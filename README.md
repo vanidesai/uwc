@@ -6,9 +6,8 @@ The directory comprises of 2 repos:
 
 # Install pre-requisites
 1. Follow #Docker Pre-requisites section mentioned in "README.md" file present in IEdgeInsights-v2.0.
-2. Download modbus stack source code from SVN ("UWC_Modbus_Stack") into modbus-master directory.
-3. Copy "docker-compose.yml" file in "</EISv2.0PV/Release-Package/EdgeInsightsSoftware-v2.0/IEdgeInsights/IEdgeInsights-v2.0>/docker_setup" directory in EIS.
-4. Copy "modbus-master" directory in </EISv2.0PV/Release-Package/EdgeInsightsSoftware-v2.0/IEdgeInsights/IEdgeInsights-v2.0> directory.
+2. Copy "docker-compose.yml" file in "</EISv2.0PV/Release-Package/EdgeInsightsSoftware-v2.0/IEdgeInsights/IEdgeInsights-v2.0>/docker_setup" directory in EIS.
+3. Copy "modbus-master" directory in </EISv2.0PV/Release-Package/EdgeInsightsSoftware-v2.0/IEdgeInsights/IEdgeInsights-v2.0> directory.
 
 # Build and Run Modbus TCP container
 1. Follow steps metioned from #EIS Pre-requisites till end to provision and deploy.
