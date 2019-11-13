@@ -12,41 +12,29 @@ pipeline {
         SLACK_FAIL   = '#indu-base-algos'
     }
     stages {
+        stage('Protex Scan') {
+            staticCodeScan {
+                scanners = ['protex']
+                protexProjectName = 'UWC'
+                protexBuildName = 'rrp-generic-protex-build'
+            }
+        }
         stage('Code Scan') {
             parallel {
-                stage('Bandit') {
-                    agent {
-                        docker {
-                            image 'amr-registry.caas.intel.com/rrp-devops/bandit-build-agent:latest'
-                            reuseNode true
-                        }
-                    }
-
-                    steps {
-                        sh 'bandit -f txt **/*.py scripts/*.py | tee bandit_scan.txt'
-                        updateGitlabCommitStatus name: 'Bandit', state: 'success'
+                stage('Static Code Analysis') {
+                    staticCodeScan  {
+                        scanners = ['sonarqube']
+                        scannerType = 'C,C++'
+                        projectName = 'UWC' 
                     }
                 }
                 stage('Static Code Analysis') {
-                    steps {
-                        rbheStaticCodeScan()
-                        updateGitlabCommitStatus name: 'Static Code Analysis', state: 'success'
+                    staticCodeScan  {
+                        scanners = ['checkmarx']
+                        checkmarxProjectName = 'UWC' 
                     }
                 }
             }
-        }
-    }
-    post {
-        always {
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'bandit_scan.txt'
-        }
-        failure {
-            updateGitlabCommitStatus name: 'Static Code Analysis', state: 'failed'
-            slackBuildNotify([failed: true, slackFailureChannel: env.SLACK_FAIL]) {}
-        }
-        success {
-            updateGitlabCommitStatus name: 'Static Code Analysis', state: 'success'
-            slackBuildNotify([slackSuccessChannel: env.SLACK_SUCCESS]) {}
         }
     }
 }
