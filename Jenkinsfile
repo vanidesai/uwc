@@ -11,9 +11,6 @@ pipeline {
         SLACK_SUCCESS = '#indu-base-algos'
         SLACK_FAIL   = '#indu-base-algos'
     }
-    triggers {
-        gitlab(triggerOnPush: true, triggerOnMergeRequest: true, branchFilterType: 'All')
-    }
     stages {
         stage('Code Scan') {
             parallel {
