@@ -21,28 +21,6 @@ pipeline {
                 }
             }
         }
-        stage('Code Scan') {
-            stages {
-                parallel {
-                    stage('Static Code Analysis') {
-                        steps {
-                            staticCodeScan  {
-                                scanners = ['sonarqube']
-                                scannerType = 'C,C++'
-                                projectName = 'UWC' 
-                            }
-                        }
-                    }
-                    stage('Static Code Analysis') {
-                        steps {
-                            staticCodeScan  {
-                                scanners = ['checkmarx']
-                                checkmarxProjectName = 'UWC' 
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        
     }
 }
