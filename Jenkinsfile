@@ -14,13 +14,11 @@ pipeline {
     stages {
         stage('Protex Scan') {
             steps {
-                staticCodeScan {
                     scanners = ['protex']
                     protexProjectName = 'UWC'
                     protexBuildName = 'rrp-generic-protex-build'
                 }
             }
         }
-        
     }
 }
