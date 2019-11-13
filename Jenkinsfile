@@ -8,8 +8,8 @@ pipeline {
         // SCANNERS = 'checkmarx,protex'
 
         PROJECT_NAME = 'UWC'
-        SLACK_SUCCESS = '#indu-base-algos'
-        SLACK_FAIL   = '#indu-base-algos'
+        SLACK_SUCCESS = '#indu-uwc'
+        SLACK_FAIL   = '#indu-uwc'
     }
     stages {
         stage('Protex Scan') {
