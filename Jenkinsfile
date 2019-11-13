@@ -12,12 +12,10 @@ pipeline {
         SLACK_FAIL   = '#indu-uwc'
     }
     stages {
-        stage('Protex Scan') {
+        stage('Stage 1') {
             steps {
-                    scanners = ['protex']
-                    protexProjectName = 'UWC'
-                    protexBuildName = 'rrp-generic-protex-build'
-                }
-		}
-	}
+                echo 'Hello world!' 
+            }
+        }
+    }
 }
