@@ -18,7 +18,6 @@ pipeline {
                     protexProjectName = 'UWC'
                     protexBuildName = 'rrp-generic-protex-build'
                 }
-            }
-        }
-    }
+		}
+	}
 }
