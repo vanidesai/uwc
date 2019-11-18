@@ -18,14 +18,11 @@ pipeline {
             }
         }
         stage('Protex Scan') {
-                echo 'Testing..'
+            steps {
+                echo 'Protex Scan..'
                 scanners = ['protex']
                 protexProjectName = 'UWC'
                 protexBuildName = 'rrp-generic-protex-build'
-        }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying....'
             }
         }
     }
