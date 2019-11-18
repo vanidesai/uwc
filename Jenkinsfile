@@ -18,7 +18,7 @@ pipeline {
             }
         }
         stage('Protex Scan') {
-            staticCodeScan {
+            rbheStaticCodeScan {
                 echo 'Protex Scan..'
                 scanners = ['protex']
                 protexProjectName = 'UWC'
