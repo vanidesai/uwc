@@ -26,9 +26,7 @@ pipeline {
     }
     
     post {
-        always {
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'bandit_scan.txt'
-        }
+        
         failure {
             updateGithubCommitStatus name: 'Static Code Analysis', state: 'failed'
             slackBuildNotify([failed: true, slackFailureChannel: env.SLACK_FAIL]) {}
