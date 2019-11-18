@@ -16,7 +16,7 @@ pipeline {
         stage('Hello') {
             steps {
                 echo 'Hello..'
-                sh 'export https_proxy = proxy-chain.intel.com:911; git clone https://gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights.git'
+                sh 'export https_proxy="proxy-chain.intel.com:911"; git clone https://gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights.git'
             }
         }
     }
