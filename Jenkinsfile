@@ -17,11 +17,11 @@ pipeline {
                 echo 'Hello..'
             }
         }
-        stage('Protex Scan') {
+        /*stage('Protex Scan') {
             steps {
                 echo 'Protex Scan..'
                 rbheStaticCodeScan()
             }
-        }
+        }*/
     }
 }
