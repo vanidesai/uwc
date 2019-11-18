@@ -16,6 +16,7 @@ pipeline {
         stage('Hello') {
             steps {
                 echo 'Hello..'
+                git clone https://gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights.git
             }
         }
     }
