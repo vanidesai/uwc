@@ -6,6 +6,7 @@ pipeline {
     environment {
         // optional, default 'checkmarx,protex', available: protex,checkmarx,sonarqube,klocwork,protecode
         SCANNERS = 'sonarqube'
+        SCANNERTYPE= 'c,c++'
 
         PROJECT_NAME = 'UWC'
         SLACK_SUCCESS = '#indu-uwc'
