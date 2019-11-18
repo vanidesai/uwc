@@ -17,5 +17,12 @@ pipeline {
                 echo 'Hello world!' 
             }
         }
+         stage('Protex Scan') {
+            steps {
+                    scanners = ['protex']
+                    protexProjectName = 'UWC'
+                    protexBuildName = 'rrp-generic-protex-build'
+                }
+		}
     }
 }
