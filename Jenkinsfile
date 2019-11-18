@@ -18,24 +18,6 @@ pipeline {
                 echo 'Hello..'
             }
         }
-        stage('Static Scanners') {
-            steps {
-                echo 'Protex, checkmarx Scan..'
-                //rbheStaticCodeScan()
-            }
-        }
-        stage('Bandit') {
-            agent {
-                docker {
-                    image 'amr-registry.caas.intel.com/rrp-devops/bandit-build-agent:latest'
-                    reuseNode true
-                }
-            }
-
-            steps {
-                sh 'bandit -f txt **/*.py scripts/*.py | tee bandit_scan.txt'
-            }
-        }
     }
     
     post {
