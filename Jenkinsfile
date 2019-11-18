@@ -5,7 +5,7 @@ pipeline {
     }
     environment {
         // optional, default 'checkmarx,protex', available: protex,checkmarx,sonarqube,klocwork,protecode
-        // SCANNERS = 'checkmarx,protex'
+        SCANNERS = 'checkmarx,protex,sonarqube'
 
         PROJECT_NAME = 'UWC'
         SLACK_SUCCESS = '#indu-uwc'
