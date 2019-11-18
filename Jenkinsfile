@@ -24,7 +24,7 @@ pipeline {
                 //rbheStaticCodeScan()
             }
         }
-        /*stage('Bandit') {
+        stage('Bandit') {
             agent {
                 docker {
                     image 'amr-registry.caas.intel.com/rrp-devops/bandit-build-agent:latest'
@@ -35,7 +35,7 @@ pipeline {
             steps {
                 sh 'bandit -f txt **/*.py scripts/*.py | tee bandit_scan.txt'
             }
-        }*/
+        }
     }
     
     post {
