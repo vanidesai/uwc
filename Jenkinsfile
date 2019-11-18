@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'UWC' }
+    agent { label 'rbhe' }
     options {
         timestamps()
     }
