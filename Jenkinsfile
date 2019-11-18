@@ -16,11 +16,12 @@ pipeline {
         stage('Hello') {
             steps {
                 echo 'Hello..'
+                
             }
         }
-        stage('Protex Scan') {
+        /*stage('Static Scanners') {
             steps {
-                echo 'Protex Scan..'
+                echo 'Protex, checkmarx Scan..'
                 rbheStaticCodeScan()
             }
         }
@@ -35,7 +36,7 @@ pipeline {
             steps {
                 sh 'bandit -f txt **/*.py scripts/*.py | tee bandit_scan.txt'
             }
-        }
+        }*/
     }
     
     post {
