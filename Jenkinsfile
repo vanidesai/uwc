@@ -16,7 +16,6 @@ pipeline {
         stage('Hello') {
             steps {
                 echo 'Hello..'
-                
             }
         }
         /*stage('Static Scanners') {
