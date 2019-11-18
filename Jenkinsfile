@@ -28,11 +28,11 @@ pipeline {
     post {
         
         failure {
-            updateGithubCommitStatus name: 'Static Code Analysis', state: 'failed'
+            //updateGithubCommitStatus name: 'Static Code Analysis', state: 'failed'
             slackBuildNotify([failed: true, slackFailureChannel: env.SLACK_FAIL]) {}
         }
         success {
-            updateGithubCommitStatus name: 'Static Code Analysis', state: 'success'
+            //updateGithubCommitStatus name: 'Static Code Analysis', state: 'success'
             slackBuildNotify([slackSuccessChannel: env.SLACK_SUCCESS]) {}
         }
     }
