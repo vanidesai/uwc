@@ -27,6 +27,8 @@
 //#include "cpprest/http_listener.h"
 //#include "Httprest.hpp"
 #include "BoostLogger.hpp"
+#include "cJSON.h"
+#include "PublishJson.hpp"
 
 /// node for response Q
 struct stStackResponse
@@ -37,6 +39,8 @@ struct stStackResponse
 	uint8_t u8Reason;
 	uint16_t u16TransacID;
 };
+
+class CRefDataForPolling; 
 
 // class for Read periodic
 class CPeriodicReponseProcessor{
@@ -49,7 +53,8 @@ private:
 	BOOLEAN pushToQueue(struct stStackResponse &stStackResNode);
 	BOOLEAN getDataToProcess(struct stStackResponse &a_stStackResNode);
 
-	BOOLEAN prepareResponseJson(string &a_sTopic, stStackResponse stPeriodicResp, bool bIsValPresent = FALSE);
+	//BOOLEAN prepareResponseJson(cJSON *jsonVal, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp);
+	BOOLEAN prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp);
 	BOOLEAN postResponseJSON(stStackResponse& a_stResp);
 
 	BOOLEAN initSem();

@@ -19,16 +19,20 @@
  *
  * @return int [out] return 1 on success
  */
-#include "DataPoll.hpp"
+
 #include "BoostLogger.hpp"
 #include "PeriodicReadFeature.hpp"
-
+#include "NetworkInfo.hpp"
+#include "ZmqHandler.hpp"
+#include "PublishJson.hpp"
+#include "PeriodicRead.hpp"
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <string.h>
 #include <cstring>
 #include <stdio.h>
 #include <stdlib.h>
+#include "YamlUtil.h"
 
 extern "C" {
 #include <safe_lib.h>
@@ -37,21 +41,138 @@ extern "C" {
 // for boost logging
 extern src::severity_logger< severity_level > lg;
 
+void populatePollingRefData()
+{
+	BOOST_LOG_SEV(lg, debug) << __func__ << "Start";
+	
+	using network_info::CUniqueDataPoint;
+	using network_info::eEndPointType;
+	// 1. get unique point list
+	// 2. check if polling is enabled for that point
+	// 3. check if zmqcontext is available
+	// 4. if 2 and 3 are yes, create polling ref data
+
+	const std::map<std::string, CUniqueDataPoint> &mapUniquePoint = network_info::getUniquePointList();
+	for(auto pt: mapUniquePoint)
+	{
+		const CUniqueDataPoint &a = mapUniquePoint.at(pt.first);
+		if(0 == a.getDataPoint().getPollingConfig().m_uiPollFreq)
+		{
+			BOOST_LOG_SEV(lg, info) << __func__ << "Polling is not set for " << a.getDataPoint().getID();
+			// Polling frequency is not set
+			continue; // go to next point
+		}
+		try
+		{
+			std::string sTopic(a.getWellSite().getID() + SEPARATOR_CHAR +
+								a.getWellSiteDev().getID());
+			BOOST_LOG_SEV(lg, debug) << __func__ << "Topic for context search: " << sTopic;
+			std::cout << "Topic for context search: " << sTopic << std::endl;
+			zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX(sTopic);
+
+			uint8_t uiFuncCode;
+			switch(a.getDataPoint().getAddress().m_eType)
+			{
+			case network_info::eEndPointType::eCoil:
+				uiFuncCode = 1;
+				break;
+			case network_info::eEndPointType::eDiscrete_Input:
+				uiFuncCode = 2;
+				break;
+			case network_info::eEndPointType::eHolding_Register:
+				uiFuncCode = 3;
+				break;
+			case network_info::eEndPointType::eInput_Register:
+				uiFuncCode = 4;
+				break;
+			}
+
+			CRefDataForPolling objRefPolling{mapUniquePoint.at(pt.first), busCTX, uiFuncCode};
+
+			CTimeMapper::instance().insert(a.getDataPoint().getPollingConfig().m_uiPollFreq, objRefPolling);
+			BOOST_LOG_SEV(lg, info) << __func__ << "Polling is set for " << a.getDataPoint().getID() << ", FunctionCode " << (unsigned)uiFuncCode
+						<< ", frequency " << a.getDataPoint().getPollingConfig().m_uiPollFreq;
+		}
+		catch(std::exception &e)
+		{
+			BOOST_LOG_SEV(lg, error) << __func__ << "Exception '" << e.what() << "' in processing " << a.getDataPoint().getID();
+			std::cout << e.what() << std::endl;
+		}
+	}
+	
+	BOOST_LOG_SEV(lg, debug) << __func__ << "End";
+}
+
 int main(int argc, char* argv[])
 {
+	BOOST_LOG_SEV(lg, debug) << __func__ << "Start";
 	try
 	{
-		PeriodicDataPoll objDataPoll;
+		//PeriodicDataPoll objDataPoll;
 
 		initLogging();
 		logging::add_common_attributes();
 
 		uint8_t	u8ReturnType = AppMbusMaster_StackInit();
+		if(0 != u8ReturnType)
+		{
+			BOOST_LOG_SEV(lg, error) << __func__ << "Exiting. Failed to initialize modbus stack:" << u8ReturnType;
+			std::cout << "Error: Exiting. Failed to initialize modbus stack:" << u8ReturnType << std::endl;
+			exit(1);
+		}
 
+		zmq_handler::startupPreparePubContext();
+
+		// get the environment variable
+		if(const char* env_p = std::getenv("TCP_ENABLED"))
+		{
+			int32_t imode = atoi(env_p);
+			if(imode == 1)
+			{
+				/// store the yaml files in data structures
+				network_info::buildNetworkInfo(true);
+				BOOST_LOG_SEV(lg, info) << __func__ << "Modbus container application is set to TCP mode";
+				cout << "Modbus container application is set to TCP mode.." << endl;
+			}
+			else if (imode == 0)
+			{
+				BOOST_LOG_SEV(lg, fatal) << __func__ << "RTU mode is not supported currently..Use TCP mode only";
+				cout << "RTU mode is not supported currently.. Use TCP mode only...Exiting ..." << endl;
+				exit(1);
+			}
+			else
+			{
+				BOOST_LOG_SEV(lg, fatal) << __func__ << "Invalid value for TCP_ENABLED environment variable..it should be 0/1";
+				cout << "Invalid value for TCP_ENABLED environment variable..it should be 0 or 1"
+						"(i.e. 0 for RTU and 1 for TCP mode )......Exiting ..." << endl;
+				exit(1);
+			}
+		}
+		else
+		{
+			BOOST_LOG_SEV(lg, fatal) << __func__ << "TCP_ENABLED Environment variable is not set..Exiting";
+			cout << "TCP_ENABLED Environment variable is not set..Exiting" << endl;
+			exit(1);
+		}
+
+		// ZMQ contexts are built
+		// Network device data and unique point data are also available
+		// Lets build: reference data for polling
+		populatePollingRefData();
+
+
+		if(false == CPeriodicReponseProcessor::Instance().isInitialized())
+		{
+			BOOST_LOG_SEV(lg, debug) << __func__ << "CPeriodicReponseProcessor is not initialized";
+		}
+		else
+		{
+			BOOST_LOG_SEV(lg, debug) << __func__ << "CPeriodicReponseProcessor is properly initialized";
+			CPeriodicReponseProcessor::Instance().initRespHandlerThreads();
+		}
+
+		BOOST_LOG_SEV(lg, info) << __func__ << "Configuration done. Starting operations.";
 		CTimeMapper::instance().initTimerFunction();
-
-
-		objDataPoll.initDataPoll();
 
 		while(1)
 		{
@@ -60,13 +181,10 @@ int main(int argc, char* argv[])
 	}
 	catch (const std::exception &e)
 	{
-		BOOST_LOG_SEV(lg, info) << "fatal::Error in getting arguments: "<<e.what();
+		BOOST_LOG_SEV(lg, error) << __func__ << "fatal::Error in getting arguments: ";
 		return 0;
 	}
+	BOOST_LOG_SEV(lg, debug) << __func__ << "End";
 
 	return EXIT_SUCCESS;
 }
-
-
-
-

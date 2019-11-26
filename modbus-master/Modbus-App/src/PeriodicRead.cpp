@@ -7,27 +7,15 @@
 * property right is granted to or conferred upon you by disclosure or delivery of
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
-/*
-#include <list>
-#include <thread>
-#include <queue>
-#include <algorithm>
-#include <mutex>
-#include <chrono>
-#include <vector>
-#include <numeric>
-#include "Common.hpp"
-#include "session.hpp"
-#include "cpprest/http_listener.h"
-#include "Httprest.hpp"
-#include "BoostLogger.hpp"
-*/
-#include "PeriodicRead.hpp"
-//#include "PlatformBusInterface.hpp"
-#include "PeriodicReadFeature.hpp"
-//#include "RequestMapper.hpp"
 
-//#include <fstream>
+#include "PeriodicRead.hpp"
+#include "PeriodicReadFeature.hpp"
+#include <boost/bind/bind.hpp>
+//#include "PublishJson.hpp"
+#include "YamlUtil.h"
+#include <sstream>
+#include <ctime>
+#include <chrono>
 
 extern "C" {
 	#include <safe_lib.h>
@@ -67,132 +55,102 @@ extern "C" {
 #endif
 
 using namespace std;
-//using namespace web;
-//using namespace boostbeast;
 
 std::atomic<unsigned short> g_u16TxId;
 extern src::severity_logger< severity_level > lg;
 
-template <class A, class B>
-A ConvertFunc(std::vector<uint8_t> vt)
+void getTimeStamps(std::string &a_sTimeStamp, std::string &a_sUsec)
 {
-    B val = 0;
-    for (int i = 0; i < vt.size(); i++)
-    {
-        val = (val << 8) | vt[i];
-    }
-    return *((A*)&val);
+	std::stringstream ss;
+	a_sTimeStamp.clear();
+	a_sUsec.clear();
+	
+    std::time_t rawtime;
+    std::tm* timeinfo;
+    char buffer [80];
+
+    std::time(&rawtime);
+    timeinfo = std::localtime(&rawtime);
+
+    std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
+    //std::puts(buffer);
+	a_sTimeStamp.insert(0, buffer);
+
+	ss << std::chrono::system_clock::now().time_since_epoch().count();
+	a_sUsec.insert(0, ss.str());
 }
 
-BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(string &a_sTopic, stStackResponse stPeriodicResp, bool bIsValPresent)
+BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp)
 {
 	bool bRetValue = true;
-	/*
-	string IPaddress;
-	string RespData;
-
-	HaystackInfo_t stHaystackInfo = {};
+	msg_envelope_t *msg = NULL;
 	try
 	{
-		//stHaystackInfo = RequestMapper::instance().getReadPeriodicHaystackStruct(stPeriodicResp.u16TransacID);
-		JSONReply["haystack_id"] = json::value::string(stHaystackInfo.m_stHaystackId);
-		JSONReply["error"] = json::value::string("");
+		std::string sTimestamp, sUsec;
+		getTimeStamps(sTimestamp, sUsec);
+		
+		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
+		msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string(std::to_string(a_stResp.u16TransacID).c_str());
+		msg_envelope_elem_body_t* ptTimeStamp = msgbus_msg_envelope_new_string(sTimestamp.c_str());
+		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(sUsec.c_str());
+		msg_envelope_elem_body_t* ptTopic = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getID().c_str());
+		msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getWellSite().getID().c_str());
+		msg_envelope_elem_body_t* ptMetric = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getDataPoint().getID().c_str());
 
-		a_sTopic = stHaystackInfo.m_sMqttTopic;
+		msg = msgbus_msg_envelope_new(CT_JSON);
+		msgbus_msg_envelope_put(msg, "version", ptVersion);
+		msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
+		msgbus_msg_envelope_put(msg, "timestamp", ptTimeStamp);
+		msgbus_msg_envelope_put(msg, "usec", ptUsec);
+		msgbus_msg_envelope_put(msg, "topic", ptTopic);
+		msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
+		msgbus_msg_envelope_put(msg, "metric", ptMetric);
 
-		if(TRUE == bIsValPresent)
+		//// fill value
+		*a_pMsg = msg;
+
+		if(TRUE == a_stResp.bIsValPresent)
 		{
-			JSONReply["status"] = json::value::string("ok");
-			std::vector<uint8_t> vt = stPeriodicResp.m_Value;
-			switch(stHaystackInfo.m_stDataType)
+			std::vector<uint8_t> vt = a_stResp.m_Value;
+			if(0 != vt.size())
 			{
-				case MBUS_DT_BINARY:
+				static const char* digits = "0123456789ABCDEF";
+				std::string sVal(vt.size()*2+2,'0');
+				int i = 0;
+				sVal[i++] = '0'; sVal[i++] = 'x';
+				for (auto a: vt)
 				{
-					if(0 == vt[0])
-					{
-						JSONReply["value"] = json::value::boolean(FALSE);
-					}
-					else
-					{
-						JSONReply["value"] = json::value::boolean(TRUE);
-					}
+					sVal[i] = digits[(a >> 4) & 0x0F];
+					sVal[i+1] = digits[a & 0x0F];
+					i += 2;
 				}
-				break;
-				case MBUS_DT_UNSIGNED_INT:
-				case MBUS_DT_ENUM:
-				{
-					JSONReply["value"] = json::value::number(ConvertFunc<unsigned int, unsigned int>(vt));
-				}
-				break;
-				case MBUS_DT_FLOAT:
-				{
-					JSONReply["value"] = json::value::number(ConvertFunc<float, unsigned int>(vt));
-				}
-				break;
-				case MBUS_DT_SIGNED_SHORT:
-				{
-					JSONReply["value"] = json::value::number(ConvertFunc<short, unsigned int>(vt));
-				}
-				break;
-				case MBUS_DT_UNSIGNED_SHORT:
-				{
-					JSONReply["value"] = json::value::number(ConvertFunc<unsigned short, unsigned int>(vt));
-				}
-				break;
-				case MBUS_DT_SIGNED_INT:
-				{
-					JSONReply["value"] = json::value::number(ConvertFunc<int, unsigned int>(vt));
-				}
-				break;
-				case MBUS_DT_DOUBLE:
-				{
-					JSONReply["value"] = json::value::number(ConvertFunc<double, unsigned long>(vt));
-				}
-				break;
-				case MBUS_DT_STRING:
-				{
-					char arr[vt.size()] = {};
-					int i = 0;
-					for(auto const& value: vt)
-					{
-						arr[i] = (char)value;
-						i++;
-					}
-					string str(arr);
-					JSONReply["value"] = json::value::string(str);
-				}
-				break;
-				case MBUS_DT_SINGED_LONG:
-				{
-					JSONReply["value"] = json::value::number(ConvertFunc<long, unsigned long>(vt));
-				}
-				break;
-				case MBUS_DT_UNSIGNED_LONG:
-				{
-					JSONReply["value"] = json::value::number(ConvertFunc<unsigned long, unsigned long>(vt));
-				}
-				break;
-				default:
-					bRetValue = false;
-				break;
 
+				msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(sVal.c_str());
+				msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
+				msgbus_msg_envelope_put(msg, "value", ptValue);
+				msgbus_msg_envelope_put(msg, "status", ptStatus);
 			}
+			else
+			{
+				msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string("");
+				msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
+				msgbus_msg_envelope_put(msg, "value", ptValue);
+				msgbus_msg_envelope_put(msg, "status", ptStatus);
+			}		
 		}
 		else
 		{
-			JSONReply["status"] = json::value::string("Fault");
-			JSONReply["error"] = json::value::string("exception_code::"+
-										to_string(stPeriodicResp.m_stException.m_u8ExcCode)+
-										"  exception_status::"+
-										to_string(stPeriodicResp.m_stException.m_u8ExcStatus));
+			msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string("");
+			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
+			msgbus_msg_envelope_put(msg, "value", ptValue);
+			msgbus_msg_envelope_put(msg, "status", ptStatus);
 		}
 	}
     catch(const std::exception& e)
 	{
-    	BOOST_LOG_SEV(lg, info) <<"fatal::" << __func__ << "::Exception is raised. "<<e.what();
+		logMessage(debug,"::Exception is raised. "<<e.what());
     	bRetValue = false;
 	}
-	*/
 
 	return bRetValue;
 
@@ -200,25 +158,33 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(string &a_sTopic, stStack
 
 BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 {
-	//json::value ipJson;
+	msg_envelope_t* g_msg = NULL;
+
 	try
 	{
 		std::string sTopic("");
-		// Get Haystack data
-		if(FALSE == prepareResponseJson(sTopic, a_stResp, a_stResp.bIsValPresent))
+		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(a_stResp.u16TransacID);
+		
+		if(FALSE == prepareResponseJson(&g_msg, objReqData, a_stResp))
 		{
-			BOOST_LOG_SEV(lg, info) << "Error::" << __func__ << ": " << " could not extract Haystack info";
-			cout << __DATE__ << " " << __TIME__ << " " << __func__ << ":  could not extract Haystack info\n";
+			logMessage(info,"Error in preparing response");
 			return FALSE;
 		}
-
-		//PlBusHandler::instance().publishPlBus(ipJson, sTopic.c_str());
+		else
+		{
+			PublishJsonHandler::instance().publishJson(g_msg, objReqData.getBusContext().m_pContext,
+					objReqData.getDataPoint().getID());
+		}
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, info) << "Exception::" << __func__ << ": " << e.what();
+		logMessage(debug,"Exception::" << __func__ << ": " << e.what());
 		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what() << std::endl;
-		return FALSE;
+	}
+
+	if(NULL == g_msg)
+	{
+		msgbus_msg_envelope_destroy(g_msg);
 	}
 
 	// return true on success
@@ -307,17 +273,16 @@ eMbusStackErrorCode CPeriodicReponseProcessor::CPeriodicReponseProcessor::respPr
 					postResponseJSON(res);
 				}
 
-				/// remove node from haystack info map
-				//RequestMapper::instance().removeReadPeriodicHaystackStruct(res.u16TransacID);
+				/// remove node from TxID map
+				CRequestInitiator::instance().removeTxIDReqData(res.u16TransacID);
 				res.m_Value.clear();
-
 			}
 			catch(const std::exception& e)
 			{
 #ifdef PERFTESTING
 				other_status++;
 #endif
-				BOOST_LOG_SEV(lg, info) << "Exception in sendReadPeriodicResponseThread ::" << __func__ << ": " << e.what();
+				logMessage(info, "Exception in sendReadPeriodicResponseThread ::" << __func__ << ": " << e.what());
 				cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what() << std::endl;
 				//return FALSE;
 			}
@@ -341,7 +306,7 @@ bool CPeriodicReponseProcessor::pushToQueue(struct stStackResponse &stStackResNo
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, info) << "Exception CPeriodicReponseProcessor ::" << __func__ << ": " << e.what();
+		logMessage(warning, "Exception CPeriodicReponseProcessor ::" << __func__ << ": " << e.what();)
 	}
 
 	return false;
@@ -359,7 +324,7 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, info) << "Exception CPeriodicReponseProcessor ::" << __func__ << ": " << e.what();
+		logMessage(warning, "Exception CPeriodicReponseProcessor ::" << __func__ << ": " << e.what())
 	}
 
 	return false;
@@ -393,9 +358,9 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 
 			stStackResNode.u16TransacID = u16TransacID;
 
-			cout << "ExceptionCode::"<< (unsigned)pstException->m_u8ExcCode<<
-					" Exception Status::"<< (unsigned)pstException->m_u8ExcStatus <<
-					" TransactionID::" << (unsigned)u16TransacID << endl;
+			//cout << "ExceptionCode::"<< (unsigned)pstException->m_u8ExcCode<<
+			//		" Exception Status::"<< (unsigned)pstException->m_u8ExcStatus <<
+			//		" TransactionID::" << (unsigned)u16TransacID << endl;
 
 			if((0 == pstException->m_u8ExcStatus) &&
 					(0 == pstException->m_u8ExcCode))
@@ -418,7 +383,7 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, info) <<"fatal::" << __func__ << "::Exception is raised. "<<e.what();
+		logMessage(warning,"Exception is raised. "<<e.what());
 	}
 
 }
@@ -459,7 +424,7 @@ CPeriodicReponseProcessor::CPeriodicReponseProcessor() : m_bIsInitialized(false)
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, info) << "Exception CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what();
+		logMessage(warning,"Exception CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what());
 		std::cout << "\nException CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
@@ -487,193 +452,35 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, info) << "Exception CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what();
+		logMessage(warning,"Exception CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what());
 		std::cout << "\nException CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
 
-/**
- *
- * DESCRIPTION
- * function to subscribe or un-subscribe periodic read request
- *
- * @param lRdPeridList 			   [in] Read periodic request
- *
- * @return eMbusStackErrorCode 	   [out] return specific error code.
- *
- */
-eMbusStackErrorCode SubscibeOrUnSubPeriodicRead(RestRdPeriodicTagPart_t &lRdPeridList)
-{
-	eMbusStackErrorCode u8ReturnType = MBUS_STACK_NO_ERROR;
-	//CPeriodicReponseProcessor *pobjPeriodicRead = NULL;
-
-	RestRdPeriodicTagPart_t stTemp;
-
-	try
-	{
-		// Check if wrong element is sent for unsubscription
-		//if (!(CPeriodicReponseProcessor::CheckInstance()) && false == lRdPeridList.IsSubscription)
-		if((false ==
-				//CMapHIDRdPeriod::instance().getElement((const char*)(lRdPeridList.m_stHaystackInfo.m_stHaystackId), stTemp))
-				CMapHIDRdPeriod::instance().getElement(lRdPeridList.m_stHaystackInfo.m_stHaystackId, stTemp))
-				&& (false == lRdPeridList.IsSubscription))
-		{
-			u8ReturnType = MBUS_APP_SUBSCRIPTION_NOT_FOUND;
-		}
-		else if(true == CMapHIDRdPeriod::instance().processElement(lRdPeridList))
-		{
-			//if(MBUS_STACK_NO_ERROR == u8ReturnType)
-			if(false == lRdPeridList.IsSubscription)
-			{
-				//pobjPeriodicRead = CPeriodicReponseProcessor::Instance();
-				//u8ReturnType = pobjPeriodicRead->SubOrUnsubPeriodicRead(lRdPeridList);
-				u8ReturnType = MBUS_STACK_NO_ERROR;
-			}
-		}
-	}
-	catch(const std::exception& e)
-	{
-		BOOST_LOG_SEV(lg, info) <<"fatal::" << __func__ << "::Exception is raised. "<<e.what();
-	}
-
-	return u8ReturnType;
-}
-
 bool CRequestInitiator::initSem()
 {
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-	//
-	int ok = sem_init(&semReqInit, 0, 1 /* Initial value of one*/);
-	if (ok == -1) {
-	   std::cout << "*******CRequestInitiator::initSem - Could not create unnamed semaphore\n";
-	   return false;
-	}
-	std::cout << "CRequestInitiator::initSem - success\n";
-#endif
 	return true;
 }
 
-void CRequestInitiator::addPendingReq(std::vector<std::string> a_vsRefID, unsigned int a_index)
-{
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-	try
-	{
-		std::cout << "CRequestInitiator::addPendingReq\n";
-		while(a_index < a_vsRefID.size())
-		{
-			string str = a_vsRefID[a_index];
-			std::vector<std::string>::iterator itPendingVector =
-					std::find(m_vsPrevPendingRequests.begin(), m_vsPrevPendingRequests.end(), str);
-			if (m_vsPrevPendingRequests.end() != itPendingVector)
-			{
-				// Element in vector.
-				// Send an error message on platform bus that request could not be initiated
-				//std::cout << str << " :addPendingReq::element present \n";
-#ifdef PERFTESTING // will be removed afterwards
-				++reqCount;
-#endif
-				// Send an error message on platform bus
-				RestRdPeriodicTagPart_t stRdPeriod;
-				if(true == CMapHIDRdPeriod::instance().getElement(str, stRdPeriod))
-				{
-					json::value tempRPResponse;
-					string strHID((const char*)stRdPeriod.m_stHaystackInfo.m_stHaystackId);
-					tempRPResponse["haystack_id"] = json::value::string(strHID);
-
-					string strKind((const char*)stRdPeriod.m_stHaystackInfo.m_stKind);
-					tempRPResponse["kind"] = json::value::string(strKind);
-
-					string l_stErrorString = "Next request is also pending like the earlier one";
-					tempRPResponse["error"] = json::value::string(l_stErrorString);;
-					/// Publishing error message to platformbus
-					PlBusHandler::instance().publishPlBus(tempRPResponse, READ_PERIODIC_NUMBER_TOPIC.c_str());
-				}
-
-				// Remove the element from pending list
-				//std::lock_guard<std::mutex> lock(m_mutexPrevReqVector);
-				m_vsPrevPendingRequests.erase(itPendingVector);
-			}
-			else
-			{
-			//std::lock_guard<std::mutex> lock(m_mutexPrevReqVector);
-			// Insert at the beginning
-				m_vsPrevPendingRequests.insert(m_vsPrevPendingRequests.begin(), str);
-			}
-			++a_index;
-		}
-	}
-	catch (exception &e)
-	{
-		std::cout << "Exception in CRequestInitiator::addPendingReq: " << e.what() << endl;
-	}
-#endif
-}
-
-void CRequestInitiator::threadRequestInit(std::vector<std::string> a_vsRefID)
+//void CRequestInitiator::threadRequestInit(std::vector<CRefDataForPolling> a_vReqData)
+void CRequestInitiator::threadRequestInit(std::vector<std::vector<CRefDataForPolling>> a_vReqDataList)
 {
 	try
 	{
 		std::atomic<unsigned int> uiReqCount(0);
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-		++m_uiIsNextRequest;
-		// Wait for current thread in execution to exit
-		sem_wait(&semReqInit);
-		--m_uiIsNextRequest;
-#endif
 
 		unsigned int index = 0;
-		while(index < a_vsRefID.size())
-		//for (std::vector<std::string>::iterator it = a_vsRefID.begin() ; it != a_vsRefID.end(); ++it)
+		for(auto a_vReqData: a_vReqDataList)
 		{
-			string str = a_vsRefID[index];
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-			if(0 < m_uiIsNextRequest)
-			{
-				// Next thread is waiting. Exit this one.
-				// But before that, add current requests into pending list
-				addPendingReq(a_vsRefID, index);
-				break;
-			}
-#endif
-			RestRdPeriodicTagPart_t stRdPeriod;
-			bool bIsFound = CMapHIDRdPeriod::instance().getElement(str, stRdPeriod);
-
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-			std::vector<std::string>::iterator itPendingVector =
-					std::find(m_vsPrevPendingRequests.begin(), m_vsPrevPendingRequests.end(), str);
-			if (m_vsPrevPendingRequests.end() != itPendingVector)
-			{
-				// Element in vector.
-				// Send an error message on platform bus that request could not be initiated
-				if (true == bIsFound)
-				{
-					json::value tempRPResponse;
-					string strHID((const char*)stRdPeriod.m_stHaystackInfo.m_stHaystackId);
-					tempRPResponse["haystack_id"] = json::value::string(strHID);
-
-					string strKind((const char*)stRdPeriod.m_stHaystackInfo.m_stKind);
-					tempRPResponse["kind"] = json::value::string(strKind);
-
-					string l_stErrorString = "Next request to be sent before the pending one";
-					tempRPResponse["error"] = json::value::string(l_stErrorString);;
-					/// Publishing error message to platformbus
-					PlBusHandler::instance().publishPlBus(tempRPResponse, READ_PERIODIC_NUMBER_TOPIC.c_str());
-				}
-				else
-				{
-					// No action - instance not found
-				}
-				// Remove the element from pending list
-				//std::lock_guard<std::mutex> lock(m_mutexPrevReqVector);
-				m_vsPrevPendingRequests.erase(itPendingVector);
-			}
-#endif
-
-			if(true == bIsFound)
+		while(index < a_vReqData.size())
+		{
+			CRefDataForPolling objReqData = a_vReqData[index];
+			
+			//if(true == bIsFound)
 			{
 				// The entry is found in map
 				// Send a request
-				if (true == sendRequest(stRdPeriod))
+				if (true == sendRequest(objReqData))
 				{
 					// Request is sent successfully
 					// No action
@@ -701,87 +508,20 @@ void CRequestInitiator::threadRequestInit(std::vector<std::string> a_vsRefID)
 				}
 				else
 				{
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-					// Request could not be sent
-					m_vsPrevPendingRequests.insert(m_vsPrevPendingRequests.begin(), str);
-#endif
 				}
-			}
-			else
-			{
-				// Request is not found in map
-				// No action
 			}
 			++index;
 		}
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-		//std::lock_guard<std::mutex> lock(m_mutexPrevReqVector);
-		// All requests scheduled for this interval are complete
-		// Now look at pending requests only if next thread is not waiting !
-		while((0 == m_uiIsNextRequest) && (false == m_vsPrevPendingRequests.empty()))
-		{
-			// Get data from back
-			std::string sRef = m_vsPrevPendingRequests.back();
-			m_vsPrevPendingRequests.pop_back();
-
-
-			RestRdPeriodicTagPart_t stRdPeriod;
-			if(true == CMapHIDRdPeriod::instance().getElement(sRef, stRdPeriod))
-			{
-				// The entry is found in map
-				// Send a request
-				if (true == sendRequest(stRdPeriod))
-				{
-					// Request is sent successfully
-					// No action
-					++uiReqCount;
-#ifdef PERFTESTING // will be removed afterwards
-					++reqCount;
-#endif
-					/**
-					 *
-					if(0 == uiReqCount%100)
-					{
-						uiReqCount.store(0);
-						std::this_thread::sleep_for(std::chrono::milliseconds(90));
-					}
-					*/
-#ifdef PERFTESTING // will be removed afterwards
-					if(reqCount == total_read_periodic.load())
-					{
-						reqCount = 0;
-						cout << "Polling is stopped ...." << endl;
-						stopPolling.store(true);
-						break;
-					}
-#endif
-				}
-				else
-				{
-					// Request could not be sent
-					m_vsPrevPendingRequests.insert(m_vsPrevPendingRequests.begin(), sRef);
-				}
-			}
-			else
-			{
-				// Request is not found in map
-				// No action
-			}
 		}
-#endif
 	}
 	catch (exception &e)
 	{
 		std::cout << "Exception in CMapHIDRdPeriod::threadRequestInit: " << e.what() << endl;
 	}
-
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-	// Allow next thread to execute
-	sem_post(&semReqInit);
-#endif
 }
 
-void CRequestInitiator::initiateRequests(std::vector<std::string> a_vsRefID)
+//void CRequestInitiator::initiateRequests(std::vector<CRefDataForPolling> a_vReqData)
+void CRequestInitiator::initiateRequests(std::vector<std::vector<CRefDataForPolling>> a_vReqData)
 {
 	try
 	{
@@ -789,7 +529,7 @@ void CRequestInitiator::initiateRequests(std::vector<std::string> a_vsRefID)
 		if(!stopPolling.load())
 #endif
 		{
-			std::thread(&CRequestInitiator::threadRequestInit, this, a_vsRefID).detach();
+			std::thread(&CRequestInitiator::threadRequestInit, this, a_vReqData).detach();
 		}
 	}
 	catch (exception &e)
@@ -800,7 +540,6 @@ void CRequestInitiator::initiateRequests(std::vector<std::string> a_vsRefID)
 
 CRequestInitiator::~CRequestInitiator()
 {
-	m_vsPrevPendingRequests.clear();
 }
 
 CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
@@ -811,16 +550,40 @@ CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, info) << "Exception CRequestInitiator ::" << __func__ << ": Unable to initiate instance: " << e.what();
+		logMessage(warning,"Exception CRequestInitiator ::" << __func__ << ": Unable to initiate instance: " << e.what());
 		std::cout << "\nException CRequestInitiator ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
 
+CRefDataForPolling CRequestInitiator::getTxIDReqData(unsigned short tokenId)
+{
+	/// Ensure that only on thread can execute at a time
+	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+
+	// return the request ID
+	return m_mapTxIDReqData.at(tokenId);
+}
+
+// function to insert new entry in map
+void CRequestInitiator::insertTxIDReqData(unsigned short token, CRefDataForPolling objRefData)
+{
+	/// Ensure that only on thread can execute at a time
+	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+
+	// insert the data in request map
+	m_mapTxIDReqData.insert(pair <unsigned short, CRefDataForPolling> (token, objRefData));
+}
+
+// function to remove entry from the map once reply is sent
+void CRequestInitiator::removeTxIDReqData(unsigned short tokenId)
+{
+	/// Ensure that only on thread can execute at a time
+	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+	m_mapTxIDReqData.erase(tokenId);
+}
+
 CTimeMapper::CTimeMapper()
 {
-	//m_thread =
-	//std::thread(&CTimeMapper::ioPeriodicReadTimer, this, 5).detach();
-	//std::cout << "\nCreated periodic read timer thread\n";
 }
 
 void CTimeMapper::initTimerFunction()
@@ -834,7 +597,8 @@ void CTimeMapper::initTimerFunction()
 
 void CTimeMapper::checkTimer()
 {
-    std::vector<std::string> vsRefId;
+    std::vector<CRefDataForPolling> vPolledPoints;
+    std::vector <std::vector<CRefDataForPolling> > vPolledPointsList;
 
     try
 	{
@@ -844,14 +608,15 @@ void CTimeMapper::checkTimer()
 			CTimeRecord &a = element.second;
 			if(0 == a.decrementTime(1))
 			{
-				std::vector<std::string> vsTemp = a.getRefIDList();
-				vsRefId.insert(vsRefId.end(), vsTemp.begin(), vsTemp.end());
+				std::vector<CRefDataForPolling>& vTemp = a.getPolledPointList();
+				vPolledPointsList.push_back(vTemp);
+				//vPolledPoints.insert(vPolledPoints.end(), vTemp.begin(), vTemp.end());
 			}
 		}
 
-		if(vsRefId.size())
+		if(vPolledPointsList.size())
 		{
-			CRequestInitiator::instance().initiateRequests(vsRefId);
+			CRequestInitiator::instance().initiateRequests(vPolledPointsList);
 		}
 	}
 	catch (exception &e)
@@ -862,15 +627,16 @@ void CTimeMapper::checkTimer()
 
 void CTimeMapper::timerThreadFunc(const boost::system::error_code& e, boost::asio::steady_timer* t)
 {
-	auto start = chrono::steady_clock::now();
+    auto start = chrono::steady_clock::now();
 	CTimeMapper::instance().checkTimer();
 	auto end = chrono::steady_clock::now();
 
-	auto sleepFor = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	auto sleepFor = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
+	//cout << "Sleep For::"<<sleepFor << endl;
 	/// Reschedule the timer for TIMER_DURATION (i.e. 1 min) in the future
 	//t->expires_after(boost::asio::chrono::seconds(60 - sleepFor));
-	t->expires_after(boost::asio::chrono::milliseconds(10-sleepFor));
+	t->expires_after(boost::asio::chrono::microseconds(1000-sleepFor));
 
 	// Posts the timer event
 	t->async_wait(boost::bind(CTimeMapper::timerThreadFunc,
@@ -884,92 +650,59 @@ void CTimeMapper::ioPeriodicReadTimer(int v)
 	// Start timer immediately
 	//boost::asio::steady_timer t(io, boost::asio::chrono::seconds(1));
 	boost::asio::steady_timer t(io);
-	t.expires_after(boost::asio::chrono::seconds(1));	//TODO convert to millisecond
+	t.expires_after(boost::asio::chrono::milliseconds(100));
 	t.async_wait(boost::bind(CTimeMapper::timerThreadFunc,
 	        boost::asio::placeholders::error, &t));
 
 	io.run();
 }
 
-
-bool CRequestInitiator::sendRequest(RestRdPeriodicTagPart_t &a_stRdPrdObj)
+bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 {
 	MbusAPI_t stMbusApiPram = {};
-	errno_t eSafeFunRetType;
-	HaystackInfo_t stHaystackInfo = {};
 	uint8_t u8ReturnType = MBUS_STACK_NO_ERROR;
 	bool bRet = false;
 
 	try
 	{
-		stMbusApiPram.m_u8DevId = a_stRdPrdObj.m_u8UnitId;
-		eSafeFunRetType = memcpy_s(stMbusApiPram.m_u8IpAddr, sizeof(stMbusApiPram.m_u8IpAddr),
-				a_stRdPrdObj.m_u8IpAddr, sizeof(stMbusApiPram.m_u8IpAddr));
-		if(eSafeFunRetType != EOK)
+		std::string sIPAddr{a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stTCP.m_sIPAddress};
+
+		CommonUtils::ConvertIPStringToCharArray(sIPAddr,stMbusApiPram.m_u8IpAddr);
+		stMbusApiPram.m_u8DevId = 1;
+		stMbusApiPram.m_u16StartAddr = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iAddress;
+		stMbusApiPram.m_u16Quantity = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
+		stMbusApiPram.m_u16ByteCount = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
+
+		if(network_info::eEndPointType::eCoil != a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_eType)
 		{
-			BOOST_LOG_SEV(lg, debug) <<"fatal::" << __func__ <<
-					"::IpAddr:memcpy_s return type:" << (unsigned)eSafeFunRetType;
+			// as default value for register is 2 bytes
+			stMbusApiPram.m_u16ByteCount = stMbusApiPram.m_u16Quantity *2;
 		}
 
-		stMbusApiPram.m_u16StartAddr = a_stRdPrdObj.m_u16StartAddr;
-		stMbusApiPram.m_u16Quantity = a_stRdPrdObj.m_u16Quantity;
-		stMbusApiPram.m_u16ByteCount = a_stRdPrdObj.m_u16ReqDataLen;
-		stHaystackInfo = a_stRdPrdObj.m_stHaystackInfo;
 		/*Enter TX Id*/
-		//stMbusApiPram.m_u16TxId = (unsigned short)g_u16TxId.load();
-		stMbusApiPram.m_u16TxId = (unsigned short)1;
+		stMbusApiPram.m_u16TxId = (unsigned short)g_u16TxId.load();
 #ifdef UNIT_TEST
 		stMbusApiPram.m_u16TxId = 5;
 #endif
 		g_u16TxId++;
-		a_stRdPrdObj.m_u16TxId = stMbusApiPram.m_u16TxId;
+		//a_stRdPrdObj.m_u16TxId = stMbusApiPram.m_u16TxId;
 
-		//RequestMapper::instance().insertReadPeriodicHaystackStruct(stMbusApiPram.m_u16TxId, stHaystackInfo);
+		CRequestInitiator::instance().insertTxIDReqData(stMbusApiPram.m_u16TxId, a_stRdPrdObj);
 
-		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.m_u8FunCode, &stMbusApiPram, (void *)readPeriodicCallBack);
+		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.getFunctionCode(), &stMbusApiPram, (void *)readPeriodicCallBack);
 
 		if(MBUS_STACK_NO_ERROR == u8ReturnType)
 		{
 			bRet = true;
 		}
-		else //BACDEL_SUCCESS != eReturnType
+		else
 		{
 			// In case of error, immediately retry in next iteration
-			a_stRdPrdObj.bIsRespAwaited = false;
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-			a_stRdPrdObj.cntError++;
-
-			// If number of consecutive errors are more, then try it after completing certain attemps
-			// At present, till 40 sec time retry will be tried
-			if(MAX_RDPRD_REQ_RETRIES < a_stRdPrdObj.cntError)
-#endif
+			//a_stRdPrdObj.bIsRespAwaited = false;
 			{
-				//json::value tempRPResponse;
-				//string strHID((const char*)stHaystackInfo.m_stHaystackId);
-				//tempRPResponse["haystack_id"] = json::value::string(stHaystackInfo.m_stHaystackId);
-
-				//string strKind((const char*)stHaystackInfo.m_stKind);
-				//tempRPResponse["kind"] = json::value::string(stHaystackInfo.m_stKind);
-
 				string l_stErrorString = "Request initiation error:: "+ to_string(u8ReturnType)+" " + "DeviceID ::" + to_string(stMbusApiPram.m_u16TxId);
-				//tempRPResponse["error"] = json::value::string(l_stErrorString);;
-				/// Publishing error message to platformbus
-				//PlBusHandler::instance().publishPlBus(tempRPResponse, stHaystackInfo.m_sMqttTopic.c_str());
-
-				//cout << "RP request initiation failed in Periodic read property request with error :: "<< eReturnType << endl;
 				bRet = true;
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-			a_stRdPrdObj.cntError = 0;
-#endif
-
 			}
-#if PENDINGREQ_HANDLING // To be enabled in future to follow a policy to attempt max to initiate a request
-			else
-			{
-				// Append to pending list for retry
-				bRet = false;
-			}
-#endif
 		}
 	}
 	catch(exception &e)
@@ -980,8 +713,7 @@ bool CRequestInitiator::sendRequest(RestRdPeriodicTagPart_t &a_stRdPrdObj)
 	return bRet;
 }
 
-
-bool CTimeMapper::insert(uint32_t a_uTime, const std::string &a_sHID)
+bool CTimeMapper::insert(uint32_t a_uTime, CRefDataForPolling &a_oPointD)
 {
 	bool bRet = true;
 	// 1. Check if record for this time exists or not
@@ -995,52 +727,18 @@ bool CTimeMapper::insert(uint32_t a_uTime, const std::string &a_sHID)
 		if(m_mapTimeRecord.end() != it)
 		{
 			// It means record exists
-			it->second.add(a_sHID);
+			it->second.add(a_oPointD);
 		}
 		else
 		{
 			// Record does not exist
-			CTimeRecord oTimeRecord(a_uTime, a_sHID);
+			CTimeRecord oTimeRecord(a_uTime, a_oPointD);
 			m_mapTimeRecord.emplace(a_uTime, oTimeRecord);
 		}
 	}
 	catch (exception &e)
 	{
-		std::cout << "Time map insert failed: " << a_uTime << ", " << a_sHID << " : " << e.what() << endl;
-		bRet = false;
-	}
-	return bRet;
-}
-
-bool CTimeMapper::remove(uint32_t a_uTime, const std::string &a_sHID)
-{
-	bool bRet = true;
-	// 1. Check if record for this time exists or not
-	// 2. If exists, then remove the given reference from existing list
-	// 3. If does not exist, no action
-	try
-	{
-		std::lock_guard<std::mutex> lock(m_mapMutex);
-		std::map<uint32_t, CTimeRecord>::iterator it = m_mapTimeRecord.find(a_uTime);
-
-		if(m_mapTimeRecord.end() != it)
-		{
-			// It means record exists
-			bRet = it->second.remove(a_sHID);
-
-			if (0 == it->second.size())
-			{
-				m_mapTimeRecord.erase(it);
-			}
-		}
-		else
-		{
-			// No action
-		}
-	}
-	catch (exception &e)
-	{
-		BOOST_LOG_SEV(lg, trace) << "Time map remove failed: " << a_uTime << ", " << a_sHID << " : " << e.what() << endl;
+		//std::cout << "Time map insert failed: " << a_uTime << ", " << a_sHID << " : " << e.what() << endl;
 		bRet = false;
 	}
 	return bRet;
@@ -1062,7 +760,7 @@ CTimeMapper::~CTimeMapper()
 
 void CTimeMapper::print()
 {
-	try
+	/*try
 	{
 		// Clear map
 		std::lock_guard<std::mutex> lock(m_mapMutex);
@@ -1078,10 +776,10 @@ void CTimeMapper::print()
 	catch (exception &e)
 	{
 		std::cout << "Exception in TimeMapper Deletion: " << e.what() << endl;
-	}
+	}*/
 }
 
-bool CTimeRecord::add(const std::string &a_sHID)
+bool CTimeRecord::add(CRefDataForPolling &a_oPoint)
 {
 	bool bRet = true;
 	// 1. Check if record for this time exists or not
@@ -1090,52 +788,19 @@ bool CTimeRecord::add(const std::string &a_sHID)
 	try
 	{
 		std::lock_guard<std::mutex> lock(m_vectorMutex);
-		if (std::find(m_vsRefID.begin(), m_vsRefID.end(), a_sHID) != m_vsRefID.end())
-		{
-		  // Element in vector.
-		  // No action
-		}
-		else
 		{
 			// Add the reference
-			m_vsRefID.push_back(a_sHID);
+			m_vPolledPoints.push_back(a_oPoint);
 		}
 	}
 	catch (exception &e)
 	{
-		std::cout << "TimeRecord insert failed: " << a_sHID << " : " << e.what() << endl;
+		//std::cout << "TimeRecord insert failed: " << a_sHID << " : " << e.what() << endl;
 		bRet = false;
 	}
 	return bRet;
 }
 
-bool CTimeRecord::remove(const std::string &a_sHID)
-{
-	bool bRet = true;
-	// 1. Check if record for this time exists or not
-	// 2. If exists, remove the element
-	// 3. If does not exist, no action
-	try
-	{
-		std::lock_guard<std::mutex> lock(m_vectorMutex);
-		std::vector<std::string>::iterator it = std::find(m_vsRefID.begin(), m_vsRefID.end(), a_sHID);
-		if (it != m_vsRefID.end())
-		{
-			// Element in vector.
-			m_vsRefID.erase(it);
-		}
-		else
-		{
-			// No action
-		}
-	}
-	catch (exception &e)
-	{
-		std::cout << "TimeRecord remove failed: " << a_sHID << " : " << e.what() << endl;
-		bRet = false;
-	}
-	return bRet;
-}
 
 CTimeRecord::~CTimeRecord()
 {
@@ -1143,7 +808,7 @@ CTimeRecord::~CTimeRecord()
 	{
 		// Clear vector of reference IDs
 		std::lock_guard<std::mutex> lock(m_vectorMutex);
-		m_vsRefID.clear();
+		m_vPolledPoints.clear();
 	}
 	catch (exception &e)
 	{
@@ -1153,7 +818,7 @@ CTimeRecord::~CTimeRecord()
 
 void CTimeRecord::print()
 {
-	try
+	/*try
 	{
 		// Clear vector of reference IDs
 		std::lock_guard<std::mutex> lock(m_vectorMutex);
@@ -1167,177 +832,5 @@ void CTimeRecord::print()
 	catch (exception &e)
 	{
 		std::cout << "Exception in TimeRecord Deletion: " << e.what() << endl;
-	}
-}
-
-CMapHIDRdPeriod::~CMapHIDRdPeriod()
-{
-	try
-	{
-		std::lock_guard<std::mutex> lock(m_mapMutex);
-		// For each element in map, remove it from timemapper
-		for (auto &element : m_mapHID)
-		{
-			CTimeMapper::instance().remove(element.second.m_u32Interval, element.first);
-		}
-
-		// Clear map
-		m_mapHID.clear();
-	}
-	catch (exception &e)
-	{
-		std::cout << "Exception in deletion of HID map: " << e.what() << endl;
-	}
-}
-
-bool CMapHIDRdPeriod::removeElement(const string &a_sHID)
-{
-	std::lock_guard<std::mutex> lock(m_mapMutex);
-	try {
-		m_mapHID.erase(a_sHID);
-		return true;
-	}
-	catch (exception &e) {
-		std::cout << "Haystack ID not found: " << a_sHID << " : " << e.what() << endl;
-	}
-	return false;
-}
-
-bool CMapHIDRdPeriod::getElement(const string &a_sHID, RestRdPeriodicTagPart_t &a_stRdPeriod)
-{
-	std::lock_guard<std::mutex> lock(m_mapMutex);
-	try {
-		a_stRdPeriod = m_mapHID.at(a_sHID);
-		return true;
-	}
-	catch (exception &e)
-	{
-		BOOST_LOG_SEV(lg, trace) << "trace::getElement" << a_sHID << " : " << e.what() << endl;
-	}
-	return false;
-}
-
-bool CMapHIDRdPeriod::processElement(string &a_sHID, RestRdPeriodicTagPart_t &a_stRdPeriod)
-{
-	bool bRet = true;
-	try {
-		//
-		RestRdPeriodicTagPart_t *pstRdPeriod;
-		{
-			std::lock_guard<std::mutex> lock(m_mapMutex);
-			pstRdPeriod = &m_mapHID.at(a_sHID);;
-		}
-
-		if (NULL == pstRdPeriod)
-		{
-			// Error.
-			return false;
-		}
-
-		RestRdPeriodicTagPart_t &stRdPeriod = *pstRdPeriod;
-
-		// Cases:
-		// 1. Update interval time
-		// 2. Unsubscribe
-		// 3. No change
-
-		// Case 1: Update interval time
-		if((stRdPeriod.m_u32Interval != a_stRdPeriod.m_u32Interval) &&
-			(true == a_stRdPeriod.IsSubscription))
-		{
-			// Remove element from time map for old entry
-			bRet = CTimeMapper::instance().remove(stRdPeriod.m_u32Interval, a_sHID);
-
-			stRdPeriod.m_u32Interval = a_stRdPeriod.m_u32Interval;
-			// Make element entry into time map with new time
-			bRet = CTimeMapper::instance().insert(a_stRdPeriod.m_u32Interval, a_sHID);
-		}
-		// Case 2: Unsubscribe
-		else if(true != a_stRdPeriod.IsSubscription)
-		{
-			stRdPeriod.IsSubscription = false;
-			// Remove element from time map for old entry
-			bRet = CTimeMapper::instance().remove(stRdPeriod.m_u32Interval, a_sHID);
-
-			// Remove element
-			removeElement(a_sHID);
-		}
-		// 3. No change
-		else
-		{
-			// No action needed
-		}
-	}
-	catch(exception &e)
-	{
-		BOOST_LOG_SEV(lg, trace) << "Haystack ID not found: " << a_sHID << " : " << e.what() << endl;
-	}
-
-	return bRet;
-}
-
-bool CMapHIDRdPeriod::processElement(RestRdPeriodicTagPart_t &a_stRdPeriod)
-{
-	bool bRet = true;
-	string sHID = a_stRdPeriod.m_stHaystackInfo.m_stHaystackId;
-	try {
-		// time is in milliseconds. Convert it to minute (whole number)
-		/**
-		 *  Commenting to keep time in millisecond
-		 */
-		/*unsigned int min = a_stRdPeriod.m_u32Interval/(1000*60);
-		if (0 == min)
-		{
-			min = 1;
-		}
-		a_stRdPeriod.m_u32Interval = min;*/
-
-		std::pair<std::map<std::string, RestRdPeriodicTagPart>::iterator, bool> ret;
-		{
-			std::lock_guard<std::mutex> lock(m_mapMutex);
-			ret = m_mapHID.insert(std::pair<std::string, RestRdPeriodicTagPart> (sHID, a_stRdPeriod));
-		}
-
-		if (false == ret.second)
-		{
-			// element already exits, update it
-			bRet = processElement(sHID, a_stRdPeriod);
-		}
-		else
-		{
-			// element is new, add to time map
-			bRet = CTimeMapper::instance().insert(a_stRdPeriod.m_u32Interval, sHID);
-		}
-
-		//print();
-		//CTimeMapper::instance().print();
-	}
-	catch (std::exception &e)
-	{
-		BOOST_LOG_SEV(lg, trace) << "trace::processElement" << e.what() << endl;
-		bRet = false;
-	}
-
-	return bRet;
-}
-
-void CMapHIDRdPeriod::print()
-{
-	try
-	{
-		// Clear map
-		std::lock_guard<std::mutex> lock(m_mapMutex);
-		for (auto &element : m_mapHID)
-		{
-			RestRdPeriodicTagPart_t &a = element.second;
-			std::cout << element.first << "=(" ;
-			std::cout << a.m_u32Interval << ", " << a.IsSubscription << ", " << a.m_stHaystackInfo.m_stHaystackId;
-			std::cout  << ")" << endl ;
-		}
-		std::cout << endl;
-	}
-	catch (exception &e)
-	{
-		std::cout << "Exception in TimeMapper Deletion: " << e.what() << endl;
-	}
+	}*/
 }

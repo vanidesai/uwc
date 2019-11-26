@@ -1,0 +1,15 @@
+---
+file:
+  version: "1.0.0"
+  author: "Intel"
+  date: "Sun Sep 1 13:34:13 PDT 2019"
+  description: "Data for well site 1"
+id: "PL1"
+description: "Well site 1"
+devicelist:
+- deviceinfo: "iou_device1.yml"
+  id: "flowmeter2"
+  protocol:
+    protocol: "PROTOCOL_TCP"
+    ipaddress: "192.168.80.95"
+    port: 502

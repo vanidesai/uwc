@@ -8,6 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
+
+
 #ifndef INCLUDE_BOOSTLOGGER_HPP_
 #define INCLUDE_BOOSTLOGGER_HPP_
 
@@ -35,5 +37,14 @@ namespace sinks = boost::log::sinks;
 namespace keywords = boost::log::keywords;
 
 using namespace logging::trivial;
+
+/// boost logger handle
+extern src::severity_logger< severity_level > lg;
+
+#ifdef LOG_ENABLED
+#define logMessage(level, msg, ...) BOOST_LOG_SEV(lg, level) << msg << ##__VA_ARGS__;
+#else
+#define logMessage(level, msg);
+#endif
 
 #endif /* INCLUDE_BOOSTLOGGER_HPP_ */

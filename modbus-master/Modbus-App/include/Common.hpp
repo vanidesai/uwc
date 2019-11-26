@@ -23,22 +23,6 @@ extern "C" {
 #endif
 #include <map>
 
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/asio/bind_executor.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ssl/stream.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/config.hpp>
-
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/foreach.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/property_tree/detail/ptree_utils.hpp>
-#include <boost/property_tree/detail/file_parser_error.hpp>
-
 #ifdef __linux
 
 typedef int             BOOL;
@@ -627,8 +611,5 @@ class boostbeats_ModbusInterface
 
 };
 
-/// Report a failure
- void
- fail(boost::system::error_code ec, char const* what);
 
 #endif /* INCLUDE_INC_COMMON_HPP_ */

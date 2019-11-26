@@ -10,6 +10,7 @@
 
 #include "BoostLogger.hpp"
 
+/// boost logger handle
 src::severity_logger< severity_level > lg;
 
 /**
@@ -39,5 +40,3 @@ void initLogging()
         logging::trivial::severity >= logging::trivial::info
     );
 }
-
-

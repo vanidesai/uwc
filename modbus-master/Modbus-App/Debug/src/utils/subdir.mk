@@ -10,35 +10,17 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/BoostLogger.cpp \
-../src/Main.cpp \
-../src/ModbusStackInterface.cpp \
-../src/NetworkInfo.cpp \
-../src/PeriodicRead.cpp \
-../src/PublishJson.cpp \
-../src/ZmqHandler.cpp 
+../src/utils/YamlUtil.cpp 
 
 OBJS += \
-./src/BoostLogger.o \
-./src/Main.o \
-./src/ModbusStackInterface.o \
-./src/NetworkInfo.o \
-./src/PeriodicRead.o \
-./src/PublishJson.o \
-./src/ZmqHandler.o 
+./src/utils/YamlUtil.o 
 
 CPP_DEPS += \
-./src/BoostLogger.d \
-./src/Main.d \
-./src/ModbusStackInterface.d \
-./src/NetworkInfo.d \
-./src/PeriodicRead.d \
-./src/PublishJson.d \
-./src/ZmqHandler.d 
+./src/utils/YamlUtil.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-src/%.o: ../src/%.cpp
+src/utils/%.o: ../src/utils/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
 	g++ -lrt -std=c++11 -fpermissive -DBOOST_LOG_DYN_LINK=1 -I../$(PROJECT_DIR)/include -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/../bin/boost/include -I../$(PROJECT_DIR)/../bin/yaml-cpp/include -I../$(PROJECT_DIR)/../bin/safestring/include -I../$(PROJECT_DIR)/../bin/ssl/include -O0 -g3 -Wall -c -fmessage-length=0 -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"

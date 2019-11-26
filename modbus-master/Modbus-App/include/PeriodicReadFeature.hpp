@@ -1,4 +1,4 @@
-/*************************************************************************************
+/************************************************************************************
 * The source code contained or described herein and all documents related to
 * the source code ("Material") are owned by Intel Corporation. Title to the
 * Material remains with Intel Corporation.
@@ -6,52 +6,27 @@
 * No license under any patent, copyright, trade secret or other intellectual
 * property right is granted to or conferred upon you by disclosure or delivery of
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
-*************************************************************************************/
+************************************************************************************/
 
 #ifndef INCLUDE_INC_PERIODICREADFEATURE_HPP_
 #define INCLUDE_INC_PERIODICREADFEATURE_HPP_
 
-//#include "bacDELDef.h"
-//#include "BACnetStack.hpp"
 #include <vector>
 #include <map>
 #include <mutex>
-//#include "HttpService.hpp"
 #include <boost/asio.hpp>
 #include <semaphore.h>
+#include "NetworkInfo.hpp"
+#include "ZmqHandler.hpp"
 
 //#define QOS         1
-#define TIMEOUT     10000L
-#define MAX_RDPRD_REQ_RETRIES 10
+//#define TIMEOUT     10000L
+//#define MAX_RDPRD_REQ_RETRIES 10
 
-class CMapHIDRdPeriod {
-	private:
-	CMapHIDRdPeriod(const CMapHIDRdPeriod&) = delete;	 			// Copy construct
-	CMapHIDRdPeriod& operator=(const CMapHIDRdPeriod&) = delete;	// Copy assign
+using network_info::CUniqueDataPoint;
+using zmq_handler::stZmqContext;
 
-	std::map<std::string, RestRdPeriodicTagPart_t> m_mapHID;
-	std::mutex m_mapMutex;
-	bool processElement(std::string &a_sHID, RestRdPeriodicTagPart_t &a_stRdPeriod);
-	
-	// Default constructor
-	CMapHIDRdPeriod() {}
-	
-	public:
-	
-	// Function to get single instance of this class
-	static CMapHIDRdPeriod& instance()
-	{
-		static CMapHIDRdPeriod mapHIDRdPeriod;
-		return mapHIDRdPeriod;
-	}
-	
-	~CMapHIDRdPeriod();
-	
-	bool getElement(const std::string &a_sHID, RestRdPeriodicTagPart_t &a_oRdPrd);
-	bool processElement(RestRdPeriodicTagPart_t &a_stRdPeriod);
-	bool removeElement(const std::string &a_sHID);
-	void print();
-};
+class CRefDataForPolling;
 
 class CTimeRecord
 {
@@ -63,20 +38,18 @@ class CTimeRecord
 	std::atomic<uint32_t> m_u32Interval;
 	std::atomic<uint32_t> m_u32RemainingInterval;
 	
-	std::vector<std::string> m_vsRefID;
+	std::vector<CRefDataForPolling> m_vPolledPoints;
 	std::mutex m_vectorMutex;
 
 	public:
-	//CTimeRecord() {}
-
-	CTimeRecord(uint32_t a_u32Interval, const std::string &a_sRefID)
+	CTimeRecord(uint32_t a_u32Interval, CRefDataForPolling &a_oPoint)
 	: m_u32Interval(a_u32Interval), m_u32RemainingInterval(a_u32Interval)
 	{
-		m_vsRefID.push_back(a_sRefID);
+		m_vPolledPoints.push_back(a_oPoint);
 	}
 
 	CTimeRecord(CTimeRecord &a_oTimeRecord)
-	: m_vsRefID(a_oTimeRecord.m_vsRefID)
+	: m_vPolledPoints(a_oTimeRecord.m_vPolledPoints)
 	{
 		m_u32Interval.store(a_oTimeRecord.m_u32Interval);
 		m_u32RemainingInterval.store(a_oTimeRecord.m_u32Interval);
@@ -94,18 +67,17 @@ class CTimeRecord
 		//cout << "Remaining time to send request is :: "<<m_u32RemainingInterval<<endl;
 		return m_u32RemainingInterval;
 	}
-	std::vector<std::string> getRefIDList()
+	std::vector<CRefDataForPolling>& getPolledPointList()
 	{
 		//
 		std::lock_guard<std::mutex> lock(m_vectorMutex);
-		return m_vsRefID;
+		return m_vPolledPoints;
 	}
-	bool add(const std::string &a_sHID);
-	bool remove(const std::string &a_sHID);
+	bool add(CRefDataForPolling &a_oPoint);
 	uint32_t size() 
 	{
 		std::lock_guard<std::mutex> lock(m_vectorMutex);
-		return (uint32_t)m_vsRefID.size(); 
+		return (uint32_t)m_vPolledPoints.size(); 
 	}
 	void print();
 };
@@ -116,7 +88,6 @@ class CTimeMapper
 	CTimeMapper(const CTimeMapper&) = delete;	 			// Copy construct
 	CTimeMapper& operator=(const CTimeMapper&) = delete;	// Copy assign
 
-	//std::map<uint32_t, CTimeRecord&> m_mapTimeRecord;
 	std::map<uint32_t, CTimeRecord> m_mapTimeRecord;
 	std::mutex m_mapMutex;
 	
@@ -139,8 +110,7 @@ class CTimeMapper
 
 	~CTimeMapper();
 	
-	bool insert(uint32_t a_uTime, const std::string &a_sHID);
-	bool remove(uint32_t a_uTime, const std::string &a_sHID);
+	bool insert(uint32_t a_uTime, CRefDataForPolling &a_oPoint);
 	void print();
 };
 
@@ -153,16 +123,19 @@ private:
 	// Default constructor
 	CRequestInitiator();
 
-	void threadRequestInit(std::vector<std::string> a_vsRefID);
+	void threadRequestInit(std::vector<std::vector<CRefDataForPolling>> a_vReqData);
 
 	std::atomic<unsigned int> m_uiIsNextRequest;
-	std::vector<std::string> m_vsPrevPendingRequests;
+	//std::vector<std::string> m_vsPrevPendingRequests;
 	//std::mutex m_mutexPrevReqVector;
 	sem_t semReqInit;
 
+	std::map<unsigned short, CRefDataForPolling> m_mapTxIDReqData;
+	/// mutex for operation on m_mapTxIDReqData map
+	std::mutex m_mutextTxIDMap;
+
 	bool initSem();
-	void addPendingReq(std::vector<std::string> a_vsRefID, unsigned int a_index);
-	bool sendRequest(RestRdPeriodicTagPart_t &a_stRdPrdObj);
+	bool sendRequest(CRefDataForPolling a_stRdPrdObj);
 
 public:
 	~CRequestInitiator();
@@ -174,7 +147,36 @@ public:
 		return self;
 	}
 
-	void initiateRequests(std::vector<std::string> a_vsRefID);
+	void initiateRequests(std::vector<std::vector<CRefDataForPolling>> a_vReqData);
+
+	CRefDataForPolling getTxIDReqData(unsigned short);
+
+	// function to insert new entry in map
+	void insertTxIDReqData(unsigned short, CRefDataForPolling);
+
+	// function to remove entry from the map once reply is sent
+	void removeTxIDReqData(unsigned short);
+};
+
+class CRefDataForPolling
+{
+	const network_info::CUniqueDataPoint m_objDataPoint;
+	const struct zmq_handler::stZmqContext& m_objBusContext;
+	const struct zmq_handler::stZmqPubContext& m_objPubContext;
+
+	uint8_t m_uiFuncCode;
+	//CRefDataForPolling& operator=(const CRefDataForPolling&) = delete;	// Copy assign
+
+	public:
+	CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, struct stZmqContext& a_objBusContext, uint8_t a_uiFuncCode) :
+				m_objDataPoint{a_objDataPoint}, m_objBusContext{a_objBusContext}, m_uiFuncCode{a_uiFuncCode}
+	{
+		//std::cout << "\nin CRefDataForPolling ctor";
+	}
+
+	uint8_t getFunctionCode() {return m_uiFuncCode;}
+	const CUniqueDataPoint & getDataPoint() {return m_objDataPoint;}
+	const struct stZmqContext & getBusContext() {return m_objBusContext;}
 };
 
 #endif /* INCLUDE_INC_PERIODICREADFEATURE_HPP_ */
