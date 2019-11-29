@@ -33,6 +33,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "YamlUtil.h"
+#include "ConfigManager.hpp"
+#include "ModbusWriteHandler.hpp"
 
 extern "C" {
 #include <safe_lib.h>
@@ -108,8 +110,6 @@ int main(int argc, char* argv[])
 	BOOST_LOG_SEV(lg, debug) << __func__ << "Start";
 	try
 	{
-		//PeriodicDataPoll objDataPoll;
-
 		initLogging();
 		logging::add_common_attributes();
 
@@ -121,7 +121,31 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 
-		zmq_handler::startupPreparePubContext();
+		// Initializing all the pub/sub topic base context for ZMQ
+		if(getenv("PubTopics") != NULL)
+		{
+			BOOST_LOG_SEV(lg, error) << __func__ << " List of topic configured for Pub are :: " << getenv("PubTopics");
+			bool bRes = zmq_handler::prepareCommonContext("pub");
+			if(!bRes)
+			{
+				BOOST_LOG_SEV(lg, error) << __func__ << " Context creation failed for pub topic ";
+			}
+		}
+		if(getenv("SubTopics") != NULL)
+		{
+			BOOST_LOG_SEV(lg, error) << __func__ << " List of topic configured for Sub are :: " << getenv("SubTopics");
+			bool bRetVal = zmq_handler::prepareCommonContext("sub");
+			if(!bRetVal)
+			{
+				BOOST_LOG_SEV(lg, error) << __func__ << " Context creation failed for sub topic ";
+			}
+		}
+
+		std::string AppName(APP_NAME);
+		std::string sDirToRegister = "/" + AppName + DIR_PATH;
+
+		/// register callback for ETCD
+		CfgManager::Instance().registerCallbackOnChangeDir(sDirToRegister.c_str());
 
 		// get the environment variable
 		if(const char* env_p = std::getenv("TCP_ENABLED"))
@@ -173,6 +197,8 @@ int main(int argc, char* argv[])
 
 		BOOST_LOG_SEV(lg, info) << __func__ << "Configuration done. Starting operations.";
 		CTimeMapper::instance().initTimerFunction();
+
+		modWriteHandler::Instance().initZmqReadThread();
 
 		while(1)
 		{

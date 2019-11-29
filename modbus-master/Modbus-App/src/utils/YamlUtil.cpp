@@ -23,6 +23,12 @@ YAML::Node loadYamlFile(const std::string& filename)
 	return baseNode;
 }
 
+YAML::Node loadFromETCD(const std::string& a_sYamlFileData)
+{
+	YAML::Node baseNode = YAML::Load(a_sYamlFileData);
+	return baseNode;
+}
+
 void convertYamlToList(YAML::Node &node, std::vector<std::string>& a_slist)
 {
 	try

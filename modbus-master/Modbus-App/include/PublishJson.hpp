@@ -13,13 +13,12 @@
 
 #include "BoostLogger.hpp"
 #include "Common.hpp"
-
-extern "C"
-{
-	#include "eis/msgbus/msgbus.h"
-	//#include "eis/msgbus/logger.h"
-	#include "eis/msgbus/json_config.h"
-}
+#include <eis/utils/thread_safe_queue.h>
+#include <eis/utils/config.h>
+#include <eis/utils/json_config.h>
+#include <eis/msgbus/msgbus.h>
+#include <eis/config_manager/env_config.h>
+#include <eis/config_manager/config_manager.h>
 
 /**
  * Structure to contain state for a publisher thread

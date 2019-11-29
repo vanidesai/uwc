@@ -17,6 +17,7 @@
 #include "yaml-cpp/yaml.h"
 #include "YamlUtil.h"
 #include "BoostLogger.hpp"
+#include "ConfigManager.hpp"
 
 using namespace network_info;
 using namespace CommonUtils;
@@ -35,11 +36,11 @@ namespace
 	std::map<std::string, CWellSiteInfo> g_mapYMLWellSite;
 	std::map<std::string, CUniqueDataPoint> g_mapUniqueDataPoint;
 	std::vector<std::string> g_sErrorYMLs;
+	unsigned short g_usTotalCnt{0};
 
 	void populateUniquePointData(const CWellSiteInfo &a_oWellSite)
 	{
 		BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
-		//unsigned int uiDev = 0;
 		for(auto &objWellSiteDev : a_oWellSite.getDevices())
 		{
 			//unsigned int uiPoint = 0;
@@ -48,17 +49,13 @@ namespace
 				std::string sUniqueId(a_oWellSite.getID() + SEPARATOR_CHAR + 
 										objWellSiteDev.getID() + SEPARATOR_CHAR +
 										objPt.getID());
-				//std::cout << sUniqueId << std::endl;
-				BOOST_LOG_SEV(lg, info) << __func__ << " " << sUniqueId;
+				//BOOST_LOG_SEV(lg, info) << __func__ << " " << sUniqueId;
 				
 				// Build unique data point
 				CUniqueDataPoint oUniquePoint{sUniqueId, a_oWellSite, objWellSiteDev, objPt};
-				//CUniqueDataPoint oUniquePoint{sUniqueId, a_oWellSite, a_oWellSite.getDevices().at(uiDev),
-				//						a_oWellSite.getDevices().at(uiDev).getDevInfo().getDataPoints().at(uiPoint)};
 				g_mapUniqueDataPoint.emplace(sUniqueId, oUniquePoint);
-				//++uiPoint;
+				BOOST_LOG_SEV(lg, info) << __func__ << " " << oUniquePoint.getID() << "=" << oUniquePoint.getMyRollID();
 			}
-			//++uiDev;
 		}
 		BOOST_LOG_SEV(lg, debug) << __func__ << " End";
 	}
@@ -72,7 +69,20 @@ namespace
 		BOOST_LOG_SEV(lg, debug) << __func__ << " Start: Reading site_list.yaml";
 		try
 		{
-			YAML::Node Node = CommonUtils::loadYamlFile("site_list.yaml");
+			if(!CfgManager::Instance().IsClientCreated())
+			{
+				BOOST_LOG_SEV(lg, error) << __func__ << " ETCD client is not created ..";
+				return false;
+			}
+			char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("site_list.yaml");
+			if(NULL == cEtcdValue)
+			{
+				BOOST_LOG_SEV(lg, error) << __func__ << " No value received from ETCD  ..";
+				return false;
+			}
+			std::string sYamlStr(cEtcdValue);
+			YAML::Node Node = loadFromETCD(sYamlStr);
+			//YAML::Node Node = CommonUtils::loadYamlFile("site_list.yaml");
 			CommonUtils::convertYamlToList(Node, g_sWellSiteFileList);
 		}
 		catch(YAML::Exception &e)
@@ -258,7 +268,20 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 
 			if(it.first.as<std::string>() == "deviceinfo")
 			{
-				YAML::Node node = CommonUtils::loadYamlFile(it.second.as<std::string>());
+				if(!CfgManager::Instance().IsClientCreated())
+				{
+					BOOST_LOG_SEV(lg, error) << __func__ << " ETCD client is not created ..";
+					return;
+				}
+				char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey((it.second.as<std::string>()).c_str());
+				if(NULL == cEtcdValue)
+				{
+					BOOST_LOG_SEV(lg, error) << __func__ << " No value received from ETCD  ..";
+					return;
+				}
+				std::string sYamlStr(cEtcdValue);
+
+				YAML::Node node = CommonUtils::loadFromETCD(sYamlStr);
 				CDeviceInfo::build(node, a_oWellSiteDevInfo.getDevInfo1());
 			}
 		}
@@ -307,7 +330,20 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 			//a_oWellSite.m_sId = test["id"].as<std::string>();
 			if(test.first.as<std::string>() == "pointlist")
 			{
-				YAML::Node node = CommonUtils::loadYamlFile(test.second.as<std::string>());
+				if(!CfgManager::Instance().IsClientCreated())
+				{
+					BOOST_LOG_SEV(lg, error) << __func__ << " ETCD client is not created ..";
+					return;
+				}
+				const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey((test.second.as<std::string>()).c_str());
+				if(NULL == cEtcdValue)
+				{
+					BOOST_LOG_SEV(lg, error) << __func__ << " No value received from ETCD  ..";
+					return;
+				}
+				std::string sYamlStr(cEtcdValue);
+
+				YAML::Node node = CommonUtils::loadFromETCD(sYamlStr);
 				BOOST_LOG_SEV(lg, info) << __func__ << " : pointlist found: " << test.second.as<std::string>();
 
 				for (auto it : node)
@@ -446,6 +482,7 @@ void printWellSite(CWellSiteInfo a_oWellSite)
 	}
 	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
 }
+
 void network_info::buildNetworkInfo(bool a_bIsTCP)
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << " Start: is it TCP ? " << a_bIsTCP;
@@ -471,8 +508,8 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 	
 	// Following stage is needed only when configuration files are placed in a docker volume
 	#ifdef CONFIGFILES_IN_DOCKER_VOLUME
-	std::cout << "Config files are kept in a docker volume\n";
-	BOOST_LOG_SEV(lg, info) << __func__ << " Config files are kept in a docker volume";
+	//std::cout << "Config files are kept in a docker volume\n";
+	//BOOST_LOG_SEV(lg, info) << __func__ << " Config files are kept in a docker volume";
 	
 	// get list of well sites
 	if(false == _getWellSiteList())
@@ -498,7 +535,21 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 
 		try
 		{
-			YAML::Node baseNode = CommonUtils::loadYamlFile(sWellSiteFile);
+			/// get value from ETCD
+			if(!CfgManager::Instance().IsClientCreated())
+			{
+				BOOST_LOG_SEV(lg, error) << __func__ << " ETCD client is not created ..";
+				return;
+			}
+			const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(sWellSiteFile.c_str());
+			if(NULL == cEtcdValue)
+			{
+				BOOST_LOG_SEV(lg, error) << __func__ << " No value received from ETCD  ..";
+				return;
+			}
+			std::string sYamlStr(cEtcdValue);
+
+			YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
 			CWellSiteInfo objWellSite;
 			CWellSiteInfo::build(baseNode, objWellSite);
 			oWellSiteList.push_back(objWellSite);
@@ -513,6 +564,22 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 		}
 	}
 
+	// Once network information is read, prepare a list of unique points
+	// Set variables for unique point listing
+	if(const char* env_p = std::getenv("MY_APP_ID"))
+	{
+		BOOST_LOG_SEV(lg, info) << __func__ << ": MY_APP_ID value = " << env_p;
+		auto a = (unsigned short) atoi(env_p);
+		a = a & 0x000F;
+		g_usTotalCnt = (a << 12);
+	}
+	else
+	{
+		BOOST_LOG_SEV(lg, info) << __func__ << "MY_APP_ID value is not set. Expected values 0 to 16";
+		BOOST_LOG_SEV(lg, info) << __func__ << "Assuming value as 0";
+		g_usTotalCnt = 0;
+	}
+	BOOST_LOG_SEV(lg, info) << __func__ << ": Count start from = " << g_usTotalCnt;
 	for(auto a: g_mapYMLWellSite)
 	{
 		populateUniquePointData(g_mapYMLWellSite.at(a.first));
@@ -526,4 +593,12 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 
 	#endif
 	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
+}
+
+CUniqueDataPoint::CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
+				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint) :
+				m_uiMyRollID{g_usTotalCnt+1}, m_sId{a_sId}, 
+				m_rWellSite{a_rWellSite}, m_rWellSiteDev{a_rWellSiteDev}, m_rPoint{a_rPoint}
+{
+	++g_usTotalCnt;
 }

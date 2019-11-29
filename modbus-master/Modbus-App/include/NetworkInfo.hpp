@@ -129,6 +129,7 @@ namespace network_info
 	
 	class CUniqueDataPoint
 	{
+		const unsigned int m_uiMyRollID;
 		const std::string m_sId;
 		const CWellSiteInfo &m_rWellSite;
 		const CWellSiteDevInfo &m_rWellSiteDev;
@@ -136,16 +137,13 @@ namespace network_info
 		
 		public:
 		CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
-				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint) :
-				m_sId{a_sId}, 
-				m_rWellSite{a_rWellSite}, m_rWellSiteDev{a_rWellSiteDev}, m_rPoint{a_rPoint}
-		{
-		}
+				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint);
 		
 		std::string getID() {return m_sId;}
 		const CWellSiteInfo& getWellSite() {return m_rWellSite;}
 		const CWellSiteDevInfo& getWellSiteDev() {return m_rWellSiteDev;}
 		const CDataPoint& getDataPoint() {return m_rPoint;}
+		unsigned int getMyRollID() {return m_uiMyRollID;}
 	};
 
 	void buildNetworkInfo(bool a_bIsTCP);

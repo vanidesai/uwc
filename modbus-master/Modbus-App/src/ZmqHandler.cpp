@@ -19,125 +19,123 @@
 #include <string.h>
 #include <vector>
 #include <fstream>
+#include "ConfigManager.hpp"
 
 using namespace zmq_handler;
 
 std::mutex fileMutex;
 std::mutex __ctxMapLock;
+std::mutex __SubctxMapLock;
 std::mutex __PubctxMapLock;
+std::mutex __appSeqMapLock;
 publisher_ctx_t* g_pub_ctx;
 
 // Unnamed namespace to define globals
 namespace
 {
 	std::map<std::string, stZmqContext> g_mapContextMap;
+	std::map<std::string, stZmqSubContext> g_mapSubContextMap;
 	std::map<std::string, stZmqPubContext> g_mapPubContextMap;
+
+	std::map<unsigned short, std::string> g_mapAppSeq;
 }
 
-void zmq_handler::startupPreparePubContext()
+bool zmq_handler::prepareCommonContext(std::string topicType)
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << "Start: ";
-	void* g_msgbus_ctx = NULL;
-	std::string topic;
+	msgbus_ret_t retVal = MSG_SUCCESS;
+	bool retValue = false;
+	recv_ctx_t* sub_ctx = NULL;
 
-	do
+	if(!(topicType != "pub" || topicType != "sub"))
 	{
-		char *tempTopic = std::getenv("PubTopics");
-		if(NULL == tempTopic)
+		BOOST_LOG_SEV(lg, error) << __func__ << " Invalid TopicType parameter ::" << topicType;
+		return retValue;
+	}
+	if(CfgManager::Instance().IsClientCreated())
+	{
+		std::vector<std::string> Topics = CfgManager::Instance().getEnvConfig().get_topics_from_env(topicType);
+		for (auto topic : Topics)
 		{
-			BOOST_LOG_SEV(lg, warning) << __func__ << "PUB_TOPIC environment is not available";
-			break;
-		}
-		char* token;
-		char* rest = tempTopic;
-
-		BOOST_LOG_SEV(lg, info) << __func__ << "PUB_TOPIC value: " << tempTopic;
-
-		while ((token = strtok_r(rest, ",", &rest)))
-		{
-			std::string tempstr(token);
-			topic = tempstr;
-			tempstr = tempstr + "_cfg";
-			char *ch_ip_port = std::getenv(tempstr.c_str());
-			if(NULL == ch_ip_port)
-			{
-				BOOST_LOG_SEV(lg, warning) << __func__ << tempstr << ": environment is not available";
-				// go to next topic
-				continue;
-			}
-			BOOST_LOG_SEV(lg, info) << __func__ << tempstr << " value: " << ch_ip_port;
-
-			char *inrtoken = strtok(ch_ip_port, ",");
-			cJSON *root, *ip_Port;
-			root = cJSON_CreateObject();
-			ip_Port = cJSON_CreateObject();
-			cJSON_AddStringToObject(root, "type", inrtoken);
-			bool isHost = true;
-			while (inrtoken != NULL)
-			{
-				inrtoken = strtok(NULL, ":");
-				if(isHost)
-				{
-					cJSON_AddStringToObject(ip_Port, "host", inrtoken);
-					isHost = false;
-				}
-				else
-				{
-					if(inrtoken)
-					{
-						cJSON_AddNumberToObject(ip_Port, "port", atoi(inrtoken));
-					}
-				}
-			}
-			cJSON_AddItemToObject(root, "zmq_tcp_publish", ip_Port);
-
-			char *ptr_chJson = NULL;
-			ptr_chJson = cJSON_Print(root);
-
-			if(NULL != root)
-				cJSON_Delete(root);
-
-			std::string filePath(std::getenv("CONFIG_FILE_PATH"));
-			filePath = filePath + "tcp_socket.json";
-			BOOST_LOG_SEV(lg, info) << __func__ << " filePath for JSON config temp storage: " << filePath;
-			std::ofstream myfile (filePath);
-			if (myfile.is_open())
-			{
-				myfile << ptr_chJson;
-				myfile.close();
-			}
-			else std::cout << "Unable to open file";
-
-			config_t* config = msgbus_json_config_new(filePath.c_str());
+			retValue = true;
+			config_t* config = CfgManager::Instance().getEnvConfig().get_messagebus_config(topic, topicType);
 			if(config == NULL) {
-				BOOST_LOG_SEV(lg, error) << __func__ << "Failed to load JSON configuration " << ch_ip_port << " for " << tempstr;
+				BOOST_LOG_SEV(lg, error) << __func__ << " Failed to get publisher message bus config ::" << topic;
 				continue;
 			}
 
-			g_msgbus_ctx = msgbus_initialize(config);
-			if(g_msgbus_ctx == NULL)
+			void* msgbus_ctx = msgbus_initialize(config);
+			if(msgbus_ctx == NULL)
 			{
-				BOOST_LOG_SEV(lg, error) << __func__ << "Failed to get message bus context with config " << ch_ip_port << " for " << tempstr;
+				BOOST_LOG_SEV(lg, error) << __func__ << " Failed to get message bus context with config for topic ::" << topic;
+				config_destroy(config);
 				continue;
 			}
 
 			/// method to store msgbus_ctx as per the topic
 			stZmqContext objTempCtx;
-			objTempCtx.m_pContext = g_msgbus_ctx;
+			objTempCtx.m_pContext = msgbus_ctx;
+
 			zmq_handler::insertCTX(topic, objTempCtx);
-
-			msgbus_ret_t ret;
-
-			BOOST_LOG_SEV(lg, info) << __func__ << "Context created and stored for config " << ch_ip_port << " for " << tempstr;
-			ret = msgbus_publisher_new(g_msgbus_ctx,topic.c_str(), &g_pub_ctx);
-
-			if(ret != MSG_SUCCESS)
+			if(topicType == "pub")
 			{
-				BOOST_LOG_SEV(lg, error) <<__func__ << "Failed to initialize publisher errno: "<< ret;
+				retVal = msgbus_publisher_new(msgbus_ctx, topic.c_str(), &g_pub_ctx);
+
+				if(retVal != MSG_SUCCESS)
+				{
+					BOOST_LOG_SEV(lg, error) <<__func__ << "Failed to initialize publisher errno: "<< retVal;
+				}
 			}
+			else
+			{
+				std::cout << __func__ << " Context created and stored for config for topic :: " << topic << std::endl;
+				retVal = msgbus_subscriber_new(msgbus_ctx, topic.c_str(), NULL, &sub_ctx);
+				if(retVal != MSG_SUCCESS)
+				{
+					std::cout <<__func__ << "Failed to create subscriber context. errno: "<< retVal << std::endl;
+				}
+				else
+				{
+					stZmqSubContext objTempSubCtx;
+					objTempSubCtx.sub_ctx= sub_ctx;
+					zmq_handler::insertSubCTX(topic, objTempSubCtx);
+				}
+			}
+			BOOST_LOG_SEV(lg, info) << __func__ << " Context created and stored for config for topic :: " << topic;
+
 		}
-	} while(0);
+	}
 	BOOST_LOG_SEV(lg, debug)<<__func__ << "End: ";
+
+	return retValue;
+}
+
+stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
+{
+	BOOST_LOG_SEV(lg, debug)<<__func__ << "Start: " << a_sTopic;
+	std::unique_lock<std::mutex> lck(__SubctxMapLock);
+
+	/// return the request ID
+	return g_mapSubContextMap.at(a_sTopic);
+}
+
+void zmq_handler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRef)
+{
+	BOOST_LOG_SEV(lg, debug)<<__func__ << "Start: " << a_sTopic;
+	std::unique_lock<std::mutex> lck(__SubctxMapLock);
+
+	/// insert the data in map
+	g_mapSubContextMap.insert(std::pair <std::string, stZmqSubContext> (a_sTopic, ctxRef));
+	BOOST_LOG_SEV(lg, debug)<<__func__ << "End: ";
+}
+
+void zmq_handler::removeSubCTX(std::string a_sTopic)
+{
+	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << a_sTopic;
+	std::unique_lock<std::mutex> lck(__SubctxMapLock);
+
+	g_mapSubContextMap.erase(a_sTopic);
+	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End:";
 }
 
 stZmqContext& zmq_handler::getCTX(std::string a_sTopic)
@@ -205,5 +203,45 @@ void zmq_handler::removePubCTX(std::string a_sTopic)
 	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << a_sTopic;
 	std::unique_lock<std::mutex> lck(__PubctxMapLock);
 	g_mapPubContextMap.erase(a_sTopic);
+	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
+}
+
+std::string& zmq_handler::getAppSeq(unsigned short seqno)
+{
+	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << seqno;
+	std::unique_lock<std::mutex> lck(__appSeqMapLock);
+
+	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
+
+	/// return the context
+	return g_mapAppSeq.at(seqno);
+}
+
+bool zmq_handler::insertAppSeq(unsigned short seqno, std::string appseqno)
+{
+	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " ;
+	bool bRet = true;
+	try
+	{
+		std::unique_lock<std::mutex> lck(__appSeqMapLock);
+
+		/// insert the data
+		g_mapAppSeq.insert(std::pair <unsigned short, std::string> (seqno, appseqno));
+	}
+	catch (exception &e)
+	{
+		BOOST_LOG_SEV(lg, debug) << "Error::" << __func__ << "Exception is ::" << e.what();
+		bRet = false;
+	}
+	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
+
+	return bRet;
+}
+
+void zmq_handler::removeAppSeq(unsigned short seqno)
+{
+	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << seqno;
+	std::unique_lock<std::mutex> lck(__appSeqMapLock);
+	g_mapAppSeq.erase(seqno);
 	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
 }

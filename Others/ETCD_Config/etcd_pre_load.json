@@ -1,0 +1,33 @@
+{
+ 
+    "/GlobalEnv/": {
+        "COMPOSE_HTTP_TIMEOUT": "200",
+        "COMPOSE_PROJECT_NAME": "EIS_docker_network",
+        "EIS_USER_NAME": "eisuser",
+        "EIS_UID": "5319",
+        "EIS_INSTALL_PATH": "/opt/intel/eis",
+        "PY_LOG_LEVEL": "DEBUG",
+        "GO_LOG_LEVEL": "DEBUG",
+        "C_LOG_LEVEL" : "DEBUG",
+        "GO_VERBOSE": "0",
+        "HOST_TIME_ZONE": "",
+        "ETCD_KEEPER_PORT": "7070"
+    },
+	
+   "/MQTT-Export/config":{
+	"Mapping": [{
+			"MsgSource": "MQTT",
+			"Topics": [{
+				"/iou/PL01/KeepAlive/write": "PL01_iou_write_KeepAlive_realtime"
+			}]
+		},
+		{
+			"MsgSource": "ZeroMQ",
+			"Topics": [{
+					"PL0_flowmeter1_Point2": "/iou/PL01/KeepAlive/update"
+				}
+			]
+		}
+	]
+}
+}

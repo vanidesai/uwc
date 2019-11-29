@@ -25,6 +25,7 @@
 								<option defaultValue="gnu.cpp.compiler.debugging.level.max" id="gnu.cpp.compiler.exe.debug.option.debugging.level.192923898" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" useByScannerDiscovery="false" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.583861796" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/include"/>
 									<listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include/utils"/>
 									<listOptionValue builtIn="false" value="../$(PROJECT_DIR)/../bin/boost/include"/>
 									<listOptionValue builtIn="false" value="../$(PROJECT_DIR)/../bin/yaml-cpp/include"/>
@@ -46,6 +47,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.408081971" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.648115349" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="ModbusTCPMasterStack"/>
+									<listOptionValue builtIn="false" value="eisconfigmgr"/>
+									<listOptionValue builtIn="false" value="eismsgenv"/>
+									<listOptionValue builtIn="false" value="eisutils"/>
 									<listOptionValue builtIn="false" value="boost_system"/>
 									<listOptionValue builtIn="false" value="boost_regex"/>
 									<listOptionValue builtIn="false" value="boost_thread"/>
@@ -103,6 +107,7 @@
 								<option defaultValue="gnu.cpp.compiler.debugging.level.max" id="gnu.cpp.compiler.exe.debug.option.debugging.level.1846430975" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" useByScannerDiscovery="false" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.786399317" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/include"/>
 									<listOptionValue builtIn="false" value="../$(PROJECT_DIR)/../bin/yaml-cpp/include"/>
 									<listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include/utils"/>
 									<listOptionValue builtIn="false" value="../$(PROJECT_DIR)/../bin/boost/include"/>
@@ -124,6 +129,21 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.1292062381" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1584839820" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="ModbusTCPMasterStack"/>
+									<listOptionValue builtIn="false" value="ModbusTCPMasterStack"/>
+									<listOptionValue builtIn="false" value="eisconfigmgr"/>
+									<listOptionValue builtIn="false" value="eismsgenv"/>
+									<listOptionValue builtIn="false" value="eisutils"/>
+									<listOptionValue builtIn="false" value="boost_system"/>
+									<listOptionValue builtIn="false" value="boost_regex"/>
+									<listOptionValue builtIn="false" value="boost_thread"/>
+									<listOptionValue builtIn="false" value="boost_filesystem"/>
+									<listOptionValue builtIn="false" value="yaml-cpp"/>
+									<listOptionValue builtIn="false" value="safestring"/>
+									<listOptionValue builtIn="false" value="pthread"/>
+									<listOptionValue builtIn="false" value="boost_log"/>
+									<listOptionValue builtIn="false" value="cjson"/>
+									<listOptionValue builtIn="false" value="eismsgbus"/>
+									<listOptionValue builtIn="false" value="boost_log_setup"/>
 									<listOptionValue builtIn="false" value="yaml-cpp"/>
 									<listOptionValue builtIn="false" value="safestring"/>
 									<listOptionValue builtIn="false" value="pthread"/>

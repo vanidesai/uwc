@@ -19,6 +19,7 @@ using namespace std;
 namespace CommonUtils {
 
 YAML::Node loadYamlFile(const std::string& filename);
+YAML::Node loadFromETCD(const std::string& a_sYamlFileData);
 void convertYamlToList(YAML::Node&, std::vector<std::string>&);
 void ConvertIPStringToCharArray(string strIPaddr, unsigned char *ptrIpAddr);
 

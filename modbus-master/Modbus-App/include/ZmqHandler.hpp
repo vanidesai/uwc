@@ -18,7 +18,6 @@
 
 using std::string;
 
-
 namespace zmq_handler 
 {
 	struct stZmqContext 
@@ -29,8 +28,12 @@ namespace zmq_handler
 	{
 		void *m_pContext;
 	};
+	struct stZmqSubContext
+	{
+		recv_ctx_t* sub_ctx;
+	};
 
-	void startupPreparePubContext();
+	bool prepareCommonContext(std::string topicType);
 	//bool getContext(const std::string &a_sTopic, struct stZmqContext &a_oContext);
 
 	/// function to get message bus context based on topic
@@ -42,6 +45,15 @@ namespace zmq_handler
 	/// function to remove entry from the map once reply is sent
 	void removeCTX(std::string);
 
+	/// function to get message bus context based on topic
+	stZmqSubContext& getSubCTX(std::string str_Topic);
+
+	/// function to insert new entry in map
+	void insertSubCTX(std::string, stZmqSubContext );
+
+	/// function to remove entry from the map once reply is sent
+	void removeSubCTX(std::string);
+
 	/// function to get message bus publish context based on topic
 	stZmqPubContext getPubCTX(std::string str_Topic);
 
@@ -50,6 +62,15 @@ namespace zmq_handler
 
 	/// function to remove entry from the map
 	void removePubCTX(std::string);
+
+	/// function to get app sequence number given in request json
+	std::string& getAppSeq(unsigned short seqno);
+
+	/// function to insert new entry in map
+	bool insertAppSeq(unsigned short, std::string);
+
+	/// function to remove entry from the map
+	void removeAppSeq(unsigned short);
 }
 
 #endif /* INCLUDE_INC_ZMQHANDLDER_HPP_ */

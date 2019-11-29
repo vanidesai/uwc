@@ -59,25 +59,35 @@ using namespace std;
 std::atomic<unsigned short> g_u16TxId;
 extern src::severity_logger< severity_level > lg;
 
-void getTimeStamps(std::string &a_sTimeStamp, std::string &a_sUsec)
+void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_sTimeStamp, std::string &a_sUsec, std::string &a_sTxID)
 {
-	std::stringstream ss;
 	a_sTimeStamp.clear();
 	a_sUsec.clear();
-	
-    std::time_t rawtime;
-    std::tm* timeinfo;
-    char buffer [80];
+	a_sTxID.clear();
 
-    std::time(&rawtime);
-    timeinfo = std::localtime(&rawtime);
+	const auto p1 = std::chrono::system_clock::now();
 
-    std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
-    //std::puts(buffer);
+	std::time_t rawtime = std::chrono::system_clock::to_time_t(p1);
+	std::tm* timeinfo = std::gmtime(&rawtime);
+	char buffer [80];
+
+	std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
 	a_sTimeStamp.insert(0, buffer);
 
-	ss << std::chrono::system_clock::now().time_since_epoch().count();
-	a_sUsec.insert(0, ss.str());
+	{
+		std::stringstream ss;
+		ss << p1.time_since_epoch().count();
+		a_sUsec.insert(0, ss.str());
+	}
+
+	{
+		unsigned long long int u64{
+			std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch()).count()
+		};
+		std::stringstream ss;
+		ss << (unsigned long long)(((unsigned long long)(a_objReqData.getDataPoint().getMyRollID()) << 48) | u64);
+		a_sTxID.insert(0, ss.str());
+	}
 }
 
 BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp)
@@ -86,11 +96,11 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 	msg_envelope_t *msg = NULL;
 	try
 	{
-		std::string sTimestamp, sUsec;
-		getTimeStamps(sTimestamp, sUsec);
+		std::string sTimestamp, sUsec, sTxID;
+		getTimeBasedParams(a_objReqData, sTimestamp, sUsec, sTxID);
 		
 		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
-		msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string(std::to_string(a_stResp.u16TransacID).c_str());
+		msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string(sTxID.c_str());
 		msg_envelope_elem_body_t* ptTimeStamp = msgbus_msg_envelope_new_string(sTimestamp.c_str());
 		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(sUsec.c_str());
 		msg_envelope_elem_body_t* ptTopic = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getID().c_str());
@@ -118,10 +128,31 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 				std::string sVal(vt.size()*2+2,'0');
 				int i = 0;
 				sVal[i++] = '0'; sVal[i++] = 'x';
-				for (auto a: vt)
+				/*for (auto a: vt)
 				{
 					sVal[i] = digits[(a >> 4) & 0x0F];
 					sVal[i+1] = digits[a & 0x0F];
+					i += 2;
+				}*/
+				std::vector<unsigned char>::iterator it = vt.begin();
+				while (vt.end() != it)
+				{
+					// In 2-byte coombination, 1st byte is LSB and 2nd byte is MSB
+					// While forming a string, MSB should be taken first
+					auto cLSB = *it;
+					++it;
+					if(vt.end() != it)
+					{
+						// First take MSB
+						auto cMSB = *it;
+						++it;
+						sVal[i] = digits[(cMSB >> 4) & 0x0F];
+						sVal[i+1] = digits[cMSB & 0x0F];
+						i += 2;
+					}
+					// First take MSB
+					sVal[i] = digits[(cLSB >> 4) & 0x0F];
+					sVal[i+1] = digits[cLSB & 0x0F];
 					i += 2;
 				}
 
@@ -136,7 +167,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 				msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
 				msgbus_msg_envelope_put(msg, "value", ptValue);
 				msgbus_msg_envelope_put(msg, "status", ptStatus);
-			}		
+			}
 		}
 		else
 		{
@@ -153,7 +184,6 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 	}
 
 	return bRetValue;
-
 }
 
 BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
@@ -462,13 +492,10 @@ bool CRequestInitiator::initSem()
 	return true;
 }
 
-//void CRequestInitiator::threadRequestInit(std::vector<CRefDataForPolling> a_vReqData)
 void CRequestInitiator::threadRequestInit(std::vector<std::vector<CRefDataForPolling>> a_vReqDataList)
 {
 	try
 	{
-		std::atomic<unsigned int> uiReqCount(0);
-
 		unsigned int index = 0;
 		for(auto a_vReqData: a_vReqDataList)
 		{
@@ -484,19 +511,8 @@ void CRequestInitiator::threadRequestInit(std::vector<std::vector<CRefDataForPol
 				{
 					// Request is sent successfully
 					// No action
-					++uiReqCount;
 #ifdef PERFTESTING // will be removed afterwards
 					++reqCount;
-#endif
-					/**
-					 * Commenting for UWC. no wait after 100 request.
-					 */
-					/*if(0 == uiReqCount%100)
-					{
-						uiReqCount.store(0);
-						std::this_thread::sleep_for(std::chrono::milliseconds(90));
-					}*/
-#ifdef PERFTESTING // will be removed afterwards
 					if(reqCount == total_read_periodic.load())
 					{
 						reqCount = 0;
@@ -520,7 +536,6 @@ void CRequestInitiator::threadRequestInit(std::vector<std::vector<CRefDataForPol
 	}
 }
 
-//void CRequestInitiator::initiateRequests(std::vector<CRefDataForPolling> a_vReqData)
 void CRequestInitiator::initiateRequests(std::vector<std::vector<CRefDataForPolling>> a_vReqData)
 {
 	try
@@ -657,6 +672,7 @@ void CTimeMapper::ioPeriodicReadTimer(int v)
 	io.run();
 }
 
+
 bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 {
 	MbusAPI_t stMbusApiPram = {};
@@ -673,7 +689,11 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 		stMbusApiPram.m_u16Quantity = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
 		stMbusApiPram.m_u16ByteCount = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
 
-		if(network_info::eEndPointType::eCoil != a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_eType)
+		// Coil and discrete input are single bytes. All others are 2 byte registers
+		if( 
+		(network_info::eEndPointType::eCoil != a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_eType) &&
+		(network_info::eEndPointType::eDiscrete_Input != a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_eType)
+		)
 		{
 			// as default value for register is 2 bytes
 			stMbusApiPram.m_u16ByteCount = stMbusApiPram.m_u16Quantity *2;

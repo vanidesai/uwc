@@ -14,6 +14,8 @@ LABEL description="Modbus TCP Master Application"
 ARG EIS_UID
 ARG EIS_USER_NAME
 
+FROM ia_common:$EIS_VERSION as common
+
 # Build Boost Library
 FROM eisbase as build-boost
 RUN apt-get update && apt-get install -y \
@@ -35,20 +37,6 @@ RUN mkdir -p ${BOOST_DIR} \
     && ./b2 link=shared runtime-link=shared --no-cmake-config install \
     && cd .. && rm -rf ${BOOST_DIR}
 
-
-# Build Safe String Library
-FROM eisbase as build-safestring
-
-RUN git clone https://github.com/intel/safestringlib.git \
-    &&	cd safestringlib \
-    &&	make clean all \
-    &&	ar -x libsafestring.a \
-    &&	gcc -shared *.o -o libsafestring.so \
-    &&	mkdir /usr/safestring \
-    &&  mkdir /usr/safestring/lib \
-    &&  cp libsafestring.so /usr/safestring/lib \
-    &&  cp -r include/ /usr/safestring
-
 # yaml build
 FROM eisbase as build-yaml
 
@@ -68,36 +56,24 @@ FROM eisbase as modbus-lib
 
 WORKDIR /
 
-COPY --from=build-safestring /usr/safestring /usr/safestring/.
-COPY --from=build-safestring /usr/safestring /bin/safestring/.
+COPY --from=common /usr/local/include/safe_* /usr/local/include/
+COPY --from=common /usr/local/lib/libsafestring.so /usr/local/lib/
 
 COPY SoftMod_Stack /SoftMod_Stack/.     
 WORKDIR SoftMod_Stack
 RUN cd Release \
     && make clean all -s
 
-FROM ia_common:$EIS_VERSION as common
-
 # Build Modbus application
 FROM eisbase as modbus-app
 
 WORKDIR /
 
-COPY --from=common /libs /libs
-COPY --from=common /util /util
-
-RUN cd ./libs/EISMessageBus && \
-    rm -rf build deps && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make && \
-    make install && \
-    cd /
+COPY --from=common /usr/local/include /usr/local/include
+COPY --from=common /usr/local/lib /usr/local/lib
 
 # Copy built library from images
 COPY --from=build-boost /usr/boost /bin/boost/.
-COPY --from=build-safestring /usr/safestring /bin/safestring/.
 COPY --from=build-yaml /usr/yaml /bin/yaml-cpp/.
 
 COPY Modbus-App /Modbus-App/. 
@@ -105,31 +81,21 @@ COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusTCPMasterStack.so /Modbus
 COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
 
 RUN cd /Modbus-App/Release \
-# not effective as makefile overides
-    &&	export LD_LIBRARY_PATH='/Modbus-App/lib:\
-    /bin/boost/lib:/bin/safestring/lib':/bin/yaml-cpp/lib \
+    &&	export LD_LIBRARY_PATH='/Modbus-App/lib:/usr/local/lib\
+    :/bin/boost/lib:/bin/yaml-cpp/lib' \
     &&  export INCLUDE_DIR='/bin' \
     &&	make clean all -s
 
 # Build Modbus container service
 FROM eisbase as modbus-service
 
+COPY --from=common /usr/local/include /usr/local/include
+COPY --from=common /usr/local/lib /usr/local/lib
+
 WORKDIR /
 ENV APP_WORK_DIR /opt/app/
 RUN mkdir -p /opt/app
 RUN mkdir -p /opt/config
-
-COPY --from=common /libs /libs
-COPY --from=common /util /util
-
-RUN cd ./libs/EISMessageBus && \
-    rm -rf build deps && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make && \
-    make install && \
-    cd ${APP_WORK_DIR}
 
 ARG EIS_USER_NAME
 RUN adduser --quiet --disabled-password ${EIS_USER_NAME}
@@ -140,7 +106,6 @@ COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusTCPMasterStack.so ${APP_W
 COPY --from=modbus-app /Modbus-App/Release/ModbusTCPMaster ${APP_WORK_DIR}
 COPY --from=modbus-app /bin/boost/lib/*.so.*  ${APP_WORK_DIR}
 COPY --from=build-yaml /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
-COPY --from=build-safestring /usr/safestring/lib/* ${APP_WORK_DIR}
 
 RUN chown -R ${EIS_USER_NAME}:${EIS_USER_NAME} /opt/config
 RUN chown -R ${EIS_USER_NAME}:${EIS_USER_NAME} ${APP_WORK_DIR}
