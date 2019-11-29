@@ -27,5 +27,5 @@ The directory comprises of below file/directories:
 6. Copy "docker-compose.yml" file in </IEdgeInsights-v2.1-Alpha-RC4/docker_setup> directory in EIS.
 
 
-# Build and Run Modbus TCP container
+# Build and Run UWC containers
 1. Follow steps metioned from #EIS Pre-requisites till end to provision and deploy.
