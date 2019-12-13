@@ -257,7 +257,8 @@ eMbusStackErrorCode modWriteInfo::jsonParserForWrite(std::string a_sTopic,
 					if(WRITE_SINGLE_COIL == pstModbusRxPacket->m_u8FunCode)
 					{
 						// If value is 0x01, then write 0xFF00
-						if( (stValue.compare("0x01")) || (stValue.compare("0X01")) || (stValue.compare("01")))
+						if( (0 == stValue.compare("0x00")) || (0 == stValue.compare("0X00"))
+								|| (0 == stValue.compare("00")) || (0 == stValue.compare("0")))
 						{
 							stValue = "0x0000";
 						}
