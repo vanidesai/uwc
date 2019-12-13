@@ -1,3 +1,5 @@
+# Universal Wellpad Controller (UWC)
+
 ```
 ********************************************************************************************************************
  * The source code contained or described herein and all documents related to
@@ -9,7 +11,7 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  **********************************************************************************************************************
 ```
-# Directory details
+## Directory details
 The directory comprises of following:
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/modbus-master">modbus-master</a> :
   This directory contains the modbus container sources and docker file for building the container. 
@@ -34,13 +36,13 @@ The directory comprises of following:
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/create_uwc_package.sh">create_uwc_package.sh</a> :
   This script will be used to create UWC package
 
-# Steps to create bundle out of sources
+## Steps to create bundle out of sources
 ```
 Execute below script script to create UWC bundle for deployment.
 sudo ./create_uwc_package.sh
 ```
 
-# Install pre-requisites
+## Install pre-requisites
 1. EdgeInsightsSoftware-v2.1-Alpha version of EIS should be available on deploy machine before deployment. 
 2. Copy 01_pre-requisites.sh, 02_provisionEIS.sh, 03_DeployEIS.sh, 04_uninstall_EIS.sh and UWC.tar.gz(i.e. created in bundle create steps) files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
 3. Go to EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
@@ -50,30 +52,30 @@ sudo ./create_uwc_package.sh
 sudo ./create_uwc_package.sh
 ```
 
-# Provision EIS
+## Provision EIS
 ```
 Execute below command for provisioning EIS.
 sudo ./02_provisionEIS.sh
 ```
 
-# Build and Run all UWC containers
+## Build and Run all UWC containers
 ```
 Execute below command for container deployment.
 sudo ./03_DeployEIS.sh
 ```
 
-# Verify container status
+## Verify container status
 ```
 Execute below command to verify container status.
 sudo docker ps
 ```
 
-# Steps to check container logs
+## Steps to check container logs
 ```
 1. Syntax - sudo docker logs <container_name>
    E.g To check modbus-tcp-container logs execute "sudo docker logs modbus-tcp-container" command.
 2. Command to check logs inside the container "sudo docker exec -it <container_name> bash"
 ```
 
-# ETCD UI access
-1. ETCD UI is available on ``` "http://localhost:7070/etcdkeeper/"``` URL. (username - root , password- eis123)
+## ETCD UI access
+1. ETCD UI is available on `"http://localhost:7070/etcdkeeper/"` URL. (username - root , password- eis123)
