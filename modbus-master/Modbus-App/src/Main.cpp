@@ -23,7 +23,9 @@
 #include "YamlUtil.hpp"
 #include "ConfigManager.hpp"
 #include "ModbusWriteHandler.hpp"
+#ifdef UNIT_TEST
 #include <gtest/gtest.h>
+#endif
 
 extern "C" {
 #include <safe_lib.h>
