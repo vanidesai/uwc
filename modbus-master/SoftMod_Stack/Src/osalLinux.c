@@ -1,19 +1,13 @@
-/*************************************************************************
-*                   Copyright (c) by Softdel Systems              
-*                                                                       
-*   This software is copyrighted by and is the sole property of Softdel
-*   Systems. All rights, title, ownership, or other interests in the
-*   software remain the property of Softdel Systems. This software
-*   may only be used in accordance with the corresponding license
-*   agreement. Any unauthorized use, duplication, transmission,
-*   distribution, or disclosure of this software is expressly forbidden. 
-*                                                                       
-*   This Copyright notice may not be removed or modified without prior   
-*   written consent of Softdel Systems.                               
-*                                                                       
-*   Softdel Systems reserves the right to modify this software       
-*   without notice.                                                      
-*************************************************************************/
+/************************************************************************************
+* The source code contained or described herein and all documents related to
+* the source code ("Material") are owned by Intel Corporation or Softdel Systems
+* (and licensed to Intel Corporation). Title to the Material remains with
+* Intel Corporation or Softdel Systems.
+*
+* No license under any patent, copyright, trade secret or other intellectual
+* property right is granted to or conferred upon you by disclosure or delivery of
+* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+************************************************************************************/
 
 #include <stdbool.h>
 #include "osalLinux.h"
@@ -193,8 +187,7 @@ bool OSAL_Post_Message(Post_Thread_Msg_t *pstPostThreadMsg)
 
 	MsgSize = sizeof(Linux_Msg_t) - sizeof(long);
 
-	//iStatus = msgsnd( pstPostThreadMsg->idThread, &stMsgData, MsgSize, 0);
-	iStatus = msgsnd( pstPostThreadMsg->idThread, &stMsgData, MsgSize, MSG_NOERROR | IPC_NOWAIT);
+	iStatus = msgsnd( pstPostThreadMsg->idThread, &stMsgData, MsgSize, 0);
 
 	if(iStatus == 0)
 		return true;
@@ -310,6 +303,10 @@ Mutex_H Osal_Mutex(void)
 	/// Assign memory to mutex handle
 	pstTpmPtr = (Mutex_H)OSAL_Malloc(sizeof(pthread_mutex_t));
 
+	if (NULL == pstTpmPtr)
+	{
+		return NULL;
+	}
 	if( !(pthread_mutex_init(pstTpmPtr, NULL)) )
     	return pstTpmPtr;
     else

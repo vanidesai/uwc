@@ -68,12 +68,15 @@ typedef struct SubTagPart
 	struct SubTagPart  *m_pstNextSubTag;
 }SubTagPart_t;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 // This structure defines generic request parameters for modbus
 typedef struct RestMbusReqGeneric
 {
 	unsigned short m_u16ReffId;
 	unsigned char m_u8TagCount;
 	unsigned char m_u8IpAddr[4];
+	uint16_t		m_u16Port;
 	unsigned char m_u8DevId;
 	unsigned char m_u8NodeId;
 	unsigned char  m_u8FunCode;
@@ -85,11 +88,32 @@ typedef struct RestMbusReqGeneric
 	RespData_t	   m_stRespData;
 }RestMbusReqGeneric_t;
 
+#else
+// This structure defines generic request parameters for modbus RTU
+typedef struct RestMbusReqGeneric
+{
+	unsigned short m_u16ReffId;
+	unsigned char m_u8TagCount;
+	unsigned char address;
+	unsigned char m_u8DevId;
+	unsigned char m_u8NodeId;
+	unsigned char  m_u8FunCode;
+	unsigned char  m_u8Operation;
+	unsigned short m_u16StartAddr;
+	unsigned short m_u16EndAddr;
+	unsigned short m_u16Quantity;
+	ReqData_t 	   m_stReqData;
+	RespData_t	   m_stRespData;
+}RestMbusReqGeneric_t;
+
+#endif
+
 // This structure defines generic parameters for modbus common API
 typedef struct MbusAPI
 {
 	unsigned char	m_u8DevId;
 	unsigned char	m_u8IpAddr[4];
+	uint16_t		m_u16Port;
 	unsigned short  m_u16TxId;
 	unsigned short  m_u16Quantity;
 	unsigned short  m_u16StartAddr;

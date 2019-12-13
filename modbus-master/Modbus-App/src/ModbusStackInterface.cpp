@@ -50,7 +50,11 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint16_t  u16Quantity)
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
-
+	if(NULL == std::getenv("WRITE_RESPONSE_TOPIC"))
+	{
+		BOOST_LOG_SEV(lg, debug) << __func__ << " WRITE_RESPONSE_TOPIC not set";
+		return;
+	}
 	std::lock_guard<std::mutex> lock(g_RWCommonCallbackMutex);
 	msg_envelope_t *msg = NULL;
 	msg = msgbus_msg_envelope_new(CT_JSON);
@@ -61,7 +65,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(stAppSeqNum.c_str());
 		msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
 
-		if((pu8IpAddr != NULL) && (pstException != NULL))
+		if(pu8IpAddr != NULL && pstException->m_u8ExcCode == 0 && pstException->m_u8ExcStatus ==0)
 		{
 			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
 			msgbus_msg_envelope_put(msg, "Status", ptStatus);
@@ -78,14 +82,9 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		}
 
 		std::string topic = std::getenv("WRITE_RESPONSE_TOPIC");
-		zmq_handler::stZmqPubContext pub_ctx = zmq_handler::getPubCTX(topic);
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(topic);
 
-		msgbus_ret_t ret;
-		ret = msgbus_publisher_publish(msgbus_ctx.m_pContext, pub_ctx.m_pContext, msg);
-		if(ret != MSG_SUCCESS) {
-			BOOST_LOG_SEV(lg, info) << "Failed to publish message errno:" << ret;
-		}
+		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, topic);
 	}
 	catch(const std::exception& e)
 	{
@@ -120,60 +119,71 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 
 	if(pstMbusApiPram != NULL)
 	{
+		BOOST_LOG_SEV(lg, info) << "Request Init Time: "
+			<< std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+			<< ", TxID: " << pstMbusApiPram->m_u16TxId
+			<< ", Function Code: " << (unsigned)u8FunCode << ", DevID: " << (unsigned)pstMbusApiPram->m_u8DevId
+			<< ", PointAddr: " << pstMbusApiPram->m_u16StartAddr;
+
 		switch ((eModbusFuncCode_enum)u8FunCode)
 		{
 			case READ_COIL_STATUS:
-				BOOST_LOG_SEV(lg, info) << __func__ << " Read Coil Request Received";
+				BOOST_LOG_SEV(lg, debug) << __func__ << " Read Coil Request Received";
 				u8ReturnType = Modbus_Read_Coils(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
+					pstMbusApiPram->m_u16Port,
 					vpCallBackFun);
 			break;
 			case READ_INPUT_STATUS:
-				BOOST_LOG_SEV(lg, info) << __func__ << " Read Input Status Request Received";
+				BOOST_LOG_SEV(lg, debug) << __func__ << " Read Input Status Request Received";
 				u8ReturnType = Modbus_Read_Discrete_Inputs(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
+					pstMbusApiPram->m_u16Port,
 					vpCallBackFun);
 			break;
 			case READ_HOLDING_REG:
-				BOOST_LOG_SEV(lg, info) << __func__ << " Read Holding Register Request Received";
+				BOOST_LOG_SEV(lg, debug) << __func__ << " Read Holding Register Request Received";
 				u8ReturnType = Modbus_Read_Holding_Registers(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
+					pstMbusApiPram->m_u16Port,
 					vpCallBackFun);
 			break;
 			case READ_INPUT_REG:
-				BOOST_LOG_SEV(lg, info) << __func__ << " Read Input Register Request Received";
+				BOOST_LOG_SEV(lg, debug) << __func__ << " Read Input Register Request Received";
 				u8ReturnType = Modbus_Read_Input_Registers(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
+					pstMbusApiPram->m_u16Port,
 					vpCallBackFun);
 			break;
 			case WRITE_SINGLE_COIL:
 			{
-				BOOST_LOG_SEV(lg, info) << __func__ << " Write Single Coil Request Received";
+				BOOST_LOG_SEV(lg, debug) << __func__ << " Write Single Coil Request Received";
 				uint16_t *pu16OutData = (uint16_t *)pstMbusApiPram->m_pu8Data;
 				u8ReturnType = Modbus_Write_Single_Coil(pstMbusApiPram->m_u16StartAddr,
 						*pu16OutData,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
+					pstMbusApiPram->m_u16Port,
 					vpCallBackFun);
 			}
 			break;
 
 			case WRITE_SINGLE_REG:
 			{
-				BOOST_LOG_SEV(lg, info) << __func__ << " Write Single Register Request Received";
+				BOOST_LOG_SEV(lg, debug) << __func__ << " Write Single Register Request Received";
 				uint16_t u16OutData = 0;
 				memcpy_s(&u16OutData,sizeof(uint16_t),pstMbusApiPram->m_pu8Data,sizeof(uint16_t));
 				u8ReturnType = Modbus_Write_Single_Register(pstMbusApiPram->m_u16StartAddr,
@@ -181,27 +191,30 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
+					pstMbusApiPram->m_u16Port,
 					vpCallBackFun);
 			}
 			break;
 			case WRITE_MULTIPLE_COILS:
-				BOOST_LOG_SEV(lg, info) << __func__ << " Write Multiple Coils Request Received";
+				BOOST_LOG_SEV(lg, debug) << __func__ << " Write Multiple Coils Request Received";
 				u8ReturnType = Modbus_Write_Multiple_Coils(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_pu8Data,
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
+					pstMbusApiPram->m_u16Port,
 					vpCallBackFun);
 			break;
 			case WRITE_MULTIPLE_REG:
-				BOOST_LOG_SEV(lg, info) << __func__ << " Write Multiple Register Request Received";
+				BOOST_LOG_SEV(lg, debug) << __func__ << " Write Multiple Register Request Received";
 				u8ReturnType = Modbus_Write_Multiple_Register(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_pu8Data,
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
+					pstMbusApiPram->m_u16Port,
 					vpCallBackFun);
 			break;
 
@@ -230,20 +243,21 @@ uint8_t modbusInterface::MbusApp_Process_Request(RestMbusReqGeneric_t *pstMbusRe
 	MbusAPI_t stMbusApiPram = {};
 	uint8_t u8ReturnType = MBUS_JSON_APP_ERROR_NULL_POINTER;
 
-	//memset(&stMbusApiPram, 0x00, sizeof(stMbusApiPram));
-
 	if(pstMbusReqGen != NULL)
 	{
 		stMbusApiPram.m_pu8Data = pstMbusReqGen->m_stReqData.m_pu8Data;
 		stMbusApiPram.m_u16ByteCount =  pstMbusReqGen->m_stReqData.m_u8DataLen;
 		stMbusApiPram.m_u16Quantity = pstMbusReqGen->m_u16Quantity;
 		stMbusApiPram.m_u16StartAddr = pstMbusReqGen->m_u16StartAddr;
-		stMbusApiPram.m_u8DevId = pstMbusReqGen->m_u8NodeId;
+		stMbusApiPram.m_u8DevId = pstMbusReqGen->m_u8DevId;
 		stMbusApiPram.m_u16TxId = pstMbusReqGen->m_u16ReffId;
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 		stMbusApiPram.m_u8IpAddr[0] = pstMbusReqGen->m_u8IpAddr[0];
 		stMbusApiPram.m_u8IpAddr[1] = pstMbusReqGen->m_u8IpAddr[1];
 		stMbusApiPram.m_u8IpAddr[2] = pstMbusReqGen->m_u8IpAddr[2];
 		stMbusApiPram.m_u8IpAddr[3] = pstMbusReqGen->m_u8IpAddr[3];
+		stMbusApiPram.m_u16Port = pstMbusReqGen->m_u16Port;
+#endif
 
 		if(MBUS_MIN_FUN_CODE != pstMbusReqGen->m_u8FunCode)
 		{

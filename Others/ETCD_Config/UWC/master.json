@@ -1,3 +1,4 @@
 {
-	"Modbus-TCP-Master" : "./config/UWC/YAML_Config"
+	"Modbus-TCP-Master" : "./config/UWC/YAML_Config",
+	"Modbus-RTU-Master" : "./config/UWC/YAML_Config"
 }

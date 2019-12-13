@@ -45,19 +45,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: ModbusTCPMaster
+all: ModbusMaster
 
 # Tool invocations
-ModbusTCPMaster: $(OBJS) $(USER_OBJS)
+ModbusMaster: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L../$(PROJECT_DIR)/../bin/yaml-cpp/lib -L../$(PROJECT_DIR)/lib -L../$(PROJECT_DIR)/../bin/boost/lib -L../$(PROJECT_DIR)/../bin/safestring/lib -z noexecstack -z relro -z now -pie -o "ModbusTCPMaster" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L../$(PROJECT_DIR)/../bin/yaml-cpp/lib -L../$(PROJECT_DIR)/lib -L../$(PROJECT_DIR)/../bin/boost/lib -L../$(PROJECT_DIR)/../bin/safestring/lib -z noexecstack -z relro -z now -pie -o "ModbusMaster" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) ModbusTCPMaster
+	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) ModbusMaster
 	-@echo ' '
 
 .PHONY: all clean dependents

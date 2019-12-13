@@ -12,7 +12,6 @@ ARG EIS_VERSION
 FROM ia_eisbase:$EIS_VERSION as eisbase
 LABEL description="MQTT Export Application"
 ARG EIS_UID
-ARG EIS_USER_NAME
 
 FROM ia_common:$EIS_VERSION as common
 
@@ -63,17 +62,15 @@ FROM eisbase as mqtt-export-service
 COPY --from=common /usr/local/include /usr/local/include
 COPY --from=common /usr/local/lib /usr/local/lib
 WORKDIR /
-ENV APP_WORK_DIR /opt/app/
-RUN mkdir -p /opt/app
-RUN mkdir -p /opt/config
-ARG EIS_USER_NAME
-RUN adduser --quiet --disabled-password ${EIS_USER_NAME}
+ENV APP_WORK_DIR /opt/intel/app/
+RUN mkdir -p /opt/intel/app
+RUN mkdir -p /opt/intel/config
 WORKDIR ${APP_WORK_DIR}
 COPY --from=mqtt-export /MQTT-Export-App/Release/MQTT_Export ${APP_WORK_DIR}
 COPY --from=build-pahoc /usr/paho-c/lib/lib* ${APP_WORK_DIR}
 COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
-RUN chown -R ${EIS_USER_NAME}:${EIS_USER_NAME} ${APP_WORK_DIR}
-RUN chown -R ${EIS_USER_NAME}:${EIS_USER_NAME} ${APP_WORK_DIR}
+RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
+RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
 RUN chmod -R 770 ${APP_WORK_DIR}
 
 #set the environment variable

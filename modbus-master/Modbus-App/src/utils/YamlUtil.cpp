@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
-#include "YamlUtil.h"
+#include "utils/YamlUtil.hpp"
 #include<iostream>
 
 using namespace std;
@@ -19,7 +19,12 @@ std::vector<std::string> g_sWellSiteFileList1;
 
 YAML::Node loadYamlFile(const std::string& filename)
 {
-	YAML::Node baseNode = YAML::LoadFile( std::getenv("CONFIG_FILE_PATH") + filename);
+	std::string sBasePath{""};
+	if(NULL != std::getenv("CONFIG_FILE_PATH"))
+	{
+		sBasePath = std::getenv("CONFIG_FILE_PATH");
+	}
+	YAML::Node baseNode = YAML::LoadFile( sBasePath + filename);
 	return baseNode;
 }
 

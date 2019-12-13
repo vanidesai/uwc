@@ -12,7 +12,7 @@
 #include "PeriodicReadFeature.hpp"
 #include <boost/bind/bind.hpp>
 //#include "PublishJson.hpp"
-#include "YamlUtil.h"
+#include "utils/YamlUtil.hpp"
 #include <sstream>
 #include <ctime>
 #include <chrono>
@@ -69,6 +69,10 @@ void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_s
 
 	std::time_t rawtime = std::chrono::system_clock::to_time_t(p1);
 	std::tm* timeinfo = std::gmtime(&rawtime);
+	if(NULL == timeinfo)
+	{
+		return;
+	}
 	char buffer [80];
 
 	std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
@@ -82,7 +86,7 @@ void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_s
 
 	{
 		unsigned long long int u64{
-			std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch()).count()
+			(unsigned long long int)(std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch()).count())
 		};
 		std::stringstream ss;
 		ss << (unsigned long long)(((unsigned long long)(a_objReqData.getDataPoint().getMyRollID()) << 48) | u64);
@@ -128,12 +132,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 				std::string sVal(vt.size()*2+2,'0');
 				int i = 0;
 				sVal[i++] = '0'; sVal[i++] = 'x';
-				/*for (auto a: vt)
-				{
-					sVal[i] = digits[(a >> 4) & 0x0F];
-					sVal[i+1] = digits[a & 0x0F];
-					i += 2;
-				}*/
+
 				std::vector<unsigned char>::iterator it = vt.begin();
 				while (vt.end() != it)
 				{
@@ -202,8 +201,25 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 		}
 		else
 		{
-			PublishJsonHandler::instance().publishJson(g_msg, objReqData.getBusContext().m_pContext,
-					objReqData.getDataPoint().getID());
+			if(true == PublishJsonHandler::instance().publishJson(g_msg, objReqData.getBusContext().m_pContext,
+					objReqData.getDataPoint().getID()))
+			{
+				msg_envelope_serialized_part_t* parts = NULL;
+				int num_parts = msgbus_msg_envelope_serialize(g_msg, &parts);
+				if(num_parts > 0)
+				{
+					if(NULL != parts[0].bytes)
+					{
+						std::string s(parts[0].bytes);
+						BOOST_LOG_SEV(lg, info) << "Response ZMQ Publish Time: "
+							<< std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+							<< ", TxID: " << a_stResp.u16TransacID
+							<< ", Msg: " << s;
+					}
+
+					msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+				}
+			}
 		}
 	}
 	catch(const std::exception& e)
@@ -496,12 +512,11 @@ void CRequestInitiator::threadRequestInit(std::vector<std::vector<CRefDataForPol
 {
 	try
 	{
-		unsigned int index = 0;
 		for(auto a_vReqData: a_vReqDataList)
 		{
-		while(index < a_vReqData.size())
+		for(auto a_oReqData: a_vReqData)
 		{
-			CRefDataForPolling objReqData = a_vReqData[index];
+			CRefDataForPolling objReqData = a_oReqData;
 			
 			//if(true == bIsFound)
 			{
@@ -526,7 +541,6 @@ void CRequestInitiator::threadRequestInit(std::vector<std::vector<CRefDataForPol
 				{
 				}
 			}
-			++index;
 		}
 		}
 	}
@@ -681,10 +695,6 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 
 	try
 	{
-		std::string sIPAddr{a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stTCP.m_sIPAddress};
-
-		CommonUtils::ConvertIPStringToCharArray(sIPAddr,stMbusApiPram.m_u8IpAddr);
-		stMbusApiPram.m_u8DevId = 1;
 		stMbusApiPram.m_u16StartAddr = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iAddress;
 		stMbusApiPram.m_u16Quantity = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
 		stMbusApiPram.m_u16ByteCount = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
@@ -708,8 +718,25 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 		//a_stRdPrdObj.m_u16TxId = stMbusApiPram.m_u16TxId;
 
 		CRequestInitiator::instance().insertTxIDReqData(stMbusApiPram.m_u16TxId, a_stRdPrdObj);
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+		// fill the unit ID
+		stMbusApiPram.m_u8DevId = a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stTCP.m_uiUnitID;
+		std::string sIPAddr{a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stTCP.m_sIPAddress};
+
+		CommonUtils::ConvertIPStringToCharArray(sIPAddr,stMbusApiPram.m_u8IpAddr);
+
+		/// fill tcp port
+		stMbusApiPram.m_u16Port = a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stTCP.m_ui16PortNumber;
 
 		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.getFunctionCode(), &stMbusApiPram, (void *)readPeriodicCallBack);
+
+#else
+		stMbusApiPram.m_u8DevId = a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stRTU.m_uiSlaveId;
+		//stMbusApiPram.m_u8DevId = 10; //Slave id
+		//cout<< "#########----------------------- stMbusApiPram.m_u8DevId == "<< (unsigned)stMbusApiPram.m_u8DevId <<endl;
+
+		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.getFunctionCode(), &stMbusApiPram, (void *)readPeriodicCallBack);
+#endif
 
 		if(MBUS_STACK_NO_ERROR == u8ReturnType)
 		{

@@ -13,7 +13,7 @@
 
 #include <string>
 #include <map>
-#include "cJSON.h"
+#include "cjson/cJSON.h"
 #include "PublishJson.hpp"
 
 using std::string;

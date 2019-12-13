@@ -26,23 +26,71 @@ using namespace eis::config_manager;
 class CfgManager {
 public:
 
+    /** register callback for specific directory in ETCD
+     *
+     * @param key: name of the key
+     * @return: nothing
+     */
 	void registerCallbackOnChangeDir(char *key);
-	void registerCallbackOnChangeKet(char *key);
+
+    /** Register callback for specific key in ETCD
+     *
+     * @param key: name of the key
+     * @return: nothing
+     */
+	void registerCallbackOnChangeKey(char *key);
+
+    /** Returns the single instance of this class
+     *
+     * @param  : nothing
+     * @return : object of this class
+     */
 	static CfgManager& Instance();
-	char* getETCDValuebyKey(const char *);
+
+    /** Returns the value from ETCD on specific key
+     *
+     * @param key: name of the key
+     * @return: value from ETCD against given key
+     */
+	char* getETCDValuebyKey(const char *key);
+
+    /** Returns the client status of creation
+     *
+     * @param : Nothing
+     * @return: true/false based on status
+     */
 	bool IsClientCreated();
 
-	const EnvConfig& getEnvConfig() const {
+	/** Returns client from EIS Config library
+	 *
+	 * @param : Nothing
+	 * @return: Configuration object
+	 */
+	EnvConfig& getEnvConfig() {
 		return env_config;
 	}
 
 private:
-	bool isClientCreated;
+
+	/// True for success and false for failure
+	bool m_isClientCreated;
+
+	/// Local object for EIS Config Manager
 	EnvConfig env_config;
 
-	CfgManager(){};
-	CfgManager(CfgManager const&);             /// copy constructor is private
-	CfgManager& operator=(CfgManager const&);  /// assignment operator is private
+    /** Constructor
+     */
+	CfgManager(){
+		m_isClientCreated = false;
+	};
+
+    /** copy constructor is private
+     */
+	CfgManager(CfgManager const&);
+
+    /** assignment operator is private
+     */
+	CfgManager& operator=(CfgManager const&);
 };
 
 #endif /* INCLUDE_CONFIGMANAGER_HPP_ */

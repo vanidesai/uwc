@@ -34,12 +34,17 @@ PublishJsonHandler& PublishJsonHandler::instance()
 
 BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, const std::string a_sTopic)
 {
+	if((NULL == msg) || (NULL == msgbus_ctx))
+	{
+		BOOST_LOG_SEV(lg, error) << __func__ << ": Failed to publish message - Input parameters are NULL";
+		return false;
+	}
 	std::lock_guard<std::mutex> lock(publishJsonMutex);
 
 	msgbus_ret_t ret;
 	zmq_handler::stZmqPubContext busPubCTX;
 
-	BOOST_LOG_SEV(lg, debug) << __func__ << "msg to publish ::" << "Topic :: "<< a_sTopic <<ret;
+	BOOST_LOG_SEV(lg, debug) << __func__ << " msg to publish ::" << "Topic :: "<< a_sTopic <<ret;
 
 	try
 	{
@@ -53,24 +58,32 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 
 		if(ret != MSG_SUCCESS)
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << "Failed to initialize publisher errno: "<< ret;
+			BOOST_LOG_SEV(lg, error) << __func__ << " Failed to initialize publisher errno: "<< ret;
 			return false;
 		}
 
 		objPubContext.m_pContext = pub_ctx;
-		zmq_handler::insertPubCTX(a_sTopic, objPubContext);
-
-		/// get the publisher context
-		busPubCTX = zmq_handler::getPubCTX(a_sTopic);
+		if(true == zmq_handler::insertPubCTX(a_sTopic, objPubContext))
+		{
+			/// get the publisher context
+			busPubCTX = zmq_handler::getPubCTX(a_sTopic);
+		}
+		else
+		{
+			BOOST_LOG_SEV(lg, error) << __func__ << " Failed to obtain publish context "<< ret;
+			return false;
+		}
 	}
 
-	ret = msgbus_publisher_publish(msgbus_ctx, busPubCTX.m_pContext, msg);
+	//void *pubContext = busPubCTX.m_pContext;
+	ret = msgbus_publisher_publish(msgbus_ctx, (publisher_ctx_t*)busPubCTX.m_pContext, msg);
 	if(ret != MSG_SUCCESS)
 	{
-		BOOST_LOG_SEV(lg, error) << __func__ << "Failed to publish message errno: "<< ret;
+		BOOST_LOG_SEV(lg, error) << __func__ << " Failed to publish message errno: "<< ret;
+		return false;
 	}
 
-	return 0;
+	return true;
 }
 
 msg_envelope_t* PublishJsonHandler::initialize_message(std::string strMsg)

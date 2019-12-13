@@ -1,19 +1,13 @@
-/*************************************************************************
-*                   Copyright (c) by Softdel Systems              
-*                                                                       
-*   This software is copyrighted by and is the sole property of Softdel
-*   Systems. All rights, title, ownership, or other interests in the
-*   software remain the property of Softdel Systems. This software
-*   may only be used in accordance with the corresponding license
-*   agreement. Any unauthorized use, duplication, transmission,
-*   distribution, or disclosure of this software is expressly forbidden. 
-*                                                                       
-*   This Copyright notice may not be removed or modified without prior   
-*   written consent of Softdel Systems.                               
-*                                                                       
-*   Softdel Systems reserves the right to modify this software       
-*   without notice.                                                      
-*************************************************************************/
+/************************************************************************************
+* The source code contained or described herein and all documents related to
+* the source code ("Material") are owned by Intel Corporation or Softdel Systems
+* (and licensed to Intel Corporation). Title to the Material remains with
+* Intel Corporation or Softdel Systems.
+*
+* No license under any patent, copyright, trade secret or other intellectual
+* property right is granted to or conferred upon you by disclosure or delivery of
+* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+************************************************************************************/
 
 #ifndef API_H_
 #define API_H_
@@ -42,6 +36,13 @@ typedef unsigned long   	ulong32_t;  /* unsinged long declarations */
 
 #define MODBUS_EXCEPTION 1
 #define MODBUS_STACK_ERROR 2
+
+#ifndef MODBUS_STACK_TCPIP_ENABLED
+/*parity selection*/
+#define NO_PARITY   (0)
+#define EVEN_PARITY  (1)
+#define ODD_PARITY  (2)
+#endif
 
 /**
  @enum MODBUS_ERROR_CODE
@@ -183,7 +184,11 @@ typedef struct SubObjList
 */
 typedef struct RdDevIdReq
 {
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	unsigned char	m_u8IpAddr[4];
+#else
+	unsigned char	m_u8DestAddr;
+#endif
 	unsigned char 	m_u8UnitId;
 	unsigned char 	m_u8MEIType;
 	unsigned char 	m_u8RdDevIDCode;
@@ -207,13 +212,14 @@ typedef struct RdDevIdResp
 	SubObjList_t 	m_pstSubObjList;
 }stRdDevIdResp_t;
 
-
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 typedef struct DevConfig
 {
 	unsigned char 	m_u8TcpConnectTimeout;
 	unsigned int 	m_u16TcpSessionTimeout;
 	unsigned char 	m_u8MaxTcpConnection;
 }stDevConfig_t;
+#endif
 
 /// Modbus master stack initialization function
 MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void);
@@ -232,6 +238,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 											  uint16_t u16TransacID,
 											  uint8_t u8UnitId,
 											  uint8_t *pu8SerIpAddr,
+											  uint16_t u16Port,
 											  void* pFunCallBack);
 
 /// Read discrete input API
@@ -240,6 +247,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 														uint16_t u16TransacID,
 														uint8_t u8UnitId,
 														uint8_t *pu8SerIpAddr,
+														uint16_t u16Port,
 														void* pFunCallBack);
 
 /// Read holding register API
@@ -248,6 +256,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 														  uint16_t u16TransacID,
 														  uint8_t u8UnitId,
 														  uint8_t *pu8SerIpAddr,
+														  uint16_t u16Port,
 														  void* pFunCallBack);
 
 /// Read input register API
@@ -256,6 +265,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 														uint16_t u16TransacID,
 														uint8_t u8UnitId,
 														uint8_t *pu8SerIpAddr,
+														uint16_t u16Port,
 														void* pFunCallBack);
 
 /// write single coil API
@@ -264,6 +274,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 													 uint16_t u16TransacID,
 													 uint8_t u8UnitId,
 													 uint8_t *pu8SerIpAddr,
+													 uint16_t u16Port,
 													 void* pFunCallBack);
 
 /// write single register API
@@ -272,6 +283,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 														 uint16_t u16TransacID,
 														 uint8_t u8UnitId,
 														 uint8_t *pu8SerIpAddr,
+														 uint16_t u16Port,
 														 void* pFunCallBack);
 
 /// write multiple coils API
@@ -281,6 +293,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 													   uint8_t  *pu8OutputVal,
 													   uint8_t  u8UnitId,
 													   uint8_t  *pu8SerIpAddr,
+													   uint16_t u16Port,
 													   void*    pFunCallBack);
 
 /// write multiple registers API
@@ -290,6 +303,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 														   uint8_t  *pu8OutputVal,
 														   uint8_t  u8UnitId,
 														   uint8_t  *pu8SerIpAddr,
+														   uint16_t u16Port,
 														   void*    pFunCallBack);
 
 /// read file record API
@@ -299,6 +313,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 													uint16_t u16TransacID,
 													uint8_t u8UnitId,
 													uint8_t *pu8SerIpAddr,
+													uint16_t u16Port,
 													void* pFunCallBack);
 
 /// write file record API
@@ -308,6 +323,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 													uint16_t u16TransacID,
 													uint8_t u8UnitId,
 													uint8_t *pu8SerIpAddr,
+													uint16_t u16Port,
 													void* pFunCallBack);
 
 /// read write multiple registers API
@@ -320,6 +336,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 									uint8_t *pu8OutputVal,
 									uint8_t u8UnitId,
 									uint8_t *pu8SerIpAddr,
+									uint16_t u16Port,
 									void* pFunCallBack);
 
 /// Read device identification
@@ -330,6 +347,12 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 		uint16_t u16TransacID,
 		uint8_t u8UnitId,
 		uint8_t *pu8SerIpAddr,
+		uint16_t u16Port,
 		void* pFunCallBack);
+
+#ifndef MODBUS_STACK_TCPIP_ENABLED
+MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uint8_t  parity, uint8_t stop_bit);
+#endif
+
 
 #endif /* API_H_ */

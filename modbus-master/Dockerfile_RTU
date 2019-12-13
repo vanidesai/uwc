@@ -10,7 +10,7 @@
 
 ARG EIS_VERSION
 FROM ia_eisbase:$EIS_VERSION as eisbase
-LABEL description="Modbus TCP Master Application"
+LABEL description="Modbus RTU Master Application"
 ARG EIS_UID
 
 FROM ia_common:$EIS_VERSION as common
@@ -59,6 +59,8 @@ COPY --from=common /usr/local/include/safe_* /usr/local/include/
 COPY --from=common /usr/local/lib/libsafestring.so /usr/local/lib/
 
 COPY SoftMod_Stack /SoftMod_Stack/.
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /SoftMod_Stack/Release/Src/subdir.mk 
+  
 WORKDIR SoftMod_Stack
 RUN cd Release \
     && make clean all -s
@@ -78,6 +80,9 @@ COPY --from=build-yaml /usr/yaml /bin/yaml-cpp/.
 COPY Modbus-App /Modbus-App/. 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
 COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
+
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Release/src/subdir.mk 
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Release/src/utils/subdir.mk 
 
 RUN cd /Modbus-App/Release \
     &&	export LD_LIBRARY_PATH='/Modbus-App/lib:/usr/local/lib\

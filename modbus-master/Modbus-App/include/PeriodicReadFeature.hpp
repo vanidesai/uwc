@@ -162,7 +162,7 @@ class CRefDataForPolling
 {
 	const network_info::CUniqueDataPoint m_objDataPoint;
 	const struct zmq_handler::stZmqContext& m_objBusContext;
-	const struct zmq_handler::stZmqPubContext& m_objPubContext;
+	//const struct zmq_handler::stZmqPubContext& m_objPubContext;
 
 	uint8_t m_uiFuncCode;
 	//CRefDataForPolling& operator=(const CRefDataForPolling&) = delete;	// Copy assign
@@ -175,8 +175,11 @@ class CRefDataForPolling
 	}
 
 	uint8_t getFunctionCode() {return m_uiFuncCode;}
-	const CUniqueDataPoint & getDataPoint() {return m_objDataPoint;}
-	const struct stZmqContext & getBusContext() {return m_objBusContext;}
+	//const CUniqueDataPoint & getDataPoint() {return m_objDataPoint;}
+	//const struct stZmqContext & getBusContext() {return m_objBusContext;}
+
+	const CUniqueDataPoint & getDataPoint() const {return m_objDataPoint;}
+	const struct stZmqContext & getBusContext() const {return m_objBusContext;}
 };
 
 #endif /* INCLUDE_INC_PERIODICREADFEATURE_HPP_ */

@@ -21,7 +21,7 @@ class modWriteInfo
 	modWriteInfo& operator=(modWriteInfo const&);  /// assignment operator is private
 public:
 	static modWriteInfo& Instance();
-	eMbusStackErrorCode writeInfoHandler(const std::string a_sTopic, std::string& msg);
+	eMbusStackErrorCode writeInfoHandler(std::string a_sTopic, std::string& msg);
 	eMbusStackErrorCode jsonParserForWrite(const std::string a_sTopic, std::string& writeReqJson, RestMbusReqGeneric_t *pstModbusRxPacket);
 };
 

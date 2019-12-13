@@ -10,10 +10,10 @@
 
 #include "ModbusWriteHandler.hpp"
 #include "BoostLogger.hpp"
-#include "YamlUtil.h"
+#include "utils/YamlUtil.hpp"
 #include <thread>
 #include <mutex>
-#include "cJSON.h"
+#include "cjson/cJSON.h"
 #include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
 #include "ConfigManager.hpp"
@@ -35,30 +35,51 @@ eMbusStackErrorCode modWriteInfo::writeInfoHandler(const std::string a_sTopic, s
 
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	RestMbusReqGeneric_t *pstModbusRxPacket = NULL;
-	modbusInterface 	 *MbusInterface = NULL;
+	///modbusInterface 	 *MbusInterface = NULL;
 	cJSON *root = cJSON_Parse(msg.c_str());
+	if(NULL == root)
+	{
+		return MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
+	}
 	try
 	{
 		pstModbusRxPacket = new RestMbusReqGeneric_t();
 		static unsigned short refId = 1;
+		if(NULL == pstModbusRxPacket)
+		{
+			if(NULL != root)
+					cJSON_Delete(root);
+			return MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
+		}
 		/// restarting refId once reached max. limit.
 		if(refId >= 65535)
 			refId = 1;
 
-		string stAppSeqNum = cJSON_GetObjectItem(root,"app_seq")->valuestring;
-		zmq_handler::insertAppSeq(refId, stAppSeqNum);
+		cJSON *cmd1 = cJSON_GetObjectItem(root,"app_seq");
+		if(NULL != cmd1)
+		{
+			string stAppSeqNum = cmd1->valuestring;
+			zmq_handler::insertAppSeq(refId, stAppSeqNum);
+		}
+		else
+		{
+			std::cout << "Invalid ip json..."<< std::endl;
+			BOOST_LOG_SEV(lg, error) << __func__ << " Invalid ip json...";
+			eFunRetType =  MBUS_STACK_ERROR_INVALID_INPUT_PARAMETER;
+		}
 
 		pstModbusRxPacket->m_stReqData.m_pu8Data = NULL;
 		pstModbusRxPacket->m_u16ReffId = refId;
 		refId++;
 
-		eFunRetType = jsonParserForWrite(a_sTopic, msg, pstModbusRxPacket);
+		if(MBUS_STACK_NO_ERROR == eFunRetType)
+			eFunRetType = jsonParserForWrite(a_sTopic, msg, pstModbusRxPacket);
 
 		if(MBUS_STACK_NO_ERROR == eFunRetType)
 		{
-			MbusInterface = new modbusInterface();
+			modbusInterface MbusInterface;// = new modbusInterface();
 
-			eFunRetType = (eMbusStackErrorCode)MbusInterface->
+			eFunRetType = (eMbusStackErrorCode)MbusInterface.
 					MbusApp_Process_Request(pstModbusRxPacket);
 		}
 
@@ -80,11 +101,11 @@ eMbusStackErrorCode modWriteInfo::writeInfoHandler(const std::string a_sTopic, s
 		pstModbusRxPacket = NULL;
 	}
 
-	if(MbusInterface != NULL)
+	/*if(MbusInterface != NULL)
 	{
 		delete(MbusInterface);
 		MbusInterface = NULL;
-	}
+	}*/
 
 	if(NULL != root)
 		cJSON_Delete(root);
@@ -95,6 +116,7 @@ eMbusStackErrorCode modWriteInfo::writeInfoHandler(const std::string a_sTopic, s
 
 int char2int(char input)
 {
+	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
 	if(input >= '0' && input <= '9')
 		return input - '0';
 	if(input >= 'A' && input <= 'F')
@@ -102,11 +124,13 @@ int char2int(char input)
 	if(input >= 'a' && input <= 'f')
 		return input - 'a' + 10;
 
+	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
 	throw std::invalid_argument("Invalid input string");
 }
 
 int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 {
+	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
 	int iOpCharPos = 0;
 	int i = 0;
 	try
@@ -152,10 +176,11 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 		std::cout << __func__ << ":Exception: " << e.what() << " while parsing hex string " << src << std::endl;
 		return -1;
 	}
+	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
 	return iOpCharPos;
 }
 
-eMbusStackErrorCode modWriteInfo::jsonParserForWrite(const std::string a_sTopic,
+eMbusStackErrorCode modWriteInfo::jsonParserForWrite(std::string a_sTopic,
 											std::string& msg,
 											RestMbusReqGeneric_t *pstModbusRxPacket)
 {
@@ -164,62 +189,91 @@ eMbusStackErrorCode modWriteInfo::jsonParserForWrite(const std::string a_sTopic,
 	cJSON *root = cJSON_Parse(msg.c_str());
 	try
 	{
-		int quantity, startAddr, funcCode;
+		//int quantity, startAddr, funcCode;
+		string stCommand, stValue;
 
-		string stCommand = cJSON_GetObjectItem(root,"command")->valuestring;
-		a_sTopic.erase(a_sTopic.end()-6, a_sTopic.end());	/// 6 is the length of "_Write"
-		string stTopic = a_sTopic + SEPARATOR_CHAR + stCommand;
-
-		std::map<std::string, network_info::CUniqueDataPoint> mpp = network_info::getUniquePointList();
-		struct network_info::stModbusAddrInfo addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
-
-		string stIpAddress = addrInfo.m_stTCP.m_sIPAddress;
-		unsigned int port = addrInfo.m_stTCP.m_uiPortNumber;
-
-		const std::vector< network_info::CDataPoint> dataPtList = mpp.at(stTopic).
-				getWellSiteDev().getDevInfo().getDataPoints();
-
-		for(auto dataPoint : dataPtList)
+		cJSON *cmd=cJSON_GetObjectItem(root,"command");
+		cJSON *value=cJSON_GetObjectItem(root,"value");
+		if(cmd && value)
 		{
-			if(dataPoint.getID() == stCommand)
-			{
-				const struct network_info::stDataPointAddress& tessgg = dataPoint.getAddress();
-				quantity = tessgg.m_iWidth;		/// quantity
-				startAddr = tessgg.m_iAddress;	/// start address
-				/// function code
-				funcCode = (tessgg.m_eType ==  network_info::eEndPointType::eCoil)?WRITE_SINGLE_COIL:WRITE_SINGLE_REG;
-			}
+			stCommand = cmd->valuestring;
+			stValue = value->valuestring;
 		}
-
-		if(NULL != pstModbusRxPacket)
+		else
 		{
+			std::cout << __func__ << " Invalid input json parameter." << std::endl;
+			BOOST_LOG_SEV(lg, error) << __func__ << " Invalid input json parameter.";
+			eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
+		}
+		if(MBUS_STACK_NO_ERROR == eFunRetType)
+		{
+			a_sTopic.erase(a_sTopic.end()-6, a_sTopic.end());	/// 6 is the length of "_Write"
+			string stTopic = a_sTopic + SEPARATOR_CHAR + stCommand;
+
+			std::map<std::string, network_info::CUniqueDataPoint> mpp = network_info::getUniquePointList();
+			struct network_info::stModbusAddrInfo addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+		string stIpAddress = addrInfo.m_stTCP.m_sIPAddress;
+		unsigned int port = addrInfo.m_stTCP.m_ui16PortNumber;
+#endif
+
+			if(NULL != pstModbusRxPacket)
+			{
+				network_info::CDataPoint obj = mpp.at(stTopic).getDataPoint();
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+			pstModbusRxPacket->m_u8DevId = addrInfo.m_stTCP.m_uiUnitID;
 			CommonUtils::ConvertIPStringToCharArray(stIpAddress,&(pstModbusRxPacket->m_u8IpAddr[0]));
-			pstModbusRxPacket->m_u8FunCode = (uint8_t)funcCode;
-			pstModbusRxPacket->m_u8NodeId = (uint8_t)1;
-			pstModbusRxPacket->m_u16StartAddr = (uint16_t)startAddr;
-			pstModbusRxPacket->m_u16Quantity = (uint16_t)quantity;
+#else
+			pstModbusRxPacket->m_u8DevId = addrInfo.m_stRTU.m_uiSlaveId;
+#endif
+				pstModbusRxPacket->m_u8FunCode =
+						(uint8_t)((obj.getAddress().m_eType == network_info::eEndPointType::eCoil)?
+																WRITE_SINGLE_COIL:WRITE_SINGLE_REG);
+				pstModbusRxPacket->m_u8NodeId = (uint8_t)1;
+				pstModbusRxPacket->m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
+				pstModbusRxPacket->m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
 
-			if(WRITE_MULTIPLE_REG == pstModbusRxPacket->m_u8FunCode)
-			{
-				pstModbusRxPacket->m_stReqData.m_u8DataLen = pstModbusRxPacket->m_u16Quantity*2;
-			}
-			else if(WRITE_MULTIPLE_COILS == pstModbusRxPacket->m_u8FunCode)
-			{
-				uint8_t u8ByteCount = (0 != (pstModbusRxPacket->m_u16Quantity%8))
-											?((pstModbusRxPacket->m_u16Quantity/8)+1)
-													:(pstModbusRxPacket->m_u16Quantity/8);
+				if(WRITE_MULTIPLE_REG == pstModbusRxPacket->m_u8FunCode)
+				{
+					pstModbusRxPacket->m_stReqData.m_u8DataLen = pstModbusRxPacket->m_u16Quantity*2;
+				}
+				else if(WRITE_MULTIPLE_COILS == pstModbusRxPacket->m_u8FunCode)
+				{
+					uint8_t u8ByteCount = (0 != (pstModbusRxPacket->m_u16Quantity%8))
+													?((pstModbusRxPacket->m_u16Quantity/8)+1)
+															:(pstModbusRxPacket->m_u16Quantity/8);
 
-				pstModbusRxPacket->m_stReqData.m_u8DataLen = (uint8_t)u8ByteCount;
+					pstModbusRxPacket->m_stReqData.m_u8DataLen = (uint8_t)u8ByteCount;
+				}
+				else if(WRITE_SINGLE_COIL == pstModbusRxPacket->m_u8FunCode ||
+						WRITE_SINGLE_REG == pstModbusRxPacket->m_u8FunCode)
+				{
+					pstModbusRxPacket->m_stReqData.m_u8DataLen = MODBUS_SINGLE_REGISTER_LENGTH;
+				}
+				pstModbusRxPacket->m_stReqData.m_pu8Data = new uint8_t[pstModbusRxPacket->m_stReqData.m_u8DataLen]();
+				if(NULL != pstModbusRxPacket->m_stReqData.m_pu8Data)
+				{
+					if(WRITE_SINGLE_COIL == pstModbusRxPacket->m_u8FunCode)
+					{
+						// If value is 0x01, then write 0xFF00
+						if( (stValue.compare("0x01")) || (stValue.compare("0X01")) || (stValue.compare("01")))
+						{
+							stValue = "0xFF00";
+						}
+						else
+						{
+							stValue = "0x0000";
+						}
+					}
+					hex2bin(stValue, pstModbusRxPacket->m_stReqData.m_u8DataLen, pstModbusRxPacket->m_stReqData.m_pu8Data);
+				}
+				else
+				{
+					eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
+					BOOST_LOG_SEV(lg, error) << __func__ << " Unable to allocate memory. Request not sent";
+				}
 			}
-			else if(WRITE_SINGLE_COIL == pstModbusRxPacket->m_u8FunCode ||
-					WRITE_SINGLE_REG == pstModbusRxPacket->m_u8FunCode)
-			{
-				pstModbusRxPacket->m_stReqData.m_u8DataLen = MODBUS_SINGLE_REGISTER_LENGTH;
-			}
-			pstModbusRxPacket->m_stReqData.m_pu8Data = new uint8_t[pstModbusRxPacket->m_stReqData.m_u8DataLen]();
-			// TODO fill data to structure
-			string stValue = cJSON_GetObjectItem(root,"value")->valuestring;
-			hex2bin(stValue, pstModbusRxPacket->m_stReqData.m_u8DataLen, pstModbusRxPacket->m_stReqData.m_pu8Data);
 		}
 	}
 	catch(const std::exception &e)
@@ -290,6 +344,13 @@ void modWriteHandler::zmqReadDeviceMessage()
 	/// parse all the subtopics
 	std::vector<std::string> stTopics = CfgManager::Instance().getEnvConfig().get_topics_from_env("sub");
 
+	if(stTopics.empty())
+	{
+		std::cout << __func__ << " sub topic is not available. " << std::endl;
+		BOOST_LOG_SEV(lg, info) << __func__ << " No subscribe topic is available.";
+		return;
+	}
+
 	for(auto subTopic : stTopics)
 	{
 		std::vector<std::string> tempTopic;
@@ -317,16 +378,14 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 		//ret = msgbus_subscriber_new(msgbus_ctx.m_pContext, stTopic.c_str(), NULL, &sub_ctx);
 		zmq_handler::stZmqSubContext stsub_ctx = zmq_handler::getSubCTX(stTopic);
 
-		while(msgbus_ctx.m_pContext != NULL)
+		while((msgbus_ctx.m_pContext != NULL) && (NULL != stsub_ctx.sub_ctx))
 		{
 			ret = msgbus_recv_wait(msgbus_ctx.m_pContext, stsub_ctx.sub_ctx, &msg);
 			if(ret != MSG_SUCCESS)
 			{
-				// Interrupt is an acceptable error
-				if(ret == MSG_ERR_EINTR)
-					break;
-				BOOST_LOG_SEV(lg, error) << __func__ <<
-						" Failed to receive message (errno: %d)" << ret;
+
+				BOOST_LOG_SEV(lg, error) << __func__ << " Failed to receive message (errno: %d)" << ret;
+				continue;
 			}
 
 			num_parts = msgbus_msg_envelope_serialize(msg, &parts);

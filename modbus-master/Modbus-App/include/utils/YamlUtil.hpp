@@ -10,7 +10,6 @@
 
 #ifndef YAMLUTIL_H_
 #define YAMLUTIL_H_
-#include "yaml-cpp/eventhandler.h"
 #include "yaml-cpp/yaml.h"  // IWYU pragma: keep
 #include "NetworkInfo.hpp"
 

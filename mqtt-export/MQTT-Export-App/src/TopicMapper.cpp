@@ -71,8 +71,6 @@ void CTopicMapper::ParseJson() {
 				continue;
 			}
 
-			//std::cout << "MsgSource : " << srcName << "\n";
-
 			cJSON *topics = cJSON_GetObjectItem(msgSrc, "Topics");
 			if(NULL == topics)
 			{
@@ -89,7 +87,6 @@ void CTopicMapper::ParseJson() {
 					// This should ideally not happen
 					continue;
 				}
-				//char *current_topic_name = topic->child->string;
 				if(NULL == topic->child->string)
 				{
 					// Again unlikely scenario
@@ -99,7 +96,6 @@ void CTopicMapper::ParseJson() {
 
 				std::string strTopicName{topic->child->string};
 
-				//char *current_topic_value = topic->child->valuestring;
 				if(NULL == topic->child->valuestring)
 				{
 					// Again unlikely scenario
@@ -110,11 +106,9 @@ void CTopicMapper::ParseJson() {
 				std::string strTopicValue{topic->child->valuestring};
 
 				if(sourceName == "MQTT") {
-					//std::cout << "Inserting value in MQTT map\n";
 					m_MQTTopics.insert(std::make_pair(strTopicName, strTopicValue));
 				}
 				else if(sourceName == "ZeroMQ") {
-					//std::cout << "Inserting value in ZMQ map\n";
 					m_ZMQTopics.insert(std::make_pair(strTopicName, strTopicValue));
 				}
 			}
@@ -123,11 +117,6 @@ void CTopicMapper::ParseJson() {
 		if(NULL != root)
 			cJSON_Delete(root);
 
-		std::cout << __func__ << ": ZMQ to MQTT Topic map:\n";
-		for(auto itr : m_ZMQTopics) {
-			std::cout << __func__ << ": ZMQ Topic : " << itr.first << ", MQTT topic : " << itr.second << std::endl;
-		}
-
 	} catch (std::exception &e) {
 		std::cout << __func__ << ": Exception: " << e.what() << std::endl;
 	}
@@ -135,6 +124,15 @@ void CTopicMapper::ParseJson() {
 
 CTopicMapper::~CTopicMapper() {
 	// TODO Auto-generated destructor stub
+}
+
+std::vector<std::string> CTopicMapper::GetMqttTopics()
+{
+	std::vector<std::string> allMQTTTopics;
+	for(auto topic : m_MQTTopics)
+		allMQTTTopics.push_back(topic.first);
+
+	return allMQTTTopics;
 }
 
 //return MQTT topic that is mapped with ZMQ

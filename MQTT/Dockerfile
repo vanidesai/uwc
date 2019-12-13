@@ -17,9 +17,10 @@ ARG EIS_USER_NAME
 FROM eisbase
 RUN apt-get install -y mosquitto
 RUN mkdir -p /mosquitto/config /mosquitto/data /mosquitto/log
+COPY mosquitto.conf /etc/mosquitto/mosquitto.conf
 
 HEALTHCHECK CMD exit 0
 
 EXPOSE 1883
 
-CMD ["mosquitto"]
+CMD ["mosquitto", "-c", "/etc/mosquitto/mosquitto.conf"]

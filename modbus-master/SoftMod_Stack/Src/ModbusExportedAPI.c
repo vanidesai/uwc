@@ -1,30 +1,25 @@
-/*************************************************************************
-*                   Copyright (c) by Softdel Systems              
-*                                                                       
-*   This software is copyrighted by and is the sole property of Softdel
-*   Systems. All rights, title, ownership, or other interests in the
-*   software remain the property of Softdel Systems. This software
-*   may only be used in accordance with the corresponding license
-*   agreement. Any unauthorized use, duplication, transmission,
-*   distribution, or disclosure of this software is expressly forbidden. 
-*                                                                       
-*   This Copyright notice may not be removed or modified without prior   
-*   written consent of Softdel Systems.                               
-*                                                                       
-*   Softdel Systems reserves the right to modify this software       
-*   without notice.                                                      
-*************************************************************************/
+/************************************************************************************
+* The source code contained or described herein and all documents related to
+* the source code ("Material") are owned by Intel Corporation or Softdel Systems
+* (and licensed to Intel Corporation). Title to the Material remains with
+* Intel Corporation or Softdel Systems.
+*
+* No license under any patent, copyright, trade secret or other intellectual
+* property right is granted to or conferred upon you by disclosure or delivery of
+* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+************************************************************************************/
 
 #include "SessionControl.h"
 #include <safe_lib.h>
 
 Thread_H SessionControl_ThreadId = 0;
+pthread_t Rx_ThreadId;
 Mutex_H TransactionId_Mutex = NULL;
 Mutex_H LivSerSesslist_Mutex = NULL;
 
-uint16_t g_u16TransacID = 0;
-
 extern int32_t i32MsgQueIdSC;
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 
 stDevConfig_t ModbusMasterConfig;
 
@@ -72,7 +67,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_GetStackConfigParam(uint8_t *u8Connect
 
 	return eStatus;
 }
-
+#endif   //MODBUS_STACK_TCPIP_ENABLED
 /**
  *
  * Description
@@ -87,9 +82,12 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	uint8_t eStatus = STACK_NO_ERROR;
 	thread_Create_t stThreadParam = { 0 };
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	ModbusMasterConfig.m_u8MaxTcpConnection = MAXIMUM_TCP_CONNECTION;
-	ModbusMasterConfig.m_u8TcpConnectTimeout = getenv("MODBUS_MASTER_CONNECT_TIMEOUT");
-	ModbusMasterConfig.m_u16TcpSessionTimeout = getenv("MODBUS_MASTER_SESSION_TIMEOUT");
+	ModbusMasterConfig.m_u8TcpConnectTimeout = MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC;
+	ModbusMasterConfig.m_u16TcpSessionTimeout = SESSION_TIMEOUT_IN_SEC;
+#endif //#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 
 	i32MsgQueIdSC = OSAL_Init_Message_Queue();
 
@@ -296,6 +294,8 @@ uint8_t CreateHeaderForModbusRequest(uint16_t u16StartAddr,
 	stEndianess_t stEndianess = { 0 };
 	uint16_t u16PacketIndex = 0;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stEndianess.u16word = u16TransacID;
 
 	// TODO: Release Mutex lock
@@ -304,7 +304,11 @@ uint8_t CreateHeaderForModbusRequest(uint16_t u16StartAddr,
 	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8FirstByte;
 	pstMBusRequesPacket->m_u16TransactionID = stEndianess.u16word;
+#else
+	pstMBusRequesPacket->m_u16TransactionID = u16TransacID;
+#endif
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	// Protocol ID
 	stEndianess.u16word = 0;
 	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -318,6 +322,12 @@ uint8_t CreateHeaderForModbusRequest(uint16_t u16StartAddr,
 			stEndianess.stByteOrder.u8SecondByte;
 	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8FirstByte;
+
+#else
+
+	pstMBusRequesPacket->m_u8ReceivedDestination = u8UnitId;
+
+#endif //MODBUS_STACK_TCPIP_ENABLED
 
 	// Unit Id
 	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =  u8UnitId;
@@ -358,18 +368,25 @@ uint8_t CreateHeaderForDevIdentificationModbusRequest(uint8_t u8UnitId,
 							uint8_t u8FucntionCode,
 							stMbusPacketVariables_t *pstMBusRequesPacket)
 {
-	stEndianess_t stEndianess = { 0 };
+
 	uint16_t u16PacketIndex = 0;
 
-	stEndianess.u16word = u16TransacID;
+#ifdef MODBUS_STACK_TCPIP_ENABLED  // Not required for RTU
+	stEndianess_t stEndianess = { 0 };
 
+	stEndianess.u16word = u16TransacID;
 	/* TODO: Release Mutex lock */
 	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8SecondByte;
 	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8FirstByte;
-	pstMBusRequesPacket->m_u16TransactionID = stEndianess.u16word;
 
+	pstMBusRequesPacket->m_u16TransactionID = stEndianess.u16word;
+#else
+	pstMBusRequesPacket->m_u16TransactionID = u16TransacID;
+#endif
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	/* Protocol ID */
 	stEndianess.u16word = 0;
 	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -383,8 +400,10 @@ uint8_t CreateHeaderForDevIdentificationModbusRequest(uint8_t u8UnitId,
 			stEndianess.stByteOrder.u8SecondByte;
 	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8FirstByte;
+#endif  //#ifdef MODBUS_STACK_TCPIP_ENABLED
 
-	/* Unit Id */
+
+		/* Unit Id */
 	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =  u8UnitId;
 	pstMBusRequesPacket->m_u8UnitID = u8UnitId;
 
@@ -414,16 +433,23 @@ uint8_t InputParameterVerification(uint16_t u16StartCoilOrReg, uint16_t u16Numbe
 		uint8_t u8UnitID, void* pFunCallBack, uint8_t u8FunctionCode, uint8_t u8ByteCount)
 {
 	if (NULL == pFunCallBack)
+	{
+		printf("STACK_ERROR_INVALID_INPUT_PARAMETER 0");
 		return STACK_ERROR_INVALID_INPUT_PARAMETER;
+	}
 
 	/* Maximum allowed slave 0- 247 */
 	if((0 == u8UnitID) || ((u8UnitID >= 248) && (u8UnitID < 255)))
 	{
+		printf("STACK_ERROR_INVALID_INPUT_PARAMETER 1");
 		return STACK_ERROR_INVALID_INPUT_PARAMETER;
 	}
 
 	if(ValidateQuantity(u8FunctionCode,u16NumberOfcoilsOrReg,u8ByteCount))
+	{
+		printf("STACK_ERROR_INVALID_INPUT_PARAMETER 2");
 		return STACK_ERROR_INVALID_INPUT_PARAMETER;
+	}
 
 	return STACK_NO_ERROR;
 }
@@ -448,6 +474,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 											  uint16_t u16TransacID,
 											  uint8_t u8UnitId,
 											  uint8_t *pu8SerIpAddr,
+											  uint16_t u16Port,
 											  void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -465,13 +492,22 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 
 
 	u16StartAddr = GetOffsetAddress1(u8FunctionCode, u16StartCoil);
-
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
 													u8UnitId,
 													6,
 													u16TransacID,
 													u8FunctionCode,
 													&stMBusRequesPacket);
+#else
+
+	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
+													u8UnitId,
+													0,
+													u16TransacID,
+													u8FunctionCode,
+													&stMBusRequesPacket);
+#endif
 
 	stEndianess.u16word = u16NumOfcoils;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -482,10 +518,18 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 	stMBusRequesPacket.m_stMbusTxData.m_u16Length = (u16PacketIndex);
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId;
+#endif   //#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 
 	stMBusRequesPacket.m_u16StartAdd = u16StartCoil;
 
@@ -539,6 +583,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 														uint16_t u16TransacID,
 														uint8_t u8UnitId,
 														uint8_t *pu8SerIpAddr,
+														uint16_t u16Port,
 														void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -556,12 +601,23 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 
 	u16StartAddr = GetOffsetAddress1(u8FunctionCode, u16StartDI);
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
 													u8UnitId,
 													6,
 													u16TransacID,
 													u8FunctionCode,
 													&stMBusRequesPacket);
+
+#else
+	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
+													u8UnitId,
+													0,
+													u16TransacID,
+													u8FunctionCode,
+													&stMBusRequesPacket);
+#endif
 
 	stEndianess.u16word = u16NumOfDI;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -573,10 +629,18 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
+
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; //Asheesh
+#endif
 
 	stMBusRequesPacket.m_u16StartAdd = u16StartDI;
 
@@ -631,6 +695,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 														  uint16_t u16TransacID,
 														  uint8_t u8UnitId,
 														  uint8_t *pu8SerIpAddr,
+														  uint16_t u16Port,
 														  void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -648,13 +713,22 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 
 	u16StartAddr = GetOffsetAddress1(u8FunctionCode, u16StartReg);
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	u16PacketIndex = CreateHeaderForModbusRequest(u16StartAddr,
 													u8UnitId,
 													6,
 													u16TransacID,
 													u8FunctionCode,
 													&stMBusRequesPacket);
+#else
 
+	u16PacketIndex = CreateHeaderForModbusRequest(u16StartAddr,
+													u8UnitId,
+													0,
+													u16TransacID,
+													u8FunctionCode,
+													&stMBusRequesPacket);
+#endif
 	stEndianess.u16word = u16NumberOfRegisters;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8SecondByte;
@@ -665,11 +739,18 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
 
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId;
+#endif
 	stMBusRequesPacket.m_u16StartAdd = u16StartReg;
 
 	stMBusRequesPacket.m_u16Quantity = u16NumberOfRegisters;
@@ -687,6 +768,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 
 	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
 				&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
@@ -721,6 +803,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 														uint16_t u16TransacID,
 														uint8_t u8UnitId,
 														uint8_t *pu8SerIpAddr,
+														uint16_t u16Port,
 														void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -737,13 +820,23 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 		return u8ReturnType;
 
 	u16StartAddr = GetOffsetAddress1(u8FunctionCode, u16StartReg);
-
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
 													u8UnitId,
 													6,
 													u16TransacID,
 													u8FunctionCode,
 													&stMBusRequesPacket);
+#else
+
+	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
+													u8UnitId,
+													0,
+													u16TransacID,
+													u8FunctionCode,
+													&stMBusRequesPacket);
+
+#endif
 
 	stEndianess.u16word = u16NumberOfRegisters;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -755,11 +848,19 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
 
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
 
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId;
+#endif
 	stMBusRequesPacket.m_u16StartAdd = u16StartReg;
 
 	stMBusRequesPacket.m_u16Quantity = u16NumberOfRegisters;
@@ -812,6 +913,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 													 uint16_t u16TransacID,
 													 uint8_t u8UnitId,
 													 uint8_t *pu8SerIpAddr,
+													 uint16_t u16Port,
 													 void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -828,13 +930,22 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 		return u8ReturnType;
 
 	u16StartAddr = GetOffsetAddress1(u8FunctionCode, u16StartCoil);
-
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
 													u8UnitId,
 													6,
 													u16TransacID,
 													u8FunctionCode,
 													&stMBusRequesPacket);
+#else
+	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
+													u8UnitId,
+													0,
+													u16TransacID,
+													u8FunctionCode,
+													&stMBusRequesPacket);
+
+#endif
 
 	stEndianess.u16word = u16OutputVal;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -846,10 +957,19 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
 
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
+
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId;
+#endif
 
 	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
 	{
@@ -899,6 +1019,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 														 uint16_t u16TransacID,
 														 uint8_t u8UnitId,
 														 uint8_t *pu8SerIpAddr,
+														 uint16_t u16Port,
 														 void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -916,12 +1037,21 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 
 	u16StartAddr = GetOffsetAddress1(u8FunctionCode, u16StartReg);
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
 													u8UnitId,
 													6,
 													u16TransacID,
 													u8FunctionCode,
 													&stMBusRequesPacket);
+#else
+	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
+													u8UnitId,
+													0,
+													u16TransacID,
+													u8FunctionCode,
+													&stMBusRequesPacket);
+#endif //MODBUS_STACK_TCPIP_ENABLED
 
 	stEndianess.u16word = u16RegOutputVal;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -933,11 +1063,19 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
 
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
 
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
+#endif
 	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
@@ -988,6 +1126,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 									   uint8_t  *pu8OutputVal,
 									   uint8_t  u8UnitId,
 									   uint8_t  *pu8SerIpAddr,
+									   uint16_t u16Port,
 									   void*    pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1005,13 +1144,21 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 		return u8ReturnType;
 
 	u16StartAddr = GetOffsetAddress1(u8FunctionCode, u16Startcoil);
-
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
 													u8UnitId,
 													7+u8ByteCount,
 													u16TransacID,
 													u8FunctionCode,
 													&stMBusRequesPacket);
+#else
+	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
+													u8UnitId,
+													0,
+													u16TransacID,
+													u8FunctionCode,
+													&stMBusRequesPacket);
+#endif
 
 	stEndianess.u16word = u16NumOfCoil;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -1023,6 +1170,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 
 	while(u8ByteCount > 0 && NULL != pu8OutputVal)
 	{
+		if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+		{
+			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
+		}
 		stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 				*pu8OutputVal;
 		pu8OutputVal++;
@@ -1033,11 +1184,19 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
 
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
 
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
+#endif
 	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
@@ -1088,6 +1247,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 									   uint8_t  *pu8OutputVal,
 									   uint8_t  u8UnitId,
 									   uint8_t  *pu8SerIpAddr,
+									   uint16_t u16Port,
 									   void*    pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1107,12 +1267,22 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 
 	u16StartAddr = GetOffsetAddress1(u8FunctionCode, u16StartReg);
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
 													u8UnitId,
 													7+u8ByteCount,
 													u16TransacID,
 													u8FunctionCode,
 													&stMBusRequesPacket);
+#else
+
+	u16PacketIndex = CreateHeaderForModbusRequest(	u16StartAddr,
+													u8UnitId,
+													0,
+													u16TransacID,
+													u8FunctionCode,
+													&stMBusRequesPacket);
+#endif
 
 	stEndianess.u16word = u16NumOfReg;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -1120,15 +1290,26 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8FirstByte;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
 
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId;
+#endif
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] = u8ByteCount;
 
 	while(u16NumOfReg > 0 && NULL != pu16OutputVal)
 	{
+		if(u16PacketIndex+1 > TCP_MODBUS_ADU_LENGTH)
+		{
+			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
+		}
 		stEndianess.u16word = *pu16OutputVal;
 		stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 					stEndianess.stByteOrder.u8SecondByte;
@@ -1192,6 +1373,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 													uint16_t u16TransacID,
 													uint8_t u8UnitId,
 													uint8_t *pu8SerIpAddr,
+													uint16_t u16Port,
 													void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1212,6 +1394,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 	if(STACK_NO_ERROR != u8ReturnType)
 		return u8ReturnType;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	/// Transaction ID
 	stEndianess.u16word = u16TransacID;
 
@@ -1220,7 +1403,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8FirstByte;
 	stMBusRequesPacket.m_u16TransactionID = stEndianess.u16word;
+#else
+	stMBusRequesPacket.m_u16TransactionID = u16TransacID;
+#endif
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	/// Protocol ID
 	stEndianess.u16word = 0;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -1234,6 +1421,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 			stEndianess.stByteOrder.u8SecondByte;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8FirstByte;
+#endif
 
 	/// Unit Id
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =  u8UnitId;
@@ -1280,10 +1468,18 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
+
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
+#endif
 
 	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
 	{
@@ -1335,6 +1531,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 													 uint16_t u16TransacID,
 													 uint8_t u8UnitId,
 													 uint8_t *pu8SerIpAddr,
+													 uint16_t u16Port,
 													 void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1355,6 +1552,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 	if(STACK_NO_ERROR != u8ReturnType)
 		return u8ReturnType;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	/// Transaction ID
 	stEndianess.u16word = u16TransacID;
 
@@ -1363,7 +1561,12 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8FirstByte;
 	stMBusRequesPacket.m_u16TransactionID = stEndianess.u16word;
+#else
+	/// Transaction ID
+	stMBusRequesPacket.m_u16TransactionID = u16TransacID;
+#endif
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	/// Protocol ID
 	stEndianess.u16word = 0;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -1377,7 +1580,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 			stEndianess.stByteOrder.u8SecondByte;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 			stEndianess.stByteOrder.u8FirstByte;
-
+#endif
 	/// Unit Id
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =  u8UnitId;
 	stMBusRequesPacket.m_u8UnitID = u8UnitId;
@@ -1433,10 +1636,18 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
+
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
+#endif
 
 	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
 	{
@@ -1494,6 +1705,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 									uint8_t *pu8OutputVal,
 									uint8_t u8UnitId,
 									uint8_t *pu8SerIpAddr,
+									uint16_t u16Port,
 									void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1513,13 +1725,21 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 			0);
 		if(STACK_NO_ERROR != u8ReturnType)
 			return u8ReturnType;
-
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+		u16PacketIndex = CreateHeaderForModbusRequest(u16ReadRegAddress,
+														u8UnitId,
+														11+u8WriteByteCount,
+														u16TransacID,
+														u8FunCode,
+														&stMBusRequesPacket);
+#else
 	u16PacketIndex = CreateHeaderForModbusRequest(u16ReadRegAddress,
 												u8UnitId,
-												11+u8WriteByteCount,
+												0,
 												u16TransacID,
 												u8FunCode,
 												&stMBusRequesPacket);
+#endif
 
 	stEndianess.u16word = u16NoOfReadReg;
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
@@ -1534,6 +1754,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 			pFunCallBack,
 			READ_WRITE_MUL_REG,
 			u8WriteByteCount);
+
 	if(STACK_NO_ERROR != u8ReturnType)
 		return u8ReturnType;
 
@@ -1558,6 +1779,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 
 	while(u16NoOfWriteReg > 0 && NULL != pu8OutputVal)
 	{
+		if(u16PacketIndex+1 > TCP_MODBUS_ADU_LENGTH)
+		{
+			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
+		}
 		stEndianess.u16word = *pu16OutputVal;
 		stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 					stEndianess.stByteOrder.u8SecondByte;
@@ -1574,10 +1799,18 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 	if(NULL == pu8OutputVal && u8WriteByteCount > 0)
 		u8ReturnType = STACK_ERROR_INVALID_INPUT_PARAMETER;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
+
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
+#endif
 
 	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
 	{
@@ -1632,6 +1865,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 		uint16_t u16TransacID,
 		uint8_t u8UnitId,
 		uint8_t *pu8SerIpAddr,
+		uint16_t u16Port,
 		void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1672,12 +1906,21 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 		return STACK_ERROR_INVALID_INPUT_PARAMETER;
 	}
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	/// here 5 = len of trans ID + fun code + MEI + devId + ObjeId
 	u16PacketIndex = CreateHeaderForDevIdentificationModbusRequest(u8UnitId,
-														5 ,
+														5,
 														u16TransacID,
 														u8FunCode,
 														&stMBusRequesPacket);
+#else
+	u16PacketIndex = CreateHeaderForDevIdentificationModbusRequest(u8UnitId,
+														0,
+														u16TransacID,
+														u8FunCode,
+														&stMBusRequesPacket);
+
+#endif
 
 	/// Fill MEI Type
 	stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] = u8MEIType;
@@ -1691,10 +1934,19 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	stMBusRequesPacket.m_stMbusTxData.m_u16Length = (u16PacketIndex);
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
 	stMBusRequesPacket.m_u8IpAddr[0] = pu8SerIpAddr[0];
 	stMBusRequesPacket.m_u8IpAddr[1] = pu8SerIpAddr[1];
 	stMBusRequesPacket.m_u8IpAddr[2] = pu8SerIpAddr[2];
 	stMBusRequesPacket.m_u8IpAddr[3] = pu8SerIpAddr[3];
+	stMBusRequesPacket.u16Port = u16Port;
+
+#else
+	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
+	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
+#endif
 
 	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
 	{

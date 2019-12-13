@@ -11,16 +11,9 @@
 #ifndef INCLUDE_TOPICMAPPER_HPP_
 #define INCLUDE_TOPICMAPPER_HPP_
 
-//#include <iostream>
-//#include <string.h>
 #include <string>
 #include <map>
-/*#include <fstream>
-#include <streambuf>
-#include "cjson/cJSON.h"
-
-using namespace std;*/
-
+#include <vector>
 /*
  * TopicMapper Class to map MQTT topics with ZMQ topics
  */
@@ -30,6 +23,7 @@ private:
 	// Private constructor so that no objects can be created.
 	CTopicMapper();
 	CTopicMapper(const CTopicMapper & obj){}
+	CTopicMapper& operator=(CTopicMapper const&);
 
 	void ParseJson();
 	std::map<std::string, std::string> m_MQTTopics;
@@ -40,6 +34,7 @@ public:
 
 	std::string GetZMQTopic(std::string topic);
 	std::string GetMQTTopic(std::string topic);
+	std::vector<std::string> GetMqttTopics();
 
 	static CTopicMapper& getInstance() {
 		static CTopicMapper _self;

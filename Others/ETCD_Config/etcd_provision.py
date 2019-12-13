@@ -98,11 +98,12 @@ def load_in_etcd(file, appName):
     :param appName: App Name
     :type file: String
     """
-    key = file.replace(".", appName, 1)
+    withDevConfigKey= file.replace("UWC/YAML_Config", "Device_Config", 1)
+    key = withDevConfigKey.replace(".", appName, 1)
     with open(file, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
         subprocess.run(["./etcdctl", "put",
-                    "/"+key+"/", bytes(yaml.dump(config, indent=2).encode())])
+                    "/"+key, bytes(yaml.dump(config, indent=2).encode())])
             
     logging.info("=======Reading key/values to etcd========")
     value = subprocess.run(["./etcdctl", "get", key])

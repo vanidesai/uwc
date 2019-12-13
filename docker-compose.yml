@@ -1,3 +1,13 @@
+################################################################################
+# The source code contained or described herein and all documents related to
+# the source code ("Material") are owned by Intel Corporation. Title to the
+# Material remains with Intel Corporation.
+#
+# No license under any patent, copyright, trade secret or other intellectual
+# property right is granted to or conferred upon you by disclosure or delivery of
+# the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+################################################################################
+
 version: '3.6'
 
 services:
@@ -90,6 +100,43 @@ services:
       - etcd_Modbus-TCP-Master_cert
       - etcd_Modbus-TCP-Master_key
 
+  modbus-rtu-master:
+    depends_on:
+      - ia_eisbase
+    build:
+      context: $PWD/../modbus-master/
+      dockerfile: $PWD/../modbus-master/Dockerfile_RTU
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+    image: ${DOCKER_REGISTRY}modbus-rtu-master:${EIS_VERSION}
+    container_name: modbus-rtu-master
+    hostname: modbus-rtu-master
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      AppName: "Modbus-RTU-Master"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${no_proxy}
+      TCP_ENABLED : 1
+      ZMQ_RECV_HWM: "1000"
+      MY_APP_ID: 5
+      CertType: "zmq"
+      PROFILING_MODE: ${PROFILING_MODE}
+      Clients: "MQTT-Export"
+      WRITE_RESPONSE_TOPIC: "PL0_flowmeter1_write_response"
+      SubTopics: "MQTT-Export/PL0_flowmeter1_write"
+      PL0_flowmeter1_write_cfg: "zmq_tcp,127.0.0.1:5858"
+      PubTopics: "PL0_flowmeter1,PL0_flowmeter1_write_response"
+      PL0_flowmeter1_cfg: "zmq_tcp,127.0.0.1:5656"
+      PL0_flowmeter1_write_response_cfg: "zmq_tcp,127.0.0.1:9999"
+    user: ${EIS_UID}
+    secrets:
+      - ca_etcd
+      - etcd_Modbus-RTU-Master_cert
+      - etcd_Modbus-RTU-Master_key
+      
   mqtt_container:
     depends_on:
       - ia_eisbase
@@ -151,6 +198,10 @@ secrets:
     file: provision/Certificates/Modbus-TCP-Master/Modbus-TCP-Master_client_certificate.pem
   etcd_Modbus-TCP-Master_key:
     file: provision/Certificates/Modbus-TCP-Master/Modbus-TCP-Master_client_key.pem
+  etcd_Modbus-RTU-Master_cert:
+    file: provision/Certificates/Modbus-RTU-Master/Modbus-RTU-Master_client_certificate.pem
+  etcd_Modbus-RTU-Master_key:
+    file: provision/Certificates/Modbus-RTU-Master/Modbus-RTU-Master_client_key.pem
   etcd_MQTT-Export_cert:
     file: provision/Certificates/MQTT-Export/MQTT-Export_client_certificate.pem
   etcd_MQTT-Export_key:

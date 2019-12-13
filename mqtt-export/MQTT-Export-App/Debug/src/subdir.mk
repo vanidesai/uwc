@@ -8,30 +8,31 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ################################################################################
 
+
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/ConfigManager.cpp \
+../src/EISMsgbusHandler.cpp \
 ../src/MQTTCallback.cpp \
 ../src/MQTTHandler.cpp \
 ../src/MQTT_Export.cpp \
-../src/TopicMapper.cpp \
-../src/ZmqToMqtt.cpp 
+../src/TopicMapper.cpp 
 
 OBJS += \
 ./src/ConfigManager.o \
+./src/EISMsgbusHandler.o \
 ./src/MQTTCallback.o \
 ./src/MQTTHandler.o \
 ./src/MQTT_Export.o \
-./src/TopicMapper.o \
-./src/ZmqToMqtt.o 
+./src/TopicMapper.o 
 
 CPP_DEPS += \
 ./src/ConfigManager.d \
+./src/EISMsgbusHandler.d \
 ./src/MQTTCallback.d \
 ./src/MQTTHandler.d \
 ./src/MQTT_Export.d \
-./src/TopicMapper.d \
-./src/ZmqToMqtt.d 
+./src/TopicMapper.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

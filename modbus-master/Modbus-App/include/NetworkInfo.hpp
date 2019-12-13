@@ -13,7 +13,8 @@
 
 #include <string>
 #include <vector>
-#include "YamlUtil.h"
+
+#include "utils/YamlUtil.hpp"
 
 #define SEPARATOR_CHAR "_"
 
@@ -54,8 +55,11 @@ namespace network_info
 		
 		public:
 		const std::string& getID() const {return m_sId;}
-		const struct stDataPointAddress& getAddress() { return m_stAddress;}
-		const struct stPollingData& getPollingConfig() { return m_stPollingConfig;}
+		//const struct stDataPointAddress& getAddress() { return m_stAddress;}
+		//const struct stPollingData& getPollingConfig() { return m_stPollingConfig;}
+
+		const struct stDataPointAddress& getAddress() const { return m_stAddress;}
+		const struct stPollingData& getPollingConfig() const { return m_stPollingConfig;}
 
 		static void build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint);
 	};
@@ -75,7 +79,8 @@ namespace network_info
 	struct stTCPAddrInfo
 	{
 		std::string m_sIPAddress;
-		unsigned int m_uiPortNumber;
+		uint16_t m_ui16PortNumber;
+		unsigned int m_uiUnitID;
 	};
 	struct stRTUAddrInfo
 	{
@@ -85,6 +90,7 @@ namespace network_info
 		unsigned int m_uiParity;
 		unsigned int m_uiStart;
 		unsigned int m_uiStop;
+		unsigned int m_uiSlaveId;
 	};
 	struct stModbusAddrInfo
 	{
@@ -103,8 +109,11 @@ namespace network_info
 
 		public:
 		std::string getID() const {return m_sId;}
-		const struct stModbusAddrInfo& getAddressInfo() {return m_stAddress;}
-		const struct CDeviceInfo& getDevInfo() {return m_oDev;}
+		//const struct stModbusAddrInfo& getAddressInfo() {return m_stAddress;}
+		//const struct CDeviceInfo& getDevInfo() {return m_oDev;}
+
+		const struct stModbusAddrInfo& getAddressInfo() const {return m_stAddress;}
+		const struct CDeviceInfo& getDevInfo() const {return m_oDev;}
 
 		static void build(const YAML::Node& a_oData, CWellSiteDevInfo &a_oWellSiteDevInfo);
 
@@ -139,11 +148,18 @@ namespace network_info
 		CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
 				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint);
 		
-		std::string getID() {return m_sId;}
-		const CWellSiteInfo& getWellSite() {return m_rWellSite;}
-		const CWellSiteDevInfo& getWellSiteDev() {return m_rWellSiteDev;}
-		const CDataPoint& getDataPoint() {return m_rPoint;}
-		unsigned int getMyRollID() {return m_uiMyRollID;}
+		//std::string getID() {return m_sId;}
+		//const CWellSiteInfo& getWellSite() {return m_rWellSite;}
+		//const CWellSiteDevInfo& getWellSiteDev() {return m_rWellSiteDev;}
+		//const CDataPoint& getDataPoint() {return m_rPoint;}
+
+		std::string getID() const {return m_sId;}
+		const CWellSiteInfo& getWellSite() const {return m_rWellSite;}
+		const CWellSiteDevInfo& getWellSiteDev() const {return m_rWellSiteDev;}
+		const CDataPoint& getDataPoint() const {return m_rPoint;}
+
+		//unsigned int getMyRollID() {return m_uiMyRollID;}
+		unsigned int getMyRollID() const {return m_uiMyRollID;}
 	};
 
 	void buildNetworkInfo(bool a_bIsTCP);

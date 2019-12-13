@@ -13,6 +13,7 @@
 void CMQTTCallback::connection_lost(const std::string& cause)
 {
 	CMQTTHandler::instance().setMQTTConfigState(MQTT_CLIENT_CONNECT_STATE);
+	CMQTTHandler::instance().setMQTTSubConfigState(MQTT_SUSCRIBE_CONNECT_STATE);
 	std::cout << "Error::MQTT Connection lost \n";
 	if (!cause.empty())
 	{
@@ -28,17 +29,32 @@ void CMQTTCallback::connection_lost(const std::string& cause)
 void CMQTTCallback::connected(const std::string& cause)
 {
 	CMQTTHandler::instance().setMQTTConfigState(MQTT_PUBLISH_STATE);
+	CMQTTHandler::instance().setMQTTSubConfigState(MQTT_SUBSCRIBE_STATE);
+
 #ifdef PERFTESTING
 	CMQTTHandler::m_ui32Connection++;
 	CMQTTHandler::printCounters();
 #endif
+
+
 	CMQTTHandler::instance().postPendingMsgs();
+	CMQTTHandler::instance().subscribeToTopics();
 }
 
 void CMQTTCallback::delivery_complete(mqtt::delivery_token_ptr tok)
 {
 #ifdef PERFTESTING
 	CMQTTHandler::m_ui32DelComplete++;
+#endif
+}
+
+void CMQTTCallback::message_arrived(mqtt::const_message_ptr msg)
+{
+	//add this message to queue - call a function
+	CMQTTHandler::instance().pushSubMsgInQ(msg);
+
+#ifdef PERFTESTING
+	CMQTTHandler::m_ui32MessageArrived++;
 #endif
 }
 
@@ -59,4 +75,3 @@ void CMQTTActionListener::on_success(const mqtt::token& tok)
 #endif
 	//std::cout << "Info::MQTT action (connect/message sending) success \n";
 }
-

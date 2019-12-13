@@ -15,7 +15,7 @@
 #include "NetworkInfo.hpp"
 #include "yaml-cpp/eventhandler.h"
 #include "yaml-cpp/yaml.h"
-#include "YamlUtil.h"
+#include "utils/YamlUtil.hpp"
 #include "BoostLogger.hpp"
 #include "ConfigManager.hpp"
 
@@ -74,7 +74,7 @@ namespace
 				BOOST_LOG_SEV(lg, error) << __func__ << " ETCD client is not created ..";
 				return false;
 			}
-			char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("site_list.yaml");
+			char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("/Device_Config/site_list.yaml");
 			if(NULL == cEtcdValue)
 			{
 				BOOST_LOG_SEV(lg, error) << __func__ << " No value received from ETCD  ..";
@@ -231,6 +231,7 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 						a_oWellSiteDevInfo.m_stAddress.m_stRTU.m_uiStart = atoi(tempMap.at("start").c_str());
 						a_oWellSiteDevInfo.m_stAddress.m_stRTU.m_uiStop = atoi(tempMap.at("stop").c_str());
 						a_oWellSiteDevInfo.m_stAddress.m_stRTU.m_sPortAddress = tempMap.at("port").c_str();
+						a_oWellSiteDevInfo.m_stAddress.m_stRTU.m_uiSlaveId = atoi(tempMap.at("slaveid").c_str());
 
 						a_oWellSiteDevInfo.m_stAddress.a_NwType = network_info::eNetworkType::eRTU;
 						bIsProtocolPresent = true;
@@ -247,10 +248,11 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 					try
 					{
 						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress = tempMap.at("ipaddress");
-						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_uiPortNumber = atoi(tempMap.at("port").c_str());
+						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber = atoi(tempMap.at("port").c_str());
 						a_oWellSiteDevInfo.m_stAddress.a_NwType = network_info::eNetworkType::eTCP;
+						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_uiUnitID = atoi(tempMap.at("unitid").c_str());
 						bIsProtocolPresent = true;
-						BOOST_LOG_SEV(lg, info) << __func__ << " : TCP protocol: " << a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress << ":" << a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_uiPortNumber;
+						BOOST_LOG_SEV(lg, info) << __func__ << " : TCP protocol: " << a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress << ":" << a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber;
 					}
 					catch(exception &e)
 					{
@@ -273,7 +275,7 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 					BOOST_LOG_SEV(lg, error) << __func__ << " ETCD client is not created ..";
 					return;
 				}
-				char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey((it.second.as<std::string>()).c_str());
+				char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(("/Device_Config/" +it.second.as<std::string>()).c_str());
 				if(NULL == cEtcdValue)
 				{
 					BOOST_LOG_SEV(lg, error) << __func__ << " No value received from ETCD  ..";
@@ -335,7 +337,7 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 					BOOST_LOG_SEV(lg, error) << __func__ << " ETCD client is not created ..";
 					return;
 				}
-				const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey((test.second.as<std::string>()).c_str());
+				const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(( "/Device_Config/"+ test.second.as<std::string>()).c_str());
 				if(NULL == cEtcdValue)
 				{
 					BOOST_LOG_SEV(lg, error) << __func__ << " No value received from ETCD  ..";
@@ -498,11 +500,15 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 	g_bIsStarted = true;
 	
 	// Set the network type TCP or RTU
-	g_eNetworkType = eNetworkType::eTCP;
 	if(false == a_bIsTCP)
 	{
 		g_eNetworkType = eNetworkType::eRTU;
 	}
+	else
+	{
+		g_eNetworkType = eNetworkType::eTCP;
+	}
+
 	std::cout << "Network set as: " << (int)g_eNetworkType << std::endl;
 	BOOST_LOG_SEV(lg, info) << __func__ << " Network set as: " << (int)g_eNetworkType;
 	
@@ -541,7 +547,7 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 				BOOST_LOG_SEV(lg, error) << __func__ << " ETCD client is not created ..";
 				return;
 			}
-			const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(sWellSiteFile.c_str());
+			const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(( "/Device_Config/" + sWellSiteFile).c_str());
 			if(NULL == cEtcdValue)
 			{
 				BOOST_LOG_SEV(lg, error) << __func__ << " No value received from ETCD  ..";
@@ -597,7 +603,7 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 
 CUniqueDataPoint::CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
 				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint) :
-				m_uiMyRollID{g_usTotalCnt+1}, m_sId{a_sId}, 
+				m_uiMyRollID{((unsigned int)g_usTotalCnt)+1}, m_sId{a_sId},
 				m_rWellSite{a_rWellSite}, m_rWellSiteDev{a_rWellSiteDev}, m_rPoint{a_rPoint}
 {
 	++g_usTotalCnt;

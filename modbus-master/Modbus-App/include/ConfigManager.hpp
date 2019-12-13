@@ -19,30 +19,80 @@
 #include <iostream>
 
 #define APP_NAME getenv("AppName")
-#define DIR_PATH "/config/UWC/YAML_Config/"
+#define DIR_PATH "/config"
 
 using namespace eis::config_manager;
 
 class CfgManager {
 public:
 
+    /** register callback for specific directory in ETCD
+     *
+     * @param key: name of the key
+     * @return: nothing
+     */
 	void registerCallbackOnChangeDir(char *key);
-	void registerCallbackOnChangeKet(char *key);
+
+    /** Register callback for specific key in ETCD
+     *
+     * @param key: name of the key
+     * @return: nothing
+     */
+	void registerCallbackOnChangeKey(char *key);
+
+    /** Returns the single instance of this class
+     *
+     * @param  : nothing
+     * @return : object of this class
+     */
 	static CfgManager& Instance();
-	char* getETCDValuebyKey(const char *);
+
+    /** Returns the value from ETCD on specific key
+     *
+     * @param key: name of the key
+     * @return: value from ETCD against given key
+     */
+	char* getETCDValuebyKey(const char *key);
+
+    /** Returns the client status of creation
+     *
+     * @param : Nothing
+     * @return: true/false based on status
+     */
 	bool IsClientCreated();
 
-	const EnvConfig& getEnvConfig() const {
+	/** Returns client from EIS Config library
+	 *
+	 * @param : Nothing
+	 * @return: Configuration object
+	 */
+	/*const EnvConfig& getEnvConfig() const {
+		return env_config;
+	}*/
+
+	EnvConfig& getEnvConfig() {
 		return env_config;
 	}
 
 private:
+
+	/// True for success and false for failure
 	bool isClientCreated;
+
+	/// Local object for EIS Config Manager
 	EnvConfig env_config;
 
+    /** Constructor
+     */
 	CfgManager(){};
-	CfgManager(CfgManager const&);             /// copy constructor is private
-	CfgManager& operator=(CfgManager const&);  /// assignment operator is private
+
+    /** copy constructor is private
+     */
+	CfgManager(CfgManager const&);
+
+    /** assignment operator is private
+     */
+	CfgManager& operator=(CfgManager const&);
 };
 
 #endif /* INCLUDE_CONFIGMANAGER_HPP_ */

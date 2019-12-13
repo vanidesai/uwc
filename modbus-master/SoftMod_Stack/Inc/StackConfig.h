@@ -1,31 +1,35 @@
-/*************************************************************************
-*                   Copyright (c) by Softdel Systems              
-*                                                                       
-*   This software is copyrighted by and is the sole property of Softdel
-*   Systems. All rights, title, ownership, or other interests in the
-*   software remain the property of Softdel Systems. This software
-*   may only be used in accordance with the corresponding license
-*   agreement. Any unauthorized use, duplication, transmission,
-*   distribution, or disclosure of this software is expressly forbidden. 
-*                                                                       
-*   This Copyright notice may not be removed or modified without prior   
-*   written consent of Softdel Systems.                               
-*                                                                       
-*   Softdel Systems reserves the right to modify this software       
-*   without notice.                                                      
-*************************************************************************/
+/************************************************************************************
+* The source code contained or described herein and all documents related to
+* the source code ("Material") are owned by Intel Corporation or Softdel Systems
+* (and licensed to Intel Corporation). Title to the Material remains with
+* Intel Corporation or Softdel Systems.
+*
+* No license under any patent, copyright, trade secret or other intellectual
+* property right is granted to or conferred upon you by disclosure or delivery of
+* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+************************************************************************************/
 
 #ifndef STACKCONFIG_H_
 #define STACKCONFIG_H_
 
 #include "osalLinux.h"
 
-#define TCP_MODBUS_ADU_LENGTH 260
+//#define MODBUS_STACK_TCPIP_ENABLED
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+	#define TCP_MODBUS_ADU_LENGTH 260
+	#define MODBUS_DATA_LENGTH (260)
+	#define SESSION_TIMEOUT_IN_SEC 10
+	#define MODBUS_TCP_PORT 	502
+	#define MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC 10
+	#define MAXIMUM_TCP_CONNECTION 	32
+#else
+	#define TCP_MODBUS_ADU_LENGTH 256
+	#define MODBUS_DATA_LENGTH (256)
+#endif
+
 #define FILE_RECORD_REFERENCE_TYPE 6
-#define MODBUS_DATA_LENGTH (260)
 #define MAX_ALLOWED_SLAVES	(247)
-#define MODBUS_TCP_PORT 	502
-#define MAXIMUM_TCP_CONNECTION 	32
 
 /// Starting Addresses for coils and registers
 #define SERIES_COIL_STATUS_ADDR		(00001)
@@ -75,6 +79,7 @@
 #define MAX_BYTE	(0xFF)
 #define MEI_TYPE	(14)
 
+
 /**
  @struct MbusTXData_t
  @brief
@@ -119,8 +124,14 @@ typedef struct _stMbusPacketVariables
 	uint16_t m_u16TransactionID;
 	/** Holds the unit id  */
 	uint8_t  m_u8UnitID;
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	/** Holds Ip address of salve/server device */
 	uint8_t m_u8IpAddr[4];
+	uint16_t u16Port;
+#else
+	/** Received destination address */
+	uint8_t	m_u8ReceivedDestination;	
+#endif
 	/** Holds the unit id  */
 	uint8_t m_u8FunctionCode;
 	/** Holds Data to be send to server */
@@ -138,6 +149,7 @@ typedef struct _stMbusPacketVariables
 
 }stMbusPacketVariables_t;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
  @struct IP_address
  @brief
@@ -156,7 +168,7 @@ typedef struct IP_address
 		uint32_t s_addr;
 	}s_un;
 }IP_address_t;
-
+#endif
 /**
  @union uByteOrder
  @brief
@@ -213,7 +225,7 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,
 
 /// Function to send packet on network
 uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
-		int32_t* pi32sockfd);
+		int32_t *pi32sockfd);
 
 
 #endif /* STACKCONFIG_H_ */

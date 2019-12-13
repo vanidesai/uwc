@@ -1,35 +1,41 @@
-/*************************************************************************
-*                   Copyright (c) by Softdel Systems              
-*                                                                       
-*   This software is copyrighted by and is the sole property of Softdel
-*   Systems. All rights, title, ownership, or other interests in the
-*   software remain the property of Softdel Systems. This software
-*   may only be used in accordance with the corresponding license
-*   agreement. Any unauthorized use, duplication, transmission,
-*   distribution, or disclosure of this software is expressly forbidden. 
-*                                                                       
-*   This Copyright notice may not be removed or modified without prior   
-*   written consent of Softdel Systems.                               
-*                                                                       
-*   Softdel Systems reserves the right to modify this software       
-*   without notice.                                                      
-*************************************************************************/
+/************************************************************************************
+* The source code contained or described herein and all documents related to
+* the source code ("Material") are owned by Intel Corporation or Softdel Systems
+* (and licensed to Intel Corporation). Title to the Material remains with
+* Intel Corporation or Softdel Systems.
+*
+* No license under any patent, copyright, trade secret or other intellectual
+* property right is granted to or conferred upon you by disclosure or delivery of
+* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+************************************************************************************/
 
 #include <stddef.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <safe_lib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/select.h>
 #include "SessionControl.h"
+
+//#define MODBUS_STACK_TCPIP_ENABLED
+
+#ifndef MODBUS_STACK_TCPIP_ENABLED
+extern int fd;
+#endif
+
 
 extern Mutex_H LivSerSesslist_Mutex;
 
 int32_t i32MsgQueIdSC = 0;
 stLiveSerSessionList_t *pstSesCtlThdLstHead = NULL;
 
-
 extern void* ServerSessTcpAndCbThread(void* threadArg);
-extern stDevConfig_t ModbusMasterConfig;
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+extern stDevConfig_t ModbusMasterConfig;
+#endif
 /**
  *
  * Description
@@ -38,11 +44,12 @@ extern stDevConfig_t ModbusMasterConfig;
  * @param threadArg [in] thread argument
  * @return void 	[out] nothing
  */
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 void* SessionControlThread(void* threadArg)
 {
 	int32_t i32MsgQueIdSC = 0;
 	Linux_Msg_t stScMsgQue = { 0 };
-	uint8_t u8NewDevEntryFalg = 0;
+	uint8_t u8NewDevEntryFalg=0;
 	stLiveSerSessionList_t *pstLivSerSesslist = NULL;
 	stLiveSerSessionList_t *pstTempLivSerSesslist = NULL;
 	stMbusPacketVariables_t *pstMBusReqPact = NULL;
@@ -88,9 +95,9 @@ void* SessionControlThread(void* threadArg)
 					if(NULL != pstLivSerSesslist)
 					{
 						if(pstMBusReqPact->m_u8IpAddr[0] == pstLivSerSesslist->m_u8IpAddr[0] &&
-							pstMBusReqPact->m_u8IpAddr[1] == pstLivSerSesslist->m_u8IpAddr[1] &&
-							pstMBusReqPact->m_u8IpAddr[2] == pstLivSerSesslist->m_u8IpAddr[2] &&
-							pstMBusReqPact->m_u8IpAddr[3] == pstLivSerSesslist->m_u8IpAddr[3])
+								pstMBusReqPact->m_u8IpAddr[1] == pstLivSerSesslist->m_u8IpAddr[1] &&
+								pstMBusReqPact->m_u8IpAddr[2] == pstLivSerSesslist->m_u8IpAddr[2] &&
+								pstMBusReqPact->m_u8IpAddr[3] == pstLivSerSesslist->m_u8IpAddr[3])
 						{
 							break;
 						}
@@ -116,10 +123,11 @@ void* SessionControlThread(void* threadArg)
 				}
 			}
 
-			if(u8NewDevEntryFalg)
+			if(u8NewDevEntryFalg )
 			{
+
 				memcpy_s(pstLivSerSesslist->m_u8IpAddr,sizeof(pstLivSerSesslist->m_u8IpAddr),
-						pstMBusReqPact->m_u8IpAddr,sizeof(pstMBusReqPact->m_u8IpAddr));
+										pstMBusReqPact->m_u8IpAddr,sizeof(pstMBusReqPact->m_u8IpAddr));
 				pstLivSerSesslist->MsgQId = OSAL_Init_Message_Queue();
 
 				stPostThreadMsg.idThread = pstLivSerSesslist->MsgQId;
@@ -170,8 +178,45 @@ void* SessionControlThread(void* threadArg)
 		}
 		fflush(stdin);
 	}
+	return NULL;
 }
+#else
 
+/**
+ *
+ * Description
+ * Thread sends Modbus RTU messages which are available in the message queue to the Modbus RTU device.
+ * Thread gets executed whenever message is available in the queue.
+ * @param threadArg [in] thread argument
+ * @return void [out] nothing
+ */
+void* SessionControlThread(void* threadArg)
+{
+	int32_t i32MsgQueIdSC = 0;
+	Linux_Msg_t stScMsgQue = { 0 };
+	stMbusPacketVariables_t *pstMBusReqPact = NULL;
+	uint8_t u8ReturnType = 0;
+	i32MsgQueIdSC = *((int32_t *)threadArg);
+
+
+	while (1)
+	{
+		memset(&stScMsgQue,00,sizeof(stScMsgQue));
+		if(OSAL_Get_Message(&stScMsgQue, i32MsgQueIdSC))
+		{
+			pstMBusReqPact = stScMsgQue.wParam;
+			u8ReturnType = Modbus_SendPacket(pstMBusReqPact, &fd);
+			ApplicationCallBackHandler(pstMBusReqPact, u8ReturnType);
+			OSAL_Free(pstMBusReqPact);
+
+		}
+		fflush(stdin);
+	}
+	return NULL;
+}
+#endif
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
  *
  * Description
@@ -185,14 +230,14 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 {
 
 	Linux_Msg_t stScMsgQue = { 0 };
-	uint32_t u32TimeCount = 0;
 	uint8_t u8ReturnType = 0;
 	stLiveSerSessionList_t *pstLivSerSesslist = NULL;
 	stLiveSerSessionList_t *pstTempLivSerSesslist = NULL;
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
-	int32_t i32sockfd = 0;
 	int32_t i32MsgQueIdSSTC = 0;
 	int32_t i32RetVal = 0;
+	int32_t i32sockfd = 0;
+	uint32_t u32TimeCount = 0;
 
 	i32MsgQueIdSSTC = *((int32_t *)threadArg);
 
@@ -210,6 +255,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 			ApplicationCallBackHandler(pstMBusRequesPacket,u8ReturnType);
 			OSAL_Free(pstMBusRequesPacket);
 			u32TimeCount = 0;
+
 		}
 		else
 		{
@@ -218,7 +264,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 
 			if(u32TimeCount >= (ModbusMasterConfig.m_u16TcpSessionTimeout * 10))
 			{
-				close(i32sockfd);
+				//close(i32sockfd);
 				Osal_Wait_Mutex (LivSerSesslist_Mutex,0);
 				if(NULL != pstLivSerSesslist)
 				{
@@ -251,4 +297,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 			}
 		}
 	}
+	return NULL;
 }
+
+#endif
