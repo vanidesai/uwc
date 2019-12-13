@@ -15,7 +15,7 @@ ARG EIS_UID
 ARG EIS_USER_NAME
 
 FROM eisbase
-RUN apt-get install -y mosquitto
+RUN apt-get update && apt-get install -y mosquitto
 RUN mkdir -p /mosquitto/config /mosquitto/data /mosquitto/log
 COPY mosquitto.conf /etc/mosquitto/mosquitto.conf
 
