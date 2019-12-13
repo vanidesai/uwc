@@ -43,10 +43,10 @@ sudo ./create_uwc_package.sh
 ```
 
 ## Install pre-requisites
+```
 1. EdgeInsightsSoftware-v2.1-Alpha version of EIS should be available on deploy machine before deployment. 
 2. Copy 01_pre-requisites.sh, 02_provisionEIS.sh, 03_DeployEIS.sh, 04_uninstall_EIS.sh and UWC.tar.gz(i.e. created in bundle create steps) files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
 3. Go to EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
-```
 4. Uninstall previous containers using "sudo ./04_uninstall_EIS.sh" command.
 5. Run below command to install all pre-requisites required to run UWC containers.
 sudo ./create_uwc_package.sh
