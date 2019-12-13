@@ -70,12 +70,23 @@ Execute below command to verify container status.
 sudo docker ps
 ```
 
-## Steps to check container logs
+## Debugging steps
 ```
-1. Syntax - sudo docker logs <container_name>
-   E.g To check modbus-tcp-container logs execute "sudo docker logs modbus-tcp-container" command.
+1. Checking container logs 
+   Syntax - sudo docker logs <container_name>
+   E.g. To check modbus-tcp-container logs execute "sudo docker logs modbus-tcp-container" command.
 2. Command to check logs inside the container "sudo docker exec -it <container_name> bash"
+3. Use "cat <log_file_name>" to see log file inside the container
+4. Copying logs from container to host machine
+   Syntax - docker cp <container_name>:<file to copy from container> <file to be copied i.e. host directory>
+5. Check the IP address of machine use "ifconfig" command.
+6. Check attached COM port for serial communication for RTU, use "dmesg | grep tty" command.
 ```
 
 ## ETCD UI access
 1. ETCD UI is available on `"http://localhost:7070/etcdkeeper/"` URL. (username - root , password- eis123)
+
+## Notes
+1. If docker-compose.yml is modified then execute 03_DeployEIS.sh script for build and deployment of UWC containers.
+2. If previous containers are running on deploy machine then stop those containers using 04_uninstall_EIS.sh script.
+3. Changing parameteres on ETCD UI will not required any changes in build and deployment.
