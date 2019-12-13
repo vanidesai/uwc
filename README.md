@@ -1,4 +1,4 @@
-/************************************************************************************
+/********************************************************************************************************************
  * The source code contained or described herein and all documents related to
  * the source code ("Material") are owned by Intel Corporation. Title to the
  * Material remains with Intel Corporation.
@@ -6,31 +6,31 @@
  * No license under any patent, copyright, trade secret or other intellectual
  * property right is granted to or conferred upon you by disclosure or delivery of
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
- ************************************************************************************/
+ **********************************************************************************************************************/
 
 # Directory details
 The directory comprises of following:
-* modbus-master:
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/modbus-master">modbus-master</a> :
   This directory contains the modbus container sources and docker file for building the container. 
-* mqtt-export:
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/mqtt-export">mqtt-export</a> :
   This directory contains the mqtt-export container sources and docker file for building the container. 
-* MQTT:
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/MQTT">MQTT</a> :
   This directory contains the mqtt container sources and docker file for building the container.
-* Others:
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Others">Others</a> :
   This directory contains configurations for ETCD required during provisioning. 
-* docker-compose.yml :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/blob/master/docker-compose.yml">docker-compose.yml</a> :
   This file will deploy the modbus container with EIS in prod mode.
-* docker-compose_DEV.yml :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_DEV.yml">docker-compose_DEV.yml</a> :
   This file can be used to deploy UWC containers in dev mode.
-* 01_pre-requisites.sh :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/01_pre-requisites.sh">01_pre-requisites.sh</a> :
   This script is use to install all pre-requisites.
-* 02_provisionEIS.sh :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/02_provisionEIS.sh">02_provisionEIS.sh</a>  :
   This script is use to install provision EIS.
-* 03_DeployEIS.sh :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/03_DeployEIS.sh">03_DeployEIS.sh</a> :
   This script is used to deploy UWC containers in dev mode.
-* 04_uninstall_EIS.sh :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/04_uninstall_EIS.sh">04_uninstall_EIS.sh</a> :
   This script will uninstall all UWC containers.
-* create_uwc_package.sh :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/create_uwc_package.sh">create_uwc_package.sh</a> :
   This script will be used to create UWC package
 
 # Steps to create bundle out of sources
