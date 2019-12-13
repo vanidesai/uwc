@@ -130,7 +130,7 @@ void listenOnEIS(string topic, stZmqContext context,
 						//publish data to MQTT
 						std::cout << "ZMQ Message: Time: "
 							<< std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
-							<< ", Msg: " << mqttMsg;
+							<< ", Msg: " << mqttMsg << std::endl;
 
 						CMQTTHandler::instance().publish(mqttMsg,
 								mqttTopic.c_str());

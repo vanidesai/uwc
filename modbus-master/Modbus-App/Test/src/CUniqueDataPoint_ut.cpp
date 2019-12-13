@@ -145,6 +145,7 @@ TEST_F(CUniqueDataPoint_ut, getWellSiteDev_return) {
 
 /******************************CUniqueDataPoint::getDataPoint*****************************************/
 
+#if 0
 /* TC004
 Test: Return of CUniqueDataPoint::getDataPoint.
 CWellSiteDevInfo::getDataPoint should return the object of class CDataPoint,
@@ -190,3 +191,4 @@ TEST_F(CUniqueDataPoint_ut, getDataPoint_return) {
 	}
 
 }
+#endif

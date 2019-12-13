@@ -156,6 +156,7 @@ TEST_F(CDeviceInfo_ut, deviceInfo_bsent_datapoints)
 
 /**test 04: this unit test checks the name of the device is correct in the yml file .**************/
 
+#if 0
 TEST_F(CDeviceInfo_ut, device_info_name_available)
 {
 
@@ -194,7 +195,7 @@ TEST_F(CDeviceInfo_ut, device_info_name_available)
 		}
 	}
 }
-
+#endif
 /*
  test 05:: Test the behaviour of addDataPoint() function when point name is already present in
   datapoint list.

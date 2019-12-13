@@ -22,6 +22,7 @@ void CDataPoint_ut::TearDown()
 }
 /*****************************CDataPoint::build()****************************************/
 
+#if 0
 /*test 01:: this test checks whether all mandatory parameters are available in yml file or not */
 
 TEST_F(CDataPoint_ut, 0_manatory_param)
@@ -68,6 +69,7 @@ TEST_F(CDataPoint_ut, 0_manatory_param)
 	}
 
 }
+#endif
    /*test02: this test is for the check of mandatory parameters(Address),
      if not available then throws exception accordingly*/
 

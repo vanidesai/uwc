@@ -53,6 +53,7 @@ Test: Return of CWellSiteInfo::addDevice. //Need to be updated
 CWellSiteInfo::addDevice should
   return 0 if device added successfully in the vector.
  */
+#if 1
 TEST_F(CWellSiteInfo_ut, addDevice_return0) {
 
 	try
@@ -90,7 +91,7 @@ TEST_F(CWellSiteInfo_ut, addDevice_return0) {
 		EXPECT_EQ("name key not found",(string)e.what());
 	}
 }
-
+#endif
 /* TC003
 Test: Return of CWellSiteInfo::addDevice.
 CWellSiteInfo::addDevice should
@@ -179,6 +180,7 @@ TEST_F(CWellSiteInfo_ut, addDevice_returnMin1) {
 Test: Return of CWellSiteInfo::getDevices.
 CWellSiteInfo::getDevices should return the device list.
  */
+#if 0
 TEST_F(CWellSiteInfo_ut, addDevice_return) {
 
 	try
@@ -224,6 +226,7 @@ TEST_F(CWellSiteInfo_ut, addDevice_return) {
 		EXPECT_EQ("Required keys not found in PROTOCOL_TCP", (string)e.what());
 	}
 }
+#endif
 
 /******************************CWellSiteInfo::build*****************************************/
 
