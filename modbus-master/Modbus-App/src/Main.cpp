@@ -23,6 +23,7 @@
 #include "YamlUtil.hpp"
 #include "ConfigManager.hpp"
 #include "ModbusWriteHandler.hpp"
+#include <gtest/gtest.h>
 
 extern "C" {
 #include <safe_lib.h>
@@ -212,7 +213,7 @@ int main(int argc, char* argv[])
 			BOOST_LOG_SEV(lg, info) << __func__ <<" Parity == "<< parity<< endl;
 			BOOST_LOG_SEV(lg, info) << __func__ <<" StopBit == "<< stopBit;
 
-			int fd = initSerialPort(portName.c_str(), baudrate, parity, stopBit);
+			int fd = initSerialPort((uint8_t*)(portName.c_str()), baudrate, parity, stopBit);
 			if(fd < 0)
 			{
 				cout << "Failed to initialize serial port for RTU."<<endl;
@@ -303,6 +304,13 @@ int main(int argc, char* argv[])
 		CTimeMapper::instance().initTimerFunction();
 
 		modWriteHandler::Instance().initZmqReadThread();
+
+#ifdef UNIT_TEST
+
+	::testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
+
+#endif
 
 		std::unique_lock<std::mutex> lck(mtx);
 		while (!g_stop)

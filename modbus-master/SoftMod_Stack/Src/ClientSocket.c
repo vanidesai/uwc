@@ -770,10 +770,8 @@ uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBus
  */
 int8_t checkforblockingread(void)
 {
-	int s_rc;
 	fd_set rset;
 	struct timeval tv;
-	int8_t retval;
 	//wait upto 1 seconds
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
@@ -786,26 +784,7 @@ int8_t checkforblockingread(void)
 	}
 	FD_SET(fd, &rset);
 
-	while((s_rc = select(fd+1,&rset,NULL,NULL,&tv))!=0)
-	{
-		if(s_rc == -1)
-		{
-			retval = -1;
-
-		}
-		else if(s_rc != -1)
-		{
-			retval =1;
-			break;
-		}
-	}
-	if(s_rc == 0)
-	{
-		retval = 0;
-	}
-
-	return retval;
-
+	return select(fd+1,&rset,NULL,NULL,&tv);
 }
 
 
@@ -825,10 +804,10 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 	uint8_t recvBuff[TCP_MODBUS_ADU_LENGTH];
 	volatile int bytes = 0;
 	uint16_t crc;
-	int8_t retval = 0;
 	uint8_t ServerReplyBuff[TCP_MODBUS_ADU_LENGTH];
 	int totalRead = 0;
-	int numToRead = sizeof(ServerReplyBuff);
+	//int numToRead = sizeof(ServerReplyBuff);
+	uint16_t numToRead = 0;
 
 	if(NULL == pstMBusRequesPacket)
 	{
@@ -848,44 +827,54 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		recvBuff[pstMBusRequesPacket->m_stMbusTxData.m_u16Length++] = (crc & 0x00FF);
 		tcflush(fd, TCIOFLUSH);
 		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
-
-		if(baud > 19200)
+		//< Note: Below framing delay is commented intentionally as read function is having blocking read() call in which
+		//< select() function is having response waiting time of 1000 mSec as well as it is having blocking read call.
+		//< This will not allow to start new message unless mess is received from slave within 1000mSec
+		//< Please remove below commented framing delay when nonblocking call is used.
+		/*if(baud > 19200)
 		{
 			usleep(1750);
 		}
 		else
 		{
 			usleep(3700);
-		}
+		}*/
 
 		bytes = 0;
-		numToRead = TCP_MODBUS_ADU_LENGTH;
-		while(numToRead>0){
-			retval = checkforblockingread();
-			if(retval>0)
+		if((READ_COIL_STATUS == (eModbusFuncCode_enum)(pstMBusRequesPacket->m_u8FunctionCode)) ||
+				(READ_INPUT_STATUS == (eModbusFuncCode_enum)(pstMBusRequesPacket->m_u8FunctionCode)))
+		{
+			// Identify number of bytes to be read from slave device for Read coil and read input function codes.
+			// When read request is for Coil and input quantity is unit. Header length is of 5.
+			numToRead = ((pstMBusRequesPacket->m_u16Quantity) + 5);
+		}
+		else
+		{
+			// Identify number of bytes to be read from slave device for WORD i.e. integer function codes.
+			// When read request is for Holding register and input register it is of WORD i.e. multiple of quantity.
+			// Header length is of 5.
+			numToRead = ((pstMBusRequesPacket->m_u16Quantity * 2) + 5);
+		}
+		while(numToRead > 0){
+			if(checkforblockingread() > 0)
 			{
 				bytes = read(fd, &ServerReplyBuff[totalRead], numToRead);
-			}
-			else
-				bytes =0 ;
-			if(bytes > 0)
-			{
 				totalRead += bytes;
 				numToRead -= bytes;
-			}else if (bytes == 0){
-				break;
+
+				if(bytes == 0){
+					break;
+				}
 			}
 			else{
 				break;
 			}
 		}
 
-		if(totalRead >= 0)
+		if(totalRead > 0)
 		{
-
 			u8ReturnType = DecodeRxPacket(ServerReplyBuff,pstMBusRequesPacket);
 		}
-
 	}
 
 	pstMBusRequesPacket->m_u8CommandStatus = u8ReturnType;
@@ -896,7 +885,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 //#ifdef OLD_SERIALPORT
 MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uint8_t  parity, uint8_t stop_bit)
 {
-	struct termios tios, old_tios;
+	struct termios tios;
     speed_t speed;
     int flags;
     /* The O_NOCTTY flag tells UNIX that this program doesn't want
@@ -911,7 +900,7 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
      flags = O_RDWR | O_NOCTTY | O_NDELAY | O_EXCL;
     //flags = O_RDWR | O_NOCTTY | O_NDELAY | O_SYNC;
 
-    fd = open(portName, flags);
+    fd = open((const char*)portName, flags);
 
     if (fd == -1) {
         printf("ERROR Can't open the device %s (%s)\n",

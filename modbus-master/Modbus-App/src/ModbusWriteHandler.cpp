@@ -215,7 +215,7 @@ eMbusStackErrorCode modWriteInfo::jsonParserForWrite(std::string a_sTopic,
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 		string stIpAddress = addrInfo.m_stTCP.m_sIPAddress;
-		unsigned int port = addrInfo.m_stTCP.m_ui16PortNumber;
+		pstModbusRxPacket->m_u16Port = addrInfo.m_stTCP.m_ui16PortNumber;
 #endif
 
 			if(NULL != pstModbusRxPacket)
@@ -259,11 +259,11 @@ eMbusStackErrorCode modWriteInfo::jsonParserForWrite(std::string a_sTopic,
 						// If value is 0x01, then write 0xFF00
 						if( (stValue.compare("0x01")) || (stValue.compare("0X01")) || (stValue.compare("01")))
 						{
-							stValue = "0xFF00";
+							stValue = "0x0000";
 						}
 						else
 						{
-							stValue = "0x0000";
+							stValue = "0xFF00";
 						}
 					}
 					hex2bin(stValue, pstModbusRxPacket->m_stReqData.m_u8DataLen, pstModbusRxPacket->m_stReqData.m_pu8Data);
