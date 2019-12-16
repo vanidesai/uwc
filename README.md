@@ -33,22 +33,19 @@ The directory comprises of following:
   This script is used to deploy UWC containers in dev mode.
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/04_uninstall_EIS.sh">04_uninstall_EIS.sh</a> :
   This script will uninstall all UWC containers.
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Deploy">Deploy</a> :
+  This directory contains UWC bundle for deployement.
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/create_uwc_package.sh">create_uwc_package.sh</a> :
   This script will be used to create UWC package
-
-## Steps to create bundle out of sources
-```
-Execute below script script to create UWC bundle for deployment.
-sudo ./create_uwc_package.sh
-```
 
 ## Install pre-requisites
 ```
 1. EdgeInsightsSoftware-v2.1-Alpha version of EIS should be available on deploy machine before deployment. 
-2. Copy 01_pre-requisites.sh, 02_provisionEIS.sh, 03_DeployEIS.sh, 04_uninstall_EIS.sh and UWC.tar.gz(i.e. created in bundle create steps) files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
-3. Go to EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
-4. Uninstall previous containers using "sudo ./04_uninstall_EIS.sh" command.
-5. Run below command to install all pre-requisites required to run UWC containers.
+2. Copy UWC_Deploy.zip file present in Deploy diectory into EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
+3. Unzip UWC_Deploy.zip file dgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory in EIS.
+4. Go to EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
+5. Uninstall previous containers running then run "sudo ./04_uninstall_EIS.sh" command to stop it.
+6. Run below command to install all pre-requisites required to run UWC containers.
 sudo ./01_pre-requisites.sh
 ```
 
@@ -86,7 +83,15 @@ sudo docker ps
 ## ETCD UI access
 1. ETCD UI is available on `"http://localhost:7070/etcdkeeper/"` URL. (username - root , password- eis123)
 
+## Steps to create bundle out of sources - Optional 
+```
+Execute below script script to create UWC bundle for deployment.
+sudo ./create_uwc_package.sh
+```
+
 ## Notes
-1. If docker-compose.yml is modified then execute 03_DeployEIS.sh script for build and deployment of UWC containers.
-2. If previous containers are running on deploy machine then stop those containers using 04_uninstall_EIS.sh script.
-3. Changing parameteres on ETCD UI will not required any changes in build and deployment.
+*  If docker-compose.yml is modified then execute 03_DeployEIS.sh script for build and deployment of UWC containers.
+*  If previous containers are running on deploy machine then stop those containers using 04_uninstall_EIS.sh script.
+*  Changing parameters on ETCD UI will not required any changes in build and deployment.
+
+
