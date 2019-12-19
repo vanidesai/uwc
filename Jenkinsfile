@@ -17,6 +17,7 @@ pipeline {
         stage('Hello') {
             steps {
                 echo 'Hello..'
+                sh "git --version"
             }
         }
        
