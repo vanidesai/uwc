@@ -12,12 +12,14 @@ pipeline {
         PROJECT_NAME = 'UWC'
         SLACK_SUCCESS = '#indu-uwc'
         SLACK_FAIL   = '#indu-uwc'
+        GITLAB_UP = credentials('gitlab-username-password')
     }
     stages {
         stage('Hello') {
             steps {
                 echo 'Hello..'
                 sh "git --version"
+                echo '$GITLAB_UP'
             }
         }
        
