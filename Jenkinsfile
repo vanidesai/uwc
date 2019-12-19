@@ -16,7 +16,7 @@ pipeline {
     }
     stages {
         stage('Hello') {
-          
+          if($GIT_BRANCH == "UWC-Sprint3")
               steps {
                   echo "$GIT_BRANCH"
                   echo 'Hello..'
@@ -26,6 +26,7 @@ pipeline {
                   sh "git clone --single-branch --branch v2.1-Alpha-RC4 https://$GITLAB_UP@gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights"
                   sh "ls -l"
               }
+          }
         }
        
     }
