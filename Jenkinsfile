@@ -20,7 +20,9 @@ pipeline {
                 echo 'Hello..'
                 sh "git --version"
                 echo "$GITLAB_UP"
+                sh "ls -l"
                 sh "git clone --single-branch --branch v2.1-Alpha-RC4 https://$GITLAB_UP@gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights"
+                sh "ls -l"
             }
         }
        
