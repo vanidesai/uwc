@@ -19,7 +19,7 @@ pipeline {
             steps {
                 echo 'Hello..'
                 sh "git --version"
-                echo '$GITLAB_UP'
+                echo "$GITLAB_UP"
             }
         }
        
