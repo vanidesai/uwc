@@ -1,3 +1,4 @@
+  
 pipeline {
     agent { label 'rbhe' }
     options {
@@ -16,7 +17,24 @@ pipeline {
         stage('Hello') {
             steps {
                 echo 'Hello..'
-                sh 'git config --global http.proxy http://proxy-us.intel.com:911; git clone https://gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights.git'
+            }
+        }
+        stage('Static Scanners') {
+            steps {
+                echo 'Protex, checkmarx Scan..'
+                rbheStaticCodeScan()
+            }
+        }
+        stage('Bandit') {
+            agent {
+                docker {
+                    image 'amr-registry.caas.intel.com/rrp-devops/bandit-build-agent:latest'
+                    reuseNode true
+                }
+            }
+
+            steps {
+                sh 'bandit -f txt **/*.py scripts/*.py | tee bandit_scan.txt'
             }
         }
     }
