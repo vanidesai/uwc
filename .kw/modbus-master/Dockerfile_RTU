@@ -1,0 +1,199 @@
+#********************************************************************************
+# The source code contained or described herein and all documents related to 
+# the source code ("Material") are owned by Intel Corporation. Title to the 
+# Material remains with Intel Corporation.
+#
+# No license under any patent, copyright, trade secret or other intellectual
+# property right is granted to or conferred upon you by disclosure or delivery of
+# the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+#*********************************************************************************
+
+ARG EIS_VERSION
+FROM ia_eisbase:$EIS_VERSION as eisbase
+LABEL description="Modbus RTU Master Application"
+ARG EIS_UID
+
+FROM ia_common:$EIS_VERSION as common
+
+# Build Boost Library
+FROM eisbase as build-boost
+RUN apt-get update && apt-get install -y \
+    curl \
+    tar 
+
+ARG BOOST_VERSION=1.71.0
+ARG BOOST_CHECKSUM=96b34f7468f26a141f6020efb813f1a2f3dfb9797ecf76a7d7cbd843cc95f5bd
+ARG BOOST_DIR=boost
+ARG CONCURRENT_PROCESSES=1
+ENV BOOST_VERSION ${BOOST_VERSION}
+
+RUN mkdir -p ${BOOST_DIR} \
+    && cd ${BOOST_DIR} \
+    && curl -L --retry 3 "https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_1_71_0.tar.gz" -o boost.tar.gz \
+    && echo "${BOOST_CHECKSUM}  boost.tar.gz" | sha256sum -c \
+    && tar -xzf boost.tar.gz --strip 1 \
+    && ./bootstrap.sh  --prefix=/usr/boost --without-icu --with-libraries=filesystem,log,regex,system,thread,date_time  \
+    && ./b2 link=shared runtime-link=shared --no-cmake-config install \
+    && cd .. && rm -rf ${BOOST_DIR}
+
+# yaml build
+FROM eisbase as build-yaml
+
+RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
+    && cd yaml-cpp \
+    &&	mkdir build && cd build \
+    &&	cmake -DYAML_BUILD_SHARED_LIBS=ON ../ \
+    &&	make yaml-cpp \
+    &&	mkdir -p /usr/yaml \
+    &&  mkdir -p /usr/yaml/lib \
+    &&  cp lib* /usr/yaml/lib \
+    &&  cp -r ../include /usr/yaml \
+    && cd ../../
+
+# Build Modbus Stack
+FROM eisbase as modbus-lib
+
+WORKDIR /
+
+COPY --from=common /usr/local/include/safe_* /usr/local/include/
+COPY --from=common /usr/local/lib/libsafestring.so /usr/local/lib/
+
+RUN mkdir kw10 ; \
+       export http_proxy="http://proxy-chain.intel.com:911"; \
+       export https_proxy="http://proxy-chain.intel.com:911"; \
+       export all_proxy="http://proxy-chain.intel.com:911"; \
+
+       dpkg --add-architecture i386 ;\
+       apt-get update -y ;\
+       apt-get install lsb-core -y ;\
+       apt-get install libc6:i386 libgcc1:i386 -y ;\
+       apt-get install lib32tinfo5 -y ;\
+       apt-get install libncursesw:i386 -y ;\
+       apt-get install libnuma1 -y ;\
+
+       adduser --disabled-password --no-create-home --gecos "" hadi ;\
+       chown -R hadi kw10 ; \
+       su hadi -c "echo Hadi is here*******"; \
+       wget https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW12.3/Linux/kw-server-installer.12.3.0.819.linux64.sh ;\
+       chmod 755 kw-server-installer.12.3.0.819.linux64.sh ;\
+       su hadi -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /kw10 --license-server kwlic.intel.com:7500" ;\
+       ls kw10 ;
+
+RUN  ls -la ~
+RUN  mkdir .klocwork ;
+ADD  ltoken .klocwork/
+
+RUN mv .klocwork ~
+RUN ls -la ~/.klocwork
+
+COPY SoftMod_Stack /SoftMod_Stack/.
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /SoftMod_Stack/Release/Src/subdir.mk 
+  
+WORKDIR SoftMod_Stack
+RUN cd Release ; make clean ;\
+     /kw10/bin/kwinject --output kwinject.out make all -s;
+
+RUN ls -la Release
+
+       #/kw10/bin/kwauth --url https://klocwork-jf6.devtools.intel.com:8100 ;\
+RUN cd Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
+       /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
+       cp test.log tables_UWC/build.log ;\
+       cp parse_errors.log tables_UWC/parse_errors.log ;\
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC  --name KWReport_SoftMod_Stack_sprint3_RTU_2 ;
+
+# Build Modbus application
+FROM eisbase as modbus-app
+
+WORKDIR /
+
+COPY --from=common /usr/local/include /usr/local/include
+COPY --from=common /usr/local/lib /usr/local/lib
+
+# Copy built library from images
+COPY --from=build-boost /usr/boost /bin/boost/.
+COPY --from=build-yaml /usr/yaml /bin/yaml-cpp/.
+
+COPY Modbus-App /Modbus-App/. 
+COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
+COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
+
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Release/src/subdir.mk 
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Release/src/utils/subdir.mk 
+
+RUN mkdir kw10 ; \
+       export http_proxy="http://proxy-chain.intel.com:911"; \
+       export https_proxy="http://proxy-chain.intel.com:911"; \
+       export all_proxy="http://proxy-chain.intel.com:911"; \
+
+       dpkg --add-architecture i386 ;\
+       apt-get update -y ;\
+       apt-get install lsb-core -y ;\
+       apt-get install libc6:i386 libgcc1:i386 -y ;\
+       apt-get install lib32tinfo5 -y ;\
+       apt-get install libncursesw:i386 -y ;\
+       apt-get install libnuma1 -y ;\
+
+       adduser --disabled-password --no-create-home --gecos "" hadi ;\
+       chown -R hadi kw10 ; \
+       su hadi -c "echo Hadi is here*******"; \
+       wget https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW12.3/Linux/kw-server-installer.12.3.0.819.linux64.sh ;\
+       chmod 755 kw-server-installer.12.3.0.819.linux64.sh ;\
+       su hadi -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /kw10 --license-server kwlic.intel.com:7500" ;\
+       ls kw10 ;
+
+RUN  ls -la ~
+RUN  mkdir .klocwork ;
+ADD  ltoken .klocwork/
+
+RUN mv .klocwork ~
+RUN ls -la ~/.klocwork
+
+
+
+RUN cd /Modbus-App/Release \
+    &&	export LD_LIBRARY_PATH='/Modbus-App/lib:/usr/local/lib\
+    :/bin/boost/lib:/bin/yaml-cpp/lib' \
+    &&  export INCLUDE_DIR='/bin' \
+    &&  /kw10/bin/kwinject make clean all -s
+
+
+       #/kw10/bin/kwauth --url https://klocwork-jf6.devtools.intel.com:8100 ;\
+RUN cd /Modbus-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
+       /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
+       cp test.log tables_UWC/build.log ;\
+       cp parse_errors.log tables_UWC/parse_errors.log ;\
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC  --name KWReport_Modbus-App_sprint3_RTU_2 ;
+
+
+# Build Modbus container service
+FROM eisbase as modbus-service
+
+COPY --from=common /usr/local/include /usr/local/include
+COPY --from=common /usr/local/lib /usr/local/lib
+
+WORKDIR /
+
+ENV APP_WORK_DIR /opt/intel/app/
+RUN mkdir -p /opt/intel/app
+RUN mkdir -p /opt/intel/config
+
+WORKDIR ${APP_WORK_DIR}
+
+COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so ${APP_WORK_DIR}
+COPY --from=modbus-app /Modbus-App/Release/ModbusMaster ${APP_WORK_DIR}
+COPY --from=modbus-app /bin/boost/lib/*.so.*  ${APP_WORK_DIR}
+COPY --from=build-yaml /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
+
+RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config
+RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
+RUN chmod -R 770 ${APP_WORK_DIR}
+
+#set the environment variable
+ENV LD_LIBRARY_PATH ${APP_WORK_DIR}:/usr/local/lib
+
+ENV DOCKER_CONTENT_TRUST 1
+HEALTHCHECK CMD exit 0
+
+# Run Modbus container
+CMD ./ModbusMaster
