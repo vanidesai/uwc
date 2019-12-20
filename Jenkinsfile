@@ -26,7 +26,7 @@ pipeline {
 			  sh "cd ./IEdgeInsights/; ls -la"
 			  sh "apk add ncurses"
 			  sh "pwd"
-			  #sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh; "
+			  //sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh; "
 
 		  }
           
