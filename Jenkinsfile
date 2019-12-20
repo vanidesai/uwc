@@ -19,13 +19,12 @@ pipeline {
 		  steps {
 			  echo "$GIT_BRANCH"
 			  echo 'Hello..'
-			  sh "git --version"
-			  echo "$GITLAB_UP"
-			  sh "git clone --single-branch --branch v2.1-Alpha-RC4 https://$GITLAB_UP@gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights"
-			  sh "cp -r ./Deploy/* ./IEdgeInsights/"
-			  sh "cd ./IEdgeInsights/; ls -la"
-			  sh "apk add ncurses"
-			  sh "pwd"
+			  //sh "git --version"
+			  //sh "git clone --single-branch --branch v2.1-Alpha-RC4 https://$GITLAB_UP@gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights"
+			  //sh "cp -r ./Deploy/* ./IEdgeInsights/"
+			  //sh "cd ./IEdgeInsights/; ls -la"
+			  //sh "apk add ncurses"
+			  //sh "pwd"
 			  //sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh; "
 
 		  }
