@@ -54,7 +54,7 @@ check_for_errors()
 checkrootUser()
 {
    echo "Checking for root user..."    
-   if [[ "$EUID" -ne "0" ]]; then
+   if [[ $EUID -ne 0 ]]; then
     	echo "${RED}This script must be run as root.${NC}"
 	echo "${GREEN}E.g. sudo ./<script_name>${NC}"
     	exit 1
@@ -147,7 +147,7 @@ eisProvision()
         exit 1 # terminate and indicate error
     fi
 
-    ./provision_eis.sh ../docker-compose.yml
+    sudo ./provision_eis.sh ../docker-compose.yml
     check_for_errors "$?" "Provisioning is failed. Please check logs" \
                     "${GREEN}Provisioning is done successfully.${NC}"
     echo "${GREEN}>>>>>${NC}"

@@ -109,13 +109,12 @@ char* CfgManager::getETCDValuebyKey(const char *key)
 		return NULL;
 	}
 	std::string sActualKey(key);
-	if(NULL == getenv("AppName"))
-	{
-		std::cout << "AppName Environment Variable is not set.." <<std::endl;
+	const char* env_appname = std::getenv("AppName");
+	if(NULL == env_appname) {
 		std::cout << __func__ << " AppName Environment Variable is not set..";
 		return NULL;
 	}
-	std::string AppName(getenv("AppName"));
+	std::string AppName(env_appname);
 
 	if(AppName.empty())
 	{

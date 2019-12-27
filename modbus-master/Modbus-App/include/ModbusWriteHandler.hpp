@@ -13,39 +13,54 @@
 
 #include "Common.hpp"
 #include <vector>
+#include <queue>
+#include <semaphore.h>
+#include <mutex>
 
-class modWriteInfo
+/// node for writerequest Q
+struct stWriteRequest
 {
-	modWriteInfo(){};
-	modWriteInfo(modWriteInfo const&);             /// copy constructor is private
-	modWriteInfo& operator=(modWriteInfo const&);  /// assignment operator is private
-public:
-	static modWriteInfo& Instance();
-	eMbusStackErrorCode writeInfoHandler(std::string a_sTopic, std::string& msg);
-	eMbusStackErrorCode jsonParserForWrite(const std::string a_sTopic, std::string& writeReqJson, RestMbusReqGeneric_t *pstModbusRxPacket);
+	std::string m_strTopic;
+	std::string m_strMsg;
 };
 
 class modWriteHandler
 {
-	modWriteHandler(){};
+	std::queue <stWriteRequest> stackTCPWriteReqQ;
+	std::mutex __writeReqMutex;
+	sem_t semaphoreWriteReq;
+	bool m_bIsWriteInitialized;
+
+	modWriteHandler();
 	modWriteHandler(modWriteHandler const&);             /// copy constructor is private
 	modWriteHandler& operator=(modWriteHandler const&);  /// assignment operator is private
 
+	/// method to initiate the write semaphore
+	BOOLEAN initWriteSem();
+
+	/// method to push write request to queue
+	BOOLEAN pushToWriteTCPQueue(struct stWriteRequest &stWriteRequestNode);
+
+	/// method to get data from q to process write.
+	BOOLEAN getWriteDataToProcess(struct stWriteRequest &stWriteProcessNode);
+
 public:
 	static modWriteHandler& Instance();
-	void initZmqReadThread();
 
-	void zmqReadDeviceMessage();
-	void writeToDevicwe(const std::string a_sTopic, std::string msg);
+	eMbusStackErrorCode writeInfoHandler();
+
+	eMbusStackErrorCode jsonParserForWrite(const std::string a_sTopic,
+											std::string& writeReqJson,
+											MbusAPI_t &stMbusApiPram,
+											unsigned char& funcCode);
+
+	void createWriteListener();
 
 	void subscribeDeviceListener(const std::string stTopic);
 
-	std::string ltrim(const std::string& value);
-	std::string rtrim(const std::string& value);
-	std::string trim(const std::string& value);
-	void tokenize(const std::string& tokenizable_data,
-	                          std::vector<std::string>& tokenized_data,
-	                          const char delimeter);
+	bool isWriteInitialized() {return m_bIsWriteInitialized;}
+
+	void initWriteHandlerThreads();
 };
 
 

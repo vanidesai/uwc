@@ -41,10 +41,10 @@ using namespace logging::trivial;
 /// boost logger handle
 extern src::severity_logger< severity_level > lg;
 
-#ifdef LOG_ENABLED
+/*#ifdef LOG_ENABLED
 #define logMessage(level, msg, ...) BOOST_LOG_SEV(lg, level) << msg << ##__VA_ARGS__;
 #else
 #define logMessage(level, msg);
-#endif
+#endif*/
 
 #endif /* INCLUDE_BOOSTLOGGER_HPP_ */

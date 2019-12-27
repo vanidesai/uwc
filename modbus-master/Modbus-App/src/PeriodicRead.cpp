@@ -17,6 +17,9 @@
 #include <ctime>
 #include <chrono>
 
+/// flag to check thread stop condition
+std::atomic<bool> g_stopThread;
+
 extern "C" {
 	#include <safe_lib.h>
 }
@@ -80,7 +83,7 @@ void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_s
 
 	{
 		std::stringstream ss;
-		ss << p1.time_since_epoch().count();
+		ss << std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count();
 		a_sUsec.insert(0, ss.str());
 	}
 
@@ -92,6 +95,91 @@ void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_s
 		ss << (unsigned long long)(((unsigned long long)(a_objReqData.getDataPoint().getMyRollID()) << 48) | u64);
 		a_sTxID.insert(0, ss.str());
 	}
+}
+
+std::string CPeriodicReponseProcessor::swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap, bool a_bIsWordSwap)
+{
+	auto numbytes = vt.size();
+	if(0 == numbytes)
+	{
+		return NULL;
+	}
+	for (auto a: vt)
+	{
+		std::cout << (int)a << " ";
+	}
+
+	auto iPosByte1 = 1, iPosByte2 = 0;
+	auto iPosWord1 = 0, iPosWord2 = 1;
+
+	if(true == a_bIsByteSwap)
+	{
+		iPosByte1 = 0; iPosByte2 = 1;
+	}
+	if(true == a_bIsWordSwap)
+	{
+		iPosWord1 = 1; iPosWord2 = 0;
+	}
+
+	static const char* digits = "0123456789ABCDEF";
+	std::string sVal(numbytes*2+2,'0');
+	int i = 0;
+	sVal[i++] = '0'; sVal[i++] = 'x';
+	int iCurPos = 0;
+	while(numbytes)
+	{
+		if(numbytes >= 4)
+		{
+			auto byte1 = vt[iCurPos + iPosWord1*2 + iPosByte1];
+			auto byte2 = vt[iCurPos + iPosWord1*2 + iPosByte2];
+			auto byte3 = vt[iCurPos + iPosWord2*2 + iPosByte1];
+			auto byte4 = vt[iCurPos + iPosWord2*2 + iPosByte2];
+			numbytes = numbytes - 4;
+			iCurPos = iCurPos + 4;
+
+			sVal[i] = digits[(byte1 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte1 & 0x0F];
+			i += 2;
+
+			sVal[i] = digits[(byte2 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte2 & 0x0F];
+			i += 2;
+
+			sVal[i] = digits[(byte3 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte3 & 0x0F];
+			i += 2;
+
+			sVal[i] = digits[(byte4 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte4 & 0x0F];
+			i += 2;
+		}
+		else if(numbytes >= 2)
+		{
+			auto byte1 = vt[iCurPos + iPosByte1];
+			auto byte2 = vt[iCurPos + iPosByte2];
+			numbytes = numbytes - 2;
+			iCurPos = iCurPos + 2;
+
+			sVal[i] = digits[(byte1 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte1 & 0x0F];
+			i += 2;
+
+			sVal[i] = digits[(byte2 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte2 & 0x0F];
+			i += 2;
+		}
+		else
+		{
+			auto byte1 = vt[iCurPos];
+			--numbytes;
+			++iCurPos;
+
+			sVal[i] = digits[(byte1 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte1 & 0x0F];
+			i += 2;
+		}
+	}
+	return sVal;
 }
 
 BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp)
@@ -128,7 +216,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 			std::vector<uint8_t> vt = a_stResp.m_Value;
 			if(0 != vt.size())
 			{
-				static const char* digits = "0123456789ABCDEF";
+				/*static const char* digits = "0123456789ABCDEF";
 				std::string sVal(vt.size()*2+2,'0');
 				int i = 0;
 				sVal[i++] = '0'; sVal[i++] = 'x';
@@ -153,7 +241,10 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 					sVal[i] = digits[(cLSB >> 4) & 0x0F];
 					sVal[i+1] = digits[cLSB & 0x0F];
 					i += 2;
-				}
+				}*/
+				std::string sVal = swapConversion(vt,
+						a_objReqData.getDataPoint().getDataPoint().getAddress().m_bIsByteSwap,
+						a_objReqData.getDataPoint().getDataPoint().getAddress().m_bIsWordSwap);
 
 				msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(sVal.c_str());
 				msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
@@ -178,8 +269,8 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 	}
     catch(const std::exception& e)
 	{
-		logMessage(debug,"::Exception is raised. "<<e.what());
-    	bRetValue = false;
+    	BOOST_LOG_SEV(lg, debug) << __func__ << " Exception is raised:" << e.what();
+		bRetValue = false;
 	}
 
 	return bRetValue;
@@ -196,7 +287,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 		
 		if(FALSE == prepareResponseJson(&g_msg, objReqData, a_stResp))
 		{
-			logMessage(info,"Error in preparing response");
+			BOOST_LOG_SEV(lg, info) << __func__ << " Error in preparing response";
 			return FALSE;
 		}
 		else
@@ -224,7 +315,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 	}
 	catch(const std::exception& e)
 	{
-		logMessage(debug,"Exception::" << __func__ << ": " << e.what());
+		BOOST_LOG_SEV(lg, debug) << __func__ << " Error: " << e.what();
 		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what() << std::endl;
 	}
 
@@ -252,7 +343,7 @@ eMbusStackErrorCode CPeriodicReponseProcessor::CPeriodicReponseProcessor::respPr
 {
 	eMbusStackErrorCode eRetType = MBUS_STACK_NO_ERROR;
 
-	while(1)
+	while(false == g_stopThread.load())
 	{
 
 		/// iterate Queue one by one to send message on Pl-bus
@@ -328,7 +419,7 @@ eMbusStackErrorCode CPeriodicReponseProcessor::CPeriodicReponseProcessor::respPr
 #ifdef PERFTESTING
 				other_status++;
 #endif
-				logMessage(info, "Exception in sendReadPeriodicResponseThread ::" << __func__ << ": " << e.what());
+				BOOST_LOG_SEV(lg, info) << __func__ << " Exception:" << e.what();
 				cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what() << std::endl;
 				//return FALSE;
 			}
@@ -352,7 +443,7 @@ bool CPeriodicReponseProcessor::pushToQueue(struct stStackResponse &stStackResNo
 	}
 	catch(const std::exception& e)
 	{
-		logMessage(warning, "Exception CPeriodicReponseProcessor ::" << __func__ << ": " << e.what();)
+		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CPeriodicReponseProcessor:" << e.what();
 	}
 
 	return false;
@@ -370,7 +461,7 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 	}
 	catch(const std::exception& e)
 	{
-		logMessage(warning, "Exception CPeriodicReponseProcessor ::" << __func__ << ": " << e.what())
+		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CPeriodicReponseProcessor:" << e.what();
 	}
 
 	return false;
@@ -429,7 +520,7 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 	}
 	catch(const std::exception& e)
 	{
-		logMessage(warning,"Exception is raised. "<<e.what());
+		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CPeriodicReponseProcessor:" << e.what();
 	}
 
 }
@@ -470,7 +561,7 @@ CPeriodicReponseProcessor::CPeriodicReponseProcessor() : m_bIsInitialized(false)
 	}
 	catch(const std::exception& e)
 	{
-		logMessage(warning,"Exception CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what());
+		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate instance: Exception:" << e.what();
 		std::cout << "\nException CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
@@ -498,7 +589,7 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 	}
 	catch(const std::exception& e)
 	{
-		logMessage(warning,"Exception CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what());
+		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate instance: Exception:" << e.what();
 		std::cout << "\nException CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
@@ -579,7 +670,7 @@ CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
 	}
 	catch(const std::exception& e)
 	{
-		logMessage(warning,"Exception CRequestInitiator ::" << __func__ << ": Unable to initiate instance: " << e.what());
+		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate instance: Exception:" << e.what();
 		std::cout << "\nException CRequestInitiator ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
@@ -786,6 +877,7 @@ bool CTimeMapper::insert(uint32_t a_uTime, CRefDataForPolling &a_oPointD)
 	catch (exception &e)
 	{
 		//std::cout << "Time map insert failed: " << a_uTime << ", " << a_sHID << " : " << e.what() << endl;
+		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CTimeMapper:" << e.what() << ", Time: " << a_uTime << ", Point: " << a_oPointD.getDataPoint().getID();
 		bRet = false;
 	}
 	return bRet;
@@ -843,6 +935,7 @@ bool CTimeRecord::add(CRefDataForPolling &a_oPoint)
 	catch (exception &e)
 	{
 		//std::cout << "TimeRecord insert failed: " << a_sHID << " : " << e.what() << endl;
+		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CTimeRecord:" << e.what() << ", Point: " << a_oPoint.getDataPoint().getID();
 		bRet = false;
 	}
 	return bRet;

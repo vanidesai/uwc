@@ -17,6 +17,7 @@
 #include "ZmqHandler.hpp"
 #include "PeriodicReadFeature.hpp"
 #include "PublishJson.hpp"
+#include "ConfigManager.hpp"
 
 class CDeviceInfo_ut : public ::testing::Test {
 protected:

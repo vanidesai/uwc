@@ -50,7 +50,8 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint16_t  u16Quantity)
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
-	if(NULL == std::getenv("WRITE_RESPONSE_TOPIC"))
+	const char* pcWriteRespTopic = std::getenv("WRITE_RESPONSE_TOPIC");
+	if(NULL == pcWriteRespTopic)
 	{
 		BOOST_LOG_SEV(lg, debug) << __func__ << " WRITE_RESPONSE_TOPIC not set";
 		return;
@@ -81,7 +82,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 			BOOST_LOG_SEV(lg, info) <<"Info::" <<__func__<< " " << " NULL Pointer is Received from stack";
 		}
 
-		std::string topic = std::getenv("WRITE_RESPONSE_TOPIC");
+		std::string topic(pcWriteRespTopic);
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(topic);
 
 		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, topic);

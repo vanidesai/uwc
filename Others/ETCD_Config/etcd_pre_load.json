@@ -31,7 +31,7 @@
 	]
 },
 "/Modbus-RTU-Master/config/RTU_Master_Config":{
-"buad_rate" : 9600,
+"baud_rate" : 9600,
 "parity" : 0,
 "port_name" : "/dev/ttyUSB0",
 "stop_bit" : 2

@@ -402,6 +402,7 @@ uint8_t DecodeRxMBusPDU(uint8_t *ServerReplyBuff,
 	uint8_t u8Count = 0;
 	stEndianess_t stEndianess = { 0 };
 	eModbusFuncCode_enum eMbusFunctionCode = MBUS_MIN_FUN_CODE;
+	uint8_t bIsDone = 0;
 
 	eMbusFunctionCode = (eModbusFuncCode_enum)pstMBusRequesPacket->m_u8FunctionCode;
 
@@ -431,14 +432,14 @@ uint8_t DecodeRxMBusPDU(uint8_t *ServerReplyBuff,
 		case READ_WRITE_MUL_REG :
 			pstMBusRequesPacket->m_stMbusRxData.m_u8Length = ServerReplyBuff[u16BuffInex++];
 			u16TempBuffInex = u16BuffInex;
-			while(1)
+			while(0 == bIsDone)
 			{
 				stEndianess.stByteOrder.u8SecondByte = ServerReplyBuff[u16BuffInex++];
 				stEndianess.stByteOrder.u8FirstByte = ServerReplyBuff[u16BuffInex++];
 				pstMBusRequesPacket->m_stMbusRxData.m_au8DataFields[u8Count++] = stEndianess.stByteOrder.u8FirstByte;
 				pstMBusRequesPacket->m_stMbusRxData.m_au8DataFields[u8Count++] = stEndianess.stByteOrder.u8SecondByte;
 				if(pstMBusRequesPacket->m_stMbusRxData.m_u8Length <= (u16BuffInex - u16TempBuffInex))
-					break;
+					bIsDone = 1;
 			}
 			break;
 
@@ -1339,7 +1340,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 			break;
 		}
 
-		if(recv(sockfd, ServerReplyBuff, sizeof(ServerReplyBuff), 0) < 0)
+		if(recv(sockfd, ServerReplyBuff, sizeof(ServerReplyBuff), 0) <= 0)
 		{
 			u8ReturnType = STACK_ERROR_RECV_FAILED;
 			/// closing socket on error.

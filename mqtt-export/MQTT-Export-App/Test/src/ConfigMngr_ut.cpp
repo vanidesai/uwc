@@ -12,6 +12,15 @@
 
 using namespace std;
 
+void ConfigManager_ut::SetUp() {
+	// Setup code
+}
+
+void ConfigManager_ut::TearDown() {
+	// TearDown code
+}
+
+
 /***************************getETCDValuebyKey()*********************************/
 
 /* Key is valid */
@@ -65,6 +74,57 @@ TEST(ConfigManager_ut, getETCDValuebyKey_ValueExist)
 	}
 }
 
+/* Environment variable "AppName" is not set */
+TEST(ConfigManager_ut, getETCDValuebyKey_EnvVarNotSet)
+{
+	try
+	{
+		//Unset env var "AppName"
+		//if( "MQTT-Export" == getenv("AppName"))
+		if( !strcmp("MQTT-Export", getenv("AppName")) )
+		{
+			unsetenv("AppName");
+		}
+
+		char* cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("config");
+
+		EXPECT_EQ(NULL, cEtcdValue);
+
+		setenv("AppName", "MQTT-Export", 1);
+	}
+
+	catch(exception &e)
+	{
+		cout<<e.what();
+		EXPECT_EQ(1, 2); //Error occurs.
+	}
+}
+
+/* Environment variable "AppName" is empty */
+TEST(ConfigManager_ut, getETCDValuebyKey_EnvVarEmpty)
+{
+	try
+	{
+		//re-set env var "AppName" to empty
+		if( !strcmp("MQTT-Export", getenv("AppName")) )
+		{
+			setenv("AppName", "", 1);
+		}
+
+		char* cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("config");
+
+		EXPECT_EQ(NULL, cEtcdValue);
+
+		setenv("AppName", "MQTT-Export", 1);
+	}
+
+	catch(exception &e)
+	{
+		cout<<e.what();
+		EXPECT_EQ("", e.what()); //Error occurs.
+	}
+}
+
 /* Key is NULL */
 TEST(ConfigManager_ut, getETCDValuebyKey_KeyNULL)
 {
@@ -72,20 +132,12 @@ TEST(ConfigManager_ut, getETCDValuebyKey_KeyNULL)
 	{
 		char* cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(NULL);
 
-		if(NULL == cEtcdValue)
-		{
-			EXPECT_EQ(1, 1);
-		}
-		else
-		{
-			EXPECT_EQ(2, 1); //Test Fails
-		}
+		EXPECT_EQ(NULL, cEtcdValue);
 	}
 
 	catch(exception &e)
 	{
-		cout<<e.what();
-		EXPECT_EQ(1, 2); //Error occurs.
+		EXPECT_EQ("", e.what()); //Error occurs.
 	}
 }
 
@@ -160,9 +212,9 @@ TEST(ConfigManager_ut, registerCallbackOnChangeKey_InValidKey)
 }
 
 
-/***************************etcdOnChangeKeyCb()*********************************/
+/***************************registerCallbackOnChangeDir()*********************************/
 /* Valid Argument */
-TEST(ConfigManager_ut, etcdOnChangeKeyCb_ValidArg)
+TEST(ConfigManager_ut,registerCallbackOnChangeDir_ValidArg)
 {
 	try
 	{
@@ -177,20 +229,28 @@ TEST(ConfigManager_ut, etcdOnChangeKeyCb_ValidArg)
 	}
 }
 
-///* Invalid Argument */
-//TEST(ConfigManager_ut, etcdOnChangeKeyCb_InValidArg)
-//{
-//	try
-//	{
-//		etcdOnChangeKeyCb(NULL, NULL);
-//		EXPECT_EQ(1, 1);
-//	}
-//	catch(exception &e)
-//	{
-//		cout<<e.what();
-//		EXPECT_EQ(1, 2); //Error occurs.
-//	}
-//}
+TEST(ConfigManager_ut, etcdOnChangeKeyCb_InValidArg)
+{
+	try
+	{
+		etcdOnChangeKeyCb(NULL, NULL);
+		// register callback for dynamic ETCD change
+		const char* env_appname = std::getenv("AppName");
+		if(env_appname == NULL) {
+			std::cout << __func__ << " AppName Environment Variable is not set";
+			EXPECT_EQ(1, 1);
+			return;
+		}
+		std::string AppName(env_appname);
 
-
-
+		string keyToMonitor = "/" + AppName + "/";
+		CfgManager::Instance().registerCallbackOnChangeDir(const_cast<char *>("MQTT-Export"));
+		CfgManager::Instance().registerCallbackOnChangeKey(const_cast<char *>("MQTT-Export"));
+		EXPECT_EQ(1, 1);
+	}
+	catch(exception &e)
+	{
+		cout<< __func__ << " Exception : " << e.what() << std::endl;
+		EXPECT_EQ(1, 2); //Error occurs.
+	}
+}

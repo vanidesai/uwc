@@ -303,6 +303,12 @@ void postMsgstoMQTT() {
 			CfgManager::Instance().getEnvConfig().get_topics_from_env("sub");
 
 	for (auto topic : vFullTopics) {
+
+		if(topic.empty()) {
+			std::cout << __func__ << " found empty MQTT subscriber topic" << std::endl;
+			continue;
+		}
+
 		std::size_t pos = topic.find('/');
 		if (std::string::npos != pos) {
 			std::string subTopic(topic.substr(pos + 1));
@@ -404,7 +410,13 @@ int main(int argc, char *argv[]) {
 
 	try {
 		/// register callback for dynamic ETCD change
-		std::string AppName(APP_NAME);
+		const char* env_appname = std::getenv("AppName");
+		if(env_appname == NULL) {
+			std::cout << __func__ << " AppName Environment Variable is not set";
+			return -1;
+		}
+		std::string AppName(env_appname);
+
 		string keyToMonitor = "/" + AppName + "/";
 		CfgManager::Instance().registerCallbackOnChangeDir(const_cast<char *>(keyToMonitor.c_str()));
 		CfgManager::Instance().registerCallbackOnChangeKey(const_cast<char *>(keyToMonitor.c_str()));

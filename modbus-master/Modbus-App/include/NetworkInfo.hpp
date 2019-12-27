@@ -40,6 +40,8 @@ namespace network_info
 		int m_iAddress;
 		int m_iWidth;
 		eEndPointType m_eType;
+		bool m_bIsByteSwap;
+		bool m_bIsWordSwap;
 	};
 	struct stPollingData
 	{

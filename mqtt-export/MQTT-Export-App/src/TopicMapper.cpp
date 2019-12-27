@@ -42,6 +42,14 @@ void CTopicMapper::ParseJson() {
 			return;
 		}
 
+		if(! cJSON_HasObjectItem(root, "Mapping")) {
+			std::cout << __func__ << " Topic json does not have 'mappings' key\n";
+			if (NULL != root)
+				free(root);
+
+			return;
+		}
+
 		// Now let's iterate through the Mapping array
 		cJSON *mappings = cJSON_GetObjectItem(root, "Mapping");
 		if(NULL == mappings)
@@ -129,9 +137,10 @@ CTopicMapper::~CTopicMapper() {
 std::vector<std::string> CTopicMapper::GetMqttTopics()
 {
 	std::vector<std::string> allMQTTTopics;
-	for(auto topic : m_MQTTopics)
-		allMQTTTopics.push_back(topic.first);
-
+	for(auto topic : m_MQTTopics) {
+		if(! topic.first.empty())
+			allMQTTTopics.push_back(topic.first);
+	}
 	return allMQTTTopics;
 }
 

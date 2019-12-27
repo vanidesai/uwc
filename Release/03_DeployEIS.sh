@@ -54,7 +54,7 @@ check_for_errors()
 checkrootUser()
 {
    echo "Checking for root user..."    
-   if [[ "$EUID" -ne "0" ]]; then
+   if [[ $EUID -ne 0 ]]; then
     	echo "${RED}This script must be run as root.${NC}"
 	echo "${GREEN}E.g. sudo ./<script_name>${NC}"
     	exit 1
@@ -127,38 +127,48 @@ docker_compose_verify()
     return 0
 }
 
-
 #------------------------------------------------------------------
-# eisProvision
+# eisImageBuild
 #
 # Description:
-#        Reads certificates and save it securely by storing it in the Hashicorp Vault
+#        the Edge Insights Software is installed as a systemd service so that it comes up automatically
+#        on machine boot and starts the analytics process.
 # Return:
 #        None
 # Usage:
-#        eisProvision
-#------------------------------------------------------------------
-eisProvision()
+#        eisImageBuild
+#-----------------------------------------------------------------
+eisImageBuild()
 {
-    if [ -d "${eis_working_dir}/provision/" ];then
-        cd "${eis_working_dir}/provision/"
+    cd "${eis_working_dir}"
+    docker-compose up --build -d
+    if [ "$?" -eq "0" ];then
+	echo "*****************************************************************"
+        echo "${GREEN}Installed Edge Insights Software 2.1 successfully.${NC}"
     else
-        echo "${RED}ERROR: ${eis_working_dir}/provision/ is not present.${NC}"
-        exit 1 # terminate and indicate error
+        echo "${RED}Edge Insights Software 2.1 install failed. Please check logs.${NC}"
+	echo "*****************************************************************"
+        exit 1
     fi
-
-    ./provision_eis.sh ../docker-compose.yml
-    check_for_errors "$?" "Provisioning is failed. Please check logs" \
-                    "${GREEN}Provisioning is done successfully.${NC}"
-    echo "${GREEN}>>>>>${NC}"
-    echo "${GREEN}For container deployement,run 03_DeployEIS.sh script"
     return 0
 }
+
+verifyContainer()
+{
+    cd "${eis_working_dir}"
+    echo "*****************************************************************"
+    echo "${GREEN}Below is the containers deployed status.${NC}"
+    echo "*****************************************************************"
+    docker ps
+    return 0
+}
+
 checkrootUser
 checkInternetConnection
 docker_verify
 docker_compose_verify
-eisProvision
+eisImageBuild
+verifyContainer
 
 cd "${Current_Dir}"
 exit 0

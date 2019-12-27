@@ -535,7 +535,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 
 	stMBusRequesPacket.m_u16Quantity = u16NumOfcoils;
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -646,7 +646,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 
 	stMBusRequesPacket.m_u16Quantity = u16NumOfDI;
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -755,7 +755,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 
 	stMBusRequesPacket.m_u16Quantity = u16NumberOfRegisters;
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -865,7 +865,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 
 	stMBusRequesPacket.m_u16Quantity = u16NumberOfRegisters;
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -971,7 +971,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId;
 #endif
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -1076,7 +1076,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
 	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
 #endif
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -1170,7 +1170,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 
 	while(u8ByteCount > 0 && NULL != pu8OutputVal)
 	{
-		if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+		if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 		{
 			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 		}
@@ -1197,7 +1197,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 	//stMBusRequesPacket.m_u8ReceivedDestination = *pu8SerIpAddr;
 	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
 #endif
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -1306,13 +1306,17 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 
 	while(u16NumOfReg > 0 && NULL != pu16OutputVal)
 	{
-		if(u16PacketIndex+1 > TCP_MODBUS_ADU_LENGTH)
+		if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 		{
 			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 		}
 		stEndianess.u16word = *pu16OutputVal;
 		stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 					stEndianess.stByteOrder.u8SecondByte;
+		if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+		{
+			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
+		}
 		stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 					stEndianess.stByteOrder.u8FirstByte;
 		pu16OutputVal++;
@@ -1323,7 +1327,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 
 	stMBusRequesPacket.pFunc = pFunCallBack;
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -1481,7 +1485,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
 #endif
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -1649,7 +1653,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
 #endif
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -1779,13 +1783,17 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 
 	while(u16NoOfWriteReg > 0 && NULL != pu8OutputVal)
 	{
-		if(u16PacketIndex+1 > TCP_MODBUS_ADU_LENGTH)
+		if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 		{
 			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 		}
 		stEndianess.u16word = *pu16OutputVal;
 		stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 					stEndianess.stByteOrder.u8SecondByte;
+		if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+		{
+			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
+		}
 		stMBusRequesPacket.m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 					stEndianess.stByteOrder.u8FirstByte;
 		pu16OutputVal++;
@@ -1812,7 +1820,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
 #endif
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
@@ -1900,12 +1908,6 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 		return STACK_ERROR_INVALID_INPUT_PARAMETER;
 	}
 
-	/// Validate object id
-	if((u8ObjectId < MIN_VALUE) || (u8ObjectId > MAX_VALUE))
-	{
-		return STACK_ERROR_INVALID_INPUT_PARAMETER;
-	}
-
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	/// here 5 = len of trans ID + fun code + MEI + devId + ObjeId
 	u16PacketIndex = CreateHeaderForDevIdentificationModbusRequest(u8UnitId,
@@ -1948,7 +1950,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	stMBusRequesPacket.m_u8ReceivedDestination = u8UnitId; 
 #endif
 
-	if(u16PacketIndex > TCP_MODBUS_ADU_LENGTH)
+	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}

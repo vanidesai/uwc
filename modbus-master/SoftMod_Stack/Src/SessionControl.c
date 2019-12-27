@@ -59,7 +59,7 @@ void* SessionControlThread(void* threadArg)
 	i32MsgQueIdSC = *((int32_t *)threadArg);
 
 
-	while (1)
+	while (NULL != threadArg)
 	{
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
 		memset(&stPostThreadMsg,00,sizeof(stPostThreadMsg));
@@ -199,7 +199,7 @@ void* SessionControlThread(void* threadArg)
 	i32MsgQueIdSC = *((int32_t *)threadArg);
 
 
-	while (1)
+	while (NULL != threadArg)
 	{
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
 		if(OSAL_Get_Message(&stScMsgQue, i32MsgQueIdSC))
@@ -241,7 +241,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 
 	i32MsgQueIdSSTC = *((int32_t *)threadArg);
 
-	while (1)
+	while (NULL != threadArg)
 	{
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
 		i32RetVal = 0;
@@ -264,7 +264,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 
 			if(u32TimeCount >= (ModbusMasterConfig.m_u16TcpSessionTimeout * 10))
 			{
-				//close(i32sockfd);
+				close(i32sockfd);
 				Osal_Wait_Mutex (LivSerSesslist_Mutex,0);
 				if(NULL != pstLivSerSesslist)
 				{

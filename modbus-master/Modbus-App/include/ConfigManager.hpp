@@ -18,7 +18,6 @@
 #include "eis/config_manager/config_manager.h"
 #include <iostream>
 
-#define APP_NAME getenv("AppName")
 #define DIR_PATH "/config"
 
 using namespace eis::config_manager;
@@ -75,9 +74,6 @@ public:
 	}
 
 private:
-
-	/// True for success and false for failure
-	bool isClientCreated;
 
 	/// Local object for EIS Config Manager
 	EnvConfig env_config;

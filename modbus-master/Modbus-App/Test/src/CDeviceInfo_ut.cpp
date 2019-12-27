@@ -28,10 +28,14 @@ void CDeviceInfo_ut::TearDown()
 /*test 01:: this test checks whether the device_info attribute is present or not
  * and if it is unavailable it throws the exceptions accorindingly */
 
-#ifdef TO_BE_UPDATED_LATER
+
 TEST_F(CDeviceInfo_ut, device_info_unavailable)
 {
-	baseNode = CommonUtils::loadYamlFile("iou_device2.yml");
+	std::string path("/Device_Config/iou_device1.yml");
+	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
+	std::string sYamlStr(cEtcdValue);
+	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
+	//baseNode = CommonUtils::loadYamlFile("iou_device1.yml");
 	for( auto test : baseNode)
 	{
 
@@ -56,17 +60,20 @@ TEST_F(CDeviceInfo_ut, device_info_unavailable)
 			}
 		}
 	}
-}
-#endif
 
+}
 /*test 02:: this test checks whether the name key is present in the device_info or not
  * and if it is unavailable it throws the exceptions accordingly */
 
-#ifdef TO_BE_UPDATED_LATER
 TEST_F(CDeviceInfo_ut, device_info_name_unavailable)
 {
 
-	baseNode = CommonUtils::loadYamlFile("iou_device2.yml");
+	std::string path("/Device_Config/iou_device.yml");
+	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
+	std::string sYamlStr(cEtcdValue);
+	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
+
+	//baseNode = CommonUtils::loadYamlFile("iou_device.yml");
 	for( auto test : baseNode)
 	{
 		if(test.first.as<std::string>() == "device_info")
@@ -74,9 +81,6 @@ TEST_F(CDeviceInfo_ut, device_info_name_unavailable)
 			//network_info::CDeviceInfo Cdeviceinfo_obj;
 			std::string m_sName;
 			//baseNode.remove("device_info");
-
-			cout<< baseNode <<endl;
-
 
 			try
 			{
@@ -98,22 +102,23 @@ TEST_F(CDeviceInfo_ut, device_info_name_unavailable)
 		}
 	}
 }
-#endif
 
 /*test 03:: this test whether datapoints key is available or not in the yml file and
   if it is unavailable then it throws exceptons accordingly
  */
 
-#ifdef TO_BE_UPDATED_LATER
 TEST_F(CDeviceInfo_ut, deviceInfo_bsent_datapoints)
 {
-	baseNode = CommonUtils::loadYamlFile("iou_device2.yml");
+	std::string path("/Device_Config/iou_device.yml");
+	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
+	std::string sYamlStr(cEtcdValue);
+	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
+	//baseNode = CommonUtils::loadYamlFile("iou_device2.yml");
 	for( auto test : baseNode)
 	{
 		if(test.first.as<std::string>() == "pointlist")
 		{
 			YAML::Node node = CommonUtils::loadYamlFile(test.second.as<std::string>());
-			//cout<< node <<endl;
 			node.remove("datapoints");
 			for (auto it : node)
 			{
@@ -129,20 +134,20 @@ TEST_F(CDeviceInfo_ut, deviceInfo_bsent_datapoints)
 							if(0 == Cdeviceinfo_obj.addDataPoint(datapoint_obj))
 							{
 								BOOST_LOG_SEV(lg, info) << __func__ << " : Added point with id: " << datapoint_obj.getID();
-								cout<< "inside if"<<endl;
+
 							}
 							else
 							{
 								BOOST_LOG_SEV(lg, error) << __func__ << " : Ignored point with id : " << datapoint_obj.getID();
-								cout<< "Inside else"<<endl;
+
 							}
 
 						}
 					}
 					catch(YAML::Exception &e)
 					{
-						//BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
-						ASSERT_EQ(e.what(), "name key not found");
+
+						EXPECT_EQ("name key not found",(string)e.what());
 
 
 					}
@@ -152,42 +157,35 @@ TEST_F(CDeviceInfo_ut, deviceInfo_bsent_datapoints)
 		}
 	}
 }
-#endif
+
 
 /**test 04: this unit test checks the name of the device is correct in the yml file .**************/
 
-#if 0
 TEST_F(CDeviceInfo_ut, device_info_name_available)
 {
+	std::string path("/Device_Config/iou_device1.yml");
+	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
+	std::string sYamlStr(cEtcdValue);
+	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
 
-	baseNode = CommonUtils::loadYamlFile("iou_device1.yml");
+	//baseNode = CommonUtils::loadYamlFile("iou_device1.yml");
 	for( auto test : baseNode)
 	{
 		if(test.first.as<std::string>() == "device_info")
 		{
 			//network_info::CDeviceInfo Cdeviceinfo_obj;
 			std::string m_sName;
-			//baseNode.remove("device_info");
-
-			//cout<< baseNode <<endl;
-
 
 			try
 			{
 				Cdeviceinfo_obj.build(baseNode, Cdeviceinfo_obj);
 				m_sName = test.second["name"].as<std::string>();
-				cout<<"=======name======="<<endl;
-				cout<< m_sName<<endl;
-				cout<<"=======name======="<<endl;
 
 			}
 			catch(YAML::Exception &e)
 			{
-				BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
-				cout<<endl<<"============================="<<endl;
-				cout<<e.what();
-				cout<<endl<<"============================="<<endl;
-				//EXPECT_EQ(e.what(),"name key not found");
+
+				EXPECT_EQ("name key not found", (string)e.what());
 				/****** Exception is trown but not showing the proper message so the EXPECT or ASSERT is not used
 				 to check the functionality for the unit test*********/
 
@@ -195,36 +193,38 @@ TEST_F(CDeviceInfo_ut, device_info_name_available)
 		}
 	}
 }
-#endif
+
 /*
  test 05:: Test the behaviour of addDataPoint() function when point name is already present in
   datapoint list.
  Expected: It should return "-1".
  */
-#ifdef TO_BE_UPDATED_LATER
-TEST_F(CDeviceInfo_ut, addDataPoint_returnVal)
-{
-	baseNode = CommonUtils::loadYamlFile("iou_datapoints_3.yml");
-
-	for( auto basenode_it : baseNode)
-	{
-
-		if(basenode_it.second.IsSequence() && basenode_it.first.as<std::string>() == "datapoints")
-		{
-			const YAML::Node& DataPoints =  basenode_it.second;
-
-			for( auto DataPoints_It : DataPoints)
-			{
-				network_info::CDataPoint::build(DataPoints_It, datapoint_obj);
-				int temp = Cdeviceinfo_obj.addDataPoint(datapoint_obj);
-			}
-		}
-	}
-
-	int temp = Cdeviceinfo_obj.addDataPoint(datapoint_obj);
-	EXPECT_EQ(-1, temp);
-}
-#endif
+//TEST_F(CDeviceInfo_ut, addDataPoint_returnVal)
+//{
+//	std::string path("/Device_Config/iou_datapoints_3.yml");
+//	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
+//	std::string sYamlStr(cEtcdValue);
+//	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
+//	//baseNode = CommonUtils::loadYamlFile("iou_datapoints_3.yml");
+//
+//	for( auto basenode_it : baseNode)
+//	{
+//
+//		if(basenode_it.second.IsSequence() && basenode_it.first.as<std::string>() == "datapoints")
+//		{
+//			const YAML::Node& DataPoints =  basenode_it.second;
+//
+//			for( auto DataPoints_It : DataPoints)
+//			{
+//				network_info::CDataPoint::build(DataPoints_It, datapoint_obj);
+//				int temp = Cdeviceinfo_obj.addDataPoint(datapoint_obj);
+//			}
+//		}
+//	}
+//
+//	int temp = Cdeviceinfo_obj.addDataPoint(datapoint_obj);
+//	EXPECT_EQ(-1, temp);
+//}
 
 /*test 06:: Behaviour of build() when there are duplicate IDs present in device list */
 

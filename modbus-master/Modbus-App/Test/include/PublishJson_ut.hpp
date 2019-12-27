@@ -8,35 +8,39 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#ifndef TEST_INCLUDE_MODBUSWRITEHANDLER_UT_H_
-#define TEST_INCLUDE_MODBUSWRITEHANDLER_UT_H_
+#ifndef TEST_INCLUDE_PUBLISHJSON_UT_HPP_
+#define TEST_INCLUDE_PUBLISHJSON_UT_HPP_
 
-#include <stdbool.h>
-#include "gtest/gtest.h"
-#include "NetworkInfo.hpp"
+
+#include <mutex>
+#include <string.h>
+#include <stdlib.h>
+#include "PublishJson.hpp"
 #include "ZmqHandler.hpp"
 #include "PeriodicReadFeature.hpp"
-#include "PublishJson.hpp"
-#include "yaml-cpp/eventhandler.h"
-#include "yaml-cpp/yaml.h"
-#include "ConfigManager.hpp"
-#include "utils/YamlUtil.hpp"
-
-#include "ModbusWriteHandler.hpp"
+#include "PeriodicRead.hpp"
+#include "NetworkInfo.hpp"
+#include "Common.hpp"
+#include "API.h"
+#include "gtest/gtest.h"
 
 
-class ModbusWriteHandler_ut : public ::testing::Test {
+
+
+class PublishJson_ut : public::testing::Test
+{
 protected:
 	virtual void SetUp();
 	virtual void TearDown();
 
 public:
-	const string topic = "MQTT-EXPORT/PL0_flowmeter1_write,MQTT-EXPORT/PL0_flowmeter2_write";
-	string msg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
-	string str = "data";
-	uint8_t* target = NULL;
+
+	msg_envelope_t* msg;
+	msg_envelope_t* g_msg = NULL;
+	stStackResponse res;
+
+
 };
 
 
-
-#endif /* TEST_INCLUDE_MODBUSWRITEHANDLER_UT_H_ */
+#endif /* TEST_INCLUDE_PUBLISHJSON_UT_HPP_ */

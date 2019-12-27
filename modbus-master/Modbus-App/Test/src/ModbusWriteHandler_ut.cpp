@@ -11,6 +11,8 @@
 
 #include "../include/ModbusWriteHandler_ut.h"
 
+extern int hex2bin(const std::string &src, int iOpLen, uint8_t* target);
+extern int char2int(char input);
 
 void ModbusWriteHandler_ut::SetUp()
 {
@@ -81,24 +83,24 @@ TEST_F(ModbusWriteHandler_ut, subscribeDeviceListener)
 }
 
 //test 02:: Check the instance type returned by function
-
+//#if 0
 TEST_F(ModbusWriteHandler_ut, ltrim)
 {
-	modWriteHandler::Instance().ltrim(str);
+	//modWriteHandler::Instance().ltrim(str);
 }
 
 //test 02:: Check the instance type returned by function
 
 TEST_F(ModbusWriteHandler_ut, rtrim)
 {
-	modWriteHandler::Instance().rtrim(str);
+	//modWriteHandler::Instance().rtrim(str);
 }
 
 //test 02:: Check the instance type returned by function
 
 TEST_F(ModbusWriteHandler_ut, trim)
 {
-	modWriteHandler::Instance().trim(str);
+	//modWriteHandler::Instance().trim(str);
 }
 
 //test 02:: Check the instance type returned by function
@@ -107,20 +109,9 @@ TEST_F(ModbusWriteHandler_ut, tokenize)
 {
 	std::vector<std::string> vec;
 	const char del;
-	modWriteHandler::Instance().tokenize(str, vec, del);
+	//modWriteHandler::Instance().tokenize(str, vec, del);
 }
-
-
-
-
-
-
-
-
-
-
-
-
+//#endif
 
 
 

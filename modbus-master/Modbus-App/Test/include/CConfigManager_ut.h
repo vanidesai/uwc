@@ -15,6 +15,10 @@
 #include <string.h>
 #include "ConfigManager.hpp"
 
+void etcdOnChangeKeyCb(char* key, char * val);
+void etcdOnChangeDirCb(char* key, char * val);
+//void CfgManager::registerCallbackOnChangeKey(char *key)
+
 
 class CConfigManager_ut : public::testing::Test
 {
@@ -23,6 +27,9 @@ protected:
 	virtual void TearDown();
 
 public:
+
+	std::string			Test_Str = "";
+	std::string			Expected_output = "";
 
 };
 

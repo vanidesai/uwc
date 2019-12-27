@@ -90,12 +90,9 @@ services:
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT-Export"
-      WRITE_RESPONSE_TOPIC: "PL0_flowmeter1_write_response"
-      SubTopics: "MQTT-Export/PL0_flowmeter1_write"
-      PL0_flowmeter1_write_cfg: "zmq_tcp,127.0.0.1:5858"
-      PubTopics: "PL0_flowmeter1,PL0_flowmeter1_write_response"
-      PL0_flowmeter1_cfg: "zmq_tcp,127.0.0.1:5656"
-      PL0_flowmeter1_write_response_cfg: "zmq_tcp,127.0.0.1:9999"
+      PubTopics: "PL0_flowmeter"
+      PL0_flowmeter_cfg: "zmq_tcp,127.0.0.1:1115"
+      
     user: ${EIS_UID}
 
   modbus-rtu-master:
@@ -123,12 +120,12 @@ services:
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT-Export"
-      WRITE_RESPONSE_TOPIC: "PL0_flowmeter1_write_response"
-      SubTopics: "MQTT-Export/PL0_flowmeter3_write"
-      PL0_flowmeter3_write_cfg: "zmq_tcp,127.0.0.1:8998"
-      PubTopics: "PL0_flowmeter3,PL0_flowmeter3_write_response"
-      PL0_flowmeter3_cfg: "zmq_tcp,127.0.0.1:6969"
-      PL0_flowmeter3_write_response_cfg: "zmq_tcp,127.0.0.1:3636"
+      PubTopics: "PL0_iou"
+      SubTopics: "MQTT-Export/PL0_iou_write"
+      PL0_iou_cfg: "zmq_tcp,127.0.0.1:3115"
+      PL0_iou_write_cfg: "zmq_tcp,127.0.0.1:1212"
+
+
     #user: ${EIS_UID}
     devices:
       - /dev:/dev
@@ -177,6 +174,10 @@ services:
       MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:1883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      SubTopics: "Modbus-TCP-Master/PL0_flowmeter1"
-      PL0_flowmeter1_cfg: "zmq_tcp,127.0.0.1:5656"
+      SubTopics: "Modbus-TCP-Master/PL0_flowmeter,Modbus-RTU-Master/PL0_iou"
+      PubTopics: "PL0_iou_write"
+      PL0_flowmeter_cfg: "zmq_tcp,127.0.0.1:1115"
+      PL0_iou_cfg: "zmq_tcp,127.0.0.1:3115"
+      PL0_iou_write_cfg: "zmq_tcp,127.0.0.1:1212"
+
     user: ${EIS_UID}

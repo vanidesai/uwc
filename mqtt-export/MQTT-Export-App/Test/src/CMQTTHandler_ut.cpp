@@ -17,6 +17,8 @@
 
 using namespace std;
 
+extern void postMsgsToEIS();
+
 void CMQTTHandler_ut::SetUp() {
 	// Setup code
 }
@@ -59,7 +61,7 @@ TEST_F(CMQTTHandler_ut, 2_manatory_param) {
 		CTopicMapper::getInstance();
 		CMQTTHandler::instance();
 
-		sleep(4);//need to wait till a request comes
+		system("mosquitto_pub -h localhost -t /iou/PL01/KeepAlive/write  -m \"{\"wellhead\": \"PL0\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"123466666\"}\"");
 		//publish MQTT message with subscribed topic
 		retVal = CMQTTHandler::instance().getSubMsgFromQ(recvdMsg);
 
@@ -83,12 +85,9 @@ TEST_F(CMQTTHandler_ut, 3_manatory_param) {
 
 		CTopicMapper::getInstance();
 		CEISMsgbusHandler::Instance();
-		CMQTTHandler::instance();
 
 		//publish MQTT message with subscribed topic
 		retVal = CMQTTHandler::instance().publish(g_msg.c_str(), topic.c_str());
-
-		sleep(2);
 
 		CMQTTHandler::instance().cleanup();
 		CEISMsgbusHandler::Instance().cleanup();

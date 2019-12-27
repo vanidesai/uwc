@@ -1,0 +1,115 @@
+---
+file:
+  version: "1.0.0"
+  author: "Intel"
+  date: "Sun Sep 1 13:34:13 PDT 2019"
+  description: "Data for Demo IOUnit data points"
+
+datapoints:
+- id: "Flow"
+  attributes:
+    type: "COIL"
+    addr: 1
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+   
+- id: "DP"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "LinePressure"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "Temperature"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "TodayVol"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "YesterdayVol"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "Time0"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "Time1"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "Time2"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "Time3"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "Time4"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "Time5"
+  attributes:
+    type: "COIL"
+    addr: 2
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: false

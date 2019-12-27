@@ -38,6 +38,9 @@ bool g_stop = false;
 // for boost logging
 extern src::severity_logger< severity_level > lg;
 
+/// flag to stop all running threads
+extern std::atomic<bool> g_stopThread;
+
 void populatePollingRefData()
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << "Start";
@@ -93,7 +96,7 @@ void populatePollingRefData()
 		catch(std::exception &e)
 		{
 			BOOST_LOG_SEV(lg, error) << __func__ << "Exception '" << e.what() << "' in processing " << a.getDataPoint().getID();
-			std::cout << e.what() << std::endl;
+			std::cout << __func__ << "Exception '" << e.what() << "' in processing " << a.getDataPoint().getID() << std::endl;
 		}
 	}
 
@@ -111,14 +114,16 @@ void signal_handler(int signo)
 
     std::unique_lock<std::mutex> lck(mtx);
 
-    // Set stop flag
-    g_stop = true;
-
+    /// stop all running threads
+    g_stopThread = true;
     BOOST_LOG_SEV(lg, debug) << __func__ << "End";
 
     // Signal main to stop
     cv.notify_one();
 }
+
+/// function to check Main thread exit
+bool exitMainThread(){return g_stopThread;};
 
 /**
  *
@@ -157,6 +162,13 @@ int main(int argc, char* argv[])
 	BOOST_LOG_SEV(lg, debug) << __func__ << "Start";
 	try
 	{
+		const char *pcAppName = std::getenv("AppName");
+		if(NULL == pcAppName)
+		{
+			std::cout << __func__ << ": AppName environment variable cannot be empty" << std::endl;
+			BOOST_LOG_SEV(lg, error) << __func__ << " : AppName environment variable cannot be empty";
+			exit(1);
+		}
 		initLogging();
 		logging::add_common_attributes();
 
@@ -187,7 +199,7 @@ int main(int argc, char* argv[])
 
 			BOOST_LOG_SEV(lg, info) << " Parsing RTU configuration..";
 			cout<<"Parsing RTU configuration.."<<endl;
-			if(!(isElementExistInJson(root,"buad_rate") && isElementExistInJson(root,"parity")
+			if(!(isElementExistInJson(root,"baud_rate") && isElementExistInJson(root,"parity")
 					&&isElementExistInJson(root,"stop_bit")))
 			{
 				BOOST_LOG_SEV(lg, error) << __func__ << " Required element are missing from RTU_Master_Config JSON.";
@@ -195,7 +207,7 @@ int main(int argc, char* argv[])
 				return -1;
 			}
 			string portName = cJSON_GetObjectItem(root,"port_name")->valuestring;
-			int baudrate = cJSON_GetObjectItem(root,"buad_rate")->valueint;
+			int baudrate = cJSON_GetObjectItem(root,"baud_rate")->valueint;
 			int parity = cJSON_GetObjectItem(root,"parity")->valueint;
 			int stopBit = cJSON_GetObjectItem(root,"stop_bit")->valueint;
 			cout<<"Done"<<endl;
@@ -247,18 +259,18 @@ int main(int argc, char* argv[])
 		}
 
 		// Initializing all the pub/sub topic base context for ZMQ
-		if(getenv("PubTopics") != NULL)
+		if(const char* pcPubTopic = std::getenv("PubTopics"))
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << " List of topic configured for Pub are :: " << getenv("PubTopics");
+			BOOST_LOG_SEV(lg, error) << __func__ << " List of topic configured for Pub are :: " << pcPubTopic;
 			bool bRes = zmq_handler::prepareCommonContext("pub");
 			if(!bRes)
 			{
 				BOOST_LOG_SEV(lg, error) << __func__ << " Context creation failed for pub topic ";
 			}
 		}
-		if(getenv("SubTopics") != NULL)
+		if(const char* pcSubTopic = std::getenv("SubTopics"))
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << " List of topic configured for Sub are :: " << getenv("SubTopics");
+			BOOST_LOG_SEV(lg, error) << __func__ << " List of topic configured for Sub are :: " << pcSubTopic;
 			bool bRetVal = zmq_handler::prepareCommonContext("sub");
 			if(!bRetVal)
 			{
@@ -266,7 +278,7 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		std::string AppName(APP_NAME);
+		std::string AppName(pcAppName);
 		std::string sDirToRegister = "/" + AppName + "/";
 
 		/// register callback for ETCD
@@ -285,12 +297,23 @@ int main(int argc, char* argv[])
 		cout << "Modbus container application is set to RTU mode.." << endl;
 #endif
 
+		if(false == modWriteHandler::Instance().isWriteInitialized())
+		{
+			BOOST_LOG_SEV(lg, debug) << __func__ << "modWriteHandler is not initialized";
+		}
+		else
+		{
+			BOOST_LOG_SEV(lg, debug) << __func__ << "modWriteHandler is properly initialized";
+			/// Write request initializer thread.
+			modWriteHandler::Instance().initWriteHandlerThreads();
+		}
+		/// listening thread for write
+		modWriteHandler::Instance().createWriteListener();
 
 		// ZMQ contexts are built
 		// Network device data and unique point data are also available
 		// Lets build: reference data for polling
 		populatePollingRefData();
-
 
 		if(false == CPeriodicReponseProcessor::Instance().isInitialized())
 		{
@@ -304,9 +327,6 @@ int main(int argc, char* argv[])
 
 		BOOST_LOG_SEV(lg, info) << __func__ << "Configuration done. Starting operations.";
 		CTimeMapper::instance().initTimerFunction();
-
-		modWriteHandler::Instance().initZmqReadThread();
-
 #ifdef UNIT_TEST
 
 	::testing::InitGoogleTest(&argc, argv);
@@ -315,19 +335,20 @@ int main(int argc, char* argv[])
 #endif
 
 		std::unique_lock<std::mutex> lck(mtx);
-		while (!g_stop)
-		{
-			BOOST_LOG_SEV(lg, info) << __func__ << " Condition variable is set for application exit.";
-			cv.wait(lck);
-		}
+		cv.wait(lck,exitMainThread);
+
+		BOOST_LOG_SEV(lg, info) << __func__ << " Condition variable is set for application exit.";
+
 		BOOST_LOG_SEV(lg, info) << __func__ << " Exiting the application gracefully.";
-		cout << "Exited application gracefully. "<< endl;
+		cout << "************************************************************************************************" <<endl;
+		cout << "********************** Exited Modbus container to apply new configurations from ETCD ***********" <<endl;
+		cout << "************************************************************************************************" <<endl;
 
 	    return EXIT_SUCCESS;
 	}
 	catch (const std::exception &e)
 	{
-		BOOST_LOG_SEV(lg, error) << __func__ << "fatal::Error in getting arguments: ";
+		BOOST_LOG_SEV(lg, error) << __func__ << "fatal::Error in getting arguments: " << e.what();
 		return EXIT_FAILURE;
 	}
 	BOOST_LOG_SEV(lg, debug) << __func__ << "End";
