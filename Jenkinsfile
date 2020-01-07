@@ -1,5 +1,10 @@
+  
 pipeline {
-    agent { label 'rbhe' }
+    //agent { label 'rbhe' }
+    agent {
+        docker { label 'rbhe'
+		image 'ubuntu:18.04' }
+    }
     options {
         timestamps()
     }
@@ -13,10 +18,83 @@ pipeline {
         SLACK_FAIL   = '#indu-uwc'
     }
     stages {
-        stage('Hello') {
+        stage('Build') {
+		  when { branch "UWC-Sprint3" }
+		  steps {
+			  echo 'Hello..'
+			  sh "apt update"
+			  sh "apt install git -y"
+			  sh "git --version"
+			  script {
+				  withCredentials([
+					usernamePassword(credentialsId: 'GITLAB_UP',
+					  usernameVariable: 'username',
+					  passwordVariable: 'password')
+				  ]) {
+					print 'username=' + username + 'password=' + password
+					upass = username+":"+password
+					sh "set +x; git clone --single-branch --branch v2.1-Alpha-RC4 https://"+upass+"@gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights"
+					
+				  }
+				}
+			  sh "cp -r ./Deploy/* ./IEdgeInsights/"
+			  sh "cd ./IEdgeInsights/; ls -la"
+			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh; "
+			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
+			  sh "cd ./IEdgeInsights/; chmod 777 ./03_DeployEIS.sh; ./03_DeployEIS.sh; "
+			  
+		  }
+          
+        }
+	stage('KW-Scan') {
+		  when { branch "UWC-Sprint3" }
+		  steps {
+			  echo 'Hello..'
+			  sh "apt update"
+			  sh "apt install git -y"
+			  sh "git --version"
+			  script {
+				  withCredentials([
+					usernamePassword(credentialsId: 'GITLAB_UP',
+					  usernameVariable: 'username',
+					  passwordVariable: 'password')
+				  ]) {
+					print 'username=' + username + 'password=' + password
+					upass = username+":"+password
+					sh "set +x; git clone --single-branch --branch v2.1-Alpha-RC4 https://"+upass+"@gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights"
+					
+				  }
+				}
+			  sh "cp -r ./Deploy/* ./IEdgeInsights/"
+			  sh "cd ./IEdgeInsights/; ls -la"
+			  sh "cp ./.kw/modbus-master/*  ./IEdgeInsights/modbus-master/;"
+			  sh "cp ./.kw/mqtt-export/*  ./IEdgeInsights/mqtt-export/;"
+			  
+			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh; "
+			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
+			  
+			  sh "cp ./.kw/03_DeployEIS.sh  ./IEdgeInsights/03_DeployEIS.sh;"
+			  sh "cd ./IEdgeInsights/; chmod 777 ./03_DeployEIS.sh; ./03_DeployEIS.sh; "
+			  
+		  }
+          
+        }
+        stage('Static Scanners') {
             steps {
-                echo 'Hello..'
-                sh 'git config --global http.proxy http://proxy-us.intel.com:911; git clone https://gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights.git'
+                echo 'Protex, checkmarx Scan..'
+                rbheStaticCodeScan()
+            }
+        }
+        stage('Bandit') {
+            agent {
+                docker {
+                    image 'amr-registry.caas.intel.com/rrp-devops/bandit-build-agent:latest'
+                    reuseNode true
+                }
+            }
+
+            steps {
+                sh 'bandit -f txt **/*.py scripts/*.py | tee bandit_scan.txt'
             }
         }
     }
