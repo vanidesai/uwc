@@ -1,61 +1,106 @@
-################################################################################
-# The source code contained or described herein and all documents related to
-# the source code ("Material") are owned by Intel Corporation. Title to the
-# Material remains with Intel Corporation.
-#
-# No license under any patent, copyright, trade secret or other intellectual
-# property right is granted to or conferred upon you by disclosure or delivery of
-# the Materials, either expressly, by implication, inducement, estoppel or otherwise.
-################################################################################
+# Universal Wellpad Controller (UWC)
 
-# Directory details
+```
+********************************************************************************************************************
+ * The source code contained or described herein and all documents related to
+ * the source code ("Material") are owned by Intel Corporation. Title to the
+ * Material remains with Intel Corporation.
+ *
+ * No license under any patent, copyright, trade secret or other intellectual
+ * property right is granted to or conferred upon you by disclosure or delivery of
+ * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+ **********************************************************************************************************************
+```
+## Directory details
 The directory comprises of following:
-* modbus-master:
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/modbus-master">modbus-master</a> :
   This directory contains the modbus container sources and docker file for building the container. 
-* mqtt-export:
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/mqtt-export">mqtt-export</a> :
   This directory contains the mqtt-export container sources and docker file for building the container. 
-* MQTT:
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/MQTT">MQTT</a> :
   This directory contains the mqtt container sources and docker file for building the container.
-* Others:
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/Others">Others</a> :
   This directory contains configurations for ETCD required during provisioning. 
-* docker-compose.yml :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/blob/UWC-Sprint3/docker-compose.yml">docker-compose.yml</a> :
   This file will deploy the modbus container with EIS in prod mode.
-* docker-compose_DEV.yml :
-  This file can be used to deploy UWC containers in dev mode.
-* 01_pre-requisites.sh :
-  This script is use to install all pre-requisites.
-* 02_provisionEIS.sh :
-  This script is use to install provision EIS.
-* 03_DeployEIS.sh :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/docker-compose_DEV.yml">docker-compose_DEV.yml</a> :
+  This file is used to deploy UWC containers in dev mode.
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/01_pre-requisites.sh">01_pre-requisites.sh</a> :
+  This script is used to install all pre-requisites.
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/02_provisionEIS.sh">02_provisionEIS.sh</a>  :
+  This script is used to install provision EIS.
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/03_DeployEIS.sh">03_DeployEIS.sh</a> :
   This script is used to deploy UWC containers in dev mode.
-* 04_uninstall_EIS.sh :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/04_uninstall_EIS.sh">04_uninstall_EIS.sh</a> :
   This script will uninstall all UWC containers.
-* create_uwc_package.sh :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/Release">Release</a> :
+  This directory contains UWC bundle for deployement.
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/create_uwc_package.sh">create_uwc_package.sh</a> :
   This script will be used to create UWC package
 
-# Steps to create bundle out of sources
-1. Run "sudo ./create_uwc_package.sh" script to create UWC bundle for deployment.
-
-# Install pre-requisites
+## Install pre-requisites
+```
 1. EdgeInsightsSoftware-v2.1-Alpha version of EIS should be available on deploy machine before deployment. 
-2. Copy 01_pre-requisites.sh, 02_provisionEIS.sh, 03_DeployEIS.sh, 04_uninstall_EIS.sh and UWC.tar.gz(i.e. created in bundle create steps) files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
-3. Go to EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
-4. Uninstall previous containers using "sudo ./04_uninstall_EIS.sh" command.
-5. Run "sudo ./01_pre-requisites.sh" script for installing all pre-requisites.
+2. Copy files from "Release" diectory (e.g. all shell scripts, tar.gz file, etc.) into "EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights" directory. Please ensure that shell scripts have "execute" permission (sudo chmod +x <script name>).
+3. Open a terminal and go to EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
+4. Uninstall previously deployed and running UWC containers, using "sudo ./04_uninstall_EIS.sh" command on terminal.
+5. Run below command on terminal to install all pre-requisites required to deploy UWC containers.
+sudo ./01_pre-requisites.sh
+```
 
-# Provision EIS
-1. Run "sudo ./02_provisionEIS.sh" command to provision EIS.
+## Provision EIS
+```
+Execute below command on terminal for provisioning EIS.
+sudo ./02_provisionEIS.sh
+```
 
-# Build and Run all UWC containers
-1. Run "sudo ./03_DeployEIS.sh" script for container deployment.
+## Build and Run all UWC containers
+```
+Execute below command on terminal for container deployment.
+sudo ./03_DeployEIS.sh
+```
 
-# Verify container status
-1. Use "sudo docker ps" command to verify container status.
+## Verify container status
+```
+Execute below command on terminal to verify container status.
+sudo docker ps
+```
 
-# Steps to check container logs
-1. Syntax - sudo docker logs <container_name>
-   E.g To check modbus-tcp-container logs execute "sudo docker logs modbus-tcp-container" command.
+## Debugging steps
+```
+1. Checking container logs 
+   Syntax - sudo docker logs <container_name>
+   E.g. To check modbus-tcp-container logs execute "sudo docker logs modbus-tcp-container" command.
 2. Command to check logs inside the container "sudo docker exec -it <container_name> bash"
+3. Use "cat <log_file_name>" to see log file inside the container
+4. Copying logs from container to host machine
+   Syntax - docker cp <container_name>:<file to copy from container> <file to be copied i.e. host directory>
+5. To check the IP address of machine, use "ifconfig" command.
+6. For Modbus RTU, to check attached COM port for serial communication, use "dmesg | grep tty" command.
 
-# ETCD UI access
-1. ETCD UI is available on "http://localhost:7070/etcdkeeper/" URL. (username - root , password- eis123)
+## Redirect docker logs to file including errors
+docker logs modbus-tcp-container > docker.log 2>&1
+```
+
+## ETCD UI access
+1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL. (username - root , password- eis123)
+
+## Steps to create bundle out of sources - Optional 
+```
+Execute below script to create UWC bundle for deployment.
+sudo ./create_uwc_package.sh
+```
+
+## How to bring up/down UWC containers
+```
+cd EIS..../docker_setup
+export PWD=$(pwd)
+docker-compose down  - bring down all containers
+docker-compose up - bring up all containers
+
+## Notes
+*  If docker-compose.yml is modified then execute 03_DeployEIS.sh script for build and deployment of UWC containers.
+*  If previous containers are running on deploy machine, then stop those containers using 04_uninstall_EIS.sh script.
+*  Once containers are up and running, configuration parameters can be changed using ETCD UI. Manual process for build and deployment is not needed once parameters are chanegd using ETCD UI.
+
+
