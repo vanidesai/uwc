@@ -13,29 +13,21 @@
 ```
 ## Directory details
 The directory comprises of following:
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/modbus-master">modbus-master</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/modbus-master">modbus-master</a> :
   This directory contains the modbus container sources and docker file for building the container. 
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/mqtt-export">mqtt-export</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/mqtt-export">mqtt-export</a> :
   This directory contains the mqtt-export container sources and docker file for building the container. 
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/MQTT">MQTT</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/MQTT">MQTT</a> :
   This directory contains the mqtt container sources and docker file for building the container.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/Others">Others</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/masterOthers">Others</a> :
   This directory contains configurations for ETCD required during provisioning. 
-* <a href="https://github.impcloud.net/uwc/UWC-Core/blob/UWC-Sprint3/docker-compose.yml">docker-compose.yml</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/blob/master/docker-compose.yml">docker-compose.yml</a> :
   This file will deploy the modbus container with EIS in prod mode.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/docker-compose_DEV.yml">docker-compose_DEV.yml</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_DEV.yml">docker-compose_DEV.yml</a> :
   This file is used to deploy UWC containers in dev mode.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/01_pre-requisites.sh">01_pre-requisites.sh</a> :
-  This script is used to install all pre-requisites.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/02_provisionEIS.sh">02_provisionEIS.sh</a>  :
-  This script is used to install provision EIS.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/03_DeployEIS.sh">03_DeployEIS.sh</a> :
-  This script is used to deploy UWC containers in dev mode.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/04_uninstall_EIS.sh">04_uninstall_EIS.sh</a> :
-  This script will uninstall all UWC containers.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/Release">Release</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Release">Release</a> :
   This directory contains UWC bundle for deployement.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/UWC-Sprint3/create_uwc_package.sh">create_uwc_package.sh</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/create_uwc_package.sh">create_uwc_package.sh</a> :
   This script will be used to create UWC package
 
 ## Install pre-requisites
