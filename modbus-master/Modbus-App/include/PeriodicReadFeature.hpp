@@ -182,4 +182,34 @@ class CRefDataForPolling
 	const struct stZmqContext & getBusContext() const {return m_objBusContext;}
 };
 
+/**
+ * namespace for Linux based timer API's
+ */
+namespace LinuxTimer
+{
+	/**
+	 * Function to start Linux timer
+	 * @param
+	 * lNextTimerTick : use to set next tick count
+	 * @return : true on success and false on failure
+	 */
+	bool start_timer(long lNextTimerTick);
+
+	/**
+	 * Function to stop Linux timer
+	 * @param : Nothing
+	 * @return : true on success and false on failure
+	 */
+	bool stop_timer(void);
+
+	/**
+	 * Function to get timer callback based on signal
+	 * @param :
+	 * iSignal : signal to get timer callback
+	 * @return : Nothing
+	 */
+	void timer_callback(int iSignal);
+}  // namespace LinuxTimer
+
+
 #endif /* INCLUDE_INC_PERIODICREADFEATURE_HPP_ */

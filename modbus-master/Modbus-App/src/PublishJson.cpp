@@ -44,7 +44,7 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 	msgbus_ret_t ret;
 	zmq_handler::stZmqPubContext busPubCTX;
 
-	BOOST_LOG_SEV(lg, debug) << __func__ << " msg to publish ::" << "Topic :: "<< a_sTopic <<ret;
+	BOOST_LOG_SEV(lg, debug) << __func__ << " msg to publish ::" << "Topic :: "<< a_sTopic;
 
 	try
 	{
@@ -52,6 +52,7 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 		busPubCTX = zmq_handler::getPubCTX(a_sTopic);
 	}
 	catch (std::exception &e) {
+		BOOST_LOG_SEV(lg, debug) << __func__ << " Exception: "<< e.what();
 		stZmqPubContext objPubContext;
 		publisher_ctx_t *pub_ctx = NULL;
 		ret = msgbus_publisher_new(msgbus_ctx,a_sTopic.c_str(), &pub_ctx);

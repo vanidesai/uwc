@@ -71,6 +71,9 @@ namespace zmq_handler
 
 	/// function to remove entry from the map
 	void removeAppSeq(unsigned short);
+
+	/// function for byteswap and wordswap
+	std::string swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap = false, bool a_bIsWordSwap = false);
 }
 
 #endif /* INCLUDE_INC_ZMQHANDLDER_HPP_ */

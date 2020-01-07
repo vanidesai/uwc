@@ -8,19 +8,26 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#ifndef TEST_INCLUDE_CCONFIGMANAGER_UT_H_
-#define TEST_INCLUDE_CCONFIGMANAGER_UT_H_
+#ifndef TEST_INCLUDE_PUBLISHJSON_UT_HPP_
+#define TEST_INCLUDE_PUBLISHJSON_UT_HPP_
 
-#include <gtest/gtest.h>
+
+#include <mutex>
 #include <string.h>
-#include "ConfigManager.hpp"
+#include <stdlib.h>
+#include "PublishJson.hpp"
+#include "ZmqHandler.hpp"
+#include "PeriodicReadFeature.hpp"
+#include "PeriodicRead.hpp"
+#include "NetworkInfo.hpp"
+#include "Common.hpp"
+#include "API.h"
+#include "gtest/gtest.h"
 
-void etcdOnChangeKeyCb(char* key, char * val);
-void etcdOnChangeDirCb(char* key, char * val);
-//void CfgManager::registerCallbackOnChangeKey(char *key)
 
 
-class CConfigManager_ut : public::testing::Test
+
+class PublishJson_ut : public::testing::Test
 {
 protected:
 	virtual void SetUp();
@@ -28,9 +35,12 @@ protected:
 
 public:
 
-	std::string			Test_Str = "";
-	std::string			Expected_output = "";
+	msg_envelope_t *msg;
+	msg_envelope_t* g_msg = NULL;
+	stStackResponse res;
+
 
 };
 
-#endif /* TEST_INCLUDE_CCONFIGMANAGER_UT_H_ */
+
+#endif /* TEST_INCLUDE_PUBLISHJSON_UT_HPP_ */

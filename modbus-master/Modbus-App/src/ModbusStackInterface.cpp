@@ -8,10 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-//#include "BoostLogger.hpp"
-//#include "Common.hpp"
 #include <mutex>
-#include "PublishJson.hpp"
 #include "ZmqHandler.hpp"
 
 extern "C" {
@@ -42,6 +39,7 @@ std::mutex g_RWCommonCallbackMutex;
 void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		 	 	 	 	 	 uint16_t u16TransacID,
 							 uint8_t* pu8IpAddr,
+							 uint16_t u16Port,
 							 uint8_t  u8FunCode,
 							 stException_t  *pstException,
 							 uint8_t  u8numBytes,
@@ -50,7 +48,8 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint16_t  u16Quantity)
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
-	if(NULL == std::getenv("WRITE_RESPONSE_TOPIC"))
+	const char* pcWriteRespTopic = std::getenv("WRITE_RESPONSE_TOPIC");
+	if(NULL == pcWriteRespTopic)
 	{
 		BOOST_LOG_SEV(lg, debug) << __func__ << " WRITE_RESPONSE_TOPIC not set";
 		return;
@@ -61,6 +60,25 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 
 	try
 	{
+		if( u8FunCode == READ_COIL_STATUS ||
+				u8FunCode == READ_HOLDING_REG ||
+				u8FunCode == READ_INPUT_STATUS ||
+				u8FunCode == READ_INPUT_REG)
+		{
+			std::vector<uint8_t> datavt;
+			for (uint8_t index=0; index<u8numBytes; index++)
+			{
+				datavt.push_back(pu8data[index]);
+			}
+
+			/// word swap is always false.
+			std:: string strdata = zmq_handler::swapConversion(datavt,
+															false,
+															false);
+			msg_envelope_elem_body_t* ptData = msgbus_msg_envelope_new_string(strdata.c_str());
+			msgbus_msg_envelope_put(msg, "value", ptData);
+		}
+
 		std::string stAppSeqNum = zmq_handler::getAppSeq(u16TransacID);
 		msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(stAppSeqNum.c_str());
 		msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
@@ -81,7 +99,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 			BOOST_LOG_SEV(lg, info) <<"Info::" <<__func__<< " " << " NULL Pointer is Received from stack";
 		}
 
-		std::string topic = std::getenv("WRITE_RESPONSE_TOPIC");
+		std::string topic(pcWriteRespTopic);
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(topic);
 
 		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, topic);

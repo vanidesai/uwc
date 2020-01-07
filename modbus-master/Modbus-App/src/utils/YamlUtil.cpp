@@ -20,9 +20,10 @@ std::vector<std::string> g_sWellSiteFileList1;
 YAML::Node loadYamlFile(const std::string& filename)
 {
 	std::string sBasePath{""};
-	if(NULL != std::getenv("CONFIG_FILE_PATH"))
+	const char* pcConfigPath = std::getenv("CONFIG_FILE_PATH");
+	if(NULL != pcConfigPath)
 	{
-		sBasePath = std::getenv("CONFIG_FILE_PATH");
+		sBasePath = pcConfigPath;
 	}
 	YAML::Node baseNode = YAML::LoadFile( sBasePath + filename);
 	return baseNode;

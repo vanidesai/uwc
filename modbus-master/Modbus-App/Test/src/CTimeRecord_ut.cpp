@@ -43,11 +43,6 @@ TEST_F(CTimeRecord_ut, time_record_available)
 	 cout << "elements of vector m_PolledPoints..." << endl;
 	 std::string id = CUniqueDataPoint_obj.getID();
 
-    	//CUniqueDataPoint_obj = CRefDataForPolling_obj1.getDataPoint();
-	    cout<<"++++++++++++++++++++++++"<<endl;
-	    cout<< id <<endl;
-	    cout<<"++++++++++++++++++++++++"<<endl;
-
 	    try
 	    {
 	    	bRet = CTimeRecord_obj.add(CRefDataForPolling_obj1);
@@ -86,9 +81,7 @@ TEST_F(CTimeRecord_ut, time_record_notavailable)
 	 std::string id = CUniqueDataPoint_obj.getID();
 
     	//CUniqueDataPoint_obj = CRefDataForPolling_obj1.getDataPoint();
-	    cout<<"++++++++++++++++++++++++"<<endl;
-	    cout<< id <<endl;
-	    cout<<"++++++++++++++++++++++++"<<endl;
+
   for(auto x: m_PolledPoints )
   {
 	    try
@@ -101,9 +94,7 @@ TEST_F(CTimeRecord_ut, time_record_notavailable)
 	    {
 	    	bRet=false;
 	    	EXPECT_EQ(false, bRet);
-	    	cout<<""""""""""""""""""<<endl;
-	    	cout<< bRet<<endl;
-	    	cout<<""""""""""""""""""<<endl;
+
 	    }
   }
 

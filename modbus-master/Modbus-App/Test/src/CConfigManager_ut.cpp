@@ -1,12 +1,12 @@
 /************************************************************************************
-* The source code contained or described herein and all documents related to
-* the source code ("Material") are owned by Intel Corporation. Title to the
-* Material remains with Intel Corporation.
-*
-* No license under any patent, copyright, trade secret or other intellectual
-* property right is granted to or conferred upon you by disclosure or delivery of
-* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
-************************************************************************************/
+ * The source code contained or described herein and all documents related to
+ * the source code ("Material") are owned by Intel Corporation. Title to the
+ * Material remains with Intel Corporation.
+ *
+ * No license under any patent, copyright, trade secret or other intellectual
+ * property right is granted to or conferred upon you by disclosure or delivery of
+ * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+ ************************************************************************************/
 
 
 #include "../include/CConfigManager_ut.h"
@@ -64,17 +64,78 @@ TEST_F(CConfigManager_ut, IsClientCreated) {
 //CConfigManager::Instance() should return Instance of class type CfgManager
 TEST_F(CConfigManager_ut, getEnvConfig_NULL) {
 	/// parse all the subtopics
-		std::vector<std::string> stTopics = CfgManager::Instance().getEnvConfig().get_topics_from_env("");
-		EXPECT_TRUE(stTopics.empty());
+	std::vector<std::string> stTopics = CfgManager::Instance().getEnvConfig().get_topics_from_env("");
+	EXPECT_TRUE(stTopics.empty());
 }
 
 //Test: Return of CConfigManager::Instance.
 //CConfigManager::Instance() should return Instance of class type CfgManager
 TEST_F(CConfigManager_ut, getEnvConfig_Val) {
 	/// parse all the subtopics
-		std::vector<std::string> stTopics = CfgManager::Instance().getEnvConfig().get_topics_from_env("sub");
-		EXPECT_FALSE(stTopics.empty());
+	std::vector<std::string> stTopics = CfgManager::Instance().getEnvConfig().get_topics_from_env("sub");
+	EXPECT_FALSE(stTopics.empty());
 
+}
+
+
+TEST_F(CConfigManager_ut, etcdOnChangeKeyCb_Test) {
+
+	Expected_output = "key: Test_Key and value: Test_Val\n";
+
+	try
+	{
+		testing::internal::CaptureStdout();
+		etcdOnChangeKeyCb("Test_Key", "Test_Val");
+		std::string output = testing::internal::GetCapturedStdout();
+
+		EXPECT_EQ(Expected_output, output);
+	}
+
+	catch(exception &e)
+	{
+		Test_Str = e.what();
+		EXPECT_EQ("", Test_Str);
+	}
+}
+
+TEST_F(CConfigManager_ut, etcdOnChangeDirCb_Test) {
+
+	Expected_output = "etcdOnChangeDirCb Application is restarting to apply new changes from ETCD..\nNew value to be apply is ::\nkey: Test_Key and value: Test_Val\n";
+
+	try
+	{
+		testing::internal::CaptureStdout();
+		etcdOnChangeDirCb("Test_Key", "Test_Val");
+		std::string output = testing::internal::GetCapturedStdout();
+
+		EXPECT_EQ(Expected_output, output);
+	}
+
+	catch(exception &e)
+	{
+		Test_Str = e.what();
+		EXPECT_EQ("", Test_Str);
+	}
+}
+
+TEST_F(CConfigManager_ut, registerCallbackOnChangeKey_Test) {
+
+	Expected_output = " Callback is register for :: Test_Key\n";
+
+	try
+	{
+		testing::internal::CaptureStdout();
+		CfgManager::Instance().registerCallbackOnChangeKey("Test_Key");
+		std::string output = testing::internal::GetCapturedStdout();
+
+		EXPECT_EQ(Expected_output, output);
+	}
+
+	catch(exception &e)
+	{
+		Test_Str = e.what();
+		EXPECT_EQ("", Test_Str);
+	}
 }
 
 ////Test: Return of CConfigManager::Instance.
@@ -90,4 +151,5 @@ TEST_F(CConfigManager_ut, getEnvConfig_Val) {
 //
 //	CfgManager::Instance().registerCallbackOnChangeKey();
 //}
+
 

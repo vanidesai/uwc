@@ -12,7 +12,7 @@
 
 #include <typeinfo>
 
-void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_sTimeStamp, std::string &a_sUsec, std::string &a_sTxID);
+extern void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_sTimeStamp, std::string &a_sUsec, std::string &a_sTxID);
 
 void PeriodicRead_ut::SetUp()
 {
@@ -24,7 +24,7 @@ void PeriodicRead_ut::TearDown()
 	// TearDown code
 }
 
-#if 0 // To be updated later
+
 
 void getTimeStamps(std::string &a_sTimeStamp, std::string &a_sUsec);
 eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
@@ -63,6 +63,7 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLAgument1) {
 
 }
 
+
 /* TC002
 Test: Execution should not hang when NULL pointer is passed as an argument.
  */
@@ -87,7 +88,7 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLAgument2) {
 
 }
 
-
+#if 0
 /* TC003
 Test: Behaviour of handleResponse() when pstException->m_u8ExcCode and pstException->m_u8ExcStatus both are 0
  */
@@ -114,37 +115,37 @@ TEST_F(PeriodicRead_ut, handleResponse_ExcStatus_ExcCode_0) {
 
 }
 
-/* TC004
-Test: Execution should not hang when pstException->m_u8ExcStatus or pstException->m_u8ExcCode is not equal to 0
- */
-TEST_F(PeriodicRead_ut, handleResponse_ExcStatus_ExcCode_Non0) {
-
-
-	try
-	{
-		pstException->m_u8ExcCode = 1;
-		pstException->m_u8ExcStatus = 0;
-
-		CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, pstException,
-				8, pu8data, u16StartAddress, u16Quantity);
-
-		pstException->m_u8ExcCode = 0;
-		pstException->m_u8ExcStatus = 1;
-
-		CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, pstException,
-				8, pu8data, u16StartAddress, u16Quantity);
-
-		EXPECT_EQ("", test_str);
-	}
-	catch(exception &e)
-	{
-		test_str = e.what();
-		EXPECT_EQ("", test_str);
-
-	}
-
-}
-
+///* TC004
+//Test: Execution should not hang when pstException->m_u8ExcStatus or pstException->m_u8ExcCode is not equal to 0
+// */
+//TEST_F(PeriodicRead_ut, handleResponse_ExcStatus_ExcCode_Non0) {
+//
+//
+//	try
+//	{
+//		pstException->m_u8ExcCode = 1;
+//		pstException->m_u8ExcStatus = 0;
+//
+//		CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, pstException,
+//				8, pu8data, u16StartAddress, u16Quantity);
+//
+//		pstException->m_u8ExcCode = 0;
+//		pstException->m_u8ExcStatus = 1;
+//
+//		CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, pstException,
+//				8, pu8data, u16StartAddress, u16Quantity);
+//
+//		EXPECT_EQ("", test_str);
+//	}
+//	catch(exception &e)
+//	{
+//		test_str = e.what();
+//		EXPECT_EQ("", test_str);
+//
+//	}
+//
+//}
+//#if 0
 /* TC005
 Test: Behaviour of handleResponse() when pstException->m_u8ExcCode
       and pstException->m_u8ExcStatus both are 0
@@ -164,8 +165,8 @@ TEST_F(PeriodicRead_ut, handleResponse_dataSizeLessThanNumOfBytes) {
 				u8numBytes, pu8data, u16StartAddress, u16Quantity);
 
 		EXPECT_LT(pu8data[u8numBytes], 9);
-		cout<<"!@@@!@!@!@!@@!@!!!"<<pu8data[u8numBytes]<<endl;
-		EXPECT_GT(pu8data[u8numBytes], 0);
+
+		//EXPECT_GT(pu8data[u8numBytes], 0);
 
 	}
 	catch(exception &e)
@@ -212,7 +213,7 @@ TEST_F(PeriodicRead_ut, isInitialized_RetTrue) {
 //#if 0
 
 /******************************PeriodicRead::InitRespHandlerThreads****************************************
-/* TC007
+TC007
 Test: Behaviour of initRespHandlerThreads(): Function executed 1st time
  */
 TEST_F(PeriodicRead_ut, initRespHandlerThreads_CalledNTime) {
@@ -236,7 +237,7 @@ TEST_F(PeriodicRead_ut, initRespHandlerThreads_CalledNTime) {
 }
 
 /******************************PeriodicRead::getTimeBasedParams****************************************
-/* TC008
+TC008
 Test: Behaviour of getTimeBasedParams()
  */
 TEST_F(PeriodicRead_ut, getTimeBasedParams_return) {
@@ -278,7 +279,7 @@ TEST_F(PeriodicRead_ut, getTimeBasedParams_return) {
 }
 
 /******************************PeriodicRead::readPeriodicCallBack****************************************
-/* TC009
+TC009
 Test: Behaviour of readPeriodicCallBack()
 */
 
@@ -329,7 +330,7 @@ TEST_F(PeriodicRead_ut, readPeriodicCallBack_NULLArg3) {
 }
 
 /******************************CRequestInitiator::insertTxIDReqData****************************************
-/* TC0012
+TC0012
 Test: Behaviour of readPeriodicCallBack()
 */
 
@@ -349,7 +350,7 @@ TEST_F(PeriodicRead_ut, insertTxIDReqData_return) {
 }
 
 /******************************CRequestInitiator::removeTxIDReqData****************************************
-/* TC0013
+TC0013
 Test: Behaviour of removeTxIDReqData()
 */
 
@@ -369,7 +370,7 @@ TEST_F(PeriodicRead_ut, removeTxIDReqData_return) {
 }
 
 /******************************CTimeMapper::initTimerFunction****************************************
-/* TC0014
+TC0014
 Test: Behaviour of initTimerFunction()
 */
 
@@ -389,7 +390,7 @@ TEST_F(PeriodicRead_ut, initTimerFunction_return) {
 }
 
 /******************************CTimeMapper::checkTimer****************************************
-/* TC0015
+TC0015
 Test: Behaviour of checkTimer()
 */
 
@@ -409,7 +410,7 @@ TEST_F(PeriodicRead_ut, checkTimer_return) {
 }
 
 /******************************CTimeMapper::ioPeriodicReadTimer****************************************
-/* TC0016
+TC0016
 Test: Behaviour of ioPeriodicReadTimer()
 */
 

@@ -200,6 +200,7 @@ bool CEISMsgbusHandler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 	}
 	catch(exception &ex)
 	{
+		std::cout << __func__ << " Exception : " << ex.what() << std::endl;
 		return false;
 	}
 

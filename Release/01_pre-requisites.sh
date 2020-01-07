@@ -14,6 +14,11 @@ RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
 NC=$(tput sgr0)
+BOLD=$(tput bold)
+
+ # Variable to store user proxy provided by command line
+USER_PROXY=""
+	
 
 eis_working_dir="$Current_Dir/docker_setup"
 
@@ -152,12 +157,75 @@ addUWCContainersInEIS()
     cp -r Others/ETCD_Config/UWC/ Others/ETCD_Config/etcd_pre_load.json ../docker_setup/provision/config/
     cp Others/ETCD_Config/etcd_provision.py ../docker_setup/provision/dep/
     echo "${GREEN}UWC containers are successfully copied.${NC}"
-    echo "${GREEN}>>>>>${NC}"
-    echo "${GREEN}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
+    echo "${BOLD}${GREEN}>>>>>${NC}"
+	echo "${BOLD}${GREEN}************************* This script is sucessfully executed ***************************************************"
+    echo "${BOLD}${GREEN}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
     cd ${working_dir}/ && rm -rf UWC/
     return 0
 }
 
+Usage () {
+    echo "${BOLD}${RED}">&2 "$@${NC}" 
+	echo
+	echo "${BOLD}${MAGENTA}***********************************************************************************************************"
+	echo "${GREEN}Usage : Script can be run with following modes"
+	echo
+	echo "	${GREEN}1. For interactive mode - sudo ./01_pre-requisites.sh "
+	echo "	${GREEN}2. For non-interactive & no-proxy mode - sudo ./01_pre-requisites.sh --no-proxy"
+	echo "	${GREEN}3. For non-interactive & proxy mode - sudo ./01_pre-requisites.sh --proxy <proxy_address>:<proxy_port>"
+	echo
+	echo "${MAGENTA}**********************************************************************************************************************${NC}"
+    exit 1
+}
+
+validateUserInput()
+{
+	if [ "$#" -eq 0 ]
+	then
+		echo "${GREEN}Script is running with interactive mode${NC}"
+		proxy_settings
+	elif [ "$#" -eq 1 ]
+	then 
+		echo "${GREEN}Script is running with interactive and no-proxy mode${NC}"
+		if [ "$1" != "--no-proxy" ]
+		then
+			Usage "Invalid argument $1 provided"
+		fi
+		return 0
+	elif [ "$#" -eq 2 ]
+	then 
+		echo "${GREEN}Script is running with interactive and --proxy mode ${NC}"
+		if [ "$1" != "--proxy" ]
+		then
+			Usage "Invalid argument $1 provided"
+		fi
+		
+		#Creating config.json
+		if [ ! -d ~/.docker ];then
+			mkdir ~/.docker
+		fi
+		if [ ! -f ~/.docker/config.json ];then
+			touch ~/.docker/config.json
+			chmod 766 ~/.docker/config.json
+		fi
+		
+		# set proxy through command line
+		USER_PROXY=$2
+		
+		echo "${GREEN}Configuring proxy setting in the system${NC}"
+		echo "Docker services will be restarted after proxy settings configured"
+		proxy_enabled_network
+		check_for_errors "$?" "Failed to configure proxy settings on the system. Please check logs" \
+			"${GREEN}Configured proxy settings in the system successfully.${NC}"
+		dns_server_settings
+		check_for_errors "$?" "Failed to update DNS server settings in the system. Please check logs" \
+			"${GREEN}Updated DNS server settings in the system.${NC}"
+		echo "${GREEN}Given arguments are :: ${NC}" $1 $2
+	else
+		Usage "Invalid argument, $1 provided"
+	fi
+	return 0
+}
 #------------------------------------------------------------------------------
 # proxy_enabled_network
 #
@@ -170,15 +238,8 @@ addUWCContainersInEIS()
 proxy_enabled_network()
 {
     # 1. Configure the Docker client
-    USER_PROXY=""
-    echo "Please enter your proxy address ${GREEN}(Ex: <proxy.example.com>:<port-number>):${NC}"
-    read USER_PROXY
-    while [ -z "${USER_PROXY}" ]
-    do
-        echo "${RED}Proxy is empty, please enter again${NC}"
-        read USER_PROXY
-    done
-
+    #USER_PROXY=""
+		
 echo "{
  \"proxies\":
   {
@@ -295,6 +356,14 @@ proxy_settings()
                     touch ~/.docker/config.json
                     chmod 766 ~/.docker/config.json
                 fi
+				echo "Please enter your proxy address ${GREEN}(Ex: <proxy.example.com>:<port-number>):${NC}"
+				read USER_PROXY
+				while [ -z "${USER_PROXY}" ]
+					do
+						echo "${RED}Proxy is empty, please enter again${NC}"
+						read USER_PROXY
+				done
+			
                 echo "${GREEN}Configuring proxy setting in the system${NC}"
                 echo "Docker services will be restarted after proxy settings configured"
                 proxy_enabled_network
@@ -444,7 +513,7 @@ docker_verification_installation()
         echo "${GREEN}Installing Docker${NC}"
         docker_install
     fi
-    proxy_settings
+	validateUserInput "$@"
     return 0
 }
 
@@ -453,7 +522,7 @@ verifyDirectory
 checkrootUser
 checkInternetConnection
 installBasicPackages
-docker_verification_installation
+docker_verification_installation	"$@"
 docker_compose_verify_installation
 setdevmodetrue
 addUWCContainersInEIS

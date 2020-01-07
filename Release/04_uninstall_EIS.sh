@@ -15,6 +15,24 @@ GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
 NC=$(tput sgr0)
 
+verifyDirectory()
+{
+    echo "Verifying the directory..."    
+    if [ ! -d ${working_dir}/docker_setup ]; then
+    	echo "${RED}UWC installer files file are not placed in right directory.${NC}"
+	echo "${GREEN}Copy UWC installer files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory and re-run this script.${NC}"
+	exit 1
+    fi
+    if [ ! -f UWC.tar.gz ] && [ ! f ${working_dir}/01_pre-requisites.sh ] && [ ! f ${working_dir}/02_provisionAndDeployEIS.sh ] &&  [ ! f ${working_dir}/03_uninstall_EIS.sh ]; then
+    	echo "${RED}UWC.tar.gz, 01_pre-requisites.sh, 02_provisionAndDeployEIS.sh, 03_uninstall_EIS.sh files are not present in required directory.${NC}"
+	echo "${GREEN}Copy all UWC installer files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory and re-run this script.${NC}"
+	exit 1
+    else
+	echo "${GREEN}UWC files are present in current directory${NC}"
+    fi
+
+}
+
 # ----------------------------
 # Checking for root user
 # ----------------------------
@@ -48,5 +66,6 @@ uninstallEIS()
 }
 
 cd ${Current_Dir}
+verifyDirectory
 checkrootUser
 uninstallEIS

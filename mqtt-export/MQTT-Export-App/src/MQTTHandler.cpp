@@ -335,9 +335,10 @@ bool CMQTTHandler::subscribeToTopics() {
 	try
 	{
 		for (auto topic : vMqttTopics) {
-
-			std::cout << "Subscribing topic : " << topic << "\n";
-			subscriber.subscribe(topic, QOS, nullptr, listener);
+			if(! topic.empty()) {
+				std::cout << "Subscribing topic : " << topic << "\n";
+				subscriber.subscribe(topic, QOS, nullptr, listener);
+			}
 		}
 	}
 	catch(exception &ex)

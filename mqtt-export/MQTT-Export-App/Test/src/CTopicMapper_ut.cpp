@@ -25,21 +25,20 @@ void CTopicMapper_ut::TearDown()
 	// TearDown code
 }
 
-#if 0 // To be updated later
 //test 01:: this test returns ZMQ topic which has been mapped with MQTT
-TEST_F(CTopicMapper_ut, 0_manatory_param)
+TEST_F(CTopicMapper_ut, 0_get_zmq_topic)
 {
 	cout<<endl<<"TEST_0_manatory_param"<<endl;
+
 	string returnVal = CTopicMapper::getInstance().GetZMQTopic("/iou/PL01/KeepAlive/write");
 
 	std::cout << "returnVal : " << returnVal << "\n";
 
 	EXPECT_EQ("PL01_iou_write", returnVal);
 }
-#endif
 
 //test 02:: this test returns "" if ZMQ topic is not found in topic mapper
-TEST_F(CTopicMapper_ut, 1_manatory_param)
+TEST_F(CTopicMapper_ut, 1_get_zmq_topic_negative)
 {
 	cout<<endl<<"TEST_1_manatory_param"<<endl;
 	string returnVal = CTopicMapper::getInstance().GetZMQTopic("test_topic");
@@ -60,7 +59,6 @@ TEST_F(CTopicMapper_ut, 2_manatory_param)
 	EXPECT_EQ("", returnVal);
 }
 
-#if 0 // To be updated later
 //test 04:: this test returns ZMQ topic which has been mapped with MQTT
 TEST_F(CTopicMapper_ut, 3_manatory_param)
 {
@@ -71,7 +69,6 @@ TEST_F(CTopicMapper_ut, 3_manatory_param)
 
 	EXPECT_EQ("", returnVal);
 }
-#endif
 
 //test 05:: this test returns "" if ZMQ topic is not found in topic mapper
 TEST_F(CTopicMapper_ut, 4_manatory_param)
@@ -109,4 +106,16 @@ TEST_F(CTopicMapper_ut, 6_manatory_param)
 	}
 
 	EXPECT_EQ(allMqttTopic, returnVal);
+}
+
+//test 07:: this test returns blank if Mapping key is missing from topics json
+TEST_F(CTopicMapper_ut, 7_mapping_key_missing)
+{
+	cout<<endl<<"TEST_7_mapping_key_missing"<<endl;
+
+	string returnVal = CTopicMapper::getInstance().GetZMQTopic("/iou/PL01/KeepAlive/write");
+
+	std::cout << "*************************************** returnVal : " << returnVal << "\n";
+
+	EXPECT_EQ("", returnVal);
 }

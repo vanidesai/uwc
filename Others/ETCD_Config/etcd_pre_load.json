@@ -17,21 +17,76 @@
    "/MQTT-Export/config":{
 	"Mapping": [{
 			"MsgSource": "MQTT",
-			"Topics": [{
-				"/iou/PL01/KeepAlive/write": "PL01_iou_write_KeepAlive_realtime"
-			}]
+			"Topics": [
+                                {"/iou/PL1/KeepAlive/write": "PL0_iou_write"},
+				{"/iou/PL0/AValve/write": "PL0_iou_write"},
+				{"/iou/PL0/DValve/write": "PL0_iou_write"}
+]
 		},
 		{
 			"MsgSource": "ZeroMQ",
-			"Topics": [{
-					"PL0_flowmeter1_Point2": "/iou/PL01/KeepAlive/update"
+			"Topics": [
+                                {
+					"PL0_flowmeter_Flow": "/iou/PL00/Flow/update"
+				},
+                                {
+					"PL0_flowmeter_DP": "/iou/PL00/DP/update"
+				},
+                                {
+					"PL0_flowmeter_LinePressure": "/iou/PL00/LinePressure/update"
+				},
+				{
+					"PL0_flowmeter_Temperature": "/iou/PL00/Temperature/update"
+				},
+				{
+					"PL0_flowmeter_TodayVol": "/iou/PL00/TodayVol/update"
+				},
+				{
+					"PL0_flowmeter_YesterdayVol": "/iou/PL00/YesterdayVol/update"
+				},
+				{
+					"PL0_flowmeter_Time0": "/iou/PL00/Time0/update"
+				},
+                                {
+					"PL0_flowmeter_Time1": "/iou/PL00/Time1/update"
+				},
+				{
+					"PL0_flowmeter_Time2": "/iou/PL00/Time2/update"
+				},
+                                {
+					"PL0_flowmeter_Time3": "/iou/PL00/Time3/update"
+				},
+                                {
+					"PL0_flowmeter_Time4": "/iou/PL00/Time4/update"
+				},
+				{
+					"PL0_flowmeter_Time5": "/iou/PL00/Time5/update"
+				},
+					
+				{
+					"PL0_iou_Arrival": "/iou/PL00/Arrival/update"
+				},
+				{
+					"PL0_iou_AValve": "/iou/PL00/AValve/update"
+				},
+				{
+					"PL0_iou_DValve": "/iou/PL00/DValve/update"
+				},
+				{
+					"PL0_iou_TubingPressure": "/iou/PL00/TubingPressure/update"
+				},
+				{
+					"PL0_iou_CasingPressure": "/iou/PL00/CasingPressure/update"
+				},
+				{
+					"PL0_iou_KeepAlive": "/iou/PL00/KeepAlive/update"
 				}
 			]
 		}
 	]
 },
 "/Modbus-RTU-Master/config/RTU_Master_Config":{
-"buad_rate" : 9600,
+"baud_rate" : 9600,
 "parity" : 0,
 "port_name" : "/dev/ttyUSB0",
 "stop_bit" : 2

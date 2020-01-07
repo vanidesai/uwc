@@ -452,10 +452,21 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 	// Check mandatory parameters
 	try
 	{
+		a_oCDataPoint.m_stAddress.m_bIsByteSwap =  false;
+		a_oCDataPoint.m_stAddress.m_bIsWordSwap =  false;
+
 		a_oCDataPoint.m_sId = a_oData["id"].as<std::string>();
 		a_oCDataPoint.m_stAddress.m_eType = getPointType(a_oData["attributes"]["type"].as<std::string>());
 		a_oCDataPoint.m_stAddress.m_iAddress = a_oData["attributes"]["addr"].as<std::int32_t>();
 		a_oCDataPoint.m_stAddress.m_iWidth =  a_oData["attributes"]["width"].as<std::int32_t>();
+		if (a_oData["attributes"]["byteswap"])
+		{
+			a_oCDataPoint.m_stAddress.m_bIsByteSwap =  a_oData["attributes"]["byteswap"].as<bool>();
+		}
+		if (a_oData["attributes"]["wordswap"])
+		{
+			a_oCDataPoint.m_stAddress.m_bIsWordSwap =  a_oData["attributes"]["wordswap"].as<bool>();
+		}
 	}
 	catch(YAML::Exception &e)
 	{
@@ -526,13 +537,19 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 	std::vector<CWellSiteInfo> oWellSiteList;
 	for(auto sWellSiteFile: g_sWellSiteFileList)
 	{
+		if(true == sWellSiteFile.empty())
+		{
+			std::cout << __func__ <<" : Encountered empty file name. Ignoring";
+			BOOST_LOG_SEV(lg, info) << __func__ << " : Encountered empty file name. Ignoring";
+			continue;
+		}
 		// Check if the file is already scanned
 		std::map<std::string, CWellSiteInfo>::iterator it = g_mapYMLWellSite.find(sWellSiteFile);
 
 		if(g_mapYMLWellSite.end() != it)
 		{
 			// It means record exists
-			std::cout << sWellSiteFile <<" : is already scanned. Ignoring";
+			std::cout << __func__ << " " << sWellSiteFile <<" : is already scanned. Ignoring";
 			BOOST_LOG_SEV(lg, info) << __func__ << " " << sWellSiteFile << "Already scanned YML file: Ignoring it.";
 			continue;
 		}
@@ -593,7 +610,7 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 
 	for(auto a: oWellSiteList)
 	{
-		std::cout << "\n\n New Well Site\n";
+		std::cout << "\nNew Well Site\n";
 		printWellSite(a);
 	}
 

@@ -245,3 +245,84 @@ void zmq_handler::removeAppSeq(unsigned short seqno)
 	g_mapAppSeq.erase(seqno);
 	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
 }
+
+std::string zmq_handler::swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap, bool a_bIsWordSwap)
+{
+	auto numbytes = vt.size();
+	if(0 == numbytes)
+	{
+		return NULL;
+	}
+
+	auto iPosByte1 = 1, iPosByte2 = 0;
+	auto iPosWord1 = 0, iPosWord2 = 1;
+
+	if(true == a_bIsByteSwap)
+	{
+		iPosByte1 = 0; iPosByte2 = 1;
+	}
+	if(true == a_bIsWordSwap)
+	{
+		iPosWord1 = 1; iPosWord2 = 0;
+	}
+
+	static const char* digits = "0123456789ABCDEF";
+	std::string sVal(numbytes*2+2,'0');
+	int i = 0;
+	sVal[i++] = '0'; sVal[i++] = 'x';
+	int iCurPos = 0;
+	while(numbytes)
+	{
+		if(numbytes >= 4)
+		{
+			auto byte1 = vt[iCurPos + iPosWord1*2 + iPosByte1];
+			auto byte2 = vt[iCurPos + iPosWord1*2 + iPosByte2];
+			auto byte3 = vt[iCurPos + iPosWord2*2 + iPosByte1];
+			auto byte4 = vt[iCurPos + iPosWord2*2 + iPosByte2];
+			numbytes = numbytes - 4;
+			iCurPos = iCurPos + 4;
+
+			sVal[i] = digits[(byte1 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte1 & 0x0F];
+			i += 2;
+
+			sVal[i] = digits[(byte2 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte2 & 0x0F];
+			i += 2;
+
+			sVal[i] = digits[(byte3 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte3 & 0x0F];
+			i += 2;
+
+			sVal[i] = digits[(byte4 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte4 & 0x0F];
+			i += 2;
+		}
+		else if(numbytes >= 2)
+		{
+			auto byte1 = vt[iCurPos + iPosByte1];
+			auto byte2 = vt[iCurPos + iPosByte2];
+			numbytes = numbytes - 2;
+			iCurPos = iCurPos + 2;
+
+			sVal[i] = digits[(byte1 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte1 & 0x0F];
+			i += 2;
+
+			sVal[i] = digits[(byte2 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte2 & 0x0F];
+			i += 2;
+		}
+		else
+		{
+			auto byte1 = vt[iCurPos];
+			--numbytes;
+			++iCurPos;
+
+			sVal[i] = digits[(byte1 >> 4) & 0x0F];
+			sVal[i+1] = digits[byte1 & 0x0F];
+			i += 2;
+		}
+	}
+	return sVal;
+}

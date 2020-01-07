@@ -43,6 +43,7 @@ typedef struct LiveSerSessionList
 	eClientSessionStatus m_eCltSesStatus;
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	uint8_t m_u8IpAddr[4];
+	uint16_t m_u16Port;
 #else
 	uint8_t m_u8ReceivedDestination;
 #endif

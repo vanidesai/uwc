@@ -25,90 +25,120 @@
 #include "eis/msgbus/msgbus.h"
 #include "eis/utils/json_config.h"
 
-std::mutex writeMutex;
+/// stop thread flag
+extern std::atomic<bool> g_stopThread;
+/// reference if to store request data
+std::atomic<unsigned short> refId;
 
-eMbusStackErrorCode modWriteInfo::writeInfoHandler(const std::string a_sTopic, std::string& msg)
+modWriteHandler::modWriteHandler() : m_bIsWriteInitialized(false)
+{
+	try
+	{
+		initWriteSem();
+		m_bIsWriteInitialized = true;
+	}
+	catch(const std::exception& e)
+	{
+		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate write instance: Exception: " << e.what();
+		std::cout << "\nException modWriteHandler ::" << __func__ << ": Unable to initiate instance: " << e.what();
+	}
+}
+
+bool modWriteHandler::initWriteSem()
+{
+	//
+	int ok = sem_init(&semaphoreWriteReq, 0, 0);
+	if (ok == -1) {
+	   std::cout << "*******Could not create unnamed write semaphore\n";
+	   return false;
+	}
+	return true;
+}
+
+eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
 
-	std::lock_guard<std::mutex> lock(writeMutex);
-
+	stWriteRequest writeReq;
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
-	RestMbusReqGeneric_t *pstModbusRxPacket = NULL;
-	///modbusInterface 	 *MbusInterface = NULL;
-	cJSON *root = cJSON_Parse(msg.c_str());
-	if(NULL == root)
+	unsigned char  m_u8FunCode;
+	MbusAPI_t stMbusApiPram = {};
+	cJSON *root = NULL;
+
+	while(false == g_stopThread.load())
 	{
-		return MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
-	}
-	try
-	{
-		pstModbusRxPacket = new RestMbusReqGeneric_t();
-		static unsigned short refId = 1;
-		if(NULL == pstModbusRxPacket)
+		do
 		{
+			sem_wait(&semaphoreWriteReq);
+			try
+			{
+				if(false == getWriteDataToProcess(writeReq))
+				{
+					return MBUS_STACK_ERROR_QUEUE_SEND;
+				}
+
+				BOOST_LOG_SEV(lg, error) << __func__ << " write Processing initiated :: " << writeReq.m_strMsg;
+
+				root = cJSON_Parse(writeReq.m_strMsg.c_str());
+				if(NULL == root)
+				{
+					return MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
+				}
+
+				refId++;
+				/// restarting refId once reached max. limit.
+				if(refId >= 65535)
+					refId = 1;
+
+				cJSON *cmd1 = cJSON_GetObjectItem(root,"app_seq");
+				if(NULL != cmd1)
+				{
+					string stAppSeqNum = cmd1->valuestring;
+					zmq_handler::insertAppSeq(refId, stAppSeqNum);
+				}
+				else
+				{
+					std::cout << "Invalid ip json..."<< std::endl;
+					BOOST_LOG_SEV(lg, error) << __func__ << " Invalid ip json...";
+					eFunRetType =  MBUS_STACK_ERROR_INVALID_INPUT_PARAMETER;
+				}
+
+				stMbusApiPram.m_pu8Data = NULL;
+				stMbusApiPram.m_u16TxId = refId;
+
+
+				if(MBUS_STACK_NO_ERROR == eFunRetType)
+				{
+					eFunRetType = jsonParserForWrite(writeReq.m_strTopic, writeReq.m_strMsg, stMbusApiPram, m_u8FunCode);
+				}
+
+				if(MBUS_STACK_NO_ERROR == eFunRetType)
+				{
+					if(MBUS_MIN_FUN_CODE != m_u8FunCode)
+					{
+						eFunRetType = Modbus_Stack_API_Call(
+								m_u8FunCode,
+								&stMbusApiPram,
+								(void*)ModbusMaster_AppCallback);
+					}
+				}
+			}
+			catch(const std::exception &e)
+			{
+				eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
+				BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
+			}
+
 			if(NULL != root)
-					cJSON_Delete(root);
-			return MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
-		}
-		/// restarting refId once reached max. limit.
-		if(refId >= 65535)
-			refId = 1;
+				cJSON_Delete(root);
 
-		cJSON *cmd1 = cJSON_GetObjectItem(root,"app_seq");
-		if(NULL != cmd1)
-		{
-			string stAppSeqNum = cmd1->valuestring;
-			zmq_handler::insertAppSeq(refId, stAppSeqNum);
-		}
-		else
-		{
-			std::cout << "Invalid ip json..."<< std::endl;
-			BOOST_LOG_SEV(lg, error) << __func__ << " Invalid ip json...";
-			eFunRetType =  MBUS_STACK_ERROR_INVALID_INPUT_PARAMETER;
-		}
-
-		pstModbusRxPacket->m_stReqData.m_pu8Data = NULL;
-		pstModbusRxPacket->m_u16ReffId = refId;
-		refId++;
-
-		if(MBUS_STACK_NO_ERROR == eFunRetType)
-			eFunRetType = jsonParserForWrite(a_sTopic, msg, pstModbusRxPacket);
-
-		if(MBUS_STACK_NO_ERROR == eFunRetType)
-		{
-			modbusInterface MbusInterface;// = new modbusInterface();
-
-			eFunRetType = (eMbusStackErrorCode)MbusInterface.
-					MbusApp_Process_Request(pstModbusRxPacket);
-		}
-
+			if(NULL != stMbusApiPram.m_pu8Data)
+			{
+				delete[] stMbusApiPram.m_pu8Data;
+				stMbusApiPram.m_pu8Data  = NULL;
+			}
+		}while(0);
 	}
-	catch(const std::exception &e)
-	{
-		eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
-		BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
-	}
-
-	if(NULL != pstModbusRxPacket)
-	{
-		if(NULL != pstModbusRxPacket->m_stReqData.m_pu8Data)
-		{
-			delete[](pstModbusRxPacket->m_stReqData.m_pu8Data);
-			pstModbusRxPacket->m_stReqData.m_pu8Data = NULL;
-		}
-		delete(pstModbusRxPacket);
-		pstModbusRxPacket = NULL;
-	}
-
-	/*if(MbusInterface != NULL)
-	{
-		delete(MbusInterface);
-		MbusInterface = NULL;
-	}*/
-
-	if(NULL != root)
-		cJSON_Delete(root);
 
 	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
 	return eFunRetType;
@@ -136,7 +166,6 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 	try
 	{
 		int iLen = src.length();
-		//std::cout << "\ninput: " << src << " with length: " << iLen << ", output: ";
 		if(0 != (iLen%2))
 		{
 			std::cout << "\n input string is not proper \n";
@@ -161,11 +190,9 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 			if ((i+1) < iLen)
 			{
 				unsigned char byte2 = char2int(src[i])*16 + char2int(src[i+1]);
-				std::cout << std::hex << (unsigned short)byte2 << " ";
 				target[iOpCharPos] = byte2;
 				iOpCharPos++;
 			}
-			std::cout << std::hex << (unsigned short)byte1 << "\n";
 			target[iOpCharPos] = byte1;
 			iOpCharPos++;
 			i = i + 2;
@@ -180,100 +207,126 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 	return iOpCharPos;
 }
 
-eMbusStackErrorCode modWriteInfo::jsonParserForWrite(std::string a_sTopic,
+eMbusStackErrorCode modWriteHandler::jsonParserForWrite(std::string a_sTopic,
 											std::string& msg,
-											RestMbusReqGeneric_t *pstModbusRxPacket)
+											MbusAPI_t &stMbusApiPram,
+											unsigned char& funcCode)
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	cJSON *root = cJSON_Parse(msg.c_str());
 	try
 	{
-		//int quantity, startAddr, funcCode;
-		string stCommand, stValue;
-
-		cJSON *cmd=cJSON_GetObjectItem(root,"command");
-		cJSON *value=cJSON_GetObjectItem(root,"value");
-		if(cmd && value)
-		{
-			stCommand = cmd->valuestring;
-			stValue = value->valuestring;
-		}
-		else
-		{
-			std::cout << __func__ << " Invalid input json parameter." << std::endl;
-			BOOST_LOG_SEV(lg, error) << __func__ << " Invalid input json parameter.";
-			eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
-		}
 		if(MBUS_STACK_NO_ERROR == eFunRetType)
 		{
-			a_sTopic.erase(a_sTopic.end()-6, a_sTopic.end());	/// 6 is the length of "_Write"
+			bool isWrite = a_sTopic.find("write") <= a_sTopic.length() ? true : false;	//if write then "true" else "false"
+			string stCommand, stValue;
+
+			cJSON *cmd=cJSON_GetObjectItem(root,"command");
+			cJSON *value=cJSON_GetObjectItem(root,"value");
+			if(cmd)
+			{
+				stCommand = cmd->valuestring;
+				if(value && isWrite)
+					stValue = value->valuestring;
+			}
+			else
+			{
+				std::cout << __func__ << " Invalid input json parameter." << std::endl;
+				BOOST_LOG_SEV(lg, error) << __func__ << " Invalid input json parameter.";
+				eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
+			}
+
+			std::size_t found = a_sTopic.find_last_of("_");
+			a_sTopic.erase(found, (a_sTopic.length()-found));
 			string stTopic = a_sTopic + SEPARATOR_CHAR + stCommand;
 
 			std::map<std::string, network_info::CUniqueDataPoint> mpp = network_info::getUniquePointList();
 			struct network_info::stModbusAddrInfo addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
 
+			network_info::CDataPoint obj = mpp.at(stTopic).getDataPoint();
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-		string stIpAddress = addrInfo.m_stTCP.m_sIPAddress;
-		pstModbusRxPacket->m_u16Port = addrInfo.m_stTCP.m_ui16PortNumber;
-#endif
-
-			if(NULL != pstModbusRxPacket)
-			{
-				network_info::CDataPoint obj = mpp.at(stTopic).getDataPoint();
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-			pstModbusRxPacket->m_u8DevId = addrInfo.m_stTCP.m_uiUnitID;
-			CommonUtils::ConvertIPStringToCharArray(stIpAddress,&(pstModbusRxPacket->m_u8IpAddr[0]));
+			string stIpAddress = addrInfo.m_stTCP.m_sIPAddress;
+			stMbusApiPram.m_u16Port = addrInfo.m_stTCP.m_ui16PortNumber;
+			stMbusApiPram.m_u8DevId = addrInfo.m_stTCP.m_uiUnitID;
+			CommonUtils::ConvertIPStringToCharArray(stIpAddress,&(stMbusApiPram.m_u8IpAddr[0]));
 #else
-			pstModbusRxPacket->m_u8DevId = addrInfo.m_stRTU.m_uiSlaveId;
+			stMbusApiPram.m_u8DevId = addrInfo.m_stRTU.m_uiSlaveId;
 #endif
-				pstModbusRxPacket->m_u8FunCode =
-						(uint8_t)((obj.getAddress().m_eType == network_info::eEndPointType::eCoil)?
-																WRITE_SINGLE_COIL:WRITE_SINGLE_REG);
-				pstModbusRxPacket->m_u8NodeId = (uint8_t)1;
-				pstModbusRxPacket->m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
-				pstModbusRxPacket->m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
 
-				if(WRITE_MULTIPLE_REG == pstModbusRxPacket->m_u8FunCode)
-				{
-					pstModbusRxPacket->m_stReqData.m_u8DataLen = pstModbusRxPacket->m_u16Quantity*2;
-				}
-				else if(WRITE_MULTIPLE_COILS == pstModbusRxPacket->m_u8FunCode)
-				{
-					uint8_t u8ByteCount = (0 != (pstModbusRxPacket->m_u16Quantity%8))
-													?((pstModbusRxPacket->m_u16Quantity/8)+1)
-															:(pstModbusRxPacket->m_u16Quantity/8);
+			switch(obj.getAddress().m_eType)
+			{
+			case network_info::eEndPointType::eCoil:
+				funcCode = isWrite ? WRITE_SINGLE_COIL : READ_COIL_STATUS;
+				break;
+			case network_info::eEndPointType::eHolding_Register:
+				funcCode = isWrite ? WRITE_SINGLE_REG : READ_HOLDING_REG;
+				break;
+			case network_info::eEndPointType::eInput_Register:
+				funcCode = READ_INPUT_STATUS;
+				break;
+			case network_info::eEndPointType::eDiscrete_Input:
+				funcCode = READ_INPUT_REG;
+				break;
+			default:
+				BOOST_LOG_SEV(lg, error) << __func__ << " Invalid type.";
+				break;
+			}
+			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
+			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
 
-					pstModbusRxPacket->m_stReqData.m_u8DataLen = (uint8_t)u8ByteCount;
-				}
-				else if(WRITE_SINGLE_COIL == pstModbusRxPacket->m_u8FunCode ||
-						WRITE_SINGLE_REG == pstModbusRxPacket->m_u8FunCode)
+			if(WRITE_MULTIPLE_REG == funcCode)
+			{
+				stMbusApiPram.m_u16ByteCount = stMbusApiPram.m_u16Quantity*2;
+			}
+			else if(WRITE_MULTIPLE_COILS == funcCode)
+			{
+				uint8_t u8ByteCount = (0 != (stMbusApiPram.m_u16Quantity%8))
+																			?((stMbusApiPram.m_u16Quantity/8)+1)
+																					:(stMbusApiPram.m_u16Quantity/8);
+
+				stMbusApiPram.m_u16ByteCount = (uint8_t)u8ByteCount;
+			}
+			else if(WRITE_SINGLE_COIL == funcCode ||
+					WRITE_SINGLE_REG == funcCode)
+			{
+				stMbusApiPram.m_u16ByteCount = MODBUS_SINGLE_REGISTER_LENGTH;
+			}
+			stMbusApiPram.m_pu8Data = new uint8_t[stMbusApiPram.m_u16ByteCount]();
+			if(NULL != stMbusApiPram.m_pu8Data)
+			{
+				if(WRITE_SINGLE_COIL == funcCode)
 				{
-					pstModbusRxPacket->m_stReqData.m_u8DataLen = MODBUS_SINGLE_REGISTER_LENGTH;
-				}
-				pstModbusRxPacket->m_stReqData.m_pu8Data = new uint8_t[pstModbusRxPacket->m_stReqData.m_u8DataLen]();
-				if(NULL != pstModbusRxPacket->m_stReqData.m_pu8Data)
-				{
-					if(WRITE_SINGLE_COIL == pstModbusRxPacket->m_u8FunCode)
+					// If value is 0x01, then write 0xFF00
+					if( (0 == stValue.compare("0x00")) || (0 == stValue.compare("0X00"))
+							|| (0 == stValue.compare("00")) || (0 == stValue.compare("0")))
 					{
-						// If value is 0x01, then write 0xFF00
-						if( (0 == stValue.compare("0x00")) || (0 == stValue.compare("0X00"))
-								|| (0 == stValue.compare("00")) || (0 == stValue.compare("0")))
-						{
-							stValue = "0x0000";
-						}
-						else
-						{
-							stValue = "0xFF00";
-						}
+						stValue = "0x0000";
 					}
-					hex2bin(stValue, pstModbusRxPacket->m_stReqData.m_u8DataLen, pstModbusRxPacket->m_stReqData.m_pu8Data);
+					else
+					{
+						stValue = "0xFF00";
+					}
 				}
-				else
+				if(true == obj.getAddress().m_bIsByteSwap && (WRITE_SINGLE_REG == funcCode))
 				{
-					eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
-					BOOST_LOG_SEV(lg, error) << __func__ << " Unable to allocate memory. Request not sent";
+					std::vector<uint8_t> tempVt;
+					int i = 2;	/// to ignore "0x" from datastring
+					int iLen = stValue.length();
+					while(i < iLen)
+					{
+						unsigned char byte1 = char2int(stValue[i])*16 + char2int(stValue[i+1]);
+						tempVt.push_back(byte1);
+						i = i+2;
+					}
+					stValue = zmq_handler::swapConversion(tempVt,!obj.getAddress().m_bIsByteSwap, false);
 				}
+				hex2bin(stValue, stMbusApiPram.m_u16ByteCount, stMbusApiPram.m_pu8Data);
+			}
+			else
+			{
+				eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
+				BOOST_LOG_SEV(lg, error) << __func__ << " Unable to allocate memory. Request not sent";
 			}
 		}
 	}
@@ -290,52 +343,10 @@ eMbusStackErrorCode modWriteInfo::jsonParserForWrite(std::string a_sTopic,
 	return eFunRetType;
 }
 
-modWriteInfo& modWriteInfo::Instance()
+//TODO function name change
+void modWriteHandler::createWriteListener()
 {
-	static modWriteInfo _self;
-	return _self;
-}
-
-void modWriteHandler::writeToDevicwe(const std::string a_sTopic, std::string msg)
-{
-	modWriteInfo::Instance().writeInfoHandler(a_sTopic, msg);
-}
-
-std::string modWriteHandler::ltrim(const std::string& value)
-{
-    size_t start = value.find_first_not_of(" ");
-    return (start == std::string::npos) ? "" : value.substr(start);
-}
-
-
-std::string modWriteHandler::rtrim(const std::string& value)
-{
-    size_t end = value.find_last_not_of(" ");
-    return (end == std::string::npos) ? "" : value.substr(0, end + 1);
-}
-
-
-std::string modWriteHandler::trim(const std::string& value)
-{
-    return rtrim(ltrim(value));
-}
-
-void modWriteHandler::tokenize(const std::string& tokenizable_data,
-                          std::vector<std::string>& tokenized_data,
-                          const char delimeter)
-{
-    std::stringstream topic_stream(tokenizable_data);
-    std::string data;
-
-    // Tokenizing based on delimeter
-    while(getline(topic_stream, data, delimeter)) {
-        trim(data);
-        tokenized_data.push_back(data);
-    }
-}
-
-void modWriteHandler::zmqReadDeviceMessage()
-{
+	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
 	if(getenv("SubTopics") == NULL)
 	{
 		cout<< __func__<<" Error:: SubTopics are not configured.." << endl;
@@ -352,12 +363,20 @@ void modWriteHandler::zmqReadDeviceMessage()
 		return;
 	}
 
-	for(auto subTopic : stTopics)
+	for(auto sTopic : stTopics)
 	{
-		std::vector<std::string> tempTopic;
-		tokenize(subTopic, tempTopic, '/');
-		std::thread(&modWriteHandler::subscribeDeviceListener, this, tempTopic[1]).detach();
+		std::size_t pos = sTopic.find('/');
+		if (std::string::npos != pos)
+		{
+			std::string subTopic(sTopic.substr(pos + 1));
+			std::thread(&modWriteHandler::subscribeDeviceListener, this, subTopic).detach();
+		}
+		else
+		{
+			BOOST_LOG_SEV(lg, error) << __func__ << " Incorrect topic name format:" << sTopic;
+		}
 	}
+	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
 }
 
 modWriteHandler& modWriteHandler::Instance()
@@ -370,16 +389,15 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 {
 	msg_envelope_t *msg = NULL;
 	msg_envelope_serialized_part_t* parts = NULL;
-	//recv_ctx_t* sub_ctx = NULL;
 	int num_parts = 0;
 	msgbus_ret_t ret;
 	try
 	{
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(stTopic);
-		//ret = msgbus_subscriber_new(msgbus_ctx.m_pContext, stTopic.c_str(), NULL, &sub_ctx);
 		zmq_handler::stZmqSubContext stsub_ctx = zmq_handler::getSubCTX(stTopic);
 
-		while((msgbus_ctx.m_pContext != NULL) && (NULL != stsub_ctx.sub_ctx))
+		while((msgbus_ctx.m_pContext != NULL) && (NULL != stsub_ctx.sub_ctx)
+				&& (false == g_stopThread.load()))
 		{
 			ret = msgbus_recv_wait(msgbus_ctx.m_pContext, stsub_ctx.sub_ctx, &msg);
 			if(ret != MSG_SUCCESS)
@@ -398,8 +416,15 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 
 			if(NULL != parts[0].bytes)
 			{
-				std::string s(parts[0].bytes);
-				std::thread(&modWriteHandler::writeToDevicwe, this, stTopic, s).detach();
+				struct stWriteRequest stWriteRequestNode;
+				std::string strMsg(parts[0].bytes);
+
+				stWriteRequestNode.m_strTopic = stTopic;
+				stWriteRequestNode.m_strMsg = strMsg;
+
+				BOOST_LOG_SEV(lg, error) << __func__ << " write initiated for msg:: " << strMsg;
+				/// pushing write request to q to process.
+				pushToWriteTCPQueue(stWriteRequestNode);
 			}
 
 			msgbus_msg_envelope_serialize_destroy(parts, num_parts);
@@ -418,16 +443,63 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 	}
 }
 
-void modWriteHandler::initZmqReadThread()
+bool modWriteHandler::pushToWriteTCPQueue(struct stWriteRequest &stWriteRequestNode)
 {
 	try
 	{
-		std::thread{std::bind(&modWriteHandler::zmqReadDeviceMessage, std::ref(*this))}.detach();
+		std::lock_guard<std::mutex> lock(__writeReqMutex);
+		stackTCPWriteReqQ.push(stWriteRequestNode);
+		// Signal thread to process
+		sem_post(&semaphoreWriteReq);
 
+		return true;
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
-		std::cout << "\nException modWriteHandler ::" << __func__ << ": Unable to initiate instance: " << e.what();
+		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in modWriteHandler: " << e.what();
 	}
+
+	return false;
+}
+
+void modWriteHandler::initWriteHandlerThreads()
+{
+	static bool bWriteSpawned = false;
+	try
+	{
+		if(false == bWriteSpawned)
+		{
+			// Spawn 5 thread to process write request
+			//for (int i = 0; i < 5; i++)
+			{
+				std::thread{std::bind(&modWriteHandler::writeInfoHandler, std::ref(*this))}.detach();
+			}
+			bWriteSpawned = true;
+		}
+	}
+	catch(const std::exception& e)
+	{
+		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate write handler instance: Exception:" << e.what();
+		std::cout << "\nException modWriteHandler ::" << __func__ << ": Unable to initiate write handler instance: " << e.what();
+	}
+}
+
+bool modWriteHandler::getWriteDataToProcess(struct stWriteRequest &stWriteProcessNode)
+{
+	BOOST_LOG_SEV(lg, error) << __func__ << " Start";
+	try
+	{
+		std::lock_guard<std::mutex> lock(__writeReqMutex);
+		stWriteProcessNode = stackTCPWriteReqQ.front();
+		stackTCPWriteReqQ.pop();
+
+		return true;
+	}
+	catch(const std::exception& e)
+	{
+		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in modWriteHandler: " << e.what();
+	}
+
+	BOOST_LOG_SEV(lg, error) << __func__ << " End";
+	return false;
 }

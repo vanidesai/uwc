@@ -22,6 +22,13 @@
 #include "ConfigManager.hpp"
 #include "utils/YamlUtil.hpp"
 
+#include <sys/msg.h>
+#include <fstream>
+#include <cstdlib>
+#include <stdio.h>
+#include "eis/msgbus/msgbus.h"
+#include "eis/utils/json_config.h"
+#include <semaphore.h>
 #include "ModbusWriteHandler.hpp"
 
 
@@ -33,7 +40,21 @@ protected:
 public:
 	const string topic = "MQTT-EXPORT/PL0_flowmeter1_write,MQTT-EXPORT/PL0_flowmeter2_write";
 	string msg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+
 	string str = "data";
+	uint8_t* target = NULL;
+	string tCommand;
+	string tValue = "0xFF00";
+	RestMbusReqGeneric_t *stModbusRxPacket;
+	unsigned char byte1;
+	int i = 0;
+	stWriteRequest writeReq;
+	unsigned char  m_u8FunCode;
+		MbusAPI_t stMbusApiPram = {};
+	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
+	eMbusStackErrorCode eFunRetType2;
+
+
 };
 
 

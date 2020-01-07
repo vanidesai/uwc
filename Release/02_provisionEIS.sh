@@ -17,6 +17,24 @@ NC=$(tput sgr0)
 
 eis_working_dir="$Current_Dir/docker_setup"
 
+verifyDirectory()
+{
+    echo "Verifying the directory..."    
+    if [ ! -d ${working_dir}/docker_setup ]; then
+    	echo "${RED}UWC installer files file are not placed in right directory.${NC}"
+	echo "${GREEN}Copy UWC installer files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory and re-run this script.${NC}"
+	exit 1
+    fi
+    if [ ! -f UWC.tar.gz ] && [ ! f ${working_dir}/01_pre-requisites.sh ] && [ ! f ${working_dir}/02_provisionAndDeployEIS.sh ] &&  [ ! f ${working_dir}/03_uninstall_EIS.sh ]; then
+    	echo "${RED}UWC.tar.gz, 01_pre-requisites.sh, 02_provisionAndDeployEIS.sh, 03_uninstall_EIS.sh files are not present in required directory.${NC}"
+	echo "${GREEN}Copy all UWC installer files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory and re-run this script.${NC}"
+	exit 1
+    else
+	echo "${GREEN}UWC files are present in current directory${NC}"
+    fi
+
+}
+
 #------------------------------------------------------------------
 # check_for_errors
 #
@@ -54,7 +72,7 @@ check_for_errors()
 checkrootUser()
 {
    echo "Checking for root user..."    
-   if [[ $EUID -ne 0 ]]; then
+   if [[ "$EUID" -ne "0" ]]; then
     	echo "${RED}This script must be run as root.${NC}"
 	echo "${GREEN}E.g. sudo ./<script_name>${NC}"
     	exit 1
@@ -127,48 +145,39 @@ docker_compose_verify()
     return 0
 }
 
+
 #------------------------------------------------------------------
-# eisImageBuild
+# eisProvision
 #
 # Description:
-#        the Edge Insights Software is installed as a systemd service so that it comes up automatically
-#        on machine boot and starts the analytics process.
+#        Reads certificates and save it securely by storing it in the Hashicorp Vault
 # Return:
 #        None
 # Usage:
-#        eisImageBuild
-#-----------------------------------------------------------------
-eisImageBuild()
+#        eisProvision
+#------------------------------------------------------------------
+eisProvision()
 {
-    cd "${eis_working_dir}"
-    docker-compose up --build -d
-    if [ "$?" -eq "0" ];then
-	echo "*****************************************************************"
-        echo "${GREEN}Installed Edge Insights Software 2.1 successfully.${NC}"
+    if [ -d "${eis_working_dir}/provision/" ];then
+        cd "${eis_working_dir}/provision/"
     else
-        echo "${RED}Edge Insights Software 2.1 install failed. Please check logs.${NC}"
-	echo "*****************************************************************"
-        exit 1
+        echo "${RED}ERROR: ${eis_working_dir}/provision/ is not present.${NC}"
+        exit 1 # terminate and indicate error
     fi
+
+    ./provision_eis.sh ../docker-compose.yml
+    check_for_errors "$?" "Provisioning is failed. Please check logs" \
+                    "${GREEN}Provisioning is done successfully.${NC}"
+    echo "${GREEN}>>>>>${NC}"
+    echo "${GREEN}For container deployement,run 03_DeployEIS.sh script"
     return 0
 }
-
-verifyContainer()
-{
-    cd "${eis_working_dir}"
-    echo "*****************************************************************"
-    echo "${GREEN}Below is the containers deployed status.${NC}"
-    echo "*****************************************************************"
-    docker ps
-    return 0
-}
-
+verifyDirectory
 checkrootUser
 checkInternetConnection
 docker_verify
 docker_compose_verify
-eisImageBuild
-verifyContainer
+eisProvision
 
 cd "${Current_Dir}"
 exit 0

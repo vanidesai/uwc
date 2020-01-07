@@ -130,6 +130,10 @@ TEST_F(ZmqHandler_ut, prepare_test_other2)
 }
 
 
+
+
+
+
 /***************************************ZmqHandler::insertSubCTX()************************************************/
 
 
@@ -159,12 +163,12 @@ TEST_F(ZmqHandler_ut, getCTX)
    try
    {
 	   populatePollingRefData();
-	   EXPECT_EQ(2,2);
+
    }
    catch(std::exception &e)
    {
 	   std::cout << e.what() << std::endl;
-	   EXPECT_EQ(1,1);
+	   EXPECT_EQ("map::at", (string)e.what());
    }
 
 
@@ -175,7 +179,6 @@ TEST_F(ZmqHandler_ut, getCTX2)
 	try
 	{
 		zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("PL0_flowmeter1");
-		  EXPECT_EQ(1,1);
 
 	}
 	catch(std::exception &e)
@@ -192,13 +195,14 @@ TEST_F(ZmqHandler_ut, getCTX3)
 	try
 	{
 		zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("PL1_flowmeter2");
-        EXPECT_EQ(1,1);
+
 
 	}
 	catch(std::exception &e)
 	{
 
       std::cout<<e.what()<<endl;
+      EXPECT_EQ("map::at", (string)e.what());
 
 	}
 }
@@ -270,10 +274,6 @@ TEST_F(ZmqHandler_ut, getSubCtx2)
 	{
 
        busSubCTX = zmq_handler::getSubCTX("MQTT-Export/PL0_flowmeter1_write");
-
-       cout<<"-------EXCEPTION---------"<<endl;
-       cout<<e.what()<<endl;
-       cout<<"------EXCEPTION----------"<<endl;
        EXPECT_EQ("map::at", (string)e.what());
 	}
 
@@ -289,19 +289,12 @@ TEST_F(ZmqHandler_ut, getPubCtx)
 
 		bool bRes = zmq_handler::prepareCommonContext("pub");
 
-		//EXPECT_DEATH(zmq_handler::prepareCommonContext("pub"), "Failed to bind publisher socket: [98] Address already in use");
-		//busPubCTX = zmq_handler::getPubCTX("PL1_flowmeter2");
-
-
 	}
 	catch(std::exception &e)
 	{
-       //EXPECT_EQ("map::at", e.what());
+
        busPubCTX = zmq_handler::getPubCTX("PL0_flowmeter1");
 
-       cout<<"-------EXCEPTION---------"<<endl;
-       cout<<e.what()<<endl;
-       cout<<"------EXCEPTION----------"<<endl;
        EXPECT_EQ("map::at", (string)e.what());
 
 
@@ -359,29 +352,27 @@ TEST_F(ZmqHandler_ut, removeCTX)
    try
    {
 	   zmq_handler::removeCTX("PL0_flowmeter1");
-	   EXPECT_EQ(1,1);
+
    }
    catch(std::exception &e)
    {
 
 	   cout<<e.what()<<endl;
-	   EXPECT_EQ(1,1);
+	   EXPECT_EQ("map::at", (string)e.what());
    }
 }
 
-TEST_F(ZmqHandler_ut, removeCTX1)             //This Test Fails.
+TEST_F(ZmqHandler_ut, removeCTX1)
 {
    try
    {
 	   zmq_handler::removeCTX("PL2_flowmeter3");
-	   //EXPECT_EQ
-	   // To be updated later
+
    }
    catch(std::exception &e)
    {
 
-	   cout<<e.what()<<endl;
-	   EXPECT_EQ(1,1);
+	   EXPECT_EQ("map::at", (string)e.what());
    }
 }
 
@@ -397,7 +388,7 @@ TEST_F(ZmqHandler_ut, removeSubCTX)
 	catch(std::exception &e)
 	{
 		cout<<e.what();
-		EXPECT_EQ(1,1);
+		EXPECT_EQ("map::at", (string)e.what());
 	}
 }
 
@@ -413,7 +404,7 @@ TEST_F(ZmqHandler_ut, removePubCTX)
    catch(std::exception &e)
    {
 	   std::cout<<e.what();
-	   EXPECT_EQ(2,2);
+	   EXPECT_EQ("map::at", (string)e.what());
    }
 }
 
@@ -447,12 +438,12 @@ TEST_F(ZmqHandler_ut, removeAppCTX)
 	}
 	catch(std::exception &e)
 	{
-		EXPECT_EQ(1,1);
+		EXPECT_EQ("map::at", (string)e.what());
 		cout<<e.what()<<endl;
 	}
 }
 
-TEST_F(ZmqHandler_ut, trialtest)
+TEST_F(ZmqHandler_ut, buildNettest)
 {
 	network_info::buildNetworkInfo(true);
 }
