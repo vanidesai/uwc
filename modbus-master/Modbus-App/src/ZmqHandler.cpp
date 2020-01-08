@@ -37,7 +37,7 @@ namespace
 	std::map<std::string, stZmqSubContext> g_mapSubContextMap;
 	std::map<std::string, stZmqPubContext> g_mapPubContextMap;
 
-	std::map<unsigned short, std::string> g_mapAppSeq;
+	std::map<unsigned short, stOnDemandRequest> g_mapAppSeq;
 }
 
 bool zmq_handler::prepareCommonContext(std::string topicType)
@@ -206,7 +206,7 @@ void zmq_handler::removePubCTX(std::string a_sTopic)
 	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
 }
 
-std::string& zmq_handler::getAppSeq(unsigned short seqno)
+stOnDemandRequest& zmq_handler::getOnDemandReqData(unsigned short seqno)
 {
 	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << seqno;
 	std::unique_lock<std::mutex> lck(__appSeqMapLock);
@@ -217,7 +217,7 @@ std::string& zmq_handler::getAppSeq(unsigned short seqno)
 	return g_mapAppSeq.at(seqno);
 }
 
-bool zmq_handler::insertAppSeq(unsigned short seqno, std::string appseqno)
+bool zmq_handler::insertOnDemandReqData(unsigned short seqno, stOnDemandRequest reqData)
 {
 	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " ;
 	bool bRet = true;
@@ -226,7 +226,7 @@ bool zmq_handler::insertAppSeq(unsigned short seqno, std::string appseqno)
 		std::unique_lock<std::mutex> lck(__appSeqMapLock);
 
 		/// insert the data
-		g_mapAppSeq.insert(std::pair <unsigned short, std::string> (seqno, appseqno));
+		g_mapAppSeq.insert(std::pair <unsigned short, stOnDemandRequest> (seqno, reqData));
 	}
 	catch (exception &e)
 	{
@@ -238,7 +238,7 @@ bool zmq_handler::insertAppSeq(unsigned short seqno, std::string appseqno)
 	return bRet;
 }
 
-void zmq_handler::removeAppSeq(unsigned short seqno)
+void zmq_handler::removeOnDemandReqData(unsigned short seqno)
 {
 	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << seqno;
 	std::unique_lock<std::mutex> lck(__appSeqMapLock);

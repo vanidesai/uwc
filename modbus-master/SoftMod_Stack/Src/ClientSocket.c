@@ -127,6 +127,7 @@ int8_t checkforblockingread(void);
 
 #endif
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 void (*ModbusMaster_ApplicationCallback)(uint8_t  ,
 		uint16_t ,
 		uint8_t* ,
@@ -138,8 +139,29 @@ void (*ModbusMaster_ApplicationCallback)(uint8_t  ,
 		uint16_t,
 		uint16_t);
 
-
 void (*ReadFileRecord_CallbackFunction)(uint8_t, uint8_t*,uint16_t, uint16_t,uint8_t,
+		stException_t *,
+		stMbusRdFileRecdResp_t*);
+
+void (*WriteFileRecord_CallbackFunction)(uint8_t, uint8_t*, uint16_t, uint16_t,uint8_t,
+		stException_t*,
+		stMbusWrFileRecdResp_t*);
+
+void (*ReadDeviceIdentification_CallbackFunction)(uint8_t, uint8_t*, uint16_t, uint16_t,uint8_t,
+		stException_t*,
+		stRdDevIdResp_t*);
+#else
+void (*ModbusMaster_ApplicationCallback)(uint8_t  ,
+		uint16_t ,
+		uint8_t* ,
+		uint8_t  ,
+		stException_t*,
+		uint8_t  ,
+		uint8_t* ,
+		uint16_t,
+		uint16_t);
+
+void (*ReadFileRecord_CallbackFunction)(uint8_t, uint8_t*, uint16_t,uint8_t,
 		stException_t *,
 		stMbusRdFileRecdResp_t*);
 
@@ -147,9 +169,10 @@ void (*WriteFileRecord_CallbackFunction)(uint8_t, uint8_t*, uint16_t,uint8_t,
 		stException_t*,
 		stMbusWrFileRecdResp_t*);
 
-void (*ReadDeviceIdentification_CallbackFunction)(uint8_t, uint8_t*, uint16_t, uint16_t,uint8_t,
+void (*ReadDeviceIdentification_CallbackFunction)(uint8_t, uint8_t*, uint16_t,uint8_t,
 		stException_t*,
 		stRdDevIdResp_t*);
+#endif
 
 /**
  *
@@ -291,8 +314,8 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 
-		if(NULL != ReadFileRecord_CallbackFunction)
-			ReadFileRecord_CallbackFunction(pstMBusRequesPacket->m_u8UnitID,
+		if(NULL != WriteFileRecord_CallbackFunction)
+			WriteFileRecord_CallbackFunction(pstMBusRequesPacket->m_u8UnitID,
 					pstMBusRequesPacket->m_u8IpAddr,
 					pstMBusRequesPacket->u16Port,
 					pstMBusRequesPacket->m_u16TransactionID,

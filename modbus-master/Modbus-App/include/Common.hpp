@@ -185,6 +185,7 @@ typedef enum MbusStackErrorCode
 uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 								MbusAPI_t *pstMbusApiPram,void* vpCallBackFun);
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 /// This function is for application callback for common read write coils and registers function codes.
 void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		 	 	 	 	 	 uint16_t u16TransacID,
@@ -196,6 +197,18 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint8_t* pu8data,
 							 uint16_t  u16StartAdd,
 							 uint16_t  u16Quantity);
+#else
+/// This function is for application callback for common read write coils and registers function codes.
+void ModbusMaster_AppCallback(uint8_t  u8UnitID,
+		 	 	 	 	 	 uint16_t u16TransacID,
+							 uint8_t* pu8IpAddr,
+							 uint8_t  u8FunCode,
+							 stException_t  *pstException,
+							 uint8_t  u8numBytes,
+							 uint8_t* pu8data,
+							 uint16_t  u16StartAdd,
+							 uint16_t  u16Quantity);
+#endif
 
 class modbusInterface
 {

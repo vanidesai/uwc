@@ -493,6 +493,7 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 }
 
 // function to receive RP-A call back
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 										 uint16_t u16TransacID,
 										 uint8_t* pu8IpAddr,
@@ -503,6 +504,17 @@ eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 										 uint8_t* pu8data,
 										 uint16_t  u16StartAddress,
 										 uint16_t  u16Quantity)
+#else
+eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
+										 uint16_t u16TransacID,
+										 uint8_t* pu8IpAddr,
+										 uint8_t  u8FunCode,
+										 stException_t  *pstException,
+										 uint8_t  u8numBytes,
+										 uint8_t* pu8data,
+										 uint16_t  u16StartAddress,
+										 uint16_t  u16Quantity)
+#endif
 {
 	/// validate pointer
 	if(NULL == pu8data)

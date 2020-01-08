@@ -18,6 +18,12 @@
 
 using std::string;
 
+struct stOnDemandRequest
+{
+	std::string m_strAppSeq;
+	bool m_isByteSwap;
+};
+
 namespace zmq_handler 
 {
 	struct stZmqContext 
@@ -64,13 +70,13 @@ namespace zmq_handler
 	void removePubCTX(std::string);
 
 	/// function to get app sequence number given in request json
-	std::string& getAppSeq(unsigned short seqno);
+	stOnDemandRequest& getOnDemandReqData(unsigned short seqno);
 
 	/// function to insert new entry in map
-	bool insertAppSeq(unsigned short, std::string);
+	bool insertOnDemandReqData(unsigned short, stOnDemandRequest);
 
 	/// function to remove entry from the map
-	void removeAppSeq(unsigned short);
+	void removeOnDemandReqData(unsigned short);
 
 	/// function for byteswap and wordswap
 	std::string swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap = false, bool a_bIsWordSwap = false);

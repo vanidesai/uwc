@@ -10,5 +10,5 @@
 
 USER_OBJS :=
 
-LIBS := -lModbusMasterStack -leisconfigmgr -leismsgenv -leisutils -lboost_system -lboost_regex -lboost_thread -lboost_filesystem -lyaml-cpp -lsafestring -lpthread -lboost_log -lcjson -leismsgbus -lboost_log_setup
+LIBS := -lModbusMasterStack -lrt -leisconfigmgr -leismsgenv -leisutils -lboost_system -lboost_regex -lboost_thread -lboost_filesystem -lyaml-cpp -lsafestring -lpthread -lboost_log -lcjson -leismsgbus -lboost_log_setup
 

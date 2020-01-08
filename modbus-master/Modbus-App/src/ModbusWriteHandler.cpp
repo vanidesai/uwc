@@ -85,28 +85,6 @@ eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 					return MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
 				}
 
-				refId++;
-				/// restarting refId once reached max. limit.
-				if(refId >= 65535)
-					refId = 1;
-
-				cJSON *cmd1 = cJSON_GetObjectItem(root,"app_seq");
-				if(NULL != cmd1)
-				{
-					string stAppSeqNum = cmd1->valuestring;
-					zmq_handler::insertAppSeq(refId, stAppSeqNum);
-				}
-				else
-				{
-					std::cout << "Invalid ip json..."<< std::endl;
-					BOOST_LOG_SEV(lg, error) << __func__ << " Invalid ip json...";
-					eFunRetType =  MBUS_STACK_ERROR_INVALID_INPUT_PARAMETER;
-				}
-
-				stMbusApiPram.m_pu8Data = NULL;
-				stMbusApiPram.m_u16TxId = refId;
-
-
 				if(MBUS_STACK_NO_ERROR == eFunRetType)
 				{
 					eFunRetType = jsonParserForWrite(writeReq.m_strTopic, writeReq.m_strMsg, stMbusApiPram, m_u8FunCode);
@@ -214,17 +192,26 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(std::string a_sTopic,
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
+	string stCommand, stValue;
 	cJSON *root = cJSON_Parse(msg.c_str());
 	try
 	{
 		if(MBUS_STACK_NO_ERROR == eFunRetType)
 		{
 			bool isWrite = a_sTopic.find("write") <= a_sTopic.length() ? true : false;	//if write then "true" else "false"
-			string stCommand, stValue;
+			refId++;
+			/// restarting refId once reached max. limit.
+			if(refId >= 65535)
+				refId = 1;
 
+			stMbusApiPram.m_pu8Data = NULL;
+			stMbusApiPram.m_u16TxId = refId;
+
+			cJSON *appseq = cJSON_GetObjectItem(root,"app_seq");
 			cJSON *cmd=cJSON_GetObjectItem(root,"command");
 			cJSON *value=cJSON_GetObjectItem(root,"value");
-			if(cmd)
+
+			if(cmd && appseq)
 			{
 				stCommand = cmd->valuestring;
 				if(value && isWrite)
@@ -275,6 +262,14 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(std::string a_sTopic,
 			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
 			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
 
+			if(NULL != appseq)
+			{
+				stOnDemandRequest reqData;
+				reqData.m_strAppSeq = appseq->valuestring;
+				reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
+				zmq_handler::insertOnDemandReqData(refId, reqData);
+			}
+
 			if(WRITE_MULTIPLE_REG == funcCode)
 			{
 				stMbusApiPram.m_u16ByteCount = stMbusApiPram.m_u16Quantity*2;
@@ -282,8 +277,8 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(std::string a_sTopic,
 			else if(WRITE_MULTIPLE_COILS == funcCode)
 			{
 				uint8_t u8ByteCount = (0 != (stMbusApiPram.m_u16Quantity%8))
-																			?((stMbusApiPram.m_u16Quantity/8)+1)
-																					:(stMbusApiPram.m_u16Quantity/8);
+											?((stMbusApiPram.m_u16Quantity/8)+1)
+											:(stMbusApiPram.m_u16Quantity/8);
 
 				stMbusApiPram.m_u16ByteCount = (uint8_t)u8ByteCount;
 			}

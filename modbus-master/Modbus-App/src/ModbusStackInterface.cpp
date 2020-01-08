@@ -36,6 +36,7 @@ std::mutex g_RWCommonCallbackMutex;
  * @return void nothing
  *
  */
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		 	 	 	 	 	 uint16_t u16TransacID,
 							 uint8_t* pu8IpAddr,
@@ -46,6 +47,17 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint8_t* pu8data,
 							 uint16_t  u16StartAdd,
 							 uint16_t  u16Quantity)
+#else
+void ModbusMaster_AppCallback(uint8_t  u8UnitID,
+		 	 	 	 	 	 uint16_t u16TransacID,
+							 uint8_t* pu8IpAddr,
+							 uint8_t  u8FunCode,
+							 stException_t  *pstException,
+							 uint8_t  u8numBytes,
+							 uint8_t* pu8data,
+							 uint16_t  u16StartAdd,
+							 uint16_t  u16Quantity)
+#endif
 {
 	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
 	const char* pcWriteRespTopic = std::getenv("WRITE_RESPONSE_TOPIC");
@@ -60,6 +72,10 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 
 	try
 	{
+		stOnDemandRequest onDemandReqData = zmq_handler::getOnDemandReqData(u16TransacID);
+		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(pcWriteRespTopic);
+		msgbus_msg_envelope_put(msg, "topic", ptResTopic);
+
 		if( u8FunCode == READ_COIL_STATUS ||
 				u8FunCode == READ_HOLDING_REG ||
 				u8FunCode == READ_INPUT_STATUS ||
@@ -73,14 +89,13 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 
 			/// word swap is always false.
 			std:: string strdata = zmq_handler::swapConversion(datavt,
-															false,
+															onDemandReqData.m_isByteSwap,
 															false);
 			msg_envelope_elem_body_t* ptData = msgbus_msg_envelope_new_string(strdata.c_str());
 			msgbus_msg_envelope_put(msg, "value", ptData);
 		}
 
-		std::string stAppSeqNum = zmq_handler::getAppSeq(u16TransacID);
-		msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(stAppSeqNum.c_str());
+		msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(onDemandReqData.m_strAppSeq.c_str());
 		msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
 
 		if(pu8IpAddr != NULL && pstException->m_u8ExcCode == 0 && pstException->m_u8ExcStatus ==0)

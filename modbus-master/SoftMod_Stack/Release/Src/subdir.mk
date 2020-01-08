@@ -33,7 +33,7 @@ C_DEPS += \
 Src/%.o: ../Src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -DMODBUS_STACK_TCPIP_ENABLED -I../../SoftMod_Stack/Inc -I../../bin/safestring/include -O3 -Wall -c -fmessage-length=0 -fPIC -pthread  -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -Wformat -Wformat-security -fstack-protector-strong -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	gcc -DMODBUS_STACK_TCPIP_ENABLED -I..//Inc -I../../bin/safestring/include -O3 -Wall -c -fmessage-length=0 -fPIC -pthread  -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -Wformat -Wformat-security -fstack-protector-strong -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
