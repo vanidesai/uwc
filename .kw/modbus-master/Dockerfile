@@ -15,26 +15,15 @@ ARG EIS_UID
 
 FROM ia_common:$EIS_VERSION as common
 
-# Build Boost Library
-FROM eisbase as build-boost
-RUN apt-get update && apt-get install -y \
-    curl \
-    tar 
+# Build log4cpp Library
+FROM eisbase as build-log4cpp
 
-ARG BOOST_VERSION=1.71.0
-ARG BOOST_CHECKSUM=96b34f7468f26a141f6020efb813f1a2f3dfb9797ecf76a7d7cbd843cc95f5bd
-ARG BOOST_DIR=boost
-ARG CONCURRENT_PROCESSES=1
-ENV BOOST_VERSION ${BOOST_VERSION}
-
-RUN mkdir -p ${BOOST_DIR} \
-    && cd ${BOOST_DIR} \
-    && curl -L --retry 3 "https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_1_71_0.tar.gz" -o boost.tar.gz \
-    && echo "${BOOST_CHECKSUM}  boost.tar.gz" | sha256sum -c \
-    && tar -xzf boost.tar.gz --strip 1 \
-    && ./bootstrap.sh  --prefix=/usr/boost --without-icu --with-libraries=filesystem,log,regex,system,thread,date_time  \
-    && ./b2 link=shared runtime-link=shared --no-cmake-config install \
-    && cd .. && rm -rf ${BOOST_DIR}
+RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
+    && tar -zxvf log4cpp-1.1.3.tar.gz \
+    && cd log4cpp && mkdir build \
+    && ./configure --enable-static=no --prefix=$PWD/build \
+    && make \
+    && make install
 
 # yaml build
 FROM eisbase as build-yaml
@@ -98,7 +87,8 @@ RUN cd Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.int
        /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
        cp test.log tables_UWC/build.log ;\
        cp parse_errors.log tables_UWC/parse_errors.log ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC  --name KWReport_SoftMod_Stack_sprint3_TCP_2
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC  --name KWReport_SoftMod_Stack_sprint5_TCP
+
 
 
 # Build Modbus application
@@ -110,12 +100,13 @@ COPY --from=common /usr/local/include /usr/local/include
 COPY --from=common /usr/local/lib /usr/local/lib
 
 # Copy built library from images
-COPY --from=build-boost /usr/boost /bin/boost/.
 COPY --from=build-yaml /usr/yaml /bin/yaml-cpp/.
 
 COPY Modbus-App /Modbus-App/. 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
 COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
+COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
+COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /Modbus-App/lib/
 
 RUN mkdir kw10 ; \
        export http_proxy="http://proxy-chain.intel.com:911"; \
@@ -158,8 +149,7 @@ RUN cd /Modbus-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.
        /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
        cp test.log tables_UWC/build.log ;\
        cp parse_errors.log tables_UWC/parse_errors.log ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC  --name KWReport_Modbus-App_sprint3_TCP_2 ;
-
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC  --name KWReport_Modbus-App_sprint5_TCP ;
 
 # Build Modbus container service
 FROM eisbase as modbus-service
@@ -177,8 +167,9 @@ WORKDIR ${APP_WORK_DIR}
 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so ${APP_WORK_DIR}
 COPY --from=modbus-app /Modbus-App/Release/ModbusMaster ${APP_WORK_DIR}
-COPY --from=modbus-app /bin/boost/lib/*.so.*  ${APP_WORK_DIR}
 COPY --from=build-yaml /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
+COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
+COPY --from=modbus-app /Modbus-App/Config/log4cpp.properties /opt/intel/config
 
 RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config
 RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
