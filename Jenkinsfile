@@ -37,7 +37,7 @@ pipeline {
 					
 				  }
 				}
-			  sh "cp -r ./Deploy/* ./IEdgeInsights/"
+			  sh "cp -r ./Release/* ./IEdgeInsights/"
 			  sh "cd ./IEdgeInsights/; ls -la"
 			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
@@ -65,7 +65,7 @@ pipeline {
 					
 				  }
 				}
-			  sh "cp -r ./Deploy/* ./IEdgeInsights/"
+			  sh "cp -r ./Release/* ./IEdgeInsights/"
 			  sh "cd ./IEdgeInsights/; ls -la"
 			  sh "cp ./.kw/modbus-master/*  ./IEdgeInsights/modbus-master/;"
 			  sh "cp ./.kw/mqtt-export/*  ./IEdgeInsights/mqtt-export/;"
