@@ -520,7 +520,7 @@ docker_verification_installation()
 # Internal function calls to set up Insights
 verifyDirectory
 checkrootUser
-checkInternetConnection
+#checkInternetConnection
 installBasicPackages
 docker_verification_installation	"$@"
 docker_compose_verify_installation
