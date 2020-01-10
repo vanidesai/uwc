@@ -19,7 +19,7 @@ pipeline {
     }
     stages {
         stage('Build') {
-		  when { branch "UWC-Sprint3" }
+		  when { branch "UWC-Sprint5" }
 		  steps {
 			  echo 'Hello..'
 			  sh "apt update"
@@ -39,7 +39,7 @@ pipeline {
 				}
 			  sh "cp -r ./Deploy/* ./IEdgeInsights/"
 			  sh "cd ./IEdgeInsights/; ls -la"
-			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh; "
+			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./03_DeployEIS.sh; ./03_DeployEIS.sh; "
 			  
@@ -47,7 +47,7 @@ pipeline {
           
         }
 	stage('KW-Scan') {
-		  when { branch "UWC-Sprint3" }
+		  when { branch "UWC-Sprint5" }
 		  steps {
 			  echo 'Hello..'
 			  sh "apt update"
@@ -70,7 +70,7 @@ pipeline {
 			  sh "cp ./.kw/modbus-master/*  ./IEdgeInsights/modbus-master/;"
 			  sh "cp ./.kw/mqtt-export/*  ./IEdgeInsights/mqtt-export/;"
 			  
-			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh; "
+			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
 			  
 			  sh "cp ./.kw/03_DeployEIS.sh  ./IEdgeInsights/03_DeployEIS.sh;"
