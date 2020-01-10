@@ -45,6 +45,7 @@ pipeline {
 			  sh "echo \"HTTPS_PROXY=http://proxy-chain.intel.com:912\" >> /etc/environment"
 			  //sh "source /etc/environment"
 
+			  sh "sudo apt-get -y install systemd"
 			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./03_DeployEIS.sh; ./03_DeployEIS.sh; "
@@ -81,6 +82,7 @@ pipeline {
 			  sh "cp ./.kw/modbus-master/*  ./IEdgeInsights/modbus-master/;"
 			  sh "cp ./.kw/mqtt-export/*  ./IEdgeInsights/mqtt-export/;"
 			  
+			  sh "sudo apt-get -y install systemd"
 			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./03_DeployEIS.sh; ./03_DeployEIS.sh; "
