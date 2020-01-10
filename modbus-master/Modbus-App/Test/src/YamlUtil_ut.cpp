@@ -22,7 +22,10 @@ void YamlUtil_ut::TearDown()
 
 /**************************ConvertIPStringToCharArray()*************************************/
 
-/* Valid string */
+
+/***Test:YamlUtil_ut::ConvertIPStringToCharArray_ValidString() checks ConvertIPStringToCharArray()
+ function with valid string*/
+
 TEST_F(YamlUtil_ut, ConvertIPStringToCharArray_ValidString)
 {
 	try

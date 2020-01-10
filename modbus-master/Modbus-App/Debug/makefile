@@ -51,7 +51,7 @@ all: ModbusMaster
 ModbusMaster: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L../$(PROJECT_DIR)/lib -L../$(PROJECT_DIR)/../bin/boost/lib -L../$(PROJECT_DIR)/../bin/yaml-cpp/lib -L../$(PROJECT_DIR)/../bin/safestring/lib -z noexecstack -z relro -z now -pie -o "ModbusMaster" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L../$(PROJECT_DIR)/lib -L../$(PROJECT_DIR)/../bin/yaml-cpp/lib -L../$(PROJECT_DIR)/../bin/safestring/lib -z noexecstack -z relro -z now -pie -o "ModbusMaster" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

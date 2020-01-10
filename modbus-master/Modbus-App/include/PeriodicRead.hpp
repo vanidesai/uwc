@@ -26,7 +26,6 @@
 //#include "session.hpp"
 //#include "cpprest/http_listener.h"
 //#include "Httprest.hpp"
-#include "BoostLogger.hpp"
 #include "cjson/cJSON.h"
 #include "PublishJson.hpp"
 

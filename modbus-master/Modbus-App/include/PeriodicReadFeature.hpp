@@ -14,7 +14,6 @@
 #include <vector>
 #include <map>
 #include <mutex>
-#include <boost/asio.hpp>
 #include <semaphore.h>
 #include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
@@ -104,7 +103,7 @@ class CTimeMapper
 		return timeMapper;
 	}
 	void ioPeriodicReadTimer(int v);
-	static void timerThreadFunc(const boost::system::error_code& e, boost::asio::steady_timer* t);
+	//static void timerThreadFunc(const boost::system::error_code& e, boost::asio::steady_timer* t);
 	void checkTimer();
 	void initTimerFunction();
 

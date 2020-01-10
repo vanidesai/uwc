@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include "../include/CWellSiteInfo_ut.h"
+#include "../include/CWellSiteInfo_ut.hpp"
 
 void CWellSiteInfo_ut::SetUp()
 {
@@ -22,10 +22,10 @@ void CWellSiteInfo_ut::TearDown()
 
 /******************************CWellSiteInfo::getID*****************************************/
 
-/* TC001
-Test: Return of CWellSiteInfo::getID.
-CWellSiteInfo::getID should return ID mentioned in PL0.yml.
- */
+/*Test:CWellSiteInfo_ut::getID_return.***/
+
+/*CWellSiteInfo::getID() should return ID mentioned in PL0.yml.*/
+
 TEST_F(CWellSiteInfo_ut, getID_return) {
 
 	try
@@ -48,11 +48,11 @@ TEST_F(CWellSiteInfo_ut, getID_return) {
 
 /******************************CWellSiteInfo::addDevice*****************************************/
 
-/* TC002
-Test: Return of CWellSiteInfo::addDevice. //Need to be updated
-CWellSiteInfo::addDevice should
-  return 0 if device added successfully in the vector.
- */
+/*** Test:CWellSiteInfo_ut::addDevice_return0.***/ //Need to be updated
+
+/*CWellSiteInfo::addDevice() should
+  return 0 if device added successfully in the vector.*/
+
 
 TEST_F(CWellSiteInfo_ut, addDevice_return0) {
 
@@ -92,11 +92,10 @@ TEST_F(CWellSiteInfo_ut, addDevice_return0) {
 	}
 }
 
-/* TC003
-Test: Return of CWellSiteInfo::addDevice.
-CWellSiteInfo::addDevice should
-  return -2 if Network type mentioned in .yml file doesn't match with "g_eNetworkType"
- */
+/* Test:CWellSiteInfo_ut::addDevice_returnMin2.***/
+/*CWellSiteInfo::addDevice() should
+  return -2 if Network type mentioned in .yml file doesn't match with "g_eNetworkType"*/
+
 
 #if 0 // To be updated later
 TEST_F(CWellSiteInfo_ut, addDevice_returnMin2) {
@@ -128,11 +127,9 @@ TEST_F(CWellSiteInfo_ut, addDevice_returnMin2) {
 }
 #endif // To be updated later
 
-/* TC004
-Test: Return of CWellSiteInfo::addDevice.
-CWellSiteInfo::addDevice should
-  return -1 if device is already present in vector.
- */
+/*** Test: CWellSiteInfo_ut::addDevice_returnMin1.***/
+/*CWellSiteInfo::addDevice() should return -1 if device is already present in vector.*/
+
 TEST_F(CWellSiteInfo_ut, addDevice_returnMin1) {
 
 	try
@@ -176,10 +173,9 @@ TEST_F(CWellSiteInfo_ut, addDevice_returnMin1) {
 
 /******************************CWellSiteInfo::getDevices*****************************************/
 
-/* TC005
-Test: Return of CWellSiteInfo::getDevices.
-CWellSiteInfo::getDevices should return the device list.
- */
+/***Test:CWellSiteInfo_ut::addDevice_return.***/
+/* CWellSiteInfo::getDevices() should return the device list.*/
+
 #if 0
 TEST_F(CWellSiteInfo_ut, addDevice_return) {
 
@@ -230,9 +226,8 @@ TEST_F(CWellSiteInfo_ut, addDevice_return) {
 
 /******************************CWellSiteInfo::build*****************************************/
 
-/* TC006
-Test: Behaviour of CWellSiteInfo::build when adddevice() function is unsuccessful.
- */
+/*Test: Behaviour of CWellSiteInfo::build when adddevice() function is unsuccessful.*/
+
 #if 0 // To be updated later
 TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 
@@ -270,9 +265,8 @@ TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 }
 #endif // To be updated later
 
-/* TC007
-Test: Behaviour of CWellSiteInfo::build when "id" is not present in yml file.
- */
+/*Test: Behaviour of CWellSiteInfo::build when "id" is not present in yml file.*/
+
 #if 0 // To be updated later
 TEST_F(CWellSiteInfo_ut, build_NoId) {
 

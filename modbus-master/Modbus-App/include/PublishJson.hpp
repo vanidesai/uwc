@@ -11,7 +11,6 @@
 #ifndef INCLUDE_PUBLISHJSON_HPP_
 #define INCLUDE_PUBLISHJSON_HPP_
 
-#include "BoostLogger.hpp"
 #include "Common.hpp"
 #include <eis/utils/thread_safe_queue.h>
 #include <eis/utils/config.h>

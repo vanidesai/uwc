@@ -20,17 +20,17 @@ CTopicMapper::CTopicMapper() {
 void CTopicMapper::ParseJson() {
 	try {
 
-		std::cout << __func__ << " Parsing json for topic mapping\n";
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Parsing json for topic mapping"));
 
 		if(!CfgManager::Instance().IsClientCreated())
 		{
-			std::cout << __func__ << " ETCD client is not created ..\n";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("ETCD client is not created .."));
 			return;
 		}
 		char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("config");
 		if(NULL == cEtcdValue)
 		{
-			std::cout << __func__ << " No value received from ETCD\n";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("No value received from ETCD"));
 			return;
 		}
 
@@ -38,12 +38,12 @@ void CTopicMapper::ParseJson() {
 		cJSON *root = cJSON_Parse(cEtcdValue);
 		if(NULL == root)
 		{
-			std::cout << __func__ << " Could not parse value received from ETCD.\n";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not parse value received from ETCD."));
 			return;
 		}
 
 		if(! cJSON_HasObjectItem(root, "Mapping")) {
-			std::cout << __func__ << " Topic json does not have 'mappings' key\n";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Topic json does not have 'mappings' key"));
 			if (NULL != root)
 				free(root);
 
@@ -54,7 +54,7 @@ void CTopicMapper::ParseJson() {
 		cJSON *mappings = cJSON_GetObjectItem(root, "Mapping");
 		if(NULL == mappings)
 		{
-			std::cout << __func__ << " Could not get mapping from JSON config present in ETCD.\n";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not get mapping from JSON config present in ETCD."));
 			cJSON_Delete(root);
 			return;
 		}
@@ -68,21 +68,21 @@ void CTopicMapper::ParseJson() {
 			cJSON *msgSrc = cJSON_GetArrayItem(mappings, i);
 			if(NULL == msgSrc)
 			{
-				std::cout << __func__ << " Could not get JSON object for iteration " << i << std::endl;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Could not get JSON object for iteration " + std::to_string(i)));
 				continue;
 			}
 
 			char *srcName =  cJSON_GetObjectItem(msgSrc, "MsgSource")->valuestring;
 			if(NULL == srcName)
 			{
-				std::cout << __func__ << " Wrong configuration: MsgSource key not found for iteration " << i << std::endl;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Wrong configuration: MsgSource key not found for iteration " + std::to_string(i)));
 				continue;
 			}
 
 			cJSON *topics = cJSON_GetObjectItem(msgSrc, "Topics");
 			if(NULL == topics)
 			{
-				std::cout << __func__ << " Wrong configuration: Topic mapping not listed for " << msgSrc << std::endl;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Wrong configuration: Topic mapper does not have Topics"));
 				continue;
 			}
 			std::string sourceName(srcName);
@@ -98,7 +98,7 @@ void CTopicMapper::ParseJson() {
 				if(NULL == topic->child->string)
 				{
 					// Again unlikely scenario
-					std::cout << __func__ << " Key is not found \n";
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Key is not found"));
 					continue;
 				}
 
@@ -107,7 +107,7 @@ void CTopicMapper::ParseJson() {
 				if(NULL == topic->child->valuestring)
 				{
 					// Again unlikely scenario
-					std::cout << __func__ << " Value is not found for key: " << strTopicName << std::endl;
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Value is not found for key: " + strTopicName));
 					continue;
 				}
 
@@ -126,7 +126,7 @@ void CTopicMapper::ParseJson() {
 			cJSON_Delete(root);
 
 	} catch (std::exception &e) {
-		std::cout << __func__ << ": Exception: " << e.what() << std::endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 }
 
@@ -147,12 +147,12 @@ std::vector<std::string> CTopicMapper::GetMqttTopics()
 //return MQTT topic that is mapped with ZMQ
 std::string CTopicMapper::GetMQTTopic(std::string topic) {
 
-	//std::cout << "Topic to find : " << topic << "\n";
+	//std::cout << "Topic to find : " << topic << "";
 	std::string strMqttTopic = "";
 
 	try{
 		if(m_ZMQTopics.empty()) {
-			std::cout << __func__ << ": ZMQ map is empty !\n";
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("ZMQ map is empty"));
 		}
 		else
 		{
@@ -163,9 +163,9 @@ std::string CTopicMapper::GetMQTTopic(std::string topic) {
 				strMqttTopic = itrZMQTopic->second;
 		}
 	} catch(std::exception &e) {
-		std::cout << __func__ << ": Exception : " << e.what() << " for topic " << topic << std::endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
-	//std::cout << "Found matching MQTT topic : " << strMqttTopic << "\n";
+	//std::cout << "Found matching MQTT topic : " << strMqttTopic << "";
 	return strMqttTopic;
 }
 
@@ -177,7 +177,7 @@ std::string CTopicMapper::GetZMQTopic(std::string topic) {
 	try
 	{
 	if(m_MQTTopics.empty()){
-		std::cout << __func__ << " MQTT map is empty !\n";
+		CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT map is empty"));
 	}
 	else
 	{
@@ -188,7 +188,7 @@ std::string CTopicMapper::GetZMQTopic(std::string topic) {
 			strZmqTopic = itrMQTTTopic->second;
 	}
 	}catch(std::exception &e) {
-		std::cout << __func__ << ": Exception : " << e.what() << " for topic " << topic << std::endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 	return strZmqTopic;
 }

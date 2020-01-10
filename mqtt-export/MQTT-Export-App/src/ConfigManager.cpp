@@ -31,13 +31,20 @@ CfgManager& CfgManager::Instance()
  */
 void etcdOnChangeKeyCb(char* key, char * val)
 {
-	std::cout << __func__ << " Change key callback is called\n";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Change key callback is called"));
 	if(key == NULL || val == NULL) {
-		std::cout << __func__ << " cannot restart application as key or value is null" << std::endl;
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("cannot restart application as key or value is null"));
 		return;
 	}
-	std::cout << __func__ << " Application is restarting to apply new changes from ETCD.."<<std::endl;
-	std::cout << "New value to be apply key:" << key  << ", val: " << val << std::endl;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Application is restarting to apply new changes from ETCD.."));
+	string temp = "New value to be apply key:";
+	temp.append(key);
+	temp.append(":");
+	temp.append(val);
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
+	std::cout << __func__ << temp << endl;
 
 	exit(0);
 }
@@ -52,11 +59,17 @@ void etcdOnChangeDirCb(char* key, char * val)
 {
 	std::cout<< __func__ << " ETCD :: Change dir callback is called";
 	if(key == NULL || val == NULL) {
-		std::cout << __func__ << " cannot restart application as key or value is null" << std::endl;
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("cannot restart application as key or value is null"));
 		return;
 	}
-	std::cout << __func__ << " Application is restarting to apply new changes from ETCD.."<<std::endl;
-	std::cout << "New value to be apply key:" << key  << ", val: " << val << std::endl;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Application is restarting to apply new changes from ETCD.."));
+	string temp = "New value to be apply key:";
+	temp.append(key);
+	temp.append(":");
+	temp.append(val);
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+	std::cout << __func__ << temp << endl;
 
 	//raised to call clean up routine
 	raise( SIGUSR1);
@@ -70,12 +83,18 @@ void etcdOnChangeDirCb(char* key, char * val)
 void CfgManager::registerCallbackOnChangeDir(char *dir)
 {
 	if(dir == NULL) {
-		std::cout << __func__ << " dir is null, cannot register callback" << std::endl;
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("dir is null, cannot register callback"));
 		return;
 	}
 	env_config.get_config_mgr_client()->register_watch_dir(dir, etcdOnChangeDirCb);
-	std::cout << __func__ << " ETCD :: Callback is register for :: "<< dir << std::endl;
-	std::cout << " Callback is register for :: "<< dir <<std::endl;
+	string temp = "ETCD :: Callback is register for :: ";
+	temp.append(dir);
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
+	temp = "Callback is register for :: ";
+	temp.append(dir);
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+	std::cout << __func__ << temp << endl;
 }
 
 /** Register callback for specific key in ETCD
@@ -86,12 +105,17 @@ void CfgManager::registerCallbackOnChangeDir(char *dir)
 void CfgManager::registerCallbackOnChangeKey(char *key)
 {
 	if(key == NULL) {
-		std::cout << __func__ << " key is null, cannot register callback" << std::endl;
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("key is null, cannot register callback"));
 		return;
 	}
 	env_config.get_config_mgr_client()->register_watch_key(key, etcdOnChangeKeyCb);
-	std::cout << __func__ << " ETCD :: Callback is register for :: "<< key << std::endl;
-	std::cout << " Callback is register for :: "<< key <<std::endl;
+	string temp = "ETCD :: Callback is register for :: ";
+	temp.append(key);
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+	temp = "Callback is register for :: ";
+	temp.append(key);
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+	std::cout << __func__ << temp << endl;
 }
 
 /** Returns the value from ETCD on specific key
@@ -104,21 +128,20 @@ char* CfgManager::getETCDValuebyKey(const char *key)
 	char *etcdVal = NULL;
 	if(key == NULL)
 	{
-		std::cout << "Key to be fetched from etcd is empty .." <<std::endl;
-		std::cout << __func__ << " Key to be fetched from etcd is empty ..";
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Key to be fetched from etcd is empty .."));
 		return NULL;
 	}
 	std::string sActualKey(key);
 	const char* env_appname = std::getenv("AppName");
 	if(NULL == env_appname) {
-		std::cout << __func__ << " AppName Environment Variable is not set..";
+		CLogger::getInstance().log(ERROR, LOGDETAILS("AppName Environment Variable is not set.."));
 		return NULL;
 	}
 	std::string AppName(env_appname);
 
 	if(AppName.empty())
 	{
-		std::cout << __func__ << " Environment variable AppName key does not have value\n";
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Environment variable AppName key does not have value"));
 		return etcdVal;
 	}
 

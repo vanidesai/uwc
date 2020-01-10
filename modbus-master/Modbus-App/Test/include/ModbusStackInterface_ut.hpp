@@ -33,6 +33,7 @@ public:
 	uint8_t	 u8IpAddr = 0;
 	uint16_t u16TransacID = 2;
 	uint8_t* pu8IpAddr = &u8IpAddr;
+	uint16_t u16Port = 0;
 
 	stException_t stException_t_obj;
 	stException_t *pstException =&stException_t_obj;
@@ -42,6 +43,7 @@ public:
 	uint16_t  u16Quantity = 0;
 	MbusAPI MbusAPI_obj;
 	MbusAPI *pstMbusApiPram= &MbusAPI_obj;
+	MbusAPI_t stMbusApiPram = {};
 	RestMbusReqGeneric_t RestMbusReqGeneric_t_obj;
 	RestMbusReqGeneric_t *pstMbusReqGen = &RestMbusReqGeneric_t_obj;
 //	RestMbusReqGeneric_t *pstMbusReqGen = NULL;

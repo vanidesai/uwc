@@ -10,12 +10,11 @@
 
 #include <mutex>
 #include "ZmqHandler.hpp"
+#include "Logger.hpp"
 
 extern "C" {
 	#include <safe_lib.h>
 }
-
-extern src::severity_logger< severity_level > lg;
 
 std::mutex g_RWCommonCallbackMutex;
 
@@ -59,11 +58,12 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint16_t  u16Quantity)
 #endif
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
+	string temp; //temporary string for logging
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	const char* pcWriteRespTopic = std::getenv("WRITE_RESPONSE_TOPIC");
 	if(NULL == pcWriteRespTopic)
 	{
-		BOOST_LOG_SEV(lg, debug) << __func__ << " WRITE_RESPONSE_TOPIC not set";
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("WRITE_RESPONSE_TOPIC not set"));
 		return;
 	}
 	std::lock_guard<std::mutex> lock(g_RWCommonCallbackMutex);
@@ -103,15 +103,25 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
 			msgbus_msg_envelope_put(msg, "Status", ptStatus);
 
-			BOOST_LOG_SEV(lg, info) << "Info::"<< __func__ << "::function_code:"
-					<< (unsigned)u8FunCode << "," << "exception_code:" <<(unsigned)pstException->m_u8ExcCode
-					<< "," << "exception_status " << (unsigned)pstException->m_u8ExcStatus;
+			temp = "Info::";
+			temp.append("::function_code:");
+			temp.append(to_string((unsigned)u8FunCode));
+			temp.append("exception_code:");
+			temp.append(to_string((unsigned)pstException->m_u8ExcCode));
+			temp.append(",");
+			temp.append("exception_status ");
+			temp.append(to_string((unsigned)pstException->m_u8ExcStatus));
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
 		}
 		else
 		{
 			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
 			msgbus_msg_envelope_put(msg, "Status", ptStatus);
-			BOOST_LOG_SEV(lg, info) <<"Info::" <<__func__<< " " << " NULL Pointer is Received from stack";
+
+			temp = "Info::";
+			temp.append("NULL Pointer is Received from stack");
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 		}
 
 		std::string topic(pcWriteRespTopic);
@@ -121,7 +131,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, info) <<"fatal::" << __func__ << "::Exception is raised. "<<e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
 	if(msg != NULL)
@@ -130,7 +140,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		msg = NULL;
 	}
 
-	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
 /**
@@ -147,21 +157,33 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram,
 					void* vpCallBackFun)
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << " Start: Function Code: " << u8FunCode;
+	string temp; //temporary string for logging
+
+	temp = "Start: Function Code: ";
+	temp.append(to_string(u8FunCode));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
 	uint8_t u8ReturnType = MBUS_JSON_APP_ERROR_NULL_POINTER;
 
 	if(pstMbusApiPram != NULL)
 	{
-		BOOST_LOG_SEV(lg, info) << "Request Init Time: "
-			<< std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
-			<< ", TxID: " << pstMbusApiPram->m_u16TxId
-			<< ", Function Code: " << (unsigned)u8FunCode << ", DevID: " << (unsigned)pstMbusApiPram->m_u8DevId
-			<< ", PointAddr: " << pstMbusApiPram->m_u16StartAddr;
+		temp = "Request Init Time: ";
+		temp.append(to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()));
+		temp.append(", TxID: ");
+		temp.append(to_string(pstMbusApiPram->m_u16TxId));
+		temp.append(", Function Code: ");
+		temp.append(to_string((unsigned)u8FunCode));
+		temp.append(", DevID: ");
+		temp.append(to_string((unsigned)pstMbusApiPram->m_u8DevId));
+		temp.append(", PointAddr: ");
+		temp.append(to_string(pstMbusApiPram->m_u16StartAddr));
+
+		CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 
 		switch ((eModbusFuncCode_enum)u8FunCode)
 		{
 			case READ_COIL_STATUS:
-				BOOST_LOG_SEV(lg, debug) << __func__ << " Read Coil Request Received";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Read Coil Request Received"));
 				u8ReturnType = Modbus_Read_Coils(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -171,7 +193,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					vpCallBackFun);
 			break;
 			case READ_INPUT_STATUS:
-				BOOST_LOG_SEV(lg, debug) << __func__ << " Read Input Status Request Received";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Read Input Status Request Received"));
 				u8ReturnType = Modbus_Read_Discrete_Inputs(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -181,7 +203,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					vpCallBackFun);
 			break;
 			case READ_HOLDING_REG:
-				BOOST_LOG_SEV(lg, debug) << __func__ << " Read Holding Register Request Received";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Read Holding Register Request Received"));
 				u8ReturnType = Modbus_Read_Holding_Registers(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -191,7 +213,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					vpCallBackFun);
 			break;
 			case READ_INPUT_REG:
-				BOOST_LOG_SEV(lg, debug) << __func__ << " Read Input Register Request Received";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Read Input Register Request Received"));
 				u8ReturnType = Modbus_Read_Input_Registers(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -202,7 +224,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 			break;
 			case WRITE_SINGLE_COIL:
 			{
-				BOOST_LOG_SEV(lg, debug) << __func__ << " Write Single Coil Request Received";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Write Single Coil Request Received"));
 				uint16_t *pu16OutData = (uint16_t *)pstMbusApiPram->m_pu8Data;
 				u8ReturnType = Modbus_Write_Single_Coil(pstMbusApiPram->m_u16StartAddr,
 						*pu16OutData,
@@ -216,7 +238,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 
 			case WRITE_SINGLE_REG:
 			{
-				BOOST_LOG_SEV(lg, debug) << __func__ << " Write Single Register Request Received";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Write Single Register Request Received"));
 				uint16_t u16OutData = 0;
 				memcpy_s(&u16OutData,sizeof(uint16_t),pstMbusApiPram->m_pu8Data,sizeof(uint16_t));
 				u8ReturnType = Modbus_Write_Single_Register(pstMbusApiPram->m_u16StartAddr,
@@ -229,7 +251,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 			}
 			break;
 			case WRITE_MULTIPLE_COILS:
-				BOOST_LOG_SEV(lg, debug) << __func__ << " Write Multiple Coils Request Received";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Write Multiple Coils Request Received"));
 				u8ReturnType = Modbus_Write_Multiple_Coils(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -240,7 +262,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					vpCallBackFun);
 			break;
 			case WRITE_MULTIPLE_REG:
-				BOOST_LOG_SEV(lg, debug) << __func__ << " Write Multiple Register Request Received";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Write Multiple Register Request Received"));
 				u8ReturnType = Modbus_Write_Multiple_Register(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -252,12 +274,16 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 			break;
 
 			default:
-				BOOST_LOG_SEV(lg, error) << __func__ << " Invalid Request Received";
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid Request Received"));
 				u8ReturnType = MBUS_STACK_ERROR_INVALID_INPUT_PARAMETER;
 			break;
 		}
 	}
-	BOOST_LOG_SEV(lg, debug) << __func__ << " End: Return: " << u8ReturnType;
+
+	temp = "End: Return: ";
+	temp.append(to_string(u8ReturnType));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
 	return u8ReturnType;
 }
 

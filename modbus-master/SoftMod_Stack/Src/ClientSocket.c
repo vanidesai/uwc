@@ -34,6 +34,11 @@
 #include <signal.h>
 #endif
 
+#define PKT_HDR_LEN 5
+#define PKT_EXP_LEN 2
+#define EXP_VAL 0x80
+#define EXP_POS 1
+
 /*CRC calculation is for Modbus RTU stack */
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 /* Table of CRC values for high-order byte */
@@ -856,6 +861,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		recvBuff[pstMBusRequesPacket->m_stMbusTxData.m_u16Length++] = (crc & 0x00FF);
 		tcflush(fd, TCIOFLUSH);
 		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
+
 		//< Note: Below framing delay is commented intentionally as read function is having blocking read() call in which
 		//< select() function is having response waiting time of 1000 mSec as well as it is having blocking read call.
 		//< This will not allow to start new message unless mess is received from slave within 1000mSec
@@ -870,6 +876,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		}*/
 
 		bytes = 0;
+		bool expFlag = false;
 		if((READ_COIL_STATUS == (eModbusFuncCode_enum)(pstMBusRequesPacket->m_u8FunctionCode)) ||
 				(READ_INPUT_STATUS == (eModbusFuncCode_enum)(pstMBusRequesPacket->m_u8FunctionCode)))
 		{
@@ -884,6 +891,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 			// Header length is of 5.
 			numToRead = ((pstMBusRequesPacket->m_u16Quantity * 2) + 5);
 		}
+
 		while(numToRead > 0){
 			if(checkforblockingread() > 0)
 			{
@@ -893,6 +901,14 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 
 				if(bytes == 0){
 					break;
+				}
+				else if((bytes >= PKT_EXP_LEN) && (!expFlag))
+				{
+					if((ServerReplyBuff[EXP_POS] & EXP_VAL) == EXP_VAL)
+					{
+						numToRead = PKT_HDR_LEN - bytes;
+						expFlag = true;
+					}
 				}
 			}
 			else{
@@ -915,9 +931,9 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uint8_t  parity, uint8_t stop_bit)
 {
 	struct termios tios;
-    speed_t speed;
-    int flags;
-    /* The O_NOCTTY flag tells UNIX that this program doesn't want
+	speed_t speed;
+	int flags;
+	/* The O_NOCTTY flag tells UNIX that this program doesn't want
        to be the "controlling terminal" for that port. If you
        don't specify this then any input (such as keyboard abort
        signals and so forth) will affect your process
@@ -925,179 +941,179 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
        Timeouts are ignored in canonical input mode or when the
        NDELAY option is set on the file via open or fcntl */
 
-    memset(&tios, 0, sizeof(struct termios));
-     flags = O_RDWR | O_NOCTTY | O_NDELAY | O_EXCL;
-    //flags = O_RDWR | O_NOCTTY | O_NDELAY | O_SYNC;
+	memset(&tios, 0, sizeof(struct termios));
+	flags = O_RDWR | O_NOCTTY | O_NDELAY | O_EXCL;
+	//flags = O_RDWR | O_NOCTTY | O_NDELAY | O_SYNC;
 
-    fd = open((const char*)portName, flags);
+	fd = open((const char*)portName, flags);
 
-    if (fd == -1) {
-        printf("ERROR Can't open the device %s (%s)\n",
-                    portName, strerror(errno));
-        return -1;
-    }
+	if (fd == -1) {
+		printf("ERROR Can't open the device %s (%s)\n",
+				portName, strerror(errno));
+		return -1;
+	}
 
-    /* Save */
-   // tcgetattr(fd, &old_tios);
-    tcgetattr(fd, &tios);
+	/* Save */
+	// tcgetattr(fd, &old_tios);
+	tcgetattr(fd, &tios);
 
 
-    /* C_ISPEED     Input baud (new interface)
+	/* C_ISPEED     Input baud (new interface)
        C_OSPEED     Output baud (new interface)
-    */
-    switch (baudrate) {
-    case 110:
-        speed = B110;
-        break;
-    case 300:
-        speed = B300;
-        break;
-    case 600:
-        speed = B600;
-        break;
-    case 1200:
-        speed = B1200;
-        break;
-    case 2400:
-        speed = B2400;
-        break;
-    case 4800:
-        speed = B4800;
-        break;
-    case 9600:
-        speed = B9600;
-        break;
-    case 19200:
-        speed = B19200;
-        break;
-    case 38400:
-        speed = B38400;
-        break;
+	 */
+	switch (baudrate) {
+	case 110:
+		speed = B110;
+		break;
+	case 300:
+		speed = B300;
+		break;
+	case 600:
+		speed = B600;
+		break;
+	case 1200:
+		speed = B1200;
+		break;
+	case 2400:
+		speed = B2400;
+		break;
+	case 4800:
+		speed = B4800;
+		break;
+	case 9600:
+		speed = B9600;
+		break;
+	case 19200:
+		speed = B19200;
+		break;
+	case 38400:
+		speed = B38400;
+		break;
 #ifdef B57600
-    case 57600:
-        speed = B57600;
-        break;
+	case 57600:
+		speed = B57600;
+		break;
 #endif
 #ifdef B115200
-    case 115200:
-        speed = B115200;
-        break;
+	case 115200:
+		speed = B115200;
+		break;
 #endif
 #ifdef B230400
-    case 230400:
-        speed = B230400;
-        break;
+	case 230400:
+		speed = B230400;
+		break;
 #endif
 #ifdef B460800
-    case 460800:
-        speed = B460800;
-        break;
+	case 460800:
+		speed = B460800;
+		break;
 #endif
 #ifdef B500000
-    case 500000:
-        speed = B500000;
-        break;
+	case 500000:
+		speed = B500000;
+		break;
 #endif
 #ifdef B576000
-    case 576000:
-        speed = B576000;
-        break;
+	case 576000:
+		speed = B576000;
+		break;
 #endif
 #ifdef B921600
-    case 921600:
-        speed = B921600;
-        break;
+	case 921600:
+		speed = B921600;
+		break;
 #endif
 #ifdef B1000000
-    case 1000000:
-        speed = B1000000;
-        break;
+	case 1000000:
+		speed = B1000000;
+		break;
 #endif
 #ifdef B1152000
-   case 1152000:
-        speed = B1152000;
-        break;
+	case 1152000:
+		speed = B1152000;
+		break;
 #endif
 #ifdef B1500000
-    case 1500000:
-        speed = B1500000;
-        break;
+	case 1500000:
+		speed = B1500000;
+		break;
 #endif
 #ifdef B2500000
-    case 2500000:
-        speed = B2500000;
-        break;
+	case 2500000:
+		speed = B2500000;
+		break;
 #endif
 #ifdef B3000000
-    case 3000000:
-        speed = B3000000;
-        break;
+	case 3000000:
+		speed = B3000000;
+		break;
 #endif
 #ifdef B3500000
-    case 3500000:
-        speed = B3500000;
-        break;
+	case 3500000:
+		speed = B3500000;
+		break;
 #endif
 #ifdef B4000000
-    case 4000000:
-        speed = B4000000;
-        break;
+	case 4000000:
+		speed = B4000000;
+		break;
 #endif
-    default:
-        speed = B9600;
+	default:
+		speed = B9600;
 		printf("ERROR Unknown baud rate %d for %s (B9600 used)\n",
 				baudrate, portName);
-    }
+	}
 
-    /* Set the baud rate */
-    if ((cfsetispeed(&tios, speed) < 0) ||
-        (cfsetospeed(&tios, speed) < 0)) {
-        close(fd);
-        fd = -1;
-        return -1;
-    }
+	/* Set the baud rate */
+	if ((cfsetispeed(&tios, speed) < 0) ||
+			(cfsetospeed(&tios, speed) < 0)) {
+		close(fd);
+		fd = -1;
+		return -1;
+	}
 
-    /* C_CFLAG      Control options
+	/* C_CFLAG      Control options
        CLOCAL       Local line - do not change "owner" of port
        CREAD        Enable receiver
-    */
-    tios.c_cflag |= (CREAD | CLOCAL);
-    /* CSIZE, HUPCL, CRTSCTS (hardware flow control) */
+	 */
+	tios.c_cflag |= (CREAD | CLOCAL);
+	/* CSIZE, HUPCL, CRTSCTS (hardware flow control) */
 
-    /* Set data bits (5, 6, 7, 8 bits)
+	/* Set data bits (5, 6, 7, 8 bits)
        CSIZE        Bit mask for data bits
-    */
-    tios.c_cflag &= ~CSIZE;
+	 */
+	tios.c_cflag &= ~CSIZE;
 	tios.c_cflag |= CS8;
 
-    /* Stop bit (1 or 2) */
-    if (stop_bit == 1)
-        tios.c_cflag &=~ CSTOPB;
-    else /* 2 */
-        tios.c_cflag |= CSTOPB;
+	/* Stop bit (1 or 2) */
+	if (stop_bit == 1)
+		tios.c_cflag &=~ CSTOPB;
+	else /* 2 */
+		tios.c_cflag |= CSTOPB;
 
-    /* PARENB       Enable parity bit
+	/* PARENB       Enable parity bit
        PARODD       Use odd parity instead of even */
-    if (parity == NO_PARITY) {
-        /* None */
-        tios.c_cflag &=~ PARENB;
-    } else if (parity == EVEN_PARITY) {
-        /* Even */
-        tios.c_cflag |= PARENB;
-        tios.c_cflag &=~ PARODD;
-    } else {
-        /* Odd */
-        tios.c_cflag |= PARENB;
-        tios.c_cflag |= PARODD;
-    }
+	if (parity == NO_PARITY) {
+		/* None */
+		tios.c_cflag &=~ PARENB;
+	} else if (parity == EVEN_PARITY) {
+		/* Even */
+		tios.c_cflag |= PARENB;
+		tios.c_cflag &=~ PARODD;
+	} else {
+		/* Odd */
+		tios.c_cflag |= PARENB;
+		tios.c_cflag |= PARODD;
+	}
 
-    /* Read the man page of termios if you need more information. */
+	/* Read the man page of termios if you need more information. */
 
-    /* This field isn't used on POSIX systems
+	/* This field isn't used on POSIX systems
        tios.c_line = 0;
-    */
+	 */
 
-    /* C_LFLAG      Line options
+	/* C_LFLAG      Line options
 
        ISIG Enable SIGINTR, SIGSUSP, SIGDSUSP, and SIGQUIT signals
        ICANON       Enable canonical input (else raw)
@@ -1125,12 +1141,12 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
        through exactly as they are received, when they are
        received. Generally you'll deselect the ICANON, ECHO,
        ECHOE, and ISIG options when using raw input
-    */
+	 */
 
-    /* Raw input */
-    tios.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+	/* Raw input */
+	tios.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
-    /* C_IFLAG      Input options
+	/* C_IFLAG      Input options
 
        Constant     Description
        INPCK        Enable parity check
@@ -1147,28 +1163,30 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
        ICRNL        Map CR to NL
        IUCLC        Map uppercase to lowercase
        IMAXBEL      Echo BEL on input line too long
-    */
-    if (parity == NO_PARITY) {
-        /* None */
-        tios.c_iflag &= ~INPCK;
-    } else {
-        tios.c_iflag |= INPCK;
-    }
+	 */
+	if (parity == NO_PARITY) {
+		/* None */
+		tios.c_iflag &= ~INPCK;
+	} else {
+		tios.c_iflag |= INPCK;
+	}
 
-    /* Software flow control is disabled */
-    tios.c_iflag &= ~(IXON | IXOFF | IXANY);
+	tios.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
 
-    /* C_OFLAG      Output options
+	/* Software flow control is disabled */
+	tios.c_iflag &= ~(IXON | IXOFF | IXANY);
+
+	/* C_OFLAG      Output options
        OPOST        Postprocess output (not set = raw output)
        ONLCR        Map NL to CR-NL
 
        ONCLR ant others needs OPOST to be enabled
-    */
+	 */
 
-    /* Raw ouput */
-    tios.c_oflag &=~ OPOST;
+	/* Raw ouput */
+	tios.c_oflag &=~ OPOST;
 
-    /* C_CC         Control characters
+	/* C_CC         Control characters
        VMIN         Minimum number of characters to read
        VTIME        Time to wait for data (tenths of seconds)
 
@@ -1206,16 +1224,16 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
        characters in tenths of seconds. If VTIME is set to 0 (the
        default), reads will block (wait) indefinitely unless the
        NDELAY option is set on the port with open or fcntl.
-    */
-    /* Unused because we use open with the NDELAY option */
-    tios.c_cc[VMIN] = 0;
-    tios.c_cc[VTIME] = 0;
+	 */
+	/* Unused because we use open with the NDELAY option */
+	tios.c_cc[VMIN] = 0;
+	tios.c_cc[VTIME] = 0;
 
-    if (tcsetattr(fd, TCSANOW, &tios) < 0) {
-        close(fd);
-        fd = -1;
-        return -1;
-    }
+	if (tcsetattr(fd, TCSANOW, &tios) < 0) {
+		close(fd);
+		fd = -1;
+		return -1;
+	}
 	return fd;
 }
 

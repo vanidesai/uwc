@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include "../include/CUniqueDataPoint_ut.h"
+#include "../include/CUniqueDataPoint_ut.hpp"
 
 
 void CUniqueDataPoint_ut::SetUp()
@@ -23,11 +23,12 @@ void CUniqueDataPoint_ut::TearDown()
 
 /******************************CUniqueDataPoint::getID*****************************************/
 
-/* TC001
-Test: Return of CUniqueDataPoint::getID.
-CWellSiteDevInfo::getID should return the string passed during constructor call.
-  string passed here is "Test_String".
- */
+/***Test:CUniqueDataPoint_ut::getID_return***/
+
+/*CWellSiteDevInfo::getID() should return the string passed during constructor call.
+  string passed here is "Test_String".*/
+
+
 TEST_F(CUniqueDataPoint_ut, getID_return) {
 
 	/* Calling constructor of class CUniqueDataPoint with string "Test_String" */
@@ -45,11 +46,12 @@ TEST_F(CUniqueDataPoint_ut, getID_return) {
 
 /******************************CUniqueDataPoint::getID*****************************************/
 
-/* TC002
-Test: Return of CUniqueDataPoint::getWellSite.
-CWellSiteDevInfo::getWellSite should return the object of class CWellSiteInfo,
-  initialized with the value passed while calling constructor
- */
+/***Test: CUniqueDataPoint_ut::getWellSite_return***/
+
+/*CWellSiteDevInfo::getWellSite() should return the object of class CWellSiteInfo,
+  initialized with the value passed while calling constructor*/
+
+
 TEST_F(CUniqueDataPoint_ut, getWellSite_return) {
 	std::string path("/Device_Config/PL0.yml");
 	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
@@ -79,7 +81,6 @@ TEST_F(CUniqueDataPoint_ut, getWellSite_return) {
 	catch( YAML::Exception &e)
 	{
 
-		//EXPECT_EQ(1, 2);	//Test fails
 		EXPECT_EQ("name key not found", (string)e.what());
 	}
 }
@@ -87,11 +88,11 @@ TEST_F(CUniqueDataPoint_ut, getWellSite_return) {
 
 /******************************CUniqueDataPoint::getWellSiteDev*****************************************/
 
-/* TC003
-Test: Return of CUniqueDataPoint::getWellSiteDev.
-CWellSiteDevInfo::getWellSite should return the object of class CWellSiteDevInfo,
-  initialized with the value passed while calling constructor
- */
+/***Test: Return of CUniqueDataPoint_ut::getWellSiteDev_return().***/
+/*CWellSiteDevInfo::getWellSite() should return the object of class CWellSiteDevInfo,
+  initialized with the value passed while calling constructor */
+
+
 TEST_F(CUniqueDataPoint_ut, getWellSiteDev_return) {
 	std::string path("/Device_Config/PL0.yml");
 	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
@@ -113,7 +114,6 @@ TEST_F(CUniqueDataPoint_ut, getWellSiteDev_return) {
 				}
 			}
 		}
-		/*		**										*/
 
 		/* Calling constructor of class CUniqueDataPoint with object1 of class CWellSiteDevInfo */
 		network_info::CUniqueDataPoint 		CUniqueDataPoint_obj
@@ -133,8 +133,6 @@ TEST_F(CUniqueDataPoint_ut, getWellSiteDev_return) {
 	catch( YAML::Exception &e)
 	{
 		PrintError(e.what());
-		//EXPECT_EQ(1, 2);	//Test fails
-
 		EXPECT_EQ("name key not found",(string)e.what());
 
 
@@ -146,11 +144,10 @@ TEST_F(CUniqueDataPoint_ut, getWellSiteDev_return) {
 /******************************CUniqueDataPoint::getDataPoint*****************************************/
 
 #if 0
-/* TC004
-Test: Return of CUniqueDataPoint::getDataPoint.
-CWellSiteDevInfo::getDataPoint should return the object of class CDataPoint,
-  initialized with the value passed while calling constructor
- */
+/*** Test:CUniqueDataPoint_ut::getDataPoint_return().***/
+/*CWellSiteDevInfo::getDataPoint() should return the object of class CDataPoint,
+  initialized with the value passed while calling constructor*/
+
 TEST_F(CUniqueDataPoint_ut, getDataPoint_return) {
 
 	try

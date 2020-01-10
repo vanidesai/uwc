@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include "../include/CDataPoint_ut.h"
+#include "../include/CDataPoint_ut.hpp"
 
 
 void CDataPoint_ut::SetUp()
@@ -22,12 +22,11 @@ void CDataPoint_ut::TearDown()
 }
 /*****************************CDataPoint::build()****************************************/
 
-/*test 01:: this test checks whether all mandatory parameters are available in yml file or not */
+/** Test:CDataPoint_ut::address_manatory_param****/
+/*Test 01::  checks whether mandatory parameter (iAddress) is available in yml file or not */
 
-TEST_F(CDataPoint_ut, 0_manatory_param)
+TEST_F(CDataPoint_ut, address_manatory_param)
 {
- //   int counter=0;
-
 
  	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
 	for( auto it : baseNode)
@@ -65,8 +64,11 @@ TEST_F(CDataPoint_ut, 0_manatory_param)
 
 }
 
+/***Test:CDataPoint_ut::width_manatory_param****/
+/*Test 02::  checks whether mandatory parameter (iwidth) is available in yml file or not */
 
-TEST_F(CDataPoint_ut, 0_manatory_param2)
+
+TEST_F(CDataPoint_ut, width_manatory_param)
 {
  //   int counter=0;
 
@@ -107,8 +109,10 @@ TEST_F(CDataPoint_ut, 0_manatory_param2)
 
 }
 
+/***Test:CDataPoint_ut::eType_manatory_param****/
+/*Test 03::  checks whether mandatory parameter (eType) is available in yml file or not */
 
-TEST_F(CDataPoint_ut, 0_manatory_param3)
+TEST_F(CDataPoint_ut, eType_manatory_param)
 {
  //   int counter=0;
 
@@ -148,11 +152,13 @@ TEST_F(CDataPoint_ut, 0_manatory_param3)
 	}
 
 }
-   /*test02: this test is for the check of mandatory parameters
-     if not available then throws exception accordingly*/
+
+/***Test:CDataPoint_ut::all_manatory_param****/
+/*Test 04::  checks whether all mandatory parameters are available in yml file or not, if not
+  present then throws exception accordingly*/
 
 
-TEST_F(CDataPoint_ut, 1_manatory_param_addr)
+/*TEST_F(CDataPoint_ut, all_manatory_param)
 {
  //   int counter=0;
 
@@ -198,61 +204,7 @@ TEST_F(CDataPoint_ut, 1_manatory_param_addr)
 		}
 	}
 
-}
-/*test02: this test is for the check of mandatory parameters(Id),
-     if not available then throws exception accordingly*/
-
-//TEST_F(CDataPoint_ut, 3_manatory_param_id)
-//{
-// //   int counter=0;
-//
-//	std::string path("/Device_Config/iou_datapoints_10.yml");
-//	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
-//	std::string sYamlStr(cEtcdValue);
-//	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
-//
-// 	//baseNode = CommonUtils::loadYamlFile("iou_datapoints_10.yml");
-//	for( auto it : baseNode)
-//	{
-//		if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
-//		{
-//			const YAML::Node& points =  it.second;
-//
-//			int i = 0;
-//			int Add_expected[] = {1, 2};
-//			for (auto it1 : points)
-//			{
-//              //if(counter==0){
-//				try
-//				{
-//
-//				CDataPoint_obj.build(it1, CDataPoint_obj);
-//                id=CDataPoint_obj.getID();
-//				m_Address = CDataPoint_obj.getAddress();
-//				//EXPECT_EQ("AValve", id);
-//				EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
-//				cout<<"============================="<<endl;
-//				cout<<m_Address.m_iAddress<<endl;
-//				cout<<"============================="<<endl;
-//				EXPECT_EQ(1, m_Address.m_iWidth);
-//				EXPECT_EQ(network_info::eEndPointType::eCoil, m_Address.m_eType);
-//
-//				}
-//				catch(YAML::Exception &e)
-//				{
-//					BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
-//					//EXPECT_EQ("Unknown Modbus point type", e.what());
-//					cout<<"***********************"<<endl;
-//					cout<<e.what()<<endl;
-//					cout<<"***********************"<<endl;
-//					EXPECT_EQ(1, 1);
-//				}
-//
-//			}
-//		}
-//	}
-//
-//}
+}*/
 
 /*****************************************************CDataPoint::getPointType()**********************************/
 
@@ -388,7 +340,7 @@ TEST_F(CDataPoint_ut, 1_manatory_param_addr)
 //}
 
 
-/*test 003:: this unit test is for giving exception when there is no any point name is available in
+/*test 003:: This unit test is for giving exception when there is no any point name is available in
  yml file*/
 
 //

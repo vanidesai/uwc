@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include "../include/PeriodicRead_ut.h"
+#include "../include/PeriodicRead_ut.hpp"
 
 #include <typeinfo>
 
@@ -39,10 +39,10 @@ eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 
 /******************************PeriodicRead::handleResponse*****************************************/
 
-/* TC001
-Test: Execution should not hang when NULL pointer is passed as an argument.
-*/
-TEST_F(PeriodicRead_ut, handleResponse_NULLAgument1) {
+/***Test:PeriodicRead_ut::handleResponse_NULLAgument_Exception()
+  Execution should not hang when NULL pointer is passed as an argument.*/
+
+TEST_F(PeriodicRead_ut, handleResponse_NULLAgument_Exception) {
 
 	pstException->m_u8ExcCode = 0;
 	pstException->m_u8ExcStatus = 0;
@@ -64,10 +64,10 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLAgument1) {
 }
 
 
-/* TC002
-Test: Execution should not hang when NULL pointer is passed as an argument.
- */
-TEST_F(PeriodicRead_ut, handleResponse_NULLAgument2) {
+/*** Test:PeriodicRead_ut::handleResponse_NULLAgument_Data()
+  Execution should not hang when NULL pointer is passed as an argument.*/
+
+TEST_F(PeriodicRead_ut, handleResponse_NULLAgument_Data) {
 
 	pstException->m_u8ExcCode = 0;
 	pstException->m_u8ExcStatus = 0;

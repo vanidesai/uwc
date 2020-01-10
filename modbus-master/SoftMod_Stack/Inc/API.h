@@ -224,6 +224,9 @@ typedef struct DevConfig
 /// Modbus master stack initialization function
 MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void);
 
+/// Modbus master stack de-initialization function
+MODBUS_STACK_EXPORT void AppMbusMaster_StackDeInit(void);
+
 /// Modbus master stack configuration function
 MODBUS_STACK_EXPORT uint8_t AppMbusMaster_SetStackConfigParam(uint8_t u8ConnectTimeout,
 		uint16_t u16SessionTimeout);

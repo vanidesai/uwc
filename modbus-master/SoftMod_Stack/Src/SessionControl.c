@@ -25,16 +25,14 @@
 extern int fd;
 #endif
 
-
-extern Mutex_H LivSerSesslist_Mutex;
-
 int32_t i32MsgQueIdSC = 0;
-stLiveSerSessionList_t *pstSesCtlThdLstHead = NULL;
-
-extern void* ServerSessTcpAndCbThread(void* threadArg);
+extern bool g_bThreadExit;
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+stLiveSerSessionList_t *pstSesCtlThdLstHead = NULL;
 extern stDevConfig_t ModbusMasterConfig;
+extern void* ServerSessTcpAndCbThread(void* threadArg);
+extern Mutex_H LivSerSesslist_Mutex;
 #endif
 /**
  *
@@ -59,7 +57,8 @@ void* SessionControlThread(void* threadArg)
 	i32MsgQueIdSC = *((int32_t *)threadArg);
 
 
-	while (NULL != threadArg)
+	//while (NULL != threadArg)
+	while(false == g_bThreadExit)
 	{
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
 		memset(&stPostThreadMsg,00,sizeof(stPostThreadMsg));
@@ -130,6 +129,7 @@ void* SessionControlThread(void* threadArg)
 				memcpy_s(pstLivSerSesslist->m_u8IpAddr,sizeof(pstLivSerSesslist->m_u8IpAddr),
 										pstMBusReqPact->m_u8IpAddr,sizeof(pstMBusReqPact->m_u8IpAddr));
 				pstLivSerSesslist->MsgQId = OSAL_Init_Message_Queue();
+				pstLivSerSesslist->m_i32sockfd = 0;
 
 				pstLivSerSesslist->m_u16Port = pstMBusReqPact->u16Port;
 				stPostThreadMsg.idThread = pstLivSerSesslist->MsgQId;
@@ -201,7 +201,8 @@ void* SessionControlThread(void* threadArg)
 	i32MsgQueIdSC = *((int32_t *)threadArg);
 
 
-	while (NULL != threadArg)
+	//while (NULL != threadArg)
+	while(false == g_bThreadExit)
 	{
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
 		if(OSAL_Get_Message(&stScMsgQue, i32MsgQueIdSC))
@@ -238,12 +239,13 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	int32_t i32MsgQueIdSSTC = 0;
 	int32_t i32RetVal = 0;
-	int32_t i32sockfd = 0;
+	//int32_t i32sockfd = 0;
 	uint32_t u32TimeCount = 0;
 
 	i32MsgQueIdSSTC = *((int32_t *)threadArg);
 
-	while (NULL != threadArg)
+	//while (NULL != threadArg)
+	while(false == g_bThreadExit)
 	{
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
 		i32RetVal = 0;
@@ -253,11 +255,16 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 		{
 			pstLivSerSesslist = stScMsgQue.wParam;
 			pstMBusRequesPacket = stScMsgQue.lParam;
-			u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &i32sockfd);
-			ApplicationCallBackHandler(pstMBusRequesPacket,u8ReturnType);
-			OSAL_Free(pstMBusRequesPacket);
-			u32TimeCount = 0;
-
+			if(NULL != pstMBusRequesPacket)
+			{
+				if(NULL != pstLivSerSesslist)
+				{
+					u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &pstLivSerSesslist->m_i32sockfd);
+					ApplicationCallBackHandler(pstMBusRequesPacket,u8ReturnType);
+					u32TimeCount = 0;
+				}
+				OSAL_Free(pstMBusRequesPacket);
+			}
 		}
 		else
 		{
@@ -266,10 +273,12 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 
 			if(u32TimeCount >= (ModbusMasterConfig.m_u16TcpSessionTimeout * 10))
 			{
-				close(i32sockfd);
+				//close(i32sockfd);
 				Osal_Wait_Mutex (LivSerSesslist_Mutex,0);
 				if(NULL != pstLivSerSesslist)
 				{
+					close(pstLivSerSesslist->m_i32sockfd);
+					pstLivSerSesslist->m_i32sockfd = 0;
 					OSAL_Delete_Message_Queue(pstLivSerSesslist->MsgQId);
 					if(pstSesCtlThdLstHead == pstLivSerSesslist)
 					{

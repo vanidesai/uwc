@@ -8,7 +8,6 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "BoostLogger.hpp"
 #include "PeriodicReadFeature.hpp"
 #include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
@@ -23,6 +22,7 @@
 #include "YamlUtil.hpp"
 #include "ConfigManager.hpp"
 #include "ModbusWriteHandler.hpp"
+#include "Logger.hpp"
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
 #endif
@@ -35,15 +35,13 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-// for boost logging
-extern src::severity_logger< severity_level > lg;
-
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
 
 void populatePollingRefData()
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << "Start";
+	string temp;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
 	using network_info::CUniqueDataPoint;
 	using network_info::eEndPointType;
@@ -58,7 +56,10 @@ void populatePollingRefData()
 		const CUniqueDataPoint &a = mapUniquePoint.at(pt.first);
 		if(0 == a.getDataPoint().getPollingConfig().m_uiPollFreq)
 		{
-			BOOST_LOG_SEV(lg, info) << __func__ << "Polling is not set for " << a.getDataPoint().getID();
+			temp = "Polling is not set for ";
+			temp.append(a.getDataPoint().getID());
+
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 			// Polling frequency is not set
 			continue; // go to next point
 		}
@@ -66,7 +67,12 @@ void populatePollingRefData()
 		{
 			std::string sTopic(a.getWellSite().getID() + SEPARATOR_CHAR +
 					a.getWellSiteDev().getID());
-			BOOST_LOG_SEV(lg, debug) << __func__ << "Topic for context search: " << sTopic;
+
+			temp = "Topic for context search: ";
+			temp.append(sTopic);
+
+			CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
 			std::cout << "Topic for context search: " << sTopic << std::endl;
 			zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX(sTopic);
 
@@ -90,17 +96,29 @@ void populatePollingRefData()
 			CRefDataForPolling objRefPolling{mapUniquePoint.at(pt.first), busCTX, uiFuncCode};
 
 			CTimeMapper::instance().insert(a.getDataPoint().getPollingConfig().m_uiPollFreq, objRefPolling);
-			BOOST_LOG_SEV(lg, info) << __func__ << "Polling is set for " << a.getDataPoint().getID() << ", FunctionCode " << (unsigned)uiFuncCode
-					<< ", frequency " << a.getDataPoint().getPollingConfig().m_uiPollFreq;
+
+			temp = "Polling is set for ";
+			temp.append(a.getDataPoint().getID());
+			temp.append(", FunctionCode ");
+			temp.append(to_string((unsigned)uiFuncCode));
+			temp.append(", frequency ");
+			temp.append(to_string(a.getDataPoint().getPollingConfig().m_uiPollFreq));
+
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 		}
 		catch(std::exception &e)
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << "Exception '" << e.what() << "' in processing " << a.getDataPoint().getID();
-			std::cout << __func__ << "Exception '" << e.what() << "' in processing " << a.getDataPoint().getID() << std::endl;
+
+			temp = "Exception '";
+			temp.append(e.what());
+			temp.append("' in processing ");
+			temp.append(a.getDataPoint().getID());
+
+			CLogger::getInstance().log(FATAL, LOGDETAILS(temp));
 		}
 	}
 
-	BOOST_LOG_SEV(lg, debug) << __func__ << "End";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
 /**
@@ -108,21 +126,22 @@ void populatePollingRefData()
  */
 void signal_handler(int signo)
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
-	BOOST_LOG_SEV(lg, info) << __func__ << " Signal Handler called..";
+	CLogger::getInstance().log(INFO, LOGDETAILS("Signal Handler called.."));
 
     std::unique_lock<std::mutex> lck(mtx);
 
     /// stop all running threads
     g_stopThread = true;
+    AppMbusMaster_StackDeInit();
 
     /// stop the read periodic timer
     bool retVal = LinuxTimer::stop_timer();
 
     (retVal == true) ? std::cout<< "Periodic Timer is stopped successfully\n":std::cout<< "Error while stopping Periodic timer\n";
 
-    BOOST_LOG_SEV(lg, debug) << __func__ << "End";
+    CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 
     // Signal main to stop
     cv.notify_one();
@@ -165,7 +184,8 @@ bool isElementExistInJson(cJSON *root, std::string a_sKeyName)
  */
 int main(int argc, char* argv[])
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << "Start";
+	CLogger::getInstance().log(DEBUG, "Start");
+	string temp;
 
 	try
 	{
@@ -173,24 +193,23 @@ int main(int argc, char* argv[])
 		if(NULL == pcAppName)
 		{
 			std::cout << __func__ << ": AppName environment variable cannot be empty" << std::endl;
-			BOOST_LOG_SEV(lg, error) << __func__ << " : AppName environment variable cannot be empty";
+			CLogger::getInstance().log(ERROR, LOGDETAILS(": AppName environment variable cannot be empty"));
 			exit(1);
 		}
-		initLogging();
-		logging::add_common_attributes();
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting Modbus_App ..."));
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 		if(!CfgManager::Instance().IsClientCreated())
 		{
 			std::cout << __func__ << "ETCD client is not created ." <<endl;
-			BOOST_LOG_SEV(lg, error) << __func__ << " ETCD client is not created";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("ETCD client is not created"));
 			return -1;
 		}
 		char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("/RTU_Master_Config");
 		if((NULL == cEtcdValue) || (0 == *cEtcdValue))
 		{
 			std::cout << __func__ << "NULL JSON received from ETCD while reading RTU configuration data.." <<endl;
-			BOOST_LOG_SEV(lg, error) << __func__ << " NULL JSON received from ETCD while reading RTU configuration data..";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("NULL JSON received from ETCD while reading RTU configuration data.."));
 			return -1;
 		}
 		else
@@ -200,16 +219,16 @@ int main(int argc, char* argv[])
 			if(NULL == root)
 			{
 				std::cout << __func__ << "Failed to parse JSON received from ETCD." <<endl;
-				BOOST_LOG_SEV(lg, error) << __func__ << " Failed to parse JSON received from ETCD.";
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to parse JSON received from ETCD."));
 				return -1;
 			}
 
-			BOOST_LOG_SEV(lg, info) << " Parsing RTU configuration..";
+			CLogger::getInstance().log(INFO, LOGDETAILS("Parsing RTU configuration.."));
 			cout<<"Parsing RTU configuration.."<<endl;
 			if(!(isElementExistInJson(root,"baud_rate") && isElementExistInJson(root,"parity")
 					&&isElementExistInJson(root,"stop_bit")))
 			{
-				BOOST_LOG_SEV(lg, error) << __func__ << " Required element are missing from RTU_Master_Config JSON.";
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Required element are missing from RTU_Master_Config JSON."));
 				cout << "Required keys are missing from RTU_Master_Config JSON."<<endl;
 				return -1;
 			}
@@ -218,7 +237,7 @@ int main(int argc, char* argv[])
 			int parity = cJSON_GetObjectItem(root,"parity")->valueint;
 			int stopBit = cJSON_GetObjectItem(root,"stop_bit")->valueint;
 			cout<<"Done"<<endl;
-			BOOST_LOG_SEV(lg, info) << " Done";
+			CLogger::getInstance().log(INFO, LOGDETAILS("Done"));
 
 			cout << "********************************************************************"<<endl;
 			cout << "Modbus RTU container is running with below configuration.."<<endl;
@@ -228,11 +247,23 @@ int main(int argc, char* argv[])
 			cout<<"StopBit = "<< stopBit<< endl;
 			cout << "********************************************************************"<<endl;
 
-			BOOST_LOG_SEV(lg, info) << "Modbus RTU container is running with below configuration..";
-			BOOST_LOG_SEV(lg, info) << __func__ << " Port Name == "<< portName;
-			BOOST_LOG_SEV(lg, info) << __func__ <<" Baud rate == "<< baudrate;
-			BOOST_LOG_SEV(lg, info) << __func__ <<" Parity == "<< parity<< endl;
-			BOOST_LOG_SEV(lg, info) << __func__ <<" StopBit == "<< stopBit;
+			CLogger::getInstance().log(INFO, LOGDETAILS("Modbus RTU container is running with below configuration.."));
+
+			temp = "Port Name == ";
+			temp.append(portName);
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
+			temp = "Baud rate == ";
+			temp.append(to_string(baudrate));
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
+			temp = "Parity == ";
+			temp.append(to_string(parity));
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
+			temp = "StopBit == ";
+			temp.append(to_string(stopBit));
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 
 			int fd = initSerialPort((uint8_t*)(portName.c_str()), baudrate, parity, stopBit);
 			if(fd < 0)
@@ -240,15 +271,23 @@ int main(int argc, char* argv[])
 				cout << "Failed to initialize serial port for RTU."<<endl;
 				cout << "Connect the RTU device to serial port"<<endl;
 				cout << "Container will restart until the serial port is connected."<<endl;
-				BOOST_LOG_SEV(lg, error) << __func__ << " Failed to initialize serial port for RTU.";
-				BOOST_LOG_SEV(lg, error) << __func__ << " File descriptor is set to ::" << fd;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize serial port for RTU."));
+
+				temp = "File descriptor is set to ::";
+				temp.append(to_string(fd));
+				CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+
 				cout << "Error:: File descriptor is set to :: " << fd << endl;
 				return -1;
 			}
 			else
 			{
 				cout << "Initialize serial port for RTU is successful"<<endl;
-				BOOST_LOG_SEV(lg, info) << __func__ << " File descriptor is set to ::" << fd;
+
+				temp = "File descriptor is set to ::";
+				temp.append(to_string(fd));
+				CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
 				cout << "File descriptor is set to :: " << fd << endl;
 			}
 		}
@@ -264,14 +303,17 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << " Failed to start periodic read timer.";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to start periodic read timer."));
 			std::cout << "Error: Failed to start periodic read timer" << std::endl;
 		}
 
 		uint8_t	u8ReturnType = AppMbusMaster_StackInit();
 		if(0 != u8ReturnType)
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << "Exiting. Failed to initialize modbus stack:" << u8ReturnType;
+			temp = "Exiting. Failed to initialize modbus stack:";
+			temp.append(to_string(u8ReturnType));
+			CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+
 			std::cout << "Error: Exiting. Failed to initialize modbus stack:" << u8ReturnType << std::endl;
 			exit(1);
 		}
@@ -279,20 +321,26 @@ int main(int argc, char* argv[])
 		// Initializing all the pub/sub topic base context for ZMQ
 		if(const char* pcPubTopic = std::getenv("PubTopics"))
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << " List of topic configured for Pub are :: " << pcPubTopic;
+			temp = "List of topic configured for Pub are :: ";
+			temp.append(pcPubTopic);
+			CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+
 			bool bRes = zmq_handler::prepareCommonContext("pub");
 			if(!bRes)
 			{
-				BOOST_LOG_SEV(lg, error) << __func__ << " Context creation failed for pub topic ";
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Context creation failed for pub topic "));
 			}
 		}
 		if(const char* pcSubTopic = std::getenv("SubTopics"))
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << " List of topic configured for Sub are :: " << pcSubTopic;
+			temp = "List of topic configured for Sub are :: ";
+			temp.append(pcSubTopic);
+			CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+
 			bool bRetVal = zmq_handler::prepareCommonContext("sub");
 			if(!bRetVal)
 			{
-				BOOST_LOG_SEV(lg, error) << __func__ << " Context creation failed for sub topic ";
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Context creation failed for sub topic "));
 			}
 		}
 
@@ -305,23 +353,23 @@ int main(int argc, char* argv[])
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 		/// store the yaml files in data structures
 		network_info::buildNetworkInfo(true);
-		BOOST_LOG_SEV(lg, info) << __func__ << "Modbus container application is set to TCP mode";
+		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus container application is set to TCP mode"));
 		cout << "Modbus container application is set to TCP mode.." << endl;
 #else
 
 		// Setting RTU mode
 		network_info::buildNetworkInfo(false);
-		BOOST_LOG_SEV(lg, info) << __func__ << "Modbus container application is set to RTU mode";
+		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus container application is set to RTU mode"));
 		cout << "Modbus container application is set to RTU mode.." << endl;
 #endif
 
 		if(false == modWriteHandler::Instance().isWriteInitialized())
 		{
-			BOOST_LOG_SEV(lg, debug) << __func__ << "modWriteHandler is not initialized";
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("modWriteHandler is not initialized"));
 		}
 		else
 		{
-			BOOST_LOG_SEV(lg, debug) << __func__ << "modWriteHandler is properly initialized";
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("modWriteHandler is properly initialized"));
 			/// Write request initializer thread.
 			modWriteHandler::Instance().initWriteHandlerThreads();
 		}
@@ -335,15 +383,15 @@ int main(int argc, char* argv[])
 
 		if(false == CPeriodicReponseProcessor::Instance().isInitialized())
 		{
-			BOOST_LOG_SEV(lg, debug) << __func__ << "CPeriodicReponseProcessor is not initialized";
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("CPeriodicReponseProcessor is not initialized"));
 		}
 		else
 		{
-			BOOST_LOG_SEV(lg, debug) << __func__ << "CPeriodicReponseProcessor is properly initialized";
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("CPeriodicReponseProcessor is properly initialized"));
 			CPeriodicReponseProcessor::Instance().initRespHandlerThreads();
 		}
 
-		BOOST_LOG_SEV(lg, info) << __func__ << "Configuration done. Starting operations.";
+		CLogger::getInstance().log(INFO, LOGDETAILS("Configuration done. Starting operations."));
 		CTimeMapper::instance().initTimerFunction();
 #ifdef UNIT_TEST
 
@@ -355,9 +403,9 @@ int main(int argc, char* argv[])
 		std::unique_lock<std::mutex> lck(mtx);
 		cv.wait(lck,exitMainThread);
 
-		BOOST_LOG_SEV(lg, info) << __func__ << " Condition variable is set for application exit.";
+		CLogger::getInstance().log(INFO, LOGDETAILS("Condition variable is set for application exit."));
 
-		BOOST_LOG_SEV(lg, info) << __func__ << " Exiting the application gracefully.";
+		CLogger::getInstance().log(INFO, LOGDETAILS("Exiting the application gracefully."));
 		cout << "************************************************************************************************" <<endl;
 		cout << "********************** Exited Modbus container to apply new configurations from ETCD ***********" <<endl;
 		cout << "************************************************************************************************" <<endl;
@@ -366,10 +414,13 @@ int main(int argc, char* argv[])
 	}
 	catch (const std::exception &e)
 	{
-		BOOST_LOG_SEV(lg, error) << __func__ << "fatal::Error in getting arguments: " << e.what();
+		temp = "fatal::Error in getting arguments: ";
+		temp.append(e.what());
+		CLogger::getInstance().log(FATAL, LOGDETAILS(temp));
+
 		return EXIT_FAILURE;
 	}
-	BOOST_LOG_SEV(lg, debug) << __func__ << "End";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 
 	return EXIT_SUCCESS;
 }

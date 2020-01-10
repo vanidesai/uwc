@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include "../include/CTimeRecord_ut.h"
+#include "../include/CTimeRecord_ut.hpp"
 
 void CTimeRecord_ut::SetUp()
 {
@@ -22,7 +22,8 @@ void CTimeRecord_ut::TearDown()
 
 /**************************CTimeRecord::add()*************************************/
 
- /*test01 : this test for add function of class CTimeRecord is to check whether
+/***CTimeRecord_ut::time_record_available***/
+ /*Test01 : This test for add function of class CTimeRecord is to check whether
       the timer record is available or not and throws exception accordingly  */
 
 TEST_F(CTimeRecord_ut, time_record_available)
@@ -40,7 +41,6 @@ TEST_F(CTimeRecord_ut, time_record_available)
 	 m_PolledPoints.push_back(CRefDataForPolling_obj3);
 	 m_PolledPoints.push_back(CRefDataForPolling_obj4);
 
-	 cout << "elements of vector m_PolledPoints..." << endl;
 	 std::string id = CUniqueDataPoint_obj.getID();
 
 	    try
@@ -57,7 +57,9 @@ TEST_F(CTimeRecord_ut, time_record_available)
 
 
 }
-/*test02 : this test for add function of class CTimeRecord is to check whether
+
+/***CTimeRecord_ut::time_record_notavailable***/
+/*Test02 : This test for add function of class CTimeRecord is to check whether
      the timer record is available or not and throws exception accordingly  (In this test the time record is not available)*/
 
 TEST_F(CTimeRecord_ut, time_record_notavailable)
@@ -77,10 +79,7 @@ TEST_F(CTimeRecord_ut, time_record_notavailable)
 	 m_PolledPoints.push_back(CRefDataForPolling_obj3);
 	 m_PolledPoints.push_back(CRefDataForPolling_obj4);
 
-	// cout << "elements of vector m_PolledPoints..." << endl;
 	 std::string id = CUniqueDataPoint_obj.getID();
-
-    	//CUniqueDataPoint_obj = CRefDataForPolling_obj1.getDataPoint();
 
   for(auto x: m_PolledPoints )
   {

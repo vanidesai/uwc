@@ -23,7 +23,7 @@ CPP_DEPS += \
 src/utils/%.o: ../src/utils/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -lrt -std=c++11 -fpermissive -DBOOST_LOG_DYN_LINK=1 -DMODBUS_STACK_TCPIP_ENABLED -I../$(PROJECT_DIR)/include -I/usr/local/include -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/../bin/boost/include -I../$(PROJECT_DIR)/../bin/yaml-cpp/include -I../$(PROJECT_DIR)/../bin/safestring/include -I../$(PROJECT_DIR)/../bin/ssl/include -O0 -g3 -Wall -c -fmessage-length=0 -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security -fstack-protector-strong -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -lrt -std=c++11 -fpermissive -DMODBUS_STACK_TCPIP_ENABLED -I../$(PROJECT_DIR)/include -I/usr/local/include -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/../bin/yaml-cpp/include -I../$(PROJECT_DIR)/../bin/safestring/include -O0 -g3 -Wall -c -fmessage-length=0 -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security -fstack-protector-strong -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

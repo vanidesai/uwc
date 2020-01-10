@@ -18,6 +18,8 @@
 #include "eis/config_manager/config_manager.h"
 #include <iostream>
 
+#include "Logger.hpp"
+
 #define APP_NAME getenv("AppName")
 //#define DIR_PATH "/config"
 

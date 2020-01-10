@@ -8,8 +8,9 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+#include "Logger.hpp"
+
 #include "ModbusWriteHandler.hpp"
-#include "BoostLogger.hpp"
 #include "utils/YamlUtil.hpp"
 #include <thread>
 #include <mutex>
@@ -39,7 +40,8 @@ modWriteHandler::modWriteHandler() : m_bIsWriteInitialized(false)
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate write instance: Exception: " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS("Unable to initiate write instance"));
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		std::cout << "\nException modWriteHandler ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
@@ -57,7 +59,7 @@ bool modWriteHandler::initWriteSem()
 
 eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
 	stWriteRequest writeReq;
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
@@ -77,7 +79,7 @@ eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 					return MBUS_STACK_ERROR_QUEUE_SEND;
 				}
 
-				BOOST_LOG_SEV(lg, error) << __func__ << " write Processing initiated :: " << writeReq.m_strMsg;
+				CLogger::getInstance().log(ERROR, LOGDETAILS(" write Processing initiated :: " + writeReq.m_strMsg));
 
 				root = cJSON_Parse(writeReq.m_strMsg.c_str());
 				if(NULL == root)
@@ -104,7 +106,7 @@ eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 			catch(const std::exception &e)
 			{
 				eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
-				BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
+				CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 			}
 
 			if(NULL != root)
@@ -118,13 +120,13 @@ eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 		}while(0);
 	}
 
-	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 	return eFunRetType;
 }
 
 int char2int(char input)
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	if(input >= '0' && input <= '9')
 		return input - '0';
 	if(input >= 'A' && input <= 'F')
@@ -132,13 +134,13 @@ int char2int(char input)
 	if(input >= 'a' && input <= 'f')
 		return input - 'a' + 10;
 
-	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 	throw std::invalid_argument("Invalid input string");
 }
 
 int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	int iOpCharPos = 0;
 	int i = 0;
 	try
@@ -179,9 +181,10 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 	catch(std::exception &e)
 	{
 		std::cout << __func__ << ":Exception: " << e.what() << " while parsing hex string " << src << std::endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		return -1;
 	}
-	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 	return iOpCharPos;
 }
 
@@ -190,7 +193,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(std::string a_sTopic,
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode)
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	string stCommand, stValue;
 	cJSON *root = cJSON_Parse(msg.c_str());
@@ -220,7 +223,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(std::string a_sTopic,
 			else
 			{
 				std::cout << __func__ << " Invalid input json parameter." << std::endl;
-				BOOST_LOG_SEV(lg, error) << __func__ << " Invalid input json parameter.";
+				CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter."));
 				eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
 			}
 
@@ -256,7 +259,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(std::string a_sTopic,
 				funcCode = READ_INPUT_REG;
 				break;
 			default:
-				BOOST_LOG_SEV(lg, error) << __func__ << " Invalid type.";
+				CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid type."));
 				break;
 			}
 			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
@@ -321,27 +324,27 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(std::string a_sTopic,
 			else
 			{
 				eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
-				BOOST_LOG_SEV(lg, error) << __func__ << " Unable to allocate memory. Request not sent";
+				CLogger::getInstance().log(ERROR, LOGDETAILS(" Unable to allocate memory. Request not sent"));
 			}
 		}
 	}
 	catch(const std::exception &e)
 	{
 		eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
-		BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
 	if(NULL != root)
 		cJSON_Delete(root);
 
-	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 	return eFunRetType;
 }
 
 //TODO function name change
 void modWriteHandler::createWriteListener()
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << " Start";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	if(getenv("SubTopics") == NULL)
 	{
 		cout<< __func__<<" Error:: SubTopics are not configured.." << endl;
@@ -354,7 +357,8 @@ void modWriteHandler::createWriteListener()
 	if(stTopics.empty())
 	{
 		std::cout << __func__ << " sub topic is not available. " << std::endl;
-		BOOST_LOG_SEV(lg, info) << __func__ << " No subscribe topic is available.";
+		CLogger::getInstance().log(INFO, LOGDETAILS("No subscribe topic is available."));
+
 		return;
 	}
 
@@ -368,10 +372,10 @@ void modWriteHandler::createWriteListener()
 		}
 		else
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << " Incorrect topic name format:" << sTopic;
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Incorrect topic name format:" + sTopic));
 		}
 	}
-	BOOST_LOG_SEV(lg, debug) << __func__ << " End";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
 modWriteHandler& modWriteHandler::Instance()
@@ -397,16 +401,19 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 			ret = msgbus_recv_wait(msgbus_ctx.m_pContext, stsub_ctx.sub_ctx, &msg);
 			if(ret != MSG_SUCCESS)
 			{
+				std::string failure =" Failed to receive message (errno: %d)";
+				failure.append(std::to_string(ret));
 
-				BOOST_LOG_SEV(lg, error) << __func__ << " Failed to receive message (errno: %d)" << ret;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("failure"));
 				continue;
 			}
 
 			num_parts = msgbus_msg_envelope_serialize(msg, &parts);
 			if(num_parts <= 0)
 			{
-				BOOST_LOG_SEV(lg, error) << __func__ <<
-						" Failed to serialize message";
+
+				CLogger::getInstance().log(ERROR, LOGDETAILS(
+						" Failed to serialize message"));
 			}
 
 			if(NULL != parts[0].bytes)
@@ -416,8 +423,10 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 
 				stWriteRequestNode.m_strTopic = stTopic;
 				stWriteRequestNode.m_strMsg = strMsg;
+				string initiate = " write initiated for msg:: ";
+				initiate.append(strMsg);
 
-				BOOST_LOG_SEV(lg, error) << __func__ << " write initiated for msg:: " << strMsg;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("initiate"));
 				/// pushing write request to q to process.
 				pushToWriteTCPQueue(stWriteRequestNode);
 			}
@@ -433,7 +442,7 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		std::cout << "\nException subscribeDeviceListener ::" << __func__ << e.what();
 	}
 }
@@ -451,7 +460,7 @@ bool modWriteHandler::pushToWriteTCPQueue(struct stWriteRequest &stWriteRequestN
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in modWriteHandler: " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
 	return false;
@@ -474,14 +483,14 @@ void modWriteHandler::initWriteHandlerThreads()
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate write handler instance: Exception:" << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		std::cout << "\nException modWriteHandler ::" << __func__ << ": Unable to initiate write handler instance: " << e.what();
 	}
 }
 
 bool modWriteHandler::getWriteDataToProcess(struct stWriteRequest &stWriteProcessNode)
 {
-	BOOST_LOG_SEV(lg, error) << __func__ << " Start";
+	CLogger::getInstance().log(ERROR, LOGDETAILS("Start"));
 	try
 	{
 		std::lock_guard<std::mutex> lock(__writeReqMutex);
@@ -492,9 +501,9 @@ bool modWriteHandler::getWriteDataToProcess(struct stWriteRequest &stWriteProces
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in modWriteHandler: " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
-	BOOST_LOG_SEV(lg, error) << __func__ << " End";
+	CLogger::getInstance().log(ERROR, LOGDETAILS("End"));
 	return false;
 }

@@ -19,6 +19,8 @@
 #include <mutex>
 #include "ZmqHandler.hpp"
 
+#include "Logger.hpp"
+
 std::mutex publishJsonMutex;
 
 using namespace zmq_handler;
@@ -36,7 +38,7 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 {
 	if((NULL == msg) || (NULL == msgbus_ctx))
 	{
-		BOOST_LOG_SEV(lg, error) << __func__ << ": Failed to publish message - Input parameters are NULL";
+		CLogger::getInstance().log(ERROR, LOGDETAILS(": Failed to publish message - Input parameters are NULL"));
 		return false;
 	}
 	std::lock_guard<std::mutex> lock(publishJsonMutex);
@@ -44,7 +46,7 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 	msgbus_ret_t ret;
 	zmq_handler::stZmqPubContext busPubCTX;
 
-	BOOST_LOG_SEV(lg, debug) << __func__ << " msg to publish ::" << "Topic :: "<< a_sTopic;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("msg to publish :: Topic :: " + a_sTopic));
 
 	try
 	{
@@ -52,14 +54,14 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 		busPubCTX = zmq_handler::getPubCTX(a_sTopic);
 	}
 	catch (std::exception &e) {
-		BOOST_LOG_SEV(lg, debug) << __func__ << " Exception: "<< e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		stZmqPubContext objPubContext;
 		publisher_ctx_t *pub_ctx = NULL;
 		ret = msgbus_publisher_new(msgbus_ctx,a_sTopic.c_str(), &pub_ctx);
 
 		if(ret != MSG_SUCCESS)
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << " Failed to initialize publisher errno: "<< ret;
+			CLogger::getInstance().log(ERROR, LOGDETAILS(" Failed to initialize publisher errno: " + std::to_string(ret)));
 			return false;
 		}
 
@@ -71,7 +73,7 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 		}
 		else
 		{
-			BOOST_LOG_SEV(lg, error) << __func__ << " Failed to obtain publish context "<< ret;
+			CLogger::getInstance().log(ERROR, LOGDETAILS(" Failed to obtain publish context " + std::to_string(ret)));
 			return false;
 		}
 	}
@@ -80,7 +82,7 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 	ret = msgbus_publisher_publish(msgbus_ctx, (publisher_ctx_t*)busPubCTX.m_pContext, msg);
 	if(ret != MSG_SUCCESS)
 	{
-		BOOST_LOG_SEV(lg, error) << __func__ << " Failed to publish message errno: "<< ret;
+		CLogger::getInstance().log(ERROR, LOGDETAILS(" Failed to publish message errno: " + std::to_string(ret)));
 		return false;
 	}
 
@@ -89,7 +91,7 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 
 msg_envelope_t* PublishJsonHandler::initialize_message(std::string strMsg)
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << "Start:: "<< strMsg;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start:: " + strMsg));
 
     // Creating message to be published
     msg_envelope_elem_body_t* tempMsg = msgbus_msg_envelope_new_string(strMsg.c_str());
@@ -98,7 +100,7 @@ msg_envelope_t* PublishJsonHandler::initialize_message(std::string strMsg)
 
     msgbus_msg_envelope_put(msg, "", tempMsg);
 
-    BOOST_LOG_SEV(lg, debug) << __func__ << "End:: "<< strMsg;
+    CLogger::getInstance().log(DEBUG, LOGDETAILS("End:: " + strMsg));
 
     return msg;
 }

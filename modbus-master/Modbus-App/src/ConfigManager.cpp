@@ -9,7 +9,7 @@
 ************************************************************************************/
 
 #include "ConfigManager.hpp"
-#include "BoostLogger.hpp"
+#include "Logger.hpp"
 
 /** Returns the single instance of this class
  *
@@ -30,7 +30,7 @@ CfgManager& CfgManager::Instance()
  */
 void etcdOnChangeKeyCb(char* key, char * val)
 {
-	BOOST_LOG_SEV(lg, info) << __func__ << " Change key callback is called";
+	CLogger::getInstance().log(INFO, LOGDETAILS("Change key callback is called"));
 	printf("key: %s and value: %s\n", key, val);
 }
 
@@ -42,8 +42,8 @@ void etcdOnChangeKeyCb(char* key, char * val)
  */
 void etcdOnChangeDirCb(char* key, char * val)
 {
-	BOOST_LOG_SEV(lg, info) << __func__ << " ETCD :: Change dir callback is called";
-	BOOST_LOG_SEV(lg, info) << __func__ << " Application is restarting to apply new changes from ETCD..";
+	CLogger::getInstance().log(INFO, LOGDETAILS("ETCD :: Change dir callback is called"));
+	CLogger::getInstance().log(INFO, LOGDETAILS("Application is restarting to apply new changes from ETCD.."));
 	std::cout << __func__ << " Application is restarting to apply new changes from ETCD.."<<std::endl;
 	std::cout << "New value to be apply is ::" << std::endl;
 	printf("key: %s and value: %s\n", key, val);
@@ -58,8 +58,20 @@ void etcdOnChangeDirCb(char* key, char * val)
  */
 void CfgManager::registerCallbackOnChangeDir(char *dir)
 {
+	string temp;
+
 	env_config.get_config_mgr_client()->register_watch_dir(dir, etcdOnChangeDirCb);
-	BOOST_LOG_SEV(lg, info) << __func__ << " ETCD :: Callback is register for :: "<< dir;
+
+	temp = "ETCD :: Callback is register for :: ";
+	temp.append(dir);
+
+	CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
+	temp = "ETCD :: Callback is register for :: ";
+	temp.append(dir);
+
+	CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
 	std::cout << "Callback is register for :: "<< dir <<std::endl;
 }
 
@@ -71,7 +83,11 @@ void CfgManager::registerCallbackOnChangeDir(char *dir)
 void CfgManager::registerCallbackOnChangeKey(char *key)
 {
 	env_config.get_config_mgr_client()->register_watch_key(key, etcdOnChangeKeyCb);
-	BOOST_LOG_SEV(lg, info) << __func__ << " ETCD :: Callback is register for :: "<< key;
+
+	string temp = "ETCD :: Callback is register for :: ";
+	temp.append(key);
+
+	CLogger::getInstance().log(INFO, LOGDETAILS(key));
 	std::cout << " Callback is register for :: "<< key <<std::endl;
 }
 
@@ -86,7 +102,7 @@ char* CfgManager::getETCDValuebyKey(const char *key)
 	if(key == NULL)
 	{
 		std::cout << "Key to be fetched from etcd is empty .." <<std::endl;
-		BOOST_LOG_SEV(lg, info) << __func__ << " Key to be fetched from etcd is empty ..";
+		CLogger::getInstance().log(INFO, LOGDETAILS("Key to be fetched from etcd is empty .."));
 		return NULL;
 	}
 	std::string sActualKey(key);
@@ -94,7 +110,7 @@ char* CfgManager::getETCDValuebyKey(const char *key)
 	if(NULL == pcAppName)
 	{
 		std::cout << "AppName Environment Variable is not set.." <<std::endl;
-		BOOST_LOG_SEV(lg, info) << __func__ << " AppName Environment Variable is not set..";
+		CLogger::getInstance().log(INFO, LOGDETAILS("AppName Environment Variable is not set.."));
 		return NULL;
 	}
 	std::string AppName(pcAppName);

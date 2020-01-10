@@ -34,7 +34,7 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		char *RootCAPath = getenv("PLBUS_ROOTCAPATH");
 		if(NULL == RootCAPath)
 		{
-			BOOST_LOG_SEV(lg, info) << "fatal:: Error in reading PLBUS_ROOTCAPATH ";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("in reading PLBUS_ROOTCAPATH"));
 			return;
 		}
 		sslopts.set_trust_store(RootCAPath);
@@ -42,14 +42,14 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		char *ClientCertPath = getenv("BACNET_PLBUS_CLIENT_CERT");
 		if(NULL == ClientCertPath)
 		{
-			BOOST_LOG_SEV(lg, info) << "fatal:: Error in reading BACNET_PLBUS_CLIENT_CERT ";
+			CLogger::getInstance().log(FATAL, LOGDETAILS("Error in reading BACNET_PLBUS_CLIENT_CERT"));
 			return;
 		}
 		sslopts.set_key_store(ClientCertPath);
 		char *ClientKeyPath = getenv("BACNET_PLBUS_CLIENT_KEY");
 		if(NULL == ClientKeyPath)
 		{
-			BOOST_LOG_SEV(lg, info) << "fatal:: Error in reading BACNET_PLBUS_CLIENT_KEY ";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Error in reading BACNET_PLBUS_CLIENT_KEY"));
 			return;
 		}
 		sslopts.set_private_key(ClientKeyPath);
@@ -63,9 +63,13 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		subscriber.set_callback(callback);
 
 		connectSubscriber();
+
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("MQTT initialized successfully"));
+		std::cout << __func__ << "MQTT initialized successfully" << std::endl;
+
 	} catch (const std::exception &e) {
-		std::cout << "fatal::Exception in CMQTTHandler constructor: "
-				<< e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << "Exception : " << e.what() << std::endl;
 	}
 }
 
@@ -82,14 +86,14 @@ CMQTTHandler& CMQTTHandler::instance() {
 		mqttBrokerURL = std::getenv("MQTT_URL_FOR_EXPORT");
 		/// check for null
 		if (NULL == mqttBrokerURL) {
-			std::cout << __func__
-					<< ":MQTT_URL_FOR_EXPORT Environment variable is not set!";
+			CLogger::getInstance().log(ERROR, LOGDETAILS(":MQTT_URL_FOR_EXPORT Environment variable is not set"));
+			std::cout << __func__ << "ERROR: MQTT_URL_FOR_EXPORT Environment variable is not set" << endl;
 			exit(EXIT_FAILURE);
 		} else {
 			strPlBusUrl.assign(mqttBrokerURL);
-			std::cout << __func__
-					<< ":MQTT_URL_FOR_EXPORT Environment variable is set to : "
-					<< strPlBusUrl;
+			CLogger::getInstance().log(DEBUG, LOGDETAILS(":MQTT_URL_FOR_EXPORT Environment variable is set to : "
+					+ strPlBusUrl));
+			std::cout << __func__ << "MQTT_URL_FOR_EXPORT Environment variable is set to : " << strPlBusUrl << endl;
 			bPlBusUrl = true;
 		}
 	}
@@ -106,11 +110,13 @@ bool CMQTTHandler::connect() {
 		/// Wait for 2 seconds to get connected
 		/*if (false == conntok->wait_for(2000))
 		 {
-		 std::cout << "Error::Failed to connect to the platform bus ";
+		 CLogger::getInstance().log(DEBUG, LOGDETAILS("Error::Failed to connect to the platform bus ";
 		 bFlag = false;
 		 }*/
 	} catch (const std::exception &e) {
-		std::cout << __func__ << ":Exception in MQTT connect: " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << "Exception : " << e.what() << std::endl;
+
 		bFlag = false;
 	}
 	return bFlag;
@@ -128,7 +134,9 @@ bool CMQTTHandler::getMsgFromQ(stMsgData &a_msg) {
 			bRet = false;
 		}
 	} catch (const std::exception &e) {
-		std::cout << "Error::Exception CMQTTHandler::getMsgFromQ " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << "Exception : " << e.what() << std::endl;
+
 		bRet = false;
 	}
 	return bRet;
@@ -141,7 +149,9 @@ bool CMQTTHandler::pushMsgInQ(const stMsgData &a_msg) {
 		std::lock_guard<std::mutex> lock(m_mutexMsgQ);
 		m_qMsgData.push(a_msg);
 	} catch (const std::exception &e) {
-		std::cout << "Error::Exception CMQTTHandler::pushMsgInQ " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << "Exception : " << e.what() << std::endl;
+
 		bRet = false;
 	}
 	return bRet;
@@ -171,7 +181,9 @@ void CMQTTHandler::postPendingMsgsThread() {
 			}
 		} while (true == bDoRun);
 	} catch (const std::exception &e) {
-		std::cout << "Error::Exception in postPendingMsgsThread: " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << "Exception : " << e.what() << std::endl;
+
 #ifdef PERFTESTING
 		CMQTTHandler::m_ui32PublishSkipped++;
 #endif
@@ -207,8 +219,8 @@ bool CMQTTHandler::publish(std::string a_sMsg, const char *topic) {
 #ifdef PERFTESTING
 		m_ui32PublishExcep++;
 #endif
-		std::cout << "Fatal::Platform Bus: Exception in MQTT_PublishMessage"
-				<< exc.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(exc.what()));
+		std::cout << __func__ << "Exception : " << exc.what() << std::endl;
 	}
 	return false;
 }
@@ -221,9 +233,9 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic,
 		// Check if topic is blank
 		if (true == a_sTopic.empty()) {
 			if (true == a_sMsg.empty()) {
-				std::cout << "Info::Blank topic and blank Message";
+				CLogger::getInstance().log(INFO, LOGDETAILS("Blank topic and blank Message"));
 			} else {
-				std::cout << "Info::Blank topic. Message not posted";
+				CLogger::getInstance().log(INFO, LOGDETAILS("Blank topic. Message not posted"));
 			}
 			return false;
 		}
@@ -234,9 +246,10 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic,
 		if (true == client.is_connected()) {
 			mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, 0,
 					false);
-			//std::cout << "Info::Platform Bus StrMsg: Publishing message ";
 
 			client.publish(pubmsg, nullptr, listener);
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("Published message on EIS successfully"));
+			std::cout << __func__ << "Published message on EIS successfully" << endl;
 
 			return true;
 		} else {
@@ -256,9 +269,8 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic,
 			//g_uiStrMsgNotPublished++;
 		}
 
-		std::cout
-				<< "Error::Platform Bus StrMsg: Exception in MQTT_PublishMessage :"
-				<< exc.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(exc.what()));
+		std::cout << __func__ << "Exception : " << exc.what() << std::endl;
 	}
 	return false;
 }
@@ -285,25 +297,25 @@ std::atomic<uint32_t> CMQTTHandler::m_uiSubscribeQReqTried(0);
 
 void CMQTTHandler::printCounters()
 {
-	std::cout << "\n\nReq rcvd: " << m_ui32PublishReq;
-	std::cout << "\nReq err: " << m_ui32PublishReqErr;
-	std::cout << "\nReq sendmsg excep: " << m_ui32PublishSkipped;
-	std::cout << "\nReq publish excep: " << m_ui32PublishExcep;
-	std::cout << "\nReq published: " << m_ui32Published;
-	std::cout << "\nReq publish failed: " << m_ui32PublishFailed;
-	std::cout << "\nReq publish timeout: " << m_ui32PublishReqTimeOut;
-	std::cout << "\nReq during no connection: " << m_ui32Disconnected;
-	std::cout << "\nReq conn lost: " << m_ui32ConnectionLost;
-	std::cout << "\nReq conn done: " << m_ui32Connection;
-	std::cout << "\n*****Str Req: " << m_ui32PublishStrReq;
-	std::cout << "\n*****Str Req err: " << m_ui32PublishStrReqErr;
-	std::cout << "\n*****Str Req excep: " << m_ui32PublishStrExcep;
-	std::cout << "\n----Pending Q Size: " << instance().m_qMsgData.size();
-	std::cout << "\n++++Req posted from Q: " << m_uiQReqTried;
-	std::cout << "\n$$$$Delivery completed: " << m_ui32DelComplete << endl;
-	std::cout << "\nSubscriber tried to publish message:" << m_uiSubscribeQReqTried << endl;
-	std::cout << "\nSubscriber skipped publishing message:" << m_ui32SubscribeSkipped << endl;
-	std::cout << "\nSubscriber received messages:" << m_ui32MessageArrived << endl;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req rcvd: " + std::to_string(m_ui32PublishReq)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req err: "  + std::to_string(m_ui32PublishReqErr)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req sendmsg excep: "  + std::to_string(m_ui32PublishSkipped)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req publish excep: "  + std::to_string(m_ui32PublishExcep)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req published: "  + std::to_string(m_ui32Published)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req publish failed: "  + std::to_string(m_ui32PublishFailed)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req publish timeout: "  + std::to_string(m_ui32PublishReqTimeOut)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req during no connection: "  + std::to_string(m_ui32Disconnected)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req conn lost: " + std::to_string(m_ui32ConnectionLost)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req conn done: " + std::to_string(m_ui32Connection)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("*****Str Req: " + std::to_string(m_ui32PublishStrReq)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("*****Str Req err: " + std::to_string(m_ui32PublishStrReqErr)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("*****Str Req excep: " + std::to_string(m_ui32PublishStrExcep)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("----Pending Q Size: " + std::to_string(instance().m_qMsgData.size())));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("++++Req posted from Q: " + std::to_string(m_uiQReqTried)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("$$$$Delivery completed: " + std::to_string(m_ui32DelComplete)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber tried to publish message:" + std::to_string(m_uiSubscribeQReqTried)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber skipped publishing message:" + std::to_string(m_ui32SubscribeSkipped)));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber received messages:" + std::to_string(m_ui32MessageArrived)));
 }
 #endif
 
@@ -320,9 +332,12 @@ bool CMQTTHandler::initSem()
 {
 	int ok = sem_init(&g_semaphoreRespProcess, 0, 0 /* Initial value of zero*/);
 	if (ok == -1) {
-	   std::cout << __func__ << "  could not create unnamed semaphore, exiting\n";
+	   CLogger::getInstance().log(DEBUG, LOGDETAILS("could not create unnamed semaphore, exiting"));
 	   exit(0);
 	}
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Sempaphores initialized successfully"));
+	std::cout << __func__ << "Semaphores initialized successfully" << std::endl;
+
 	return true;
 }
 
@@ -336,16 +351,22 @@ bool CMQTTHandler::subscribeToTopics() {
 	{
 		for (auto topic : vMqttTopics) {
 			if(! topic.empty()) {
-				std::cout << "Subscribing topic : " << topic << "\n";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscribing topic : " + topic));
 				subscriber.subscribe(topic, QOS, nullptr, listener);
 			}
 		}
 	}
 	catch(exception &ex)
 	{
-		std::cout << __func__ << " : Exception : " << ex.what() <<"\n";
+		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
+		std::cout << __func__ << "Exception : " << ex.what() << std::endl;
+
 		return false;
 	}
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscribed topics with MQTT broker"));
+	std::cout << __func__ << "Subscribed topics with MQTT broker" << std::endl;
+
 	return true;
 }
 
@@ -357,14 +378,17 @@ bool CMQTTHandler::connectSubscriber() {
 		// Wait for 2 seconds to get connected
 		/*if (false == conntok->wait_for(2000))
 		 {
-		 std::cout << "Error::Failed to connect to the platform bus ";
+		 CLogger::getInstance().log(DEBUG, LOGDETAILS("Error::Failed to connect to the platform bus ";
 		 bFlag = false;
 		 }*/
 	} catch (const std::exception &e) {
-		std::cout << __func__ << ":Exception in MQTT subscriber connect: "
-				<< e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		bFlag = false;
 	}
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber connected successfully with MQTT broker"));
+	std::cout << __func__ << "Subscriber connected successfully with MQTT broker"<< std::endl;
+
 	return bFlag;
 }
 
@@ -380,8 +404,9 @@ bool CMQTTHandler::getSubMsgFromQ(mqtt::const_message_ptr &msg) {
 			bRet = false;
 		}
 	} catch (const std::exception &e) {
-		std::cout << "Error::Exception CMQTTSubscriber::getSubMsgFromQ "
-				<< e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << "Exception : " << e.what() << std::endl;
+
 		bRet = false;
 	}
 	return bRet;
@@ -394,13 +419,13 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg) {
 		/// Ensure that only on thread can execute at a time
 		std::lock_guard<std::mutex> lock(m_mutexSubMsgQ);
 		m_qSubMsgData.push(msg);
-		std::cout << "Pushed MQTT message in queue\n";
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Pushed MQTT message in queue"));
 
 		// Signal response process thread
 		sem_post(&g_semaphoreRespProcess);
 
 	} catch (const std::exception &e) {
-		std::cout << __func__ << " Exception : " << e.what() << std::endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		bRet = false;
 	}
 	return bRet;
@@ -409,7 +434,7 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg) {
 void CMQTTHandler::cleanup()
 {
 	sem_destroy(&g_semaphoreRespProcess);
-	std::cout  << __func__ << " Destroying CMQTTHandler instance ...\n";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroying CMQTTHandler instance ..."));
 
 	conopts.set_automatic_reconnect(0);
 	client.disable_callbacks();
@@ -425,7 +450,7 @@ void CMQTTHandler::cleanup()
 	m_qMsgData = {};
 	m_qSubMsgData = {};
 
-	std::cout  << __func__ << " Destroyed CMQTTHandler instance !!\n";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroyed CMQTTHandler instance"));
 }
 
 CMQTTHandler::~CMQTTHandler()

@@ -12,7 +12,6 @@
 #include <eis/utils/json_config.h>
 
 #include "EISMsgbusHandler.hpp"
-#include "ConfigManager.hpp"
 
 namespace
 {
@@ -33,28 +32,30 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 
 	if(!(topicType != "pub" || topicType != "sub"))
 	{
-		std::cout << __func__ << " Invalid TopicType parameter ::" << topicType << std::endl;
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid TopicType parameter ::" + topicType));
+		std::cout << __func__ << "Invalid TopicType parameter ::" << topicType << std::endl;
+
 		return retValue;
 	}
 	if(CfgManager::Instance().IsClientCreated())
 	{
 		std::vector<std::string> Topics = CfgManager::Instance().getEnvConfig().get_topics_from_env(topicType);
 
-		for (auto& topic : Topics)
+		for (auto topic : Topics)
 		{
 			try
 			{
 			retValue = true;
 			config_t* config = CfgManager::Instance().getEnvConfig().get_messagebus_config(topic, topicType);
 			if(config == NULL) {
-				std::cout << __func__ << " Failed to get publisher message bus config ::" << topic << std::endl;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to get publisher message bus config ::" + topic));
 				continue;
 			}
 
 			void* msgbus_ctx = msgbus_initialize(config);
 			if(msgbus_ctx == NULL)
 			{
-				std::cout << __func__ << " Failed to get message bus context with config for topic ::" << topic << std::endl;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to get message bus context with config for topic ::" + topic));
 				config_destroy(config);
 				continue;
 			}
@@ -68,7 +69,7 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 
 				if(ret != MSG_SUCCESS)
 				{
-					std::cout << __func__ << "Failed to initialize publisher errno: "<< ret << "\n";
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize publisher errno: " + std::to_string(ret)));
 
 					if(msgbus_ctx != NULL)
 						msgbus_destroy(msgbus_ctx);
@@ -85,7 +86,7 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 
 				if(false == insertCTX(topic, objTempCtx))
 				{
-					std::cout << __func__ << " Failed to insert context for topic  : " << topic << std::endl;
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to insert context for topic  : " + topic));
 
 					if(msgbus_ctx != NULL)
 						msgbus_destroy(msgbus_ctx);
@@ -95,14 +96,14 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 
 					continue; //continue with next topic
 				}
-				std::cout << __func__ << " Context created and stored for config for topic :: " << topic << std::endl;
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Context created and stored for config for topic :: " + topic));
 
 				stZmqPubContext objPubContext;
 				objPubContext.m_pContext = pub_ctx;
 
 				if(false == insertPubCTX(topic, objPubContext))
 				{
-					std::cout << __func__ << " Failed to insert pub context for topic  : " << topic << std::endl;
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to insert pub context for topic  : " + topic));
 					if(config != NULL)
 						config_destroy(config);
 
@@ -112,11 +113,11 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 			}
 			else
 			{
-				std::cout << __func__ << " Cfg client is not connected \n";
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Cfg client is not connected"));
 				retVal = msgbus_subscriber_new(msgbus_ctx, topic.c_str(), NULL, &sub_ctx);
 				if(retVal != MSG_SUCCESS)
 				{
-					std::cout <<__func__ << "Failed to create subscriber context. errno: "<< retVal << std::endl;
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to create subscriber context. errno: " + std::to_string(retVal)));
 
 					if(msgbus_ctx != NULL)
 						msgbus_destroy(msgbus_ctx);
@@ -134,7 +135,7 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 
 					if(false == insertCTX(topic, objTempCtx))
 					{
-						std::cout << __func__ << " Failed to insert context for topic  : " << topic << std::endl;
+						CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to insert context for topic  : " + topic));
 						if(msgbus_ctx != NULL)
 							msgbus_destroy(msgbus_ctx);
 
@@ -143,14 +144,14 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 
 						continue; //continue with next topic
 					}
-					std::cout << __func__ << " Context created and stored for config for topic :: " << topic << std::endl;
+					CLogger::getInstance().log(DEBUG, LOGDETAILS("Context created and stored for config for topic :: " + topic));
 
 					stZmqSubContext objTempSubCtx;
 					objTempSubCtx.m_pContext = sub_ctx;
 
 					if(false == insertSubCTX(topic, objTempSubCtx))
 					{
-						std::cout << __func__ << " Failed to insert sub context for topic  : " << topic << std::endl;
+						CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to insert sub context for topic  : " + topic));
 						if(config != NULL)
 							config_destroy(config);
 						//remove msgbus context
@@ -161,14 +162,20 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 			}
 			catch(exception &e)
 			{
-				std::cout << __func__ << " Error::Exception is ::" << e.what() << " for topic:" << topic;
+				string temp = e.what();
+				temp.append(" for topic:");
+				temp.append(topic);
+				CLogger::getInstance().log(FATAL, LOGDETAILS(temp));
+
+				std::cout << __func__ << "Exception : " << e.what() << std::endl;
 				retValue = false;
 			}
 
 		}
 	}
 	else {
-		std::cout << __func__ << " Failed to prepare contexts as config manager client is not connected" << std::endl;
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to prepare contexts as config manager client is not connected"));
+		std::cout << __func__ << "Failed to prepare contexts as config manager client is not connected" << std::endl;
 		retValue = false;
 	}
 	return retValue;
@@ -189,18 +196,20 @@ bool CEISMsgbusHandler::getCTX(std::string a_sTopic, stZmqContext& msgbusContext
 
 bool CEISMsgbusHandler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 {
-	std::cout << __func__ << " Start: " << a_sTopic << std::endl;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start: " + a_sTopic));
 	try
 	{
 		std::unique_lock<std::mutex> lck(__ctxMapLock);
 
 		/// insert the data in map
 		g_mapContextMap.insert(std::pair <std::string, stZmqContext> (a_sTopic, ctxRef));
-		std::cout<< "End: " << std::endl;
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
 	}
 	catch(exception &ex)
 	{
-		std::cout << __func__ << " Exception : " << ex.what() << std::endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
+		std::cout << __func__ << "Exception : " << ex.what() << std::endl;
+
 		return false;
 	}
 
@@ -222,10 +231,11 @@ void CEISMsgbusHandler::removeCTX(std::string a_sTopic)
 				msgbus_destroy(zmqCtx.m_pContext);
 			}
 		}
-		std::cout << __func__ << " destroyed contexts for topic : " << a_sTopic << std::endl;
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("destroyed contexts for topic : " + a_sTopic));
 	}
 	catch(exception &ex){
-		std::cout << __func__ << " Exception : " << ex.what() << std::endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
+		std::cout << __func__ << "Exception : " << ex.what() << std::endl;
 	}
 
 }
@@ -255,7 +265,9 @@ bool CEISMsgbusHandler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRe
 	}
 	catch (exception &e)
 	{
-		std::cout << __func__ <<  ":Error::Exception is ::" << e.what() << std::endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << "Exception : " << e.what() << std::endl;
+
 		bRet = false;
 	}
 
@@ -264,6 +276,8 @@ bool CEISMsgbusHandler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRe
 
 void CEISMsgbusHandler::removeSubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 {
+	try
+	{
 	stZmqSubContext zmqSubCtx;
 	if( getSubCTX(a_sTopic, zmqSubCtx)) {
 
@@ -273,6 +287,10 @@ void CEISMsgbusHandler::removeSubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 			if((zmqCtx.m_pContext != NULL) && (zmqSubCtx.m_pContext != NULL))
 				msgbus_recv_ctx_destroy(zmqCtx.m_pContext, zmqSubCtx.m_pContext);
 		}
+	}catch(exception &ex) {
+		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
+		std::cout << __func__ << "Exception : " << ex.what() << std::endl;
+	}
 }
 
 //////////////////sub topics//////////////////
@@ -300,7 +318,9 @@ bool CEISMsgbusHandler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRe
 	}
 	catch (exception &e)
 	{
-		std::cout << __func__ <<  ":Error::Exception is ::" << e.what() << std::endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << "Exception : " << e.what() << std::endl;
+
 		bRet = false;
 	}
 
@@ -309,6 +329,8 @@ bool CEISMsgbusHandler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRe
 
 void CEISMsgbusHandler::removePubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 {
+	try
+	{
 		stZmqPubContext zmqPubCtx;
 		if( getPubCTX(a_sTopic, zmqPubCtx)) {
 
@@ -318,6 +340,10 @@ void CEISMsgbusHandler::removePubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 			if((zmqCtx.m_pContext != NULL) &&  (zmqPubCtx.m_pContext != NULL))
 				msgbus_publisher_destroy(zmqCtx.m_pContext, (publisher_ctx_t*) zmqPubCtx.m_pContext);
 		}
+	}catch(exception &ex) {
+		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
+		std::cout << __func__ << "Exception : " << ex.what() << std::endl;
+	}
 
 }
 /////////////////////////////////////////////
@@ -328,7 +354,8 @@ CEISMsgbusHandler::CEISMsgbusHandler(){
 
 
 void CEISMsgbusHandler::cleanup() {
-	std::cout << __func__ << " Destroying all contexts ...\n";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroying all contexts ..."));
+	std::cout << __func__ << "Destroying all contexts ..." << endl;
 
 	try
 	{
@@ -336,8 +363,9 @@ void CEISMsgbusHandler::cleanup() {
 		for (auto it = g_mapContextMap.cbegin(); it != g_mapContextMap.cend();
 				) {
 			if (!it->first.empty()) {
-				std::cout << __func__ << " destroying context for topic : "
-						<< it->first << std::endl;
+				string temp = "destroying context for topic : ";
+				temp.append(it->first);
+				CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
 				stZmqContext zmqCtx;
 				if (getCTX(it->first, zmqCtx)) {
@@ -349,9 +377,8 @@ void CEISMsgbusHandler::cleanup() {
 					std::unique_lock<std::mutex> lck(__ctxMapLock);
 					if (zmqCtx.m_pContext != NULL) {
 						msgbus_destroy(zmqCtx.m_pContext);
-						std::cout << __func__
-								<< " destroyed contexts for topic : "
-								<< it->first << std::endl;
+						CLogger::getInstance().log(DEBUG, LOGDETAILS("destroyed contexts for topic : "
+								+ it->first));
 					}
 				}
 
@@ -363,9 +390,13 @@ void CEISMsgbusHandler::cleanup() {
 		}
 
 	}catch(exception &ex) {
-		std::cout << __func__ << " Exception : " << ex.what() << "\n";
+		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
+		std::cout << __func__ << "Exception : " << ex.what() << std::endl;
+
 	}
-	std::cout << __func__ << " Destroyed all contexts !!\n";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroyed all contexts"));
+	std::cout << __func__ << "Destroyed all contexts" << std::endl;
+
 }
 
 CEISMsgbusHandler::~CEISMsgbusHandler() {

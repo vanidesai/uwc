@@ -21,6 +21,8 @@
 #include <fstream>
 #include "ConfigManager.hpp"
 
+#include "Logger.hpp"
+
 using namespace zmq_handler;
 
 std::mutex fileMutex;
@@ -42,14 +44,14 @@ namespace
 
 bool zmq_handler::prepareCommonContext(std::string topicType)
 {
-	BOOST_LOG_SEV(lg, debug) << __func__ << "Start: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start:"));
 	msgbus_ret_t retVal = MSG_SUCCESS;
 	bool retValue = false;
 	recv_ctx_t* sub_ctx = NULL;
 
 	if(!(topicType != "pub" || topicType != "sub"))
 	{
-		BOOST_LOG_SEV(lg, error) << __func__ << " Invalid TopicType parameter ::" << topicType;
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid TopicType parameter ::" + topicType));
 		return retValue;
 	}
 	if(CfgManager::Instance().IsClientCreated())
@@ -60,14 +62,14 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 			retValue = true;
 			config_t* config = CfgManager::Instance().getEnvConfig().get_messagebus_config(topic, topicType);
 			if(config == NULL) {
-				BOOST_LOG_SEV(lg, error) << __func__ << " Failed to get publisher message bus config ::" << topic;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to get publisher message bus config ::" + topic));
 				continue;
 			}
 
 			void* msgbus_ctx = msgbus_initialize(config);
 			if(msgbus_ctx == NULL)
 			{
-				BOOST_LOG_SEV(lg, error) << __func__ << " Failed to get message bus context with config for topic ::" << topic;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to get message bus context with config for topic ::" + topic));
 				config_destroy(config);
 				continue;
 			}
@@ -83,7 +85,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 
 				if(retVal != MSG_SUCCESS)
 				{
-					BOOST_LOG_SEV(lg, error) <<__func__ << "Failed to initialize publisher errno: "<< retVal;
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize publisher errno: " + std::to_string(retVal)));
 				}
 			}
 			else
@@ -101,18 +103,18 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 					zmq_handler::insertSubCTX(topic, objTempSubCtx);
 				}
 			}
-			BOOST_LOG_SEV(lg, info) << __func__ << " Context created and stored for config for topic :: " << topic;
+			CLogger::getInstance().log(INFO, LOGDETAILS("Context created and stored for config for topic :: " + topic));
 
 		}
 	}
-	BOOST_LOG_SEV(lg, debug)<<__func__ << "End: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 
 	return retValue;
 }
 
 stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
 {
-	BOOST_LOG_SEV(lg, debug)<<__func__ << "Start: " << a_sTopic;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
 
 	/// return the request ID
@@ -121,26 +123,26 @@ stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
 
 void zmq_handler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRef)
 {
-	BOOST_LOG_SEV(lg, debug)<<__func__ << "Start: " << a_sTopic;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
 
 	/// insert the data in map
 	g_mapSubContextMap.insert(std::pair <std::string, stZmqSubContext> (a_sTopic, ctxRef));
-	BOOST_LOG_SEV(lg, debug)<<__func__ << "End: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 
 void zmq_handler::removeSubCTX(std::string a_sTopic)
 {
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << a_sTopic;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
 
 	g_mapSubContextMap.erase(a_sTopic);
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End:";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
 }
 
 stZmqContext& zmq_handler::getCTX(std::string a_sTopic)
 {
-	BOOST_LOG_SEV(lg, debug)<<__func__ << "Start: " << a_sTopic;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
 	std::unique_lock<std::mutex> lck(__ctxMapLock);
 
 	/// return the request ID
@@ -149,29 +151,29 @@ stZmqContext& zmq_handler::getCTX(std::string a_sTopic)
 
 void zmq_handler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 {
-	BOOST_LOG_SEV(lg, debug)<<__func__ << "Start: " << a_sTopic;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
 	std::unique_lock<std::mutex> lck(__ctxMapLock);
 
 	/// insert the data in map
 	g_mapContextMap.insert(std::pair <std::string, stZmqContext> (a_sTopic, ctxRef));
-	BOOST_LOG_SEV(lg, debug)<<__func__ << "End: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 
 void zmq_handler::removeCTX(std::string a_sTopic)
 {
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << a_sTopic;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
 	std::unique_lock<std::mutex> lck(__ctxMapLock);
 
 	g_mapContextMap.erase(a_sTopic);
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End:";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
 }
 
 stZmqPubContext zmq_handler::getPubCTX(std::string a_sTopic)
 {
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << a_sTopic;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
 	std::unique_lock<std::mutex> lck(__PubctxMapLock);
 
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 
 	/// return the context
 	return g_mapPubContextMap.at(a_sTopic);
@@ -179,7 +181,7 @@ stZmqPubContext zmq_handler::getPubCTX(std::string a_sTopic)
 
 bool zmq_handler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRef)
 {
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " ;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: "));
 	bool bRet = true;
 	try
 	{
@@ -190,28 +192,28 @@ bool zmq_handler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRef)
 	}
 	catch (exception &e)
 	{
-		BOOST_LOG_SEV(lg, debug) << "Error::" << __func__ << "Exception is ::" << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		bRet = false;
 	}
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 
 	return bRet;
 }
 
 void zmq_handler::removePubCTX(std::string a_sTopic)
 {
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << a_sTopic;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
 	std::unique_lock<std::mutex> lck(__PubctxMapLock);
 	g_mapPubContextMap.erase(a_sTopic);
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 
 stOnDemandRequest& zmq_handler::getOnDemandReqData(unsigned short seqno)
 {
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << seqno;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
 	std::unique_lock<std::mutex> lck(__appSeqMapLock);
 
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 
 	/// return the context
 	return g_mapAppSeq.at(seqno);
@@ -219,7 +221,7 @@ stOnDemandRequest& zmq_handler::getOnDemandReqData(unsigned short seqno)
 
 bool zmq_handler::insertOnDemandReqData(unsigned short seqno, stOnDemandRequest reqData)
 {
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " ;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: "));
 	bool bRet = true;
 	try
 	{
@@ -230,20 +232,20 @@ bool zmq_handler::insertOnDemandReqData(unsigned short seqno, stOnDemandRequest 
 	}
 	catch (exception &e)
 	{
-		BOOST_LOG_SEV(lg, debug) << "Error::" << __func__ << "Exception is ::" << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		bRet = false;
 	}
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 
 	return bRet;
 }
 
 void zmq_handler::removeOnDemandReqData(unsigned short seqno)
 {
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "Start: " << seqno;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
 	std::unique_lock<std::mutex> lck(__appSeqMapLock);
 	g_mapAppSeq.erase(seqno);
-	BOOST_LOG_SEV(lg, debug)<<  __func__ << "End: ";
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 
 std::string zmq_handler::swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap, bool a_bIsWordSwap)

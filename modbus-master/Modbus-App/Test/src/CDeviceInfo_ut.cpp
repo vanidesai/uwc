@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include "../include/CDeviceInfo_ut.h"
+#include "../include/CDeviceInfo_ut.hpp"
 
 void CDeviceInfo_ut::SetUp()
 {
@@ -24,9 +24,9 @@ void CDeviceInfo_ut::TearDown()
 /**********************************************CDeviceInfo::build()************************************************************/
 
 
-
-/*test 01:: this test checks whether the device_info attribute is present or not
- * and if it is unavailable it throws the exceptions accorindingly */
+/***Test:CDeviceInfo_ut::device_info_unavailable***/
+/*Test 01:: This test checks whether the device_info attribute is present or not
+  and if it is unavailable it throws the exceptions accordingly */
 
 
 TEST_F(CDeviceInfo_ut, device_info_unavailable)
@@ -52,8 +52,9 @@ TEST_F(CDeviceInfo_ut, device_info_unavailable)
 
 			catch(YAML::Exception &e)
 			{
-				BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
+
 				//EXPECT_EQ(e.what(), "name key not found");
+				EXPECT_EQ("name key not found", (string)e.what());
 				/****** Exception is trown but not showing the proper message so the EXPECT or ASSERT is not used
 				to check the functionality for the unit test*********/
 
@@ -62,8 +63,10 @@ TEST_F(CDeviceInfo_ut, device_info_unavailable)
 	}
 
 }
-/*test 02:: this test checks whether the name key is present in the device_info or not
- * and if it is unavailable it throws the exceptions accordingly */
+
+/***Test:CDeviceInfo_ut::device_info_name_unavailable***/
+/*Test 02:: This test checks whether the name key is present in the device_info or not
+  and if it is unavailable it throws the exceptions accordingly */
 
 TEST_F(CDeviceInfo_ut, device_info_name_unavailable)
 {
@@ -90,11 +93,8 @@ TEST_F(CDeviceInfo_ut, device_info_name_unavailable)
 			}
 			catch(YAML::Exception &e)
 			{
-				BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
-				cout<<endl<<"============================="<<endl;
-				cout<<e.what();
-				cout<<endl<<"============================="<<endl;
-				//EXPECT_EQ(e.what(),"name key not found");
+
+				EXPECT_EQ(e.what(),"name key not found");
 				/****** Exception is trown but not showing the proper message so the EXPECT or ASSERT is not used
 				 to check the functionality for the unit test*********/
 
@@ -103,9 +103,11 @@ TEST_F(CDeviceInfo_ut, device_info_name_unavailable)
 	}
 }
 
-/*test 03:: this test whether datapoints key is available or not in the yml file and
-  if it is unavailable then it throws exceptons accordingly
- */
+
+/***CDeviceInfo_ut::deviceInfo_absent_datapoints***/
+/*Test 03:: This test whether datapoints key is available or not in the yml file and
+  if it is unavailable then it throws exceptIons accordingly  */
+
 
 TEST_F(CDeviceInfo_ut, deviceInfo_absent_datapoints)
 {
@@ -137,13 +139,15 @@ TEST_F(CDeviceInfo_ut, deviceInfo_absent_datapoints)
 							if(0 == Cdeviceinfo_obj.addDataPoint(datapoint_obj))
 							{
 
-								BOOST_LOG_SEV(lg, info) << __func__ << " : Added point with id: " << datapoint_obj.getID();
+								//BOOST_LOG_SEV(lg, info) << __func__ << " : Added point with id: " << datapoint_obj.getID();
+								std::cout<< " : Added point with id: " << datapoint_obj.getID()<<endl;
 
 							}
 							else
 							{
 
-								BOOST_LOG_SEV(lg, error) << __func__ << " : Ignored point with id : " << datapoint_obj.getID();
+								//BOOST_LOG_SEV(lg, error) << __func__ << " : Ignored point with id : " << datapoint_obj.getID();
+								std::cout<< " : Ignored point with id : " << datapoint_obj.getID()<<endl;
 
 							}
 
@@ -162,8 +166,8 @@ TEST_F(CDeviceInfo_ut, deviceInfo_absent_datapoints)
 	}
 }
 
-
-/**test 04: this unit test checks the name of the device is correct in the yml file .**************/
+/***CDeviceInfo_ut::device_info_name_available***/
+/**Test 04: This unit test checks the name of the device is correct in the yml file .**************/
 
 TEST_F(CDeviceInfo_ut, device_info_name_available)
 {
@@ -198,11 +202,14 @@ TEST_F(CDeviceInfo_ut, device_info_name_available)
 	}
 }
 
+
+/***CDeviceInfo_ut::addDataPoint_returnVal***/
 /*
- test 05:: Test the behaviour of addDataPoint() function when point name is already present in
+ Test 05:: Tests the behaviour of addDataPoint() function when point name is already present in
   datapoint list.
  Expected: It should return "-1".
  */
+
 TEST_F(CDeviceInfo_ut, addDataPoint_returnVal)
 {
 	/*std::string path("/Device_Config/iou_datapoints_3.yml");
@@ -214,7 +221,6 @@ TEST_F(CDeviceInfo_ut, addDataPoint_returnVal)
 
 	for( auto basenode_it : baseNode)
 	{
-		//cout<<"$$$$$$ In the 1st for"<<endl;
 
 		if(basenode_it.second.IsSequence() && basenode_it.first.as<std::string>() == "datapoints")
 		{
@@ -232,7 +238,9 @@ TEST_F(CDeviceInfo_ut, addDataPoint_returnVal)
 	EXPECT_EQ(-1, temp);
 }
 
-/*test 06:: Behaviour of build() when there are duplicate IDs present in device list */
+
+/***** This test Need to be updated****/
+/*Test 06:: Behaviour of build() when there are duplicate IDs present in device list */
 
 //TEST_F(CDeviceInfo_ut, build_DupID)
 //{

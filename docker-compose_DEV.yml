@@ -83,6 +83,7 @@ services:
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       TCP_ENABLED : 1
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 5
       MODBUS_MASTER_CONNECT_TIMEOUT: 30000
@@ -90,8 +91,12 @@ services:
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT-Export"
-      PubTopics: "PL0_flowmeter"
+      PubTopics: "PL0_flowmeter,PL0_flowmeter_response"
       PL0_flowmeter_cfg: "zmq_tcp,127.0.0.1:1115"
+      PL0_flowmeter_response_cfg: "zmq_tcp,127.0.0.1:6666"
+      SubTopics: "MQTT-Export/PL0_flowmeter_read"
+      PL0_flowmeter_read_cfg: "zmq_tcp,127.0.0.1:1616"
+      WRITE_RESPONSE_TOPIC: "PL0_flowmeter_response"
       
     user: ${EIS_UID}
 
@@ -114,6 +119,7 @@ services:
       AppName: "Modbus-RTU-Master"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       TCP_ENABLED : 1
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 5
@@ -170,14 +176,17 @@ services:
       AppName: "MQTT-Export"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000" 
       MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:1883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      SubTopics: "Modbus-TCP-Master/PL0_flowmeter,Modbus-RTU-Master/PL0_iou"
-      PubTopics: "PL0_iou_write"
+      SubTopics: "Modbus-TCP-Master/PL0_flowmeter,Modbus-RTU-Master/PL0_iou,Modbus-TCP-Master/PL0_flowmeter_response"
+      PL0_flowmeter_response_cfg: "zmq_tcp,127.0.0.1:6666"
+      PubTopics: "PL0_iou_write,PL0_flowmeter_read"
       PL0_flowmeter_cfg: "zmq_tcp,127.0.0.1:1115"
       PL0_iou_cfg: "zmq_tcp,127.0.0.1:3115"
       PL0_iou_write_cfg: "zmq_tcp,127.0.0.1:1212"
+      PL0_flowmeter_read_cfg: "zmq_tcp,127.0.0.1:1616"
 
     user: ${EIS_UID}

@@ -13,6 +13,7 @@
 CPP_SRCS += \
 ../src/ConfigManager.cpp \
 ../src/EISMsgbusHandler.cpp \
+../src/Logger.cpp \
 ../src/MQTTCallback.cpp \
 ../src/MQTTHandler.cpp \
 ../src/MQTT_Export.cpp \
@@ -21,6 +22,7 @@ CPP_SRCS += \
 OBJS += \
 ./src/ConfigManager.o \
 ./src/EISMsgbusHandler.o \
+./src/Logger.o \
 ./src/MQTTCallback.o \
 ./src/MQTTHandler.o \
 ./src/MQTT_Export.o \
@@ -29,6 +31,7 @@ OBJS += \
 CPP_DEPS += \
 ./src/ConfigManager.d \
 ./src/EISMsgbusHandler.d \
+./src/Logger.d \
 ./src/MQTTCallback.d \
 ./src/MQTTHandler.d \
 ./src/MQTT_Export.d \

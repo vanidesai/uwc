@@ -7,10 +7,10 @@
 * property right is granted to or conferred upon you by disclosure or delivery of
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
+#include "Logger.hpp"
 
 #include "PeriodicRead.hpp"
 #include "PeriodicReadFeature.hpp"
-#include <boost/bind/bind.hpp>
 #include "utils/YamlUtil.hpp"
 #include <sstream>
 #include <ctime>
@@ -59,7 +59,6 @@ extern "C" {
 using namespace std;
 
 std::atomic<unsigned short> g_u16TxId;
-extern src::severity_logger< severity_level > lg;
 
 /// variable to store timer instance
 timer_t gTimerid;
@@ -241,7 +240,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 	}
     catch(const std::exception& e)
 	{
-    	BOOST_LOG_SEV(lg, debug) << __func__ << " Exception is raised:" << e.what();
+    	CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		bRetValue = false;
 	}
 
@@ -258,7 +257,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(a_stResp.u16TransacID);
 		if(FALSE == prepareResponseJson(&g_msg, objReqData, a_stResp))
 		{
-			BOOST_LOG_SEV(lg, info) << __func__ << " Error in preparing response";
+			CLogger::getInstance().log(INFO, LOGDETAILS( " Error in preparing response"));
 			return FALSE;
 		}
 		else
@@ -273,10 +272,16 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 					if(NULL != parts[0].bytes)
 					{
 						std::string s(parts[0].bytes);
-						BOOST_LOG_SEV(lg, info) << "Response ZMQ Publish Time: "
-							<< std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
-							<< ", TxID: " << a_stResp.u16TransacID
-							<< ", Msg: " << s;
+
+						string temp = "Response ZMQ Publish Time: ";
+						temp.append(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()));
+						temp.append(",TxID: ");
+						temp.append(std::to_string(a_stResp.u16TransacID));
+						temp.append(",Msg: ");
+						temp.append(s);
+
+						CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
 					}
 
 					msgbus_msg_envelope_serialize_destroy(parts, num_parts);
@@ -286,7 +291,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, debug) << __func__ << " Error: " << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what()  << "Tx ID::" << a_stResp.u16TransacID<< std::endl;
 	}
 
@@ -390,7 +395,7 @@ eMbusStackErrorCode CPeriodicReponseProcessor::CPeriodicReponseProcessor::respPr
 #ifdef PERFTESTING
 				other_status++;
 #endif
-				BOOST_LOG_SEV(lg, info) << __func__ << " Exception:" << e.what();
+				CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 				cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what() << std::endl;
 				//return FALSE;
 			}
@@ -414,7 +419,7 @@ bool CPeriodicReponseProcessor::pushToQueue(struct stStackResponse &stStackResNo
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CPeriodicReponseProcessor:" << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
 	return false;
@@ -432,7 +437,8 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CPeriodicReponseProcessor:" << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+
 	}
 
 	return false;
@@ -487,7 +493,7 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CPeriodicReponseProcessor:" << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
 }
@@ -519,7 +525,7 @@ eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 	/// validate pointer
 	if(NULL == pu8data)
 	{
-		BOOST_LOG_SEV(lg, error) << __func__ << " No data received from stack";
+		CLogger::getInstance().log(ERROR, LOGDETAILS(" No data received from stack"));
 		return MBUS_STACK_ERROR_RECV_FAILED;
 	}
 
@@ -541,7 +547,8 @@ CPeriodicReponseProcessor::CPeriodicReponseProcessor() : m_bIsInitialized(false)
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate instance: Exception:" << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS("Unable to initiate instance"));
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		std::cout << "\nException CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
@@ -569,7 +576,8 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate instance: Exception:" << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS("Unable to initiate instance"));
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		std::cout << "\nException CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
@@ -618,6 +626,7 @@ void CRequestInitiator::threadRequestInit(std::vector<std::vector<CRefDataForPol
 	catch (exception &e)
 	{
 		std::cout << "Exception in CMapHIDRdPeriod::threadRequestInit: " << e.what() << endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 }
 
@@ -635,6 +644,7 @@ void CRequestInitiator::initiateRequests(std::vector<std::vector<CRefDataForPoll
 	catch (exception &e)
 	{
 		std::cout << "Exception in CMapHIDRdPeriod::initiateRequests: " << e.what() << endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 }
 
@@ -650,7 +660,8 @@ CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
 	}
 	catch(const std::exception& e)
 	{
-		BOOST_LOG_SEV(lg, warning) << __func__ << " : Unable to initiate instance: Exception:" << e.what();
+		CLogger::getInstance().log(FATAL, LOGDETAILS("Unable to initiate instance: Exception:"));
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		std::cout << "\nException CRequestInitiator ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
@@ -722,41 +733,9 @@ void CTimeMapper::checkTimer()
 	catch (exception &e)
 	{
 		std::cout << "Exception in TimeMapper timer function: " << e.what() << endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 }
-
-
-/*void CTimeMapper::timerThreadFunc(const boost::system::error_code& e, boost::asio::steady_timer* t)
-{
-    auto start = chrono::steady_clock::now();
-	CTimeMapper::instance().checkTimer();
-	auto end = chrono::steady_clock::now();
-
-	auto sleepFor = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-
-	//cout << "Sleep For::"<<sleepFor << endl;
-	/// Reschedule the timer for TIMER_DURATION (i.e. 1 min) in the future
-	//t->expires_after(boost::asio::chrono::seconds(60 - sleepFor));
-	t->expires_after(boost::asio::chrono::microseconds(1000-sleepFor));
-
-	// Posts the timer event
-	t->async_wait(boost::bind(CTimeMapper::timerThreadFunc,
-			boost::asio::placeholders::error, t));
-}
-
-void CTimeMapper::ioPeriodicReadTimer(int v)
-{
-	boost::asio::io_context io;
-
-	// Start timer immediately
-	//boost::asio::steady_timer t(io, boost::asio::chrono::seconds(1));
-	boost::asio::steady_timer t(io);
-	t.expires_after(boost::asio::chrono::milliseconds(100));
-	t.async_wait(boost::bind(CTimeMapper::timerThreadFunc,
-	        boost::asio::placeholders::error, &t));
-
-	io.run();
-}*/
 
 bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 {
@@ -826,6 +805,7 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 	catch(exception &e)
 	{
 		std::cout << "Exception in request init: " << e.what() << endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
 	return bRet;
@@ -857,7 +837,13 @@ bool CTimeMapper::insert(uint32_t a_uTime, CRefDataForPolling &a_oPointD)
 	catch (exception &e)
 	{
 		//std::cout << "Time map insert failed: " << a_uTime << ", " << a_sHID << " : " << e.what() << endl;
-		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CTimeMapper:" << e.what() << ", Time: " << a_uTime << ", Point: " << a_oPointD.getDataPoint().getID();
+		string tempw0 = "Exception in CTimeMapper: ";
+		tempw0.append(e.what());
+		tempw0.append(", Time: ");
+		tempw0.append(std::to_string(a_uTime));
+		tempw0.append(", Point: ");
+		tempw0.append(a_oPointD.getDataPoint().getID());
+		CLogger::getInstance().log(FATAL, LOGDETAILS(tempw0));
 		bRet = false;
 	}
 	return bRet;
@@ -874,6 +860,7 @@ CTimeMapper::~CTimeMapper()
 	catch (exception &e)
 	{
 		std::cout << "Exception in TimeMapper Deletion: " << e.what() << endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 }
 
@@ -915,7 +902,11 @@ bool CTimeRecord::add(CRefDataForPolling &a_oPoint)
 	catch (exception &e)
 	{
 		//std::cout << "TimeRecord insert failed: " << a_sHID << " : " << e.what() << endl;
-		BOOST_LOG_SEV(lg, warning) << __func__ << " Exception in CTimeRecord:" << e.what() << ", Point: " << a_oPoint.getDataPoint().getID();
+		string tempw = " Exception in CTimeRecord:";
+		tempw.append(e.what());
+		tempw.append(", Point: ");
+		tempw.append(a_oPoint.getDataPoint().getID());
+		CLogger::getInstance().log(FATAL, LOGDETAILS(tempw));
 		bRet = false;
 	}
 	return bRet;
@@ -933,6 +924,7 @@ CTimeRecord::~CTimeRecord()
 	catch (exception &e)
 	{
 		std::cout << "Exception in TimeRecord Deletion: " << e.what() << endl;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 }
 
@@ -976,15 +968,18 @@ bool LinuxTimer::start_timer(long nextTimerTick)
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_nsec = 1*1000000;
 
-	// create REALTIME timer
-	int ret = timer_create(CLOCK_REALTIME, NULL, &gTimerid);
+	// create CLOCK_BOOTTIME timer
+	int ret = timer_create(CLOCK_BOOTTIME, NULL, &gTimerid);
 	if(!ret)
 	{
 		retVal = true;
 	}
 	else
 	{
-	   BOOST_LOG_SEV(lg, error) << __func__ << " Failed to create timer." << "Error code ::" << ret;
+		string temp10 = " Failed to set timer.";
+		temp10.append("Error code ::");
+		temp10.append(std::to_string(ret));
+		CLogger::getInstance().log(ERROR, LOGDETAILS(temp10));
 	   std::cout << "Error: Failed to create timer" << "Error code ::" << ret<< std::endl;
 	   return retVal;
 	}
@@ -996,7 +991,10 @@ bool LinuxTimer::start_timer(long nextTimerTick)
 	}
 	else
 	{
-	   BOOST_LOG_SEV(lg, error) << __func__ << " Failed to set timer." << "Error code ::" << ret;
+	   string temp11 = " Failed to set timer.";
+	   temp11.append("Error code ::");
+	   temp11.append(std::to_string(ret));
+	   CLogger::getInstance().log(ERROR, LOGDETAILS(temp11));
 	   std::cout << "Error: Failed to set timer" << "Error code ::" << ret<< std::endl;
 	   return retVal;
 	}
@@ -1027,9 +1025,11 @@ bool LinuxTimer::stop_timer()
 	}
 	else
 	{
-	   BOOST_LOG_SEV(lg, error) << __func__ << " Failed to set timer." << "Error code ::" << ret;
-	   std::cout << "Error: Failed to set timer" << "Error code ::" << ret<< std::endl;
-	   return retVal;
+		string tempv = " Failed to set timer.";
+		tempv.append(std::to_string(ret));
+		CLogger::getInstance().log(ERROR, LOGDETAILS(tempv));
+		std::cout << "Error: Failed to set timer" << "Error code ::" << ret<< std::endl;
+		return retVal;
 	}
 
 	return retVal;

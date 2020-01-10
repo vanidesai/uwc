@@ -40,6 +40,17 @@ RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
     && make install
 
 
+# Build log4cpp Library
+FROM eisbase as build-log4cpp
+
+RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
+    && tar -zxvf log4cpp-1.1.3.tar.gz \
+    && cd log4cpp && mkdir build \
+    && ./configure --enable-static=no --prefix=$PWD/build \
+    && make \
+    && make install
+
+
 # Build MQTT-Export application
 FROM eisbase as mqtt-export
 WORKDIR /
@@ -51,6 +62,8 @@ COPY --from=build-pahoc /usr/paho-c/lib/lib* /MQTT-Export-App/lib/
 COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* /MQTT-Export-App/lib/
 COPY --from=build-pahocpp /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=build-pahoc /usr/paho-c/include/MQTT* /MQTT-Export-App/include/
+COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
+COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
 RUN cd /MQTT-Export-App/Release \
     &&	export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
@@ -69,6 +82,8 @@ WORKDIR ${APP_WORK_DIR}
 COPY --from=mqtt-export /MQTT-Export-App/Release/MQTT_Export ${APP_WORK_DIR}
 COPY --from=build-pahoc /usr/paho-c/lib/lib* ${APP_WORK_DIR}
 COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
+COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
+COPY --from=mqtt-export /MQTT-Export-App/Config/log4cpp.properties /opt/intel/config
 RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
 RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
 RUN chmod -R 770 ${APP_WORK_DIR}

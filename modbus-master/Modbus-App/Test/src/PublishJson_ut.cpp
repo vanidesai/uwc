@@ -26,7 +26,8 @@ void PublishJson_ut::TearDown()
 
 /*************************************publishJson()********************************************/
 //#if 0
-TEST_F(PublishJson_ut, publishJson0)
+/*** Test:PublishJson_ut::publishJson_functioncall() **/
+TEST_F(PublishJson_ut, publishJson_functioncall)
 {
 	try
 	{
@@ -40,8 +41,8 @@ TEST_F(PublishJson_ut, publishJson0)
 	}
 }
 
-
-TEST_F(PublishJson_ut, publishJson01)
+/*** Test:PublishJson_ut::publishJson_sub() checks behaviour of function for sub topic***/
+TEST_F(PublishJson_ut, publishJson_sub)
 {
 	try
 	{
@@ -66,8 +67,9 @@ TEST_F(PublishJson_ut, publishJson01)
 	}
 }
 
+/***Test:PublishJson_ut::publishJson_NULL_msgCTX() Gives exception when msgCTX is NULL ***/
 
-TEST_F(PublishJson_ut, publishJson00)
+TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 {
 	try
 	{
@@ -84,7 +86,8 @@ TEST_F(PublishJson_ut, publishJson00)
 	}
 }
 
-TEST_F(PublishJson_ut, publishJson000)
+/***TEST:PublishJson_ut::publishJson_all_notNULL() check when not a single argument is NULL***/
+TEST_F(PublishJson_ut, publishJson_all_notNULL)
 {
 	try
 	{
@@ -103,9 +106,9 @@ TEST_F(PublishJson_ut, publishJson000)
 }
 //#endif
 
-
+/*** Test:PublishJson_ut::publishJson_valid_arguments and pub topic***/
 /* Valid arguments */
-TEST_F(PublishJson_ut, publishJson1)
+TEST_F(PublishJson_ut, publishJson_valid_arguments)
 {
 	msg_envelope_t *msg = NULL;
 
@@ -127,8 +130,10 @@ TEST_F(PublishJson_ut, publishJson1)
 	}
 }
 
+
+/***Test:PublishJson_ut::publishJson_pub() checks for functionality with NULL argument***/
 /* NULL arguments */
-TEST_F(PublishJson_ut, publishJson2)
+TEST_F(PublishJson_ut, publishJson_pub)
 {
 	try
 	{
@@ -147,6 +152,7 @@ TEST_F(PublishJson_ut, publishJson2)
 }
 
 /******************************initialize_message()******************************/
+/***Test:PublishJson_ut::initialize_message() checks the behaviour of initialize_message() **/
 TEST_F(PublishJson_ut, initialize_message)
 {
 	try

@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include "../include/CWellSiteDevInfo_ut.h"
+#include "../include/CWellSiteDevInfo_ut.hpp"
 
 void CWellSiteDevInfo_ut::SetUp()
 {
@@ -22,10 +22,10 @@ void CWellSiteDevInfo_ut::TearDown()
 
 /******************************CWellSiteDevInfo::getID*****************************************/
 
-/* TC001
-Test: Return of CWellSiteDevInfo::getID for "PL0.yml".
-CWellSiteDevInfo::getID should return "flowmeter1"
-*/
+/*** Test: Return of CWellSiteDevInfo_ut::getID_ForPL0Yml***/
+
+/*CWellSiteDevInfo::getID() should return "flowmeter1"*/
+
 TEST_F(CWellSiteDevInfo_ut, getID_ForPL0Yml) {
 
 
@@ -48,7 +48,6 @@ TEST_F(CWellSiteDevInfo_ut, getID_ForPL0Yml) {
 
 					CWellSiteDevInfo_obj.build(nodes, CWellSiteDevInfo_obj);
 					tempStr = CWellSiteDevInfo_obj.getID();
-					cout<<"TEMPsr ="<<tempStr<<endl;
 					EXPECT_EQ(ArrayYAMl[i++], tempStr);
 				}
 			}
@@ -57,10 +56,10 @@ TEST_F(CWellSiteDevInfo_ut, getID_ForPL0Yml) {
 }
 
 
-///* TC002
-//Test: Return of CWellSiteDevInfo::getID for "PL1.yml".
-//CWellSiteDevInfo::getID should return "flowmeter2"
-//*/
+/***Test:CWellSiteDevInfo_ut::getID_ForPL1yml***/
+
+//CWellSiteDevInfo::getID() should return "flowmeter2"
+
 TEST_F(CWellSiteDevInfo_ut, getID_ForPL1Yml) {
 
 	std::string path("/Device_Config/PL1.yml");
@@ -90,10 +89,8 @@ TEST_F(CWellSiteDevInfo_ut, getID_ForPL1Yml) {
 }
 }
 
-///* TC003
-//Test: Return of CWellSiteDevInfo::getID when object of class CWellSiteDevInfo is not set.
-//CWellSiteDevInfo::getID should return blank string "".
-//*/
+/***Test: Return of CWellSiteDevInfo_ut::getID_ForInvalidYml() when object of class CWellSiteDevInfo is not set. */
+//CWellSiteDevInfo::getID() should return blank string "".
 TEST_F(CWellSiteDevInfo_ut, getID_ForInvalidYml) {
 
 	tempStr = CWellSiteDevInfo_obj.getID();
@@ -176,13 +173,14 @@ TEST_F(CWellSiteDevInfo_ut, build_WrongProtocol) {
 }
 #endif 0 // To be updated later
 
-///* TC007
-//Test: Behaviour of CWellSiteDevInfo::build when below is true in .yml file:
-//	1) "id" is present
-//	2) "protocol" is "PROTOCOL_RTU"
-//	3) any information is missing (ex: "parity")
-//CWellSiteDevInfo::build should throw an exception "Id key not found"
-//*/
+/*
+Test: Behaviour of CWellSiteDevInfo::build when below is true in .yml file:
+	1) "id" is present
+	2) "protocol" is "PROTOCOL_RTU"
+	3) any information is missing (ex: "parity")
+CWellSiteDevInfo_ut::build_ForMissingField should throw an exception "Id key not found"
+*/
+
 TEST_F(CWellSiteDevInfo_ut, build_ForMissingField) {
 
 	std::string path("/Device_Config/PL1.yml");
@@ -212,10 +210,10 @@ TEST_F(CWellSiteDevInfo_ut, build_ForMissingField) {
 
 }
 
-///* TC008
-//Test: Behaviour of CWellSiteDevInfo::build in case of a wrong .yml file:
+
+/***Test: CWellSiteDevInfo_ut::build_ForWrongYml in case of a wrong .yml file***/
 //CWellSiteDevInfo::build should throw an exception "Id key not found"
-//*/
+
 TEST_F(CWellSiteDevInfo_ut, build_ForWrongYml) {
 
 	try
@@ -277,17 +275,17 @@ TEST_F(CWellSiteDevInfo_ut, build_wrongDataType) {
 }
 
 
-///* TC010  To be Updated Later
-//Test: Behaviour of CWellSiteDevInfo::build when any value is missing in yml file.
-//build() function should throw an exception: "Required keys not found in . . ."
-//*/
+/* TC010  To be Updated Later
+Test: Behaviour of CWellSiteDevInfo::build when any value is missing in yml file.
+build() function should throw an exception: "Required keys not found in . . ."
+*/
 
-///******************************CWellSiteDevInfo::getAddressInfo*****************************************/
-//
-///* TC009 To be
-//Test: Behaviour of CWellSiteDevInfo::getAddressInfo when .yml file is "PROTOCOL_RTU"
-//getAddressInfo should return structure, updated with .yml file information.
-//*/
+/******************************CWellSiteDevInfo::getAddressInfo*****************************************/
+
+/* TC009 To be
+Test: Behaviour of CWellSiteDevInfo::getAddressInfo when .yml file is "PROTOCOL_RTU"
+getAddressInfo should return structure, updated with .yml file information.
+*/
 TEST_F(CWellSiteDevInfo_ut, buildReturnValueRTU) {
 
 	std::string path("/Modbus-RTU-Master/config/Device_Config/PL0.yml");
@@ -317,10 +315,9 @@ TEST_F(CWellSiteDevInfo_ut, buildReturnValueRTU) {
 }
 #endif
 
-///* TC010
-//Test: Behaviour of CWellSiteDevInfo::getAddressInfo when .yml file is "PROTOCOL_TCP"
+/* Test:CWellSiteDevInfo_ut::getAddressInfoReturnValueTCP when .yml file is "PROTOCOL_TCP"***/
 //getAddressInfo should return structure, updated with .yml file information.
-//*/
+
 TEST_F(CWellSiteDevInfo_ut, getAddressInfoReturnValueTCP) {
 
 	std::string path("/Device_Config/PL1.yml");
@@ -345,12 +342,11 @@ TEST_F(CWellSiteDevInfo_ut, getAddressInfoReturnValueTCP) {
 	}
 }
 
-///******************************CWellSiteDevInfo::getAddressInfo*****************************************/
-//
-///* TC011
-//Test: Behaviour of CWellSiteDevInfo::getDevInfo.
+//******************************CWellSiteDevInfo::getAddressInfo*****************************************/
+
+/*Test:CWellSiteDevInfo_ut::getDevInfoReturnValue.***/
 //getDevInfo should successfully return the object of class "CDeviceInfo".
-//*/
+
 TEST_F(CWellSiteDevInfo_ut, getDevInfoReturnValue) {
 	std::string path("/Device_Config/PL0.yml");
 	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());

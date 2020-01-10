@@ -13,6 +13,7 @@
 
 #include <string>
 #include "eis/msgbus/msgbus.h"
+#include "ConfigManager.hpp"
 
 struct stZmqContext
 {

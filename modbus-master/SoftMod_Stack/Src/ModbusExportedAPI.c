@@ -13,14 +13,13 @@
 #include <safe_lib.h>
 
 Thread_H SessionControl_ThreadId = 0;
-pthread_t Rx_ThreadId;
-Mutex_H TransactionId_Mutex = NULL;
-Mutex_H LivSerSesslist_Mutex = NULL;
-
+//Mutex_H TransactionId_Mutex = NULL;
 extern int32_t i32MsgQueIdSC;
+bool g_bThreadExit = false;
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-
+Mutex_H LivSerSesslist_Mutex = NULL;
+extern stLiveSerSessionList_t *pstSesCtlThdLstHead;
 stDevConfig_t ModbusMasterConfig;
 
 /*
@@ -82,10 +81,12 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	uint8_t eStatus = STACK_NO_ERROR;
 	thread_Create_t stThreadParam = { 0 };
 
+	g_bThreadExit = false;
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	ModbusMasterConfig.m_u8MaxTcpConnection = MAXIMUM_TCP_CONNECTION;
 	ModbusMasterConfig.m_u8TcpConnectTimeout = MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC;
 	ModbusMasterConfig.m_u16TcpSessionTimeout = SESSION_TIMEOUT_IN_SEC;
+	LivSerSesslist_Mutex = Osal_Mutex();
 #endif //#ifdef MODBUS_STACK_TCPIP_ENABLED
 
 
@@ -98,11 +99,74 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 
 	SessionControl_ThreadId = Osal_Thread_Create(&stThreadParam);
 
-	TransactionId_Mutex = Osal_Mutex();
+	//TransactionId_Mutex = Osal_Mutex();
 
-	LivSerSesslist_Mutex = Osal_Mutex();
+	//LivSerSesslist_Mutex = Osal_Mutex();
 
 	return eStatus;
+}
+
+/**
+ *
+ * Description
+ * Modbus master stack Deinitialization function
+ *
+ */
+MODBUS_STACK_EXPORT void AppMbusMaster_StackDeInit(void)
+{
+	static bool bDeInitStackFlag = false;
+	/* making the function non-reentrant */
+	if(true == bDeInitStackFlag)
+		return;
+	g_bThreadExit = true;
+	
+	if(SessionControl_ThreadId)
+	{
+		Osal_Thread_Terminate(SessionControl_ThreadId);
+	}
+	if(i32MsgQueIdSC)
+	{
+		OSAL_Delete_Message_Queue(i32MsgQueIdSC);
+	}
+	/*if(TransactionId_Mutex)
+	{
+		Osal_Close_Mutex(TransactionId_Mutex);
+	}*/
+	
+	#ifdef MODBUS_STACK_TCPIP_ENABLED
+	// Delete session list
+	Osal_Wait_Mutex (LivSerSesslist_Mutex,0);
+	stLiveSerSessionList_t *pstTempLivSerSesslist = pstSesCtlThdLstHead;
+	while(NULL != pstSesCtlThdLstHead)
+	{
+		pstTempLivSerSesslist = pstSesCtlThdLstHead;
+		pstSesCtlThdLstHead = pstSesCtlThdLstHead->m_pNextElm;
+		pstTempLivSerSesslist->m_pNextElm = NULL;
+		if(pstTempLivSerSesslist->m_ThreadId)
+		{
+			Osal_Thread_Terminate(pstTempLivSerSesslist->m_ThreadId);
+		}
+		if(pstTempLivSerSesslist->MsgQId)
+		{
+			OSAL_Delete_Message_Queue(pstTempLivSerSesslist->MsgQId);
+		}
+		if(pstTempLivSerSesslist->m_i32sockfd)
+		{
+			close(pstTempLivSerSesslist->m_i32sockfd);
+		}
+		OSAL_Free(pstTempLivSerSesslist);
+		pstTempLivSerSesslist = NULL;
+	}
+	Osal_Release_Mutex (LivSerSesslist_Mutex);
+	
+	if(LivSerSesslist_Mutex)
+	{
+		Osal_Close_Mutex(LivSerSesslist_Mutex);
+	}
+	#endif
+	/* update re-entrancy flag */
+	bDeInitStackFlag = false;
+	g_bThreadExit = false;
 }
 
 /**

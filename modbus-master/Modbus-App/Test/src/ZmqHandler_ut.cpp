@@ -8,8 +8,9 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include "../include/ZmqHandler_ut.h"
-
+#include "../include/ZmqHandler_ut.hpp"
+extern std::string zmq_handler::swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap, bool a_bIsWordSwap);
+extern int char2int(char input);
 void ZmqHandler_ut::SetUp()
 {
 	// Setup code
@@ -325,24 +326,6 @@ TEST_F(ZmqHandler_ut, insertpub)
 	}
 }
 
-/******************************getAppSeq()*****************************************/
-
-TEST_F(ZmqHandler_ut, getAppSeq)
-{
-	try
-	{
-		std::string stAppSeqNum = zmq_handler::getAppSeq(2048);
-	}
-	catch(std::exception &e){
-
-		cout<<e.what()<<endl;
-		EXPECT_EQ("map::at", (string)e.what());
-	}
-}
-
-
-
-
 /*******************************removeCTX()***********************************************/
 
 /*This test is to check the behaviour of the removeCTX() function************/
@@ -408,6 +391,27 @@ TEST_F(ZmqHandler_ut, removePubCTX)
    }
 }
 
+#if 0
+
+/******************************getAppSeq()*****************************************/
+
+TEST_F(ZmqHandler_ut, getAppSeq)
+{
+	try
+	{
+		std::string stAppSeqNum = zmq_handler::getAppSeq(2048);
+	}
+	catch(std::exception &e){
+
+		cout<<e.what()<<endl;
+		EXPECT_EQ("map::at", (string)e.what());
+	}
+}
+
+
+
+
+
 
 /********************************insertAppCTX******************************/
 
@@ -442,8 +446,138 @@ TEST_F(ZmqHandler_ut, removeAppCTX)
 		cout<<e.what()<<endl;
 	}
 }
+#endif
 
 TEST_F(ZmqHandler_ut, buildNettest)
 {
 	network_info::buildNetworkInfo(true);
 }
+
+/***Test:ZmqHandler_ut::remove_OnDemandReqData() checks the behavioour of removeOnDemandReqData() function***/
+/**Function is not retuirning anything...***/
+
+TEST_F(ZmqHandler_ut, remove_OnDemandReqData)
+{
+	try
+	{
+
+	    zmq_handler::removeOnDemandReqData(2);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("", (string)e.what());
+	}
+
+}
+
+
+
+/***Test:ZmqHandler_ut::swap_test() checks the behaviour of the swapConversion() function for Byteswap is true ***/
+
+TEST_F(ZmqHandler_ut, swap_Byte)
+{
+
+	std::vector<uint8_t> tempVt;
+						int i = 2;	/// to ignore "0x" from datastring
+						int iLen = stValue.length();
+						while(i < iLen)
+						{
+						    byte1 = char2int(stValue[i])*16 + char2int(stValue[i+1]);
+							tempVt.push_back(byte1);
+							i = i+2;
+						}
+	try
+	{
+		stValue  = zmq_handler::swapConversion(tempVt,true, false);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("", (string)e.what());
+	}
+}
+
+
+/****ZmqHandler_ut::swap_Word() check the behaviour of the swapConversion() function for wordSwap is true  ***/
+
+TEST_F(ZmqHandler_ut, swap_Word)
+{
+
+	std::vector<uint8_t> tempVt;
+						int i = 2;	/// to ignore "0x" from datastring
+						int iLen = TValue.length();
+						while(i < iLen)
+						{
+						    byte1 = char2int(TValue[i])*16 + char2int(TValue[i+1]);
+						    tempVt.push_back(byte1);
+							i = i+2;
+						}
+	try
+	{
+		TValue  = zmq_handler::swapConversion(tempVt, false, true);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("", (string)e.what());
+	}
+}
+
+
+/*** Test:ZmqHandler_ut::swap_Word_byte() checks the behaviour of the swapConversion() function
+     when both Wordswap and Byteswap are true */
+
+TEST_F(ZmqHandler_ut, swap_Word_byte_true)
+{
+
+	std::vector<uint8_t> tempVt;
+						int i = 2;	/// to ignore "0x" from datastring
+						int iLen = TValue.length();
+						while(i < iLen)
+						{
+						    byte1 = char2int(TValue[i])*16 + char2int(TValue[i+1]);
+						    tempVt.push_back(byte1);
+							i = i+2;
+						}
+	try
+	{
+		TValue  = zmq_handler::swapConversion(tempVt, true, true);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("", (string)e.what());
+	}
+}
+
+/*** Test:ZmqHandler_ut::swap_Word_byte() checks the behaviour of the swapConversion() function
+     when both Wordswap and Byteswap are false */
+
+TEST_F(ZmqHandler_ut, swap_Word_byte_false)
+{
+
+	std::vector<uint8_t> tempVt;
+						int i = 2;	/// to ignore "0x" from datastring
+						int iLen = TValue.length();
+						while(i < iLen)
+						{
+						    byte1 = char2int(TValue[i])*16 + char2int(TValue[i+1]);
+						    tempVt.push_back(byte1);
+							i = i+2;
+						}
+	try
+	{
+		TValue  = zmq_handler::swapConversion(tempVt, false, false);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("", (string)e.what());
+	}
+}
+
+
+
+
+
+
+
+
+
+

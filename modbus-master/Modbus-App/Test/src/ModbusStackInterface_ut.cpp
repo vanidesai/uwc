@@ -25,35 +25,12 @@ void ModbusStackHandler_ut::TearDown()
 
 
 /***********************************ModbusMaster_AppCallback()*************************************/
-TEST_F(ModbusStackHandler_ut, AppCallback01)
-{
-	uint8_t  u8FunCode = 1;
-	//setenv("WRITE_RESPONSE_TOPIC", , 1);
-	const char* pcWriteRespTopic = std::getenv("WRITE_RESPONSE_TOPIC");
 
-	try
-	{
-		msg_envelope_t *msg = NULL;
-		zmq_handler::insertAppSeq(2, "1111");
-		ModbusMaster_AppCallback(u8UnitID,
-				               u16TransacID,
-							   NULL,
-							   u8FunCode,
-							   NULL,
-							   u8numBytes,
-							   NULL,
-							   u16StartAdd,
-							   u16Quantity);
+/***Test:ModbusStackHandler_ut::AppCallback_allNULLPointerInput ***/
+/**ModbusMaster_AppCallback() should throw exception as the *pu8IpAddr, *pstException, *pu8data these are given as NUll **/
 
 
-	}
-	catch(std::exception &e)
-	{
-		EXPECT_EQ("", e.what());
-	}
-}
-
-TEST_F(ModbusStackHandler_ut, AppCallback1)
+TEST_F(ModbusStackHandler_ut, AppCallback_allNULLPointerInput)
 {
 	uint8_t  u8FunCode = 1;
 	setenv("WRITE_RESPONSE_TOPIC", "PL_0", 1);
@@ -61,10 +38,11 @@ TEST_F(ModbusStackHandler_ut, AppCallback1)
 	try
 	{
 		msg_envelope_t *msg = NULL;
-		zmq_handler::insertAppSeq(2, "1111");
+		//zmq_handler::insertAppSeq(2, "1111");
 		ModbusMaster_AppCallback(u8UnitID,
 				               u16TransacID,
 							   NULL,
+							   u16Port,
 							   u8FunCode,
 							   NULL,
 							   u8numBytes,
@@ -86,9 +64,11 @@ TEST_F(ModbusStackHandler_ut, AppCallback1)
 
 
 
+/*** Test:ModbusStackHandler_ut::AppCallback_twoNullInput***/
 
+/*** ModbusMaster_AppCallback() should throw exception as *pstException, *pu8data these input pointers are NULL  */
 
-TEST_F(ModbusStackHandler_ut, AppCallback2)
+TEST_F(ModbusStackHandler_ut, AppCallback_twoNullInput)
 {
 	uint8_t  u8FunCode = 1;
 	setenv("WRITE_RESPONSE_TOPIC", "PL_0", 1);
@@ -96,10 +76,11 @@ TEST_F(ModbusStackHandler_ut, AppCallback2)
 	try
 	{
 		msg_envelope_t *msg = NULL;
-		zmq_handler::insertAppSeq(2, "1111");
+	//	zmq_handler::insertAppSeq(2, "1111");
 		ModbusMaster_AppCallback(u8UnitID,
 				               u16TransacID,
 							   *pu8IpAddr,
+							   u16Port,
 							   u8FunCode,
 							   NULL,
 							   u8numBytes,
@@ -116,7 +97,10 @@ TEST_F(ModbusStackHandler_ut, AppCallback2)
 	}
 }
 
-TEST_F(ModbusStackHandler_ut, AppCallback3)
+/*** Test:ModbusStackHandler_ut::AppCallbackOneNullInput***/
+/** ModbusMaster_AppCallback() should throw exception as one input NULL pointer **/
+
+TEST_F(ModbusStackHandler_ut, AppCallbackOneNullInput)
 {
 	uint8_t  u8FunCode = 1;
 	setenv("WRITE_RESPONSE_TOPIC", "PL_0", 1);
@@ -127,18 +111,17 @@ TEST_F(ModbusStackHandler_ut, AppCallback3)
 		pstException->m_u8ExcStatus = 0;
 
 
-		zmq_handler::insertAppSeq(2, "1111");
+	//	zmq_handler::insertAppSeq(2, "1111");
 		ModbusMaster_AppCallback(u8UnitID,
 				               u16TransacID,
 							   pu8IpAddr,
+							   u16Port,
 							   u8FunCode,
 							   pstException,
 							   u8numBytes,
 							   NULL,
 							   u16StartAdd,
 							   u16Quantity);
-
-
 
 	}
 	catch(std::exception &e)
@@ -153,9 +136,12 @@ TEST_F(ModbusStackHandler_ut, AppCallback3)
 
 /***************************************Modbus_Stack_API_Call()*****************************************/
 
-TEST_F(ModbusStackHandler_ut, stack_API_call1)
+/***Test:ModbusStackHandler_ut::stack_API_call_stackError ***/
+
+
+TEST_F(ModbusStackHandler_ut, stack_API_call_stackError)
 {
-	uint8_t  u8FunCode = 1;
+	uint8_t  u8FunCode = 11;
 	try
 	{
 		uint8_t val = Modbus_Stack_API_Call(u8FunCode, pstMbusApiPram, (void *)ModbusMaster_AppCallback);
@@ -168,23 +154,24 @@ TEST_F(ModbusStackHandler_ut, stack_API_call1)
 	}
 }
 
+/***Test:ModbusStackHandler_ut::stack_API_call_READ_INPUT_STATUS  ***/
 
-
-TEST_F(ModbusStackHandler_ut, stack_API_call2)
+TEST_F(ModbusStackHandler_ut, stack_API_call_READ_INPUT_STATUS)
 {
 	uint8_t  u8FunCode = 2;
 	try
 	{
 		uint8_t val = Modbus_Stack_API_Call(u8FunCode, pstMbusApiPram, (void *)ModbusMaster_AppCallback);
+
 		EXPECT_EQ(1,1);
 	}
 	catch(exception &ex) {
 		EXPECT_EQ(0,1);
 	}
 }
+/***Test:ModbusStackHandler_ut::stack_API_call_READ_HOLDING_REG  ***/
 
-
-TEST_F(ModbusStackHandler_ut, stack_API_call3)
+TEST_F(ModbusStackHandler_ut, stack_API_call_READ_HOLDING_REG)
 {
 	uint8_t  u8FunCode = 3;
 	try
@@ -197,8 +184,9 @@ TEST_F(ModbusStackHandler_ut, stack_API_call3)
 	}
 }
 
+/***Test:*ModbusStackHandler_ut::stack_API_call_READ_INPUT_REG ***/
 
-TEST_F(ModbusStackHandler_ut, stack_API_call4)
+TEST_F(ModbusStackHandler_ut, stack_API_call_READ_INPUT_REG)
 {
 	uint8_t  u8FunCode = 4;
 	try
@@ -210,39 +198,9 @@ TEST_F(ModbusStackHandler_ut, stack_API_call4)
 		EXPECT_EQ(0,1);
 	}
 }
+/****Test:ModbusStackHandler_ut::stack_API_call_WRITE_MULTIPLE_COILS ***/
 
-
-//TEST_F(ModbusStackHandler_ut, stack_API_call5)
-//{
-//	uint8_t  u8FunCode = 5;
-//	try
-//	{
-//		uint8_t val = Modbus_Stack_API_Call(u8FunCode, pstMbusApiPram, (void *)ModbusMaster_AppCallback);
-//		EXPECT_EQ(1,1);
-//	}
-//	catch(exception &ex) {
-//		EXPECT_EQ(0,1);
-//	}
-//}
-
-//
-//TEST_F(ModbusStackHandler_ut, stack_API_call6)
-//{
-//	uint8_t  u8FunCode = 6;
-//	try
-//	{
-//		uint8_t val = Modbus_Stack_API_Call(u8FunCode, pstMbusApiPram, (void *)ModbusMaster_AppCallback);
-//		EXPECT_EQ(1,1);
-//	}
-//	catch(exception &ex) {
-//		EXPECT_EQ(0,1);
-//	}
-//}
-
-
-
-
-TEST_F(ModbusStackHandler_ut, stack_API_call15)
+TEST_F(ModbusStackHandler_ut, stack_API_call1_WRITE_MULTIPLE_COILS)
 {
 	uint8_t  u8FunCode = 15;
 	try
@@ -255,7 +213,9 @@ TEST_F(ModbusStackHandler_ut, stack_API_call15)
 	}
 }
 
-TEST_F(ModbusStackHandler_ut, stack_API_call16)
+/***Test:*ModbusStackHandler_ut::stack_API_call_WRITE_MULTIPLE_REG ***/
+
+TEST_F(ModbusStackHandler_ut, stack_API_call_WRITE_MULTIPLE_REG)
 {
 	uint8_t  u8FunCode = 16;
 	try
@@ -268,20 +228,24 @@ TEST_F(ModbusStackHandler_ut, stack_API_call16)
 	}
 }
 
-TEST_F(ModbusStackHandler_ut, stack_API_call20)
+/****Test:ModbusStackHandler_ut::stack_API_call_READ_FILE_RECORD ***/
+
+TEST_F(ModbusStackHandler_ut, stack_API_call_READ_FILE_RECORD)
 {
 	uint8_t  u8FunCode = 20;
 	try
 	{
 		uint8_t val = Modbus_Stack_API_Call(u8FunCode, pstMbusApiPram, (void *)ModbusMaster_AppCallback);
-		EXPECT_EQ(1,1);
+		EXPECT_EQ(11,(int)val);
 	}
 	catch(exception &e) {
 		EXPECT_EQ(" ", e.what());
 	}
 }
 
-TEST_F(ModbusStackHandler_ut, stack_API_call21)
+
+/****Test:ModbusStackHandler_ut::stack_API_call_WRITE_FILE_RECORD ***/
+TEST_F(ModbusStackHandler_ut, stack_API_call_WRITE_FILE_RECORD)
 {
 	uint8_t  u8FunCode = 21;
 	try
@@ -295,22 +259,23 @@ TEST_F(ModbusStackHandler_ut, stack_API_call21)
 }
 
 
-
-TEST_F(ModbusStackHandler_ut, stack_API_call23)
+/****Test:ModbusStackHandler_ut::stack_API_call_READ_WRITE_MUL_REG ***/
+TEST_F(ModbusStackHandler_ut, stack_API_call_READ_WRITE_MUL_REG)
 {
 	uint8_t  u8FunCode = 23;
 	try
 	{
-		uint8_t val = Modbus_Stack_API_Call(u8FunCode, pstMbusApiPram, (void *)ModbusMaster_AppCallback);
-		EXPECT_EQ(1,1);
+		uint8_t val = Modbus_Stack_API_Call(u8FunCode, &stMbusApiPram, (void *)ModbusMaster_AppCallback);
+		EXPECT_EQ(11,(int)val);
 	}
 	catch(exception &ex) {
 		EXPECT_EQ(0,1);
 	}
 }
 
+/****Test:ModbusStackHandler_ut::stack_API_call_READ_DEVICE_IDENTIFICATION ***/
 
-TEST_F(ModbusStackHandler_ut, stack_API_call43)
+TEST_F(ModbusStackHandler_ut, stack_API_call_READ_DEVICE_IDENTIFICATION)
 {
 	uint8_t  u8FunCode = 43;
 	try
@@ -323,6 +288,8 @@ TEST_F(ModbusStackHandler_ut, stack_API_call43)
 	}
 }
 
+/***Test:ModbusStackHandler_ut::MbusApp_Process_Request1***/
+
 TEST_F(ModbusStackHandler_ut, MbusApp_Process_Request1)
 {
 	if(MBUS_STACK_NO_ERROR == eFunRetType)
@@ -334,14 +301,6 @@ TEST_F(ModbusStackHandler_ut, MbusApp_Process_Request1)
 						MbusApp_Process_Request(pstModbusRxPacket);
 			}
 }
-
-
-
-
-
-
-
-
 
 
 

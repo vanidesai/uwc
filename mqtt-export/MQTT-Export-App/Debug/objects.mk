@@ -8,8 +8,7 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ################################################################################
 
-
 USER_OBJS :=
 
-LIBS := -lcjson -lpaho-mqtt3a -lpthread -lpaho-mqttpp3 -lpaho-mqtt3c -leisconfigmgr -leismsgenv -leisutils -leismsgbus
+LIBS := -lcjson -llog4cpp -lgtest -lgtest_main -lpaho-mqttpp3 -lpaho-mqtt3a -lpthread -lpaho-mqtt3c -leisconfigmgr -leismsgenv -leisutils -leismsgbus
 
