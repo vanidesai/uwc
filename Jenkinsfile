@@ -79,12 +79,12 @@ pipeline {
 		  }
           
         }
-        stage('Static Scanners') {
-            steps {
-                echo 'Protex, checkmarx Scan..'
-                rbheStaticCodeScan()
-            }
-        }
+        //stage('Static Scanners') {
+        //    steps {
+        //        echo 'Protex, checkmarx Scan..'
+        //        rbheStaticCodeScan()
+        //    }
+        //}
         stage('Bandit') {
             agent {
                 docker {
