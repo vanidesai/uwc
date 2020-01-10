@@ -43,7 +43,7 @@ pipeline {
 			  sh "echo \"https_proxy=http://proxy-chain.intel.com:912\" >> /etc/environment"
 			  sh "echo \"HTTP_PROXY=http://proxy-chain.intel.com:911\" >> /etc/environment"
 			  sh "echo \"HTTPS_PROXY=http://proxy-chain.intel.com:912\" >> /etc/environment"
-			  sh "source /etc/environment"
+			  //sh "source /etc/environment"
 
 			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
@@ -77,7 +77,7 @@ pipeline {
 			  sh "echo \"https_proxy=http://proxy-chain.intel.com:912\" >> /etc/environment"
 			  sh "echo \"HTTP_PROXY=http://proxy-chain.intel.com:911\" >> /etc/environment"
 			  sh "echo \"HTTPS_PROXY=http://proxy-chain.intel.com:912\" >> /etc/environment"
-			  sh "source /etc/environment"
+			  //sh "source /etc/environment"
 			  sh "cp ./.kw/modbus-master/*  ./IEdgeInsights/modbus-master/;"
 			  sh "cp ./.kw/mqtt-export/*  ./IEdgeInsights/mqtt-export/;"
 			  
