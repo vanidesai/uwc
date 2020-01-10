@@ -88,6 +88,7 @@ services:
       MY_APP_ID: 5
       MODBUS_MASTER_CONNECT_TIMEOUT: 30000
       MODBUS_MASTER_SESSION_TIMEOUT: 10
+      RESPONSE_TIMEOUT: 1
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT-Export"
@@ -122,6 +123,7 @@ services:
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       TCP_ENABLED : 1
       ZMQ_RECV_HWM: "1000"
+      RESPONSE_TIMEOUT: 1
       MY_APP_ID: 5
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}

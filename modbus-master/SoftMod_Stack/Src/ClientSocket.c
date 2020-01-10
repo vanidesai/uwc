@@ -807,7 +807,7 @@ int8_t checkforblockingread(void)
 	fd_set rset;
 	struct timeval tv;
 	//wait upto 1 seconds
-	tv.tv_sec = 1;
+	tv.tv_sec = getenv("RESPONSE_TIMEOUT");
 	tv.tv_usec = 0;
 	FD_ZERO(&rset);
 
@@ -1313,7 +1313,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 			{
 				if (errno == EINPROGRESS)
 				{
-					tv.tv_sec = 1;
+					tv.tv_sec = getenv("RESPONSE_TIMEOUT");
 					//tv.tv_usec = ModbusMasterConfig.m_u8TcpConnectTimeout;
 					tv.tv_usec = 0;
 					FD_ZERO(&myset);
@@ -1371,7 +1371,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 
 		//setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 
-		tv.tv_sec = 1;
+		tv.tv_sec = getenv("RESPONSE_TIMEOUT");
 		//tv.tv_usec = ModbusMasterConfig.m_u8TcpConnectTimeout;
 		tv.tv_usec = 0;
 		FD_ZERO(&myset);
