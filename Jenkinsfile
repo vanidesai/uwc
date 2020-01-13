@@ -19,7 +19,7 @@ pipeline {
     }
     stages {
         stage('Build') {
-		  when { branch "UWC-Sprint3" }
+		  //when { branch "UWC-Sprint5" }
 		  steps {
 			  echo 'Hello..'
 			  sh "apt update"
@@ -37,9 +37,16 @@ pipeline {
 					
 				  }
 				}
-			  sh "cp -r ./Deploy/* ./IEdgeInsights/"
+			  sh "cp -r ./Release/* ./IEdgeInsights/"
 			  sh "cd ./IEdgeInsights/; ls -la"
-			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh; "
+			  sh "echo \"http_proxy=http://proxy-chain.intel.com:911\" >> /etc/environment"
+			  sh "echo \"https_proxy=http://proxy-chain.intel.com:912\" >> /etc/environment"
+			  sh "echo \"HTTP_PROXY=http://proxy-chain.intel.com:911\" >> /etc/environment"
+			  sh "echo \"HTTPS_PROXY=http://proxy-chain.intel.com:912\" >> /etc/environment"
+			  //sh "source /etc/environment"
+
+			  sh "apt-get -y install systemd"
+			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./03_DeployEIS.sh; ./03_DeployEIS.sh; "
 			  
@@ -47,7 +54,7 @@ pipeline {
           
         }
 	stage('KW-Scan') {
-		  when { branch "UWC-Sprint3" }
+		  //when { branch "UWC-Sprint5" }
 		  steps {
 			  echo 'Hello..'
 			  sh "apt update"
@@ -65,26 +72,30 @@ pipeline {
 					
 				  }
 				}
-			  sh "cp -r ./Deploy/* ./IEdgeInsights/"
+			  sh "cp -r ./Release/* ./IEdgeInsights/"
 			  sh "cd ./IEdgeInsights/; ls -la"
+			  sh "echo \"http_proxy=http://proxy-chain.intel.com:911\" >> /etc/environment"
+			  sh "echo \"https_proxy=http://proxy-chain.intel.com:912\" >> /etc/environment"
+			  sh "echo \"HTTP_PROXY=http://proxy-chain.intel.com:911\" >> /etc/environment"
+			  sh "echo \"HTTPS_PROXY=http://proxy-chain.intel.com:912\" >> /etc/environment"
+			  //sh "source /etc/environment"
 			  sh "cp ./.kw/modbus-master/*  ./IEdgeInsights/modbus-master/;"
 			  sh "cp ./.kw/mqtt-export/*  ./IEdgeInsights/mqtt-export/;"
 			  
-			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh; "
+			  sh "apt-get -y install systemd"
+			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
 			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
-			  
-			  sh "cp ./.kw/03_DeployEIS.sh  ./IEdgeInsights/03_DeployEIS.sh;"
 			  sh "cd ./IEdgeInsights/; chmod 777 ./03_DeployEIS.sh; ./03_DeployEIS.sh; "
 			  
 		  }
           
         }
-        stage('Static Scanners') {
-            steps {
-                echo 'Protex, checkmarx Scan..'
-                rbheStaticCodeScan()
-            }
-        }
+        //stage('Static Scanners') {
+        //    steps {
+        //        echo 'Protex, checkmarx Scan..'
+        //        rbheStaticCodeScan()
+        //    }
+        //}
         stage('Bandit') {
             agent {
                 docker {
