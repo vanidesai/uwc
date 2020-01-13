@@ -67,6 +67,15 @@ setdevmodetrue()
    else
 	echo "${GREEN}Dev Mode is set to true.${NC}"
    fi
+   echo "${GREEN}Setting HOST_IP to 127.0.0.1 in .env file of EIS..${NC}"
+   if grep -Fxq 'HOST_IP=127.0.0.1' $working_dir/docker_setup/.env
+   then
+   	echo "${GREEN}HOST_IP=127.0.0.1 variable already present in <>docker_setup/.env${NC}"
+   else
+   	echo 'HOST_IP=127.0.0.1' >> $working_dir/docker_setup/.env
+   fi
+   echo "${GREEN}HOST_IP=127.0.0.1 is set in .env file of EIS${NC}"
+
    return 0
 }
 
