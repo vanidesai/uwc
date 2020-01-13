@@ -18,17 +18,21 @@
 	"Mapping": [{
 			"MsgSource": "MQTT",
 			"Topics": [
-                                {"/iou/PL1/KeepAlive/write": "PL0_iou_write"},
-				{"/iou/PL0/AValve/write": "PL0_iou_write"},
-				{"/iou/PL0/DValve/write": "PL0_iou_write"},
-				{"/iou/PL0/DValve/read": "PL0_flowmeter_read"}
+                                {"/iou/PL1/RTU/read": "PL0_iou_read"},
+                                {"/iou/PL1/RTU/write": "PL0_iou_write"},
+				{"/iou/PL0/TCP/read": "PL0_flowmeter_read"},
+                                {"/iou/PL1/TCP/write": "PL0_flowmeter_write"}
+
 ]
 		},
 		{
 			"MsgSource": "ZeroMQ",
 			"Topics": [
 								{
-					"PL0_flowmeter_response": "/iou/PL00/Response"
+					"PL0_flowmeter_response": "/iou/TCP/Response"
+				},
+		                {
+					"PL0_iou_response": "/iou/RTU/Response"
 				},
                                 {
 					"PL0_flowmeter_Flow": "/iou/PL00/Flow/update"

@@ -95,8 +95,9 @@ services:
       PubTopics: "PL0_flowmeter,PL0_flowmeter_response"
       PL0_flowmeter_cfg: "zmq_tcp,127.0.0.1:1115"
       PL0_flowmeter_response_cfg: "zmq_tcp,127.0.0.1:6666"
-      SubTopics: "MQTT-Export/PL0_flowmeter_read"
+      SubTopics: "MQTT-Export/PL0_flowmeter_read,MQTT-Export/PL0_flowmeter_write"
       PL0_flowmeter_read_cfg: "zmq_tcp,127.0.0.1:1616"
+      PL0_flowmeter_write_cfg: "zmq_tcp,127.0.0.1:9191"
       WRITE_RESPONSE_TOPIC: "PL0_flowmeter_response"
       
     user: ${EIS_UID}
@@ -128,11 +129,13 @@ services:
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT-Export"
-      PubTopics: "PL0_iou"
-      SubTopics: "MQTT-Export/PL0_iou_write"
+      PubTopics: "PL0_iou,PL0_iou_response"
+      SubTopics: "MQTT-Export/PL0_iou_write,MQTT-Export/PL0_iou_read"
       PL0_iou_cfg: "zmq_tcp,127.0.0.1:3115"
       PL0_iou_write_cfg: "zmq_tcp,127.0.0.1:1212"
-
+      PL0_iou_response_cfg: "zmq_tcp,127.0.0.1:7979"
+      PL0_iou_read_cfg: "zmq_tcp,127.0.0.1:5151"
+      WRITE_RESPONSE_TOPIC: "PL0_iou_response"
 
     #user: ${EIS_UID}
     devices:
@@ -183,12 +186,15 @@ services:
       MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:1883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      SubTopics: "Modbus-TCP-Master/PL0_flowmeter,Modbus-RTU-Master/PL0_iou,Modbus-TCP-Master/PL0_flowmeter_response"
+      SubTopics: "Modbus-TCP-Master/PL0_flowmeter,Modbus-RTU-Master/PL0_iou,Modbus-TCP-Master/PL0_flowmeter_response,Modbus-RTU-Master/PL0_iou_response"
       PL0_flowmeter_response_cfg: "zmq_tcp,127.0.0.1:6666"
-      PubTopics: "PL0_iou_write,PL0_flowmeter_read"
+      PubTopics: "PL0_iou_write,PL0_flowmeter_read,PL0_flowmeter_write,PL0_iou_read"
       PL0_flowmeter_cfg: "zmq_tcp,127.0.0.1:1115"
       PL0_iou_cfg: "zmq_tcp,127.0.0.1:3115"
       PL0_iou_write_cfg: "zmq_tcp,127.0.0.1:1212"
+      PL0_flowmeter_write_cfg: "zmq_tcp,127.0.0.1:9191"
       PL0_flowmeter_read_cfg: "zmq_tcp,127.0.0.1:1616"
+      PL0_iou_response_cfg: "zmq_tcp,127.0.0.1:7979"
+      PL0_iou_read_cfg: "zmq_tcp,127.0.0.1:5151"
 
     user: ${EIS_UID}
