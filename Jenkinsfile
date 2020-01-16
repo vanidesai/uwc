@@ -19,7 +19,7 @@ pipeline {
     }
     stages {
         stage('Build') {
-		  //when { branch "UWC-Sprint5" }
+		  when { branch "UWC-Sprint5" }
 		  steps {
 			  echo 'Hello..'
 			  sh "apt update"
@@ -54,7 +54,7 @@ pipeline {
           
         }
 	stage('KW-Scan') {
-		  //when { branch "UWC-Sprint5" }
+		  when { branch "UWC-Sprint5" }
 		  steps {
 			  echo 'Hello..'
 			  sh "apt update"
@@ -90,12 +90,12 @@ pipeline {
 		  }
           
         }
-        //stage('Static Scanners') {
-        //    steps {
-        //        echo 'Protex, checkmarx Scan..'
-        //        rbheStaticCodeScan()
-        //    }
-        //}
+        stage('Static Scanners') {
+            steps {
+                echo 'Protex, checkmarx Scan..'
+                rbheStaticCodeScan()
+            }
+        }
         stage('Bandit') {
             agent {
                 docker {
