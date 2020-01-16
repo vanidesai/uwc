@@ -91,6 +91,7 @@ pipeline {
           
         }
         stage('Static Scanners') {
+	    when { branch "UWC-Sprint5" }
             steps {
                 echo 'Protex, checkmarx Scan..'
                 rbheStaticCodeScan()
