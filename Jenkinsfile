@@ -15,7 +15,7 @@ pipeline {
     }
     stages {
         stage('Build') {
-		  //when { branch "UWC-Sprint5" }
+		  when { branch "UWC-Sprint5" }
 		  steps {
 			  echo 'Hello..'
 			  sh "apt update"
