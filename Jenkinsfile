@@ -15,7 +15,7 @@ pipeline {
     }
     stages {
         stage('Build') {
-		  when { branch "UWC-Sprint5" }
+		  //when { branch "UWC-Sprint5" }
 		  steps {
 			  echo 'Hello..'
 			  sh "apt update"
@@ -35,10 +35,10 @@ pipeline {
 				}
 			  sh "cp -r ./Release/* ./IEdgeInsights/"
 			  sh "cd ./IEdgeInsights/; ls -la"
-			  sh "echo \"http_proxy=http://proxy-chain.intel.com:911\" >> /etc/environment"
-			  sh "echo \"https_proxy=http://proxy-chain.intel.com:912\" >> /etc/environment"
-			  sh "echo \"HTTP_PROXY=http://proxy-chain.intel.com:911\" >> /etc/environment"
-			  sh "echo \"HTTPS_PROXY=http://proxy-chain.intel.com:912\" >> /etc/environment"
+			  //sh "echo \"http_proxy=http://proxy-chain.intel.com:911\" >> /etc/environment"
+			  //sh "echo \"https_proxy=http://proxy-chain.intel.com:912\" >> /etc/environment"
+			  //sh "echo \"HTTP_PROXY=http://proxy-chain.intel.com:911\" >> /etc/environment"
+			  //sh "echo \"HTTPS_PROXY=http://proxy-chain.intel.com:912\" >> /etc/environment"
 			  //sh "source /etc/environment"
 
 			  sh "apt-get -y install systemd"
