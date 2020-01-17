@@ -1,9 +1,6 @@
   
 pipeline {
     //agent { label 'rbhe' }
-    agent {
-        docker { label 'rbhe' }
-    }
     options {
         timestamps()
     }
