@@ -1,6 +1,6 @@
   
 pipeline {
-    //agent { label 'rbhe' }
+    agent { label 'rbhe' }
     options {
         timestamps()
     }
