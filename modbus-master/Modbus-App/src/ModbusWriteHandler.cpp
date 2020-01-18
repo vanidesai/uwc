@@ -253,10 +253,10 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(std::string a_sTopic,
 				funcCode = isWrite ? WRITE_SINGLE_REG : READ_HOLDING_REG;
 				break;
 			case network_info::eEndPointType::eInput_Register:
-				funcCode = READ_INPUT_STATUS;
+				funcCode = READ_INPUT_REG;
 				break;
 			case network_info::eEndPointType::eDiscrete_Input:
-				funcCode = READ_INPUT_REG;
+				funcCode = READ_INPUT_STATUS;
 				break;
 			default:
 				CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid type."));
