@@ -77,18 +77,10 @@ docker logs modbus-tcp-container > docker.log 2>&1
 ## ETCD UI access
 1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL. (username - root , password- eis123)
 
-## Steps to modify YAML file configuration
-  Go to docker volume location for YAML file changes
+## Steps to apply new configuration (i.e. YML files or docker-compose.yml)
+  Once YML files/docker-compose.yml are changed/Modified in /opt/intel/eis/uwc_data directory then execute following command to apply new configurations,
  ```
-  cd /opt/intel/eis/uwc_data/
-  execute ls command to display all YAML files
- ```
- Once YAML files are changed/Modified then execute following steps to apply changes,
- ```
-  cd EIS..../docker_setup
-  export PWD=$(pwd)
-  docker-compose down  - bring down all containers
-  docker-compose up - bring up all containers
+  sudo ./05_applyConfigChanges.sh
 ```
 
 ## Steps to create bundle out of sources - Optional 
