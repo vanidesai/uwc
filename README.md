@@ -99,6 +99,4 @@ docker-compose up - bring up all containers
 ## Notes
 *  If docker-compose.yml is modified then execute 03_DeployEIS.sh script for build and deployment of UWC containers.
 *  If previous containers are running on deploy machine, then stop those containers using 04_uninstall_EIS.sh script.
-*  Once containers are up and running, configuration parameters can be changed using ETCD UI. Manual process for build and deployment is not needed once parameters are chanegd using ETCD UI.
-
 
