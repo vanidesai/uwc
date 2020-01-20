@@ -52,7 +52,6 @@ public:
 	// function to get single instance of this class
 	static PublishJsonHandler& instance();
 	BOOLEAN publishJson(msg_envelope_t* msg, void* msgbus_ctx, void* pub_ctx, const std::string str_Topic);
-	msg_envelope_t* initialize_message(std::string strMsg);
 
 	const std::string& getPolledDataTopic() const {
 		return m_sPolledDataTopic;

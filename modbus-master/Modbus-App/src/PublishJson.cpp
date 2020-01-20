@@ -56,22 +56,3 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, v
 
 	return true;
 }
-
-msg_envelope_t* PublishJsonHandler::initialize_message(std::string strMsg)
-{
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start:: " + strMsg));
-
-    // Creating message to be published
-    msg_envelope_elem_body_t* tempMsg = msgbus_msg_envelope_new_string(strMsg.c_str());
-
-    msg_envelope_t* msg = msgbus_msg_envelope_new(CT_JSON);
-
-    msgbus_msg_envelope_put(msg, "", tempMsg);
-
-    CLogger::getInstance().log(DEBUG, LOGDETAILS("End:: " + strMsg));
-
-    return msg;
-}
-
-
-
