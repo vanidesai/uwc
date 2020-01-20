@@ -227,13 +227,8 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 			}
 
 			string strSearchString = "/";
-			std::size_t found1 = strSourceTopic.find(strSearchString);
-			std::size_t found2 = strSourceTopic.find(strSearchString.c_str(), found1+1);
-			string stTopic = strWellhead +
-					SEPARATOR_CHAR +
-					strSourceTopic.substr(found1+1, found2-found1-1) +
-					SEPARATOR_CHAR +
-					strCommand;
+			std::size_t found = strSourceTopic.find_last_of(strSearchString);
+			string stTopic = strSourceTopic.substr(0, found);
 
 			std::map<std::string, network_info::CUniqueDataPoint> mpp = network_info::getUniquePointList();
 			struct network_info::stModbusAddrInfo addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
@@ -316,11 +311,9 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 						strValue = "0xFF00";
 					}
 				}
-				if(eType != network_info::eEndPointType::eCoil &&
-						eType != network_info::eEndPointType::eDiscrete_Input)
+				if(true == isWrite && funcCode != WRITE_MULTIPLE_COILS)
 				{
-					if((true == obj.getAddress().m_bIsByteSwap || true == obj.getAddress().m_bIsWordSwap) &&
-							true == isWrite)
+					if((true == obj.getAddress().m_bIsByteSwap || true == obj.getAddress().m_bIsWordSwap))
 					{
 						std::vector<uint8_t> tempVt;
 						int i = 0;
