@@ -33,7 +33,7 @@ class PublishJsonHandler
 	PublishJsonHandler(const PublishJsonHandler&) = delete;	 			/// Copy construct
 	PublishJsonHandler& operator=(const PublishJsonHandler&) = delete;	/// Copy assign
 
-	/// onstructor
+	/// constructor
 	PublishJsonHandler();
 
 	// topic for publish

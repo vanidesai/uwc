@@ -26,14 +26,6 @@ namespace CommonUtils {
  */
 YAML::Node loadYamlFile(const std::string& filename);
 
-
-/** This function is used to load YAML file from ETCD
- *
- * @filename : This variable is use to pass actual filename to load
- * @return: YAML node
- */
-YAML::Node loadFromETCD(const std::string& a_sYamlFileData);
-
 /** This function is used to store YAML to list
  *
  * @filename : This variable is use to pass actual filename to load

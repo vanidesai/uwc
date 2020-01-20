@@ -34,17 +34,6 @@ YAML::Node loadYamlFile(const std::string& filename)
 	return baseNode;
 }
 
-/** This function is use to load YAML file from ETCD
- *
- * @filename : This variable is use to pass actual filename to load
- * @return: YAML node
- */
-YAML::Node loadFromETCD(const std::string& a_sYamlFileData)
-{
-	YAML::Node baseNode = YAML::Load(a_sYamlFileData);
-	return baseNode;
-}
-
 /** This function is use to store YAML to list
  *
  * @filename : This variable is use to pass actual filename to load
