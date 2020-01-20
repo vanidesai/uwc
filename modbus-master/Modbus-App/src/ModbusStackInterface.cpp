@@ -11,12 +11,38 @@
 #include <mutex>
 #include "ZmqHandler.hpp"
 #include "Logger.hpp"
+#include "PeriodicReadFeature.hpp"
 
 extern "C" {
 	#include <safe_lib.h>
 }
 
 std::mutex g_RWCommonCallbackMutex;
+
+void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
+{
+	a_sTimeStamp.clear();
+	a_sUsec.clear();
+
+	const auto p1 = std::chrono::system_clock::now();
+
+	std::time_t rawtime = std::chrono::system_clock::to_time_t(p1);
+	std::tm* timeinfo = std::gmtime(&rawtime);
+	if(NULL == timeinfo)
+	{
+		return;
+	}
+	char buffer [80];
+
+	std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
+	a_sTimeStamp.insert(0, buffer);
+
+	{
+		std::stringstream ss;
+		ss << std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count();
+		a_sUsec.insert(0, ss.str());
+	}
+}
 
 /**
  *
@@ -60,27 +86,23 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 {
 	string temp; //temporary string for logging
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
-	const char* pcWriteRespTopic = std::getenv("WRITE_RESPONSE_TOPIC");
-	if(NULL == pcWriteRespTopic)
-	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("WRITE_RESPONSE_TOPIC not set"));
-		return;
-	}
+	std::string sRespTopic = "";
+
 	std::lock_guard<std::mutex> lock(g_RWCommonCallbackMutex);
 	msg_envelope_t *msg = NULL;
 	msg = msgbus_msg_envelope_new(CT_JSON);
 
 	try
 	{
-		stOnDemandRequest onDemandReqData = zmq_handler::getOnDemandReqData(u16TransacID);
-		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(pcWriteRespTopic);
-		msgbus_msg_envelope_put(msg, "topic", ptResTopic);
+		stOnDemandRequest onDemandReqData;
+		zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
 
 		if( u8FunCode == READ_COIL_STATUS ||
 				u8FunCode == READ_HOLDING_REG ||
 				u8FunCode == READ_INPUT_STATUS ||
 				u8FunCode == READ_INPUT_REG)
 		{
+			sRespTopic = PublishJsonHandler::instance().getSReadResponseTopic();
 			std::vector<uint8_t> datavt;
 			for (uint8_t index=0; index<u8numBytes; index++)
 			{
@@ -90,13 +112,40 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 			/// word swap is always false.
 			std:: string strdata = zmq_handler::swapConversion(datavt,
 															onDemandReqData.m_isByteSwap,
-															false);
+															onDemandReqData.m_isWordSwap);
+			/// value
 			msg_envelope_elem_body_t* ptData = msgbus_msg_envelope_new_string(strdata.c_str());
 			msgbus_msg_envelope_put(msg, "value", ptData);
 		}
+		else
+		{
+			sRespTopic = PublishJsonHandler::instance().getSWriteResponseTopic();
+		}
 
+		/// topic
+		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(sRespTopic.c_str());
+		msgbus_msg_envelope_put(msg, "topic", ptResTopic);
+		/// wellhead
+		msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());
+		msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
+		/// application sequence
 		msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(onDemandReqData.m_strAppSeq.c_str());
 		msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
+		/// metric
+		msg_envelope_elem_body_t* ptMetric = msgbus_msg_envelope_new_string(onDemandReqData.m_strMetric.c_str());
+		msgbus_msg_envelope_put(msg, "metric", ptMetric);
+		/// version
+		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string(onDemandReqData.m_strVersion.c_str());
+		msgbus_msg_envelope_put(msg, "version", ptVersion);
+
+		std::string strTimestamp, strUsec;
+		getTimeParams(strTimestamp, strUsec);
+		/// usec
+		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(strUsec.c_str());
+		msgbus_msg_envelope_put(msg, "usec", ptUsec);
+		/// timestamp
+		msg_envelope_elem_body_t* ptTimestamp = msgbus_msg_envelope_new_string(strTimestamp.c_str());
+		msgbus_msg_envelope_put(msg, "timestamp", ptTimestamp);
 
 		if(pu8IpAddr != NULL && pstException->m_u8ExcCode == 0 && pstException->m_u8ExcStatus ==0)
 		{
@@ -124,10 +173,11 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 		}
 
-		std::string topic(pcWriteRespTopic);
+		std::string topic(sRespTopic);
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(topic);
+		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(topic);
 
-		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, topic);
+		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, topic);
 	}
 	catch(const std::exception& e)
 	{

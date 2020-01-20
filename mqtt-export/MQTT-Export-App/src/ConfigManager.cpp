@@ -80,7 +80,7 @@ void etcdOnChangeDirCb(char* key, char * val)
  * @param key: name of the key
  * @return: nothing
  */
-void CfgManager::registerCallbackOnChangeDir(char *dir)
+/*void CfgManager::registerCallbackOnChangeDir(char *dir)
 {
 	if(dir == NULL) {
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("dir is null, cannot register callback"));
@@ -95,13 +95,13 @@ void CfgManager::registerCallbackOnChangeDir(char *dir)
 	temp.append(dir);
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 	std::cout << __func__ << temp << endl;
-}
+}*/
 
 /** Register callback for specific key in ETCD
  *
  * @param key: name of the key
  * @return: nothing
- */
+
 void CfgManager::registerCallbackOnChangeKey(char *key)
 {
 	if(key == NULL) {
@@ -116,13 +116,14 @@ void CfgManager::registerCallbackOnChangeKey(char *key)
 	temp.append(key);
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 	std::cout << __func__ << temp << endl;
-}
+}*/
 
 /** Returns the value from ETCD on specific key
  *
  * @param key: name of the key
  * @return: value from ETCD against given key
  */
+/*
 char* CfgManager::getETCDValuebyKey(const char *key)
 {
 	char *etcdVal = NULL;
@@ -151,6 +152,7 @@ char* CfgManager::getETCDValuebyKey(const char *key)
 	etcdVal = env_config.get_config_mgr_client()->get_config((char*)(baseKey.c_str()));
 	return etcdVal;
 }
+*/
 
 /** Returns the client status of creation
  *

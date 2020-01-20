@@ -16,7 +16,8 @@
 
 #include "utils/YamlUtil.hpp"
 
-#define SEPARATOR_CHAR "_"
+#define SEPARATOR_CHAR "/"
+#define PERIODIC_GENERIC_TOPIC "update"
 
 using std::string;
 using std::vector;
@@ -47,6 +48,7 @@ namespace network_info
 	{
 		unsigned int m_uiPollFreq;
 		bool m_bIsRealTime;
+		string m_usQOS;
 	};
 	class CDataPoint
 	{

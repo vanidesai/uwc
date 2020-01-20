@@ -79,7 +79,7 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      AppName: "Modbus-TCP-Master"
+      AppName: "Modbus_TCP_Master"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       TCP_ENABLED : 1
@@ -91,15 +91,22 @@ services:
       RESPONSE_TIMEOUT: 1
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      Clients: "MQTT-Export"
-      PubTopics: "PL0_flowmeter,PL0_flowmeter_response"
-      PL0_flowmeter_cfg: "zmq_tcp,127.0.0.1:1115"
-      PL0_flowmeter_response_cfg: "zmq_tcp,127.0.0.1:6666"
-      SubTopics: "MQTT-Export/PL0_flowmeter_read,MQTT-Export/PL0_flowmeter_write"
-      PL0_flowmeter_read_cfg: "zmq_tcp,127.0.0.1:1616"
-      PL0_flowmeter_write_cfg: "zmq_tcp,127.0.0.1:9191"
-      WRITE_RESPONSE_TOPIC: "PL0_flowmeter_response"
-      
+      Clients: "MQTT_Export"
+      SITE_LIST_FILE_NAME: "site_list.yml"
+      PubTopics: "Modbus_TCP_Master_PolledData,Modbus_TCP_Master_ReadResponse,Modbus_TCP_Master_WriteResponse"
+      PolledData: "Modbus_TCP_Master_PolledData"
+      ReadResponse: "Modbus_TCP_Master_ReadResponse"
+      WriteResponse: "Modbus_TCP_Master_WriteResponse"
+      Modbus_TCP_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5000"
+      Modbus_TCP_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5001"
+      Modbus_TCP_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5002"
+      SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
+      ReadRequest: "MQTT_Export_ReadRequest"
+      WriteRequest: "MQTT_Export_WriteRequest"
+      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:5003"
+      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:5004"
+    volumes:
+      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
     user: ${EIS_UID}
 
   modbus-rtu-master:
@@ -118,25 +125,36 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      AppName: "Modbus-RTU-Master"
+      AppName: "Modbus_RTU_Master"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       TCP_ENABLED : 1
       ZMQ_RECV_HWM: "1000"
       RESPONSE_TIMEOUT: 1
+      BAUD_RATE: 9600
+      PARITY: 1
+      PORT_NAME: "tty/USB0"
+      STOPBIT: 1
       MY_APP_ID: 5
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      Clients: "MQTT-Export"
-      PubTopics: "PL0_iou,PL0_iou_response"
-      SubTopics: "MQTT-Export/PL0_iou_write,MQTT-Export/PL0_iou_read"
-      PL0_iou_cfg: "zmq_tcp,127.0.0.1:3115"
-      PL0_iou_write_cfg: "zmq_tcp,127.0.0.1:1212"
-      PL0_iou_response_cfg: "zmq_tcp,127.0.0.1:7979"
-      PL0_iou_read_cfg: "zmq_tcp,127.0.0.1:5151"
-      WRITE_RESPONSE_TOPIC: "PL0_iou_response"
-
+      Clients: "MQTT_Export"
+      SITE_LIST_FILE_NAME: "site_list.yml"
+      PubTopics: "Modbus_RTU_Master_PolledData,Modbus_RTU_Master_ReadResponse,Modbus_RTU_Master_WriteResponse"
+      PolledData: "Modbus_RTU_Master_PolledData"
+      ReadResponse: "Modbus_RTU_Master_ReadResponse"
+      WriteResponse: "Modbus_RTU_Master_WriteResponse"
+      Modbus_RTU_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5005"
+      Modbus_RTU_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5006"
+      Modbus_RTU_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5007"
+      SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
+      ReadRequest: "MQTT_Export_ReadRequest"
+      WriteRequest: "MQTT_Export_WriteRequest"
+      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:5003"
+      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:5004"
+    volumes:
+      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
     #user: ${EIS_UID}
     devices:
       - /dev:/dev
@@ -178,7 +196,7 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      AppName: "MQTT-Export"
+      AppName: "MQTT_Export"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
@@ -186,15 +204,18 @@ services:
       MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:1883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      SubTopics: "Modbus-TCP-Master/PL0_flowmeter,Modbus-RTU-Master/PL0_iou,Modbus-TCP-Master/PL0_flowmeter_response,Modbus-RTU-Master/PL0_iou_response"
-      PL0_flowmeter_response_cfg: "zmq_tcp,127.0.0.1:6666"
-      PubTopics: "PL0_iou_write,PL0_flowmeter_read,PL0_flowmeter_write,PL0_iou_read"
-      PL0_flowmeter_cfg: "zmq_tcp,127.0.0.1:1115"
-      PL0_iou_cfg: "zmq_tcp,127.0.0.1:3115"
-      PL0_iou_write_cfg: "zmq_tcp,127.0.0.1:1212"
-      PL0_flowmeter_write_cfg: "zmq_tcp,127.0.0.1:9191"
-      PL0_flowmeter_read_cfg: "zmq_tcp,127.0.0.1:1616"
-      PL0_iou_response_cfg: "zmq_tcp,127.0.0.1:7979"
-      PL0_iou_read_cfg: "zmq_tcp,127.0.0.1:5151"
+      Clients: "Modbus_TCP_Master,Modbus_RTU_Master"
+      SubTopics: "Modbus_TCP_Master/Modbus_TCP_Master_PolledData,Modbus_TCP_Master/Modbus_TCP_Master_ReadResponse,Modbus_TCP_Master/Modbus_TCP_Master_WriteResponse,Modbus_RTU_Master/Modbus_RTU_Master_PolledData,Modbus_RTU_Master/Modbus_RTU_Master_ReadResponse,Modbus_RTU_Master/Modbus_RTU_Master_WriteResponse"
+      PubTopics: "MQTT_Export_ReadRequest,MQTT_Export_WriteRequest"
+      Modbus_TCP_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5000"
+      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:5003"
+      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:5004"
+      Modbus_TCP_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5001"
+      Modbus_TCP_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5002"
+      Modbus_RTU_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5005"
+      Modbus_RTU_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5006"
+      Modbus_RTU_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5007"
+      mqtt_SubReadTopic: "/+/+/+/read"
+      mqtt_SubWriteTopic: "/+/+/+/write"
 
     user: ${EIS_UID}

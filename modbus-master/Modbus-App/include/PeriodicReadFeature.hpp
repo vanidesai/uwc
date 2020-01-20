@@ -24,6 +24,7 @@
 
 using network_info::CUniqueDataPoint;
 using zmq_handler::stZmqContext;
+using zmq_handler::stZmqPubContext;
 
 class CRefDataForPolling;
 
@@ -69,7 +70,7 @@ class CTimeRecord
 	std::vector<CRefDataForPolling>& getPolledPointList()
 	{
 		//
-		std::lock_guard<std::mutex> lock(m_vectorMutex);
+		//std::lock_guard<std::mutex> lock(m_vectorMutex);
 		return m_vPolledPoints;
 	}
 	bool add(CRefDataForPolling &a_oPoint);
@@ -108,7 +109,10 @@ class CTimeMapper
 	void initTimerFunction();
 
 	~CTimeMapper();
-	
+	std::vector<CRefDataForPolling>& getPolledPointList(uint32_t uiRef)
+	{
+		return m_mapTimeRecord.at(uiRef).getPolledPointList();
+	}
 	bool insert(uint32_t a_uTime, CRefDataForPolling &a_oPoint);
 	void print();
 };
@@ -122,19 +126,24 @@ private:
 	// Default constructor
 	CRequestInitiator();
 
-	void threadRequestInit(std::vector<std::vector<CRefDataForPolling>> a_vReqData);
+	void threadReqInit();
 
 	std::atomic<unsigned int> m_uiIsNextRequest;
 	//std::vector<std::string> m_vsPrevPendingRequests;
 	//std::mutex m_mutexPrevReqVector;
-	sem_t semReqInit;
+	sem_t semaphoreReqProcess;
 
 	std::map<unsigned short, CRefDataForPolling> m_mapTxIDReqData;
 	/// mutex for operation on m_mapTxIDReqData map
 	std::mutex m_mutextTxIDMap;
 
-	bool initSem();
+	bool init();
 	bool sendRequest(CRefDataForPolling a_stRdPrdObj);
+
+	std::queue <uint32_t> m_qReqFreq;
+	std::mutex m_mutexReqFreqQ;
+	bool getFreqRefForPollCycle(uint32_t &a_uiRef);
+	bool pushPollFreqToQueue(uint32_t &a_uiRef);
 
 public:
 	~CRequestInitiator();
@@ -146,7 +155,7 @@ public:
 		return self;
 	}
 
-	void initiateRequests(std::vector<std::vector<CRefDataForPolling>> a_vReqData);
+	void initiateRequests(uint32_t a_uiRef);
 
 	CRefDataForPolling getTxIDReqData(unsigned short);
 
@@ -159,16 +168,16 @@ public:
 
 class CRefDataForPolling
 {
-	const network_info::CUniqueDataPoint m_objDataPoint;
+	const network_info::CUniqueDataPoint& m_objDataPoint;
 	const struct zmq_handler::stZmqContext& m_objBusContext;
-	//const struct zmq_handler::stZmqPubContext& m_objPubContext;
+	const struct zmq_handler::stZmqPubContext& m_objPubContext;
 
 	uint8_t m_uiFuncCode;
 	//CRefDataForPolling& operator=(const CRefDataForPolling&) = delete;	// Copy assign
 
 	public:
-	CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, struct stZmqContext& a_objBusContext, uint8_t a_uiFuncCode) :
-				m_objDataPoint{a_objDataPoint}, m_objBusContext{a_objBusContext}, m_uiFuncCode{a_uiFuncCode}
+	CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, struct stZmqContext& a_objBusContext, struct stZmqPubContext& a_objPubContext, uint8_t a_uiFuncCode) :
+				m_objDataPoint{a_objDataPoint}, m_objBusContext{a_objBusContext}, m_objPubContext{a_objPubContext}, m_uiFuncCode{a_uiFuncCode}
 	{
 		//std::cout << "\nin CRefDataForPolling ctor";
 	}
@@ -179,6 +188,7 @@ class CRefDataForPolling
 
 	const CUniqueDataPoint & getDataPoint() const {return m_objDataPoint;}
 	const struct stZmqContext & getBusContext() const {return m_objBusContext;}
+	const struct stZmqPubContext & getPubContext() const {return m_objPubContext;}
 };
 
 /**

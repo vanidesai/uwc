@@ -169,7 +169,7 @@ eisProvision()
     check_for_errors "$?" "Provisioning is failed. Please check logs" \
                     "${GREEN}Provisioning is done successfully.${NC}"
     echo "${GREEN}>>>>>${NC}"
-    echo "${GREEN}For container deployement,run 03_DeployEIS.sh script"
+    echo "${GREEN}For container deployement,run 03_DeployEIS.sh script${NC}"
     return 0
 }
 verifyDirectory

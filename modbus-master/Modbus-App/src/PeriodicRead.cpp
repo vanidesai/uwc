@@ -98,87 +98,6 @@ void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_s
 	}
 }
 
-/*std::string CPeriodicReponseProcessor::swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap, bool a_bIsWordSwap)
-{
-	auto numbytes = vt.size();
-	if(0 == numbytes)
-	{
-		return NULL;
-	}
-
-	auto iPosByte1 = 1, iPosByte2 = 0;
-	auto iPosWord1 = 0, iPosWord2 = 1;
-
-	if(true == a_bIsByteSwap)
-	{
-		iPosByte1 = 0; iPosByte2 = 1;
-	}
-	if(true == a_bIsWordSwap)
-	{
-		iPosWord1 = 1; iPosWord2 = 0;
-	}
-
-	static const char* digits = "0123456789ABCDEF";
-	std::string sVal(numbytes*2+2,'0');
-	int i = 0;
-	sVal[i++] = '0'; sVal[i++] = 'x';
-	int iCurPos = 0;
-	while(numbytes)
-	{
-		if(numbytes >= 4)
-		{
-			auto byte1 = vt[iCurPos + iPosWord1*2 + iPosByte1];
-			auto byte2 = vt[iCurPos + iPosWord1*2 + iPosByte2];
-			auto byte3 = vt[iCurPos + iPosWord2*2 + iPosByte1];
-			auto byte4 = vt[iCurPos + iPosWord2*2 + iPosByte2];
-			numbytes = numbytes - 4;
-			iCurPos = iCurPos + 4;
-
-			sVal[i] = digits[(byte1 >> 4) & 0x0F];
-			sVal[i+1] = digits[byte1 & 0x0F];
-			i += 2;
-
-			sVal[i] = digits[(byte2 >> 4) & 0x0F];
-			sVal[i+1] = digits[byte2 & 0x0F];
-			i += 2;
-
-			sVal[i] = digits[(byte3 >> 4) & 0x0F];
-			sVal[i+1] = digits[byte3 & 0x0F];
-			i += 2;
-
-			sVal[i] = digits[(byte4 >> 4) & 0x0F];
-			sVal[i+1] = digits[byte4 & 0x0F];
-			i += 2;
-		}
-		else if(numbytes >= 2)
-		{
-			auto byte1 = vt[iCurPos + iPosByte1];
-			auto byte2 = vt[iCurPos + iPosByte2];
-			numbytes = numbytes - 2;
-			iCurPos = iCurPos + 2;
-
-			sVal[i] = digits[(byte1 >> 4) & 0x0F];
-			sVal[i+1] = digits[byte1 & 0x0F];
-			i += 2;
-
-			sVal[i] = digits[(byte2 >> 4) & 0x0F];
-			sVal[i+1] = digits[byte2 & 0x0F];
-			i += 2;
-		}
-		else
-		{
-			auto byte1 = vt[iCurPos];
-			--numbytes;
-			++iCurPos;
-
-			sVal[i] = digits[(byte1 >> 4) & 0x0F];
-			sVal[i+1] = digits[byte1 & 0x0F];
-			i += 2;
-		}
-	}
-	return sVal;
-}*/
-
 BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp)
 {
 	bool bRetValue = true;
@@ -192,9 +111,11 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string(sTxID.c_str());
 		msg_envelope_elem_body_t* ptTimeStamp = msgbus_msg_envelope_new_string(sTimestamp.c_str());
 		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(sUsec.c_str());
+		string sTopic = a_objReqData.getDataPoint().getID() + SEPARATOR_CHAR + PERIODIC_GENERIC_TOPIC;
 		msg_envelope_elem_body_t* ptTopic = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getID().c_str());
 		msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getWellSite().getID().c_str());
 		msg_envelope_elem_body_t* ptMetric = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getDataPoint().getID().c_str());
+		msg_envelope_elem_body_t* ptQos =  msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getDataPoint().getPollingConfig().m_usQOS.c_str());
 
 		msg = msgbus_msg_envelope_new(CT_JSON);
 		msgbus_msg_envelope_put(msg, "version", ptVersion);
@@ -204,6 +125,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		msgbus_msg_envelope_put(msg, "topic", ptTopic);
 		msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
 		msgbus_msg_envelope_put(msg, "metric", ptMetric);
+		msgbus_msg_envelope_put(msg, "qos", ptQos);
 
 		//// fill value
 		*a_pMsg = msg;
@@ -263,7 +185,8 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 		else
 		{
 			if(true == PublishJsonHandler::instance().publishJson(g_msg, objReqData.getBusContext().m_pContext,
-					objReqData.getDataPoint().getID()))
+					objReqData.getPubContext().m_pContext,
+					PublishJsonHandler::instance().getPolledDataTopic()))
 			{
 				msg_envelope_serialized_part_t* parts = NULL;
 				int num_parts = msgbus_msg_envelope_serialize(g_msg, &parts);
@@ -582,45 +505,106 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 	}
 }
 
-bool CRequestInitiator::initSem()
+bool CRequestInitiator::init()
 {
+	std::thread{std::bind(&CRequestInitiator::threadReqInit, std::ref(*this))}.detach();
+	
+	int ok = sem_init(&semaphoreReqProcess, 0, 0 /* Initial value of zero*/);
+	if (ok == -1) {
+	   std::cout << "*******Could not create unnamed semaphore\n";
+	   return false;
+	}
 	return true;
 }
 
-void CRequestInitiator::threadRequestInit(std::vector<std::vector<CRefDataForPolling>> a_vReqDataList)
+bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef)
 {
 	try
 	{
-		for(auto a_vReqData: a_vReqDataList)
+		std::lock_guard<std::mutex> lock(m_mutexReqFreqQ);
+		m_qReqFreq.push(a_uiRef);
+		// Signal response process thread
+		sem_post(&semaphoreReqProcess);
+
+		return true;
+	}
+	catch(const std::exception& e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+	}
+
+	return false;
+}
+
+bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef)
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(m_mutexReqFreqQ);
+		a_uiRef = m_qReqFreq.front();
+		m_qReqFreq.pop();
+
+		return true;
+	}
+	catch(const std::exception& e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+	}
+
+	return false;
+}
+
+void CRequestInitiator::threadReqInit()
+{
+	try
+	{
+		while(false == g_stopThread.load())
 		{
-		for(auto a_oReqData: a_vReqData)
-		{
-			CRefDataForPolling objReqData = a_oReqData;
-			
-			//if(true == bIsFound)
+			do
 			{
-				// The entry is found in map
-				// Send a request
-				if (true == sendRequest(objReqData))
+				// Wait for response
+				sem_wait(&semaphoreReqProcess);
+				if(true == g_stopThread.load())
 				{
-					// Request is sent successfully
-					// No action
-#ifdef PERFTESTING // will be removed afterwards
-					++reqCount;
-					if(reqCount == total_read_periodic.load())
+					break;
+				}
+				uint32_t uiRef;
+				if(false == getFreqRefForPollCycle(uiRef))
+				{
+					break;
+				}
+				//cout << "CRequestInitiator::threadReqInit():Semaphore signalled: Freq " << uiRef << std::endl;
+				std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef);
+				for(auto a_oReqData: a_vReqData)
+				{
+					CRefDataForPolling objReqData = a_oReqData;
+
+					//if(true == bIsFound)
 					{
-						reqCount = 0;
-						cout << "Polling is stopped ...." << endl;
-						stopPolling.store(true);
-						break;
+						// The entry is found in map
+						// Send a request
+						if (true == sendRequest(objReqData))
+						{
+							// Request is sent successfully
+							// No action
+		#ifdef PERFTESTING // will be removed afterwards
+							++reqCount;
+							if(reqCount == total_read_periodic.load())
+							{
+								reqCount = 0;
+								cout << "Polling is stopped ...." << endl;
+								stopPolling.store(true);
+								break;
+							}
+		#endif
+						}
+						else
+						{
+						}
 					}
-#endif
 				}
-				else
-				{
-				}
-			}
-		}
+
+			} while(0);
 		}
 	}
 	catch (exception &e)
@@ -630,7 +614,7 @@ void CRequestInitiator::threadRequestInit(std::vector<std::vector<CRefDataForPol
 	}
 }
 
-void CRequestInitiator::initiateRequests(std::vector<std::vector<CRefDataForPolling>> a_vReqData)
+void CRequestInitiator::initiateRequests(uint32_t a_uiRef)
 {
 	try
 	{
@@ -638,7 +622,7 @@ void CRequestInitiator::initiateRequests(std::vector<std::vector<CRefDataForPoll
 		if(!stopPolling.load())
 #endif
 		{
-			std::thread(&CRequestInitiator::threadRequestInit, this, a_vReqData).detach();
+			pushPollFreqToQueue(a_uiRef);
 		}
 	}
 	catch (exception &e)
@@ -656,7 +640,7 @@ CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
 {
 	try
 	{
-		initSem();
+		init();
 	}
 	catch(const std::exception& e)
 	{
@@ -708,9 +692,6 @@ void CTimeMapper::initTimerFunction()
 
 void CTimeMapper::checkTimer()
 {
-    std::vector<CRefDataForPolling> vPolledPoints;
-    std::vector <std::vector<CRefDataForPolling> > vPolledPointsList;
-
     try
 	{
     	std::lock_guard<std::mutex> lock(m_mapMutex);
@@ -719,15 +700,8 @@ void CTimeMapper::checkTimer()
 			CTimeRecord &a = element.second;
 			if(0 == a.decrementTime(1))
 			{
-				std::vector<CRefDataForPolling>& vTemp = a.getPolledPointList();
-				vPolledPointsList.push_back(vTemp);
-				//vPolledPoints.insert(vPolledPoints.end(), vTemp.begin(), vTemp.end());
+				CRequestInitiator::instance().initiateRequests(element.first);
 			}
-		}
-
-		if(vPolledPointsList.size())
-		{
-			CRequestInitiator::instance().initiateRequests(vPolledPointsList);
 		}
 	}
 	catch (exception &e)

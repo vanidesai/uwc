@@ -36,11 +36,79 @@ class PublishJsonHandler
 	/// onstructor
 	PublishJsonHandler();
 
+	// topic for publish
+	std::string m_sPolledDataTopic;
+	std::string m_sReadResponseTopic;
+	std::string m_sWriteResponseTopic;
+
+	// topic for subscription
+	std::string m_sReadRequestTopic;
+	std::string m_sWriteRequestTopic;
+	std::string m_siteListFileName;
+
+	std::string m_sAppName;
+
 public:
 	// function to get single instance of this class
 	static PublishJsonHandler& instance();
-	BOOLEAN publishJson(msg_envelope_t* msg, void* msgbus_ctx, const std::string str_Topic);
+	BOOLEAN publishJson(msg_envelope_t* msg, void* msgbus_ctx, void* pub_ctx, const std::string str_Topic);
 	msg_envelope_t* initialize_message(std::string strMsg);
+
+	const std::string& getPolledDataTopic() const {
+		return m_sPolledDataTopic;
+	}
+
+	void setPolledDataTopic(const std::string &sCommomPubTopic) {
+		m_sPolledDataTopic = sCommomPubTopic;
+	}
+
+	const std::string& getSReadRequestTopic() const {
+		return m_sReadRequestTopic;
+	}
+
+	void setSReadRequestTopic(const std::string &sReadRequestTopic) {
+		m_sReadRequestTopic = sReadRequestTopic;
+	}
+
+	const std::string& getSReadResponseTopic() const {
+		return m_sReadResponseTopic;
+	}
+
+	void setSReadResponseTopic(const std::string &sReadResponseTopic) {
+		m_sReadResponseTopic = sReadResponseTopic;
+	}
+
+	const std::string& getSWriteRequestTopic() const {
+		return m_sWriteRequestTopic;
+	}
+
+	void setSWriteRequestTopic(const std::string &sWriteRequestTopic) {
+		m_sWriteRequestTopic = sWriteRequestTopic;
+	}
+
+	const std::string& getSWriteResponseTopic() const {
+		return m_sWriteResponseTopic;
+	}
+
+	void setSWriteResponseTopic(const std::string &sWriteResponseTopic) {
+		m_sWriteResponseTopic = sWriteResponseTopic;
+	}
+
+	const std::string& getAppName() const {
+		return m_sAppName;
+	}
+
+	void setAppName(const std::string &appName) {
+		m_sAppName = appName;
+	}
+
+	const std::string& getSiteListFileName() const {
+		return m_siteListFileName;
+	}
+
+	void setSiteListFileName(const std::string &siteListFileName) {
+		m_siteListFileName = siteListFileName;
+	}
 };
 
 

@@ -34,9 +34,9 @@ PublishJsonHandler& PublishJsonHandler::instance()
 	return handler;
 }
 
-BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, const std::string a_sTopic)
+BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, void* pub_ctx, const std::string a_sTopic)
 {
-	if((NULL == msg) || (NULL == msgbus_ctx))
+	if((NULL == msg) || (NULL == msgbus_ctx) || (NULL == pub_ctx))
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS(": Failed to publish message - Input parameters are NULL"));
 		return false;
@@ -44,42 +44,10 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, c
 	std::lock_guard<std::mutex> lock(publishJsonMutex);
 
 	msgbus_ret_t ret;
-	zmq_handler::stZmqPubContext busPubCTX;
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("msg to publish :: Topic :: " + a_sTopic));
 
-	try
-	{
-		/// get the publisher context
-		busPubCTX = zmq_handler::getPubCTX(a_sTopic);
-	}
-	catch (std::exception &e) {
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		stZmqPubContext objPubContext;
-		publisher_ctx_t *pub_ctx = NULL;
-		ret = msgbus_publisher_new(msgbus_ctx,a_sTopic.c_str(), &pub_ctx);
-
-		if(ret != MSG_SUCCESS)
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS(" Failed to initialize publisher errno: " + std::to_string(ret)));
-			return false;
-		}
-
-		objPubContext.m_pContext = pub_ctx;
-		if(true == zmq_handler::insertPubCTX(a_sTopic, objPubContext))
-		{
-			/// get the publisher context
-			busPubCTX = zmq_handler::getPubCTX(a_sTopic);
-		}
-		else
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS(" Failed to obtain publish context " + std::to_string(ret)));
-			return false;
-		}
-	}
-
-	//void *pubContext = busPubCTX.m_pContext;
-	ret = msgbus_publisher_publish(msgbus_ctx, (publisher_ctx_t*)busPubCTX.m_pContext, msg);
+	ret = msgbus_publisher_publish(msgbus_ctx, (publisher_ctx_t*)pub_ctx, msg);
 	if(ret != MSG_SUCCESS)
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS(" Failed to publish message errno: " + std::to_string(ret)));

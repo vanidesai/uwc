@@ -28,8 +28,9 @@ CLogger::CLogger() {
 }
 CLogger::~CLogger() {
 	// TODO Auto-generated destructor stub
+	logger->removeAllAppenders();
 
-	log4cpp::Category::shutdown();
+	logger->shutdownForced();
 }
 
 void CLogger::LogInfo(std::string msg) {

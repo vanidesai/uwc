@@ -121,6 +121,7 @@ static uint16_t crc16(uint8_t *buffer, uint16_t buffer_length)
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 extern stDevConfig_t ModbusMasterConfig;
 #endif
+int g_iResponseTimeout;
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 int fd;
@@ -807,7 +808,7 @@ int8_t checkforblockingread(void)
 	fd_set rset;
 	struct timeval tv;
 	//wait upto 1 seconds
-	tv.tv_sec = atoi(getenv("RESPONSE_TIMEOUT"));
+	tv.tv_sec = g_iResponseTimeout;
 	tv.tv_usec = 0;
 	FD_ZERO(&rset);
 
@@ -1313,7 +1314,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 			{
 				if (errno == EINPROGRESS)
 				{
-					tv.tv_sec = atoi(getenv("RESPONSE_TIMEOUT"));
+					tv.tv_sec = g_iResponseTimeout;
 					//tv.tv_usec = ModbusMasterConfig.m_u8TcpConnectTimeout;
 					tv.tv_usec = 0;
 					FD_ZERO(&myset);
@@ -1371,7 +1372,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 
 		//setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 
-		tv.tv_sec = atoi(getenv("RESPONSE_TIMEOUT"));
+		tv.tv_sec = g_iResponseTimeout;
 		//tv.tv_usec = ModbusMasterConfig.m_u8TcpConnectTimeout;
 		tv.tv_usec = 0;
 		FD_ZERO(&myset);

@@ -49,8 +49,7 @@ public:
 
 	eMbusStackErrorCode writeInfoHandler();
 
-	eMbusStackErrorCode jsonParserForWrite(const std::string a_sTopic,
-											std::string& writeReqJson,
+	eMbusStackErrorCode jsonParserForWrite(stWriteRequest& reqMsg,
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode);
 

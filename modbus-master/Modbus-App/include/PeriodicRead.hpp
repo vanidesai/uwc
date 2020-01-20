@@ -52,10 +52,8 @@ private:
 	BOOLEAN pushToQueue(struct stStackResponse &stStackResNode);
 	BOOLEAN getDataToProcess(struct stStackResponse &a_stStackResNode);
 
-	//BOOLEAN prepareResponseJson(cJSON *jsonVal, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp);
 	BOOLEAN prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp);
 	BOOLEAN postResponseJSON(stStackResponse& a_stResp);
-	//std::string swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap = false, bool a_bIsWordSwap = false);
 
 	BOOLEAN initSem();
 	eMbusStackErrorCode respProcessThreads();

@@ -45,11 +45,12 @@ struct stMsgData
 {
 	std::string m_sMsg;
 	std::string m_sTopic;
+	int m_iQOS;
 
-	stMsgData(std::string a_sMsg, std::string a_sTopic): m_sMsg(a_sMsg), m_sTopic(a_sTopic)
+	stMsgData(std::string a_sMsg, std::string a_sTopic, int a_iQOS): m_sMsg(a_sMsg), m_sTopic(a_sTopic), m_iQOS(a_iQOS)
 	{}
 
-	stMsgData() {}
+	stMsgData():m_iQOS(0) {}
 };
 
 class CMQTTHandler
@@ -122,13 +123,13 @@ class CMQTTHandler
 	bool getMsgFromQ(stMsgData &a_msg);
 	bool pushMsgInQ(const stMsgData &a_msg);
 
-	bool publish(std::string &a_sMsg, std::string &a_sTopic, bool a_bFromQ = false);
+	bool publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQOS, bool a_bFromQ = false);
 
 public:
 
 	~CMQTTHandler();
 	static CMQTTHandler& instance(); //function to get single instance of this class
-	bool publish(std::string a_sMsg, const char *topic);
+	bool publish(std::string a_sMsg, const char *topic, int qos);
 	void postPendingMsgs();
 	bool connect();
  	bool getSubMsgFromQ(mqtt::const_message_ptr &msg);

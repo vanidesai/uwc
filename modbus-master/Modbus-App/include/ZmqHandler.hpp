@@ -21,7 +21,11 @@ using std::string;
 struct stOnDemandRequest
 {
 	std::string m_strAppSeq;
+	std::string m_strWellhead;
+	std::string m_strMetric;
+	std::string m_strVersion;
 	bool m_isByteSwap;
+	bool m_isWordSwap;
 };
 
 namespace zmq_handler 
@@ -61,7 +65,7 @@ namespace zmq_handler
 	void removeSubCTX(std::string);
 
 	/// function to get message bus publish context based on topic
-	stZmqPubContext getPubCTX(std::string str_Topic);
+	stZmqPubContext& getPubCTX(std::string str_Topic);
 
 	/// function to insert new entry in map
 	bool insertPubCTX(std::string, stZmqPubContext );
@@ -70,7 +74,7 @@ namespace zmq_handler
 	void removePubCTX(std::string);
 
 	/// function to get app sequence number given in request json
-	stOnDemandRequest& getOnDemandReqData(unsigned short seqno);
+	bool getOnDemandReqData(unsigned short seqno, stOnDemandRequest& reqData);
 
 	/// function to insert new entry in map
 	bool insertOnDemandReqData(unsigned short, stOnDemandRequest);

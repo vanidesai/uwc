@@ -51,7 +51,7 @@ void populatePollingRefData()
 	// 4. if 2 and 3 are yes, create polling ref data
 
 	const std::map<std::string, CUniqueDataPoint> &mapUniquePoint = network_info::getUniquePointList();
-	for(auto pt: mapUniquePoint)
+	for(auto &pt: mapUniquePoint)
 	{
 		const CUniqueDataPoint &a = mapUniquePoint.at(pt.first);
 		if(0 == a.getDataPoint().getPollingConfig().m_uiPollFreq)
@@ -65,8 +65,8 @@ void populatePollingRefData()
 		}
 		try
 		{
-			std::string sTopic(a.getWellSite().getID() + SEPARATOR_CHAR +
-					a.getWellSiteDev().getID());
+
+			std::string sTopic = PublishJsonHandler::instance().getPolledDataTopic();
 
 			temp = "Topic for context search: ";
 			temp.append(sTopic);
@@ -75,8 +75,9 @@ void populatePollingRefData()
 
 			std::cout << "Topic for context search: " << sTopic << std::endl;
 			zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX(sTopic);
+			zmq_handler::stZmqPubContext &pubCTX = zmq_handler::getPubCTX(sTopic);
 
-			uint8_t uiFuncCode;
+			uint8_t uiFuncCode = 0;
 			switch(a.getDataPoint().getAddress().m_eType)
 			{
 			case network_info::eEndPointType::eCoil:
@@ -93,7 +94,7 @@ void populatePollingRefData()
 				break;
 			}
 
-			CRefDataForPolling objRefPolling{mapUniquePoint.at(pt.first), busCTX, uiFuncCode};
+			CRefDataForPolling objRefPolling{a, busCTX, pubCTX, uiFuncCode};
 
 			CTimeMapper::instance().insert(a.getDataPoint().getPollingConfig().m_uiPollFreq, objRefPolling);
 
@@ -172,6 +173,65 @@ bool isElementExistInJson(cJSON *root, std::string a_sKeyName)
 	return bRetVal;
 }
 
+/** This function is used to read environment variable
+ *
+ * @sEnvVarName : environment variable to be read
+ * @storeVal : variable to store env variable value
+ * @return: true/false based on success or error
+ */
+bool CommonUtils::readEnvVariable(const char *pEnvVarName, string &storeVal)
+{
+	bool bRetVal = false;
+	char *cEvar = getenv(pEnvVarName);
+	if (NULL != cEvar)
+	{
+		bRetVal = true;
+		std::string tmp (cEvar);
+		storeVal = tmp;
+		CLogger::getInstance().log(INFO, LOGDETAILS(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal));
+	}
+	else
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS(std::string(pEnvVarName) + " environment variable is not found"));
+
+	}
+	return bRetVal;
+}
+
+/** This function is used to read common environment variables
+ *
+ * @return: true/false based on success or error
+ */
+bool CommonUtils::readCommonEnvVariables()
+{
+	bool bRetVal = false;
+	std::list<std::string> topicList{"PolledData", "ReadResponse", "WriteResponse",
+		"ReadRequest", "WriteRequest", "SITE_LIST_FILE_NAME"};
+	std::map <std::string, std::string> envTopics;
+
+	for (auto topic : topicList)
+	{
+		std::string envVar = "";
+		bRetVal = readEnvVariable(topic.c_str(), envVar);
+		if(!bRetVal)
+		{
+			return false;
+		}
+		else
+		{
+			envTopics.emplace(topic, envVar);
+		}
+	}
+
+	PublishJsonHandler::instance().setPolledDataTopic(envTopics.at("PolledData"));
+	PublishJsonHandler::instance().setSReadResponseTopic(envTopics.at("ReadResponse"));
+	PublishJsonHandler::instance().setSWriteResponseTopic(envTopics.at("WriteResponse"));
+	PublishJsonHandler::instance().setSReadRequestTopic(envTopics.at("ReadRequest"));
+	PublishJsonHandler::instance().setSWriteRequestTopic(envTopics.at("WriteRequest"));
+	PublishJsonHandler::instance().setSiteListFileName(envTopics.at("SITE_LIST_FILE_NAME"));
+
+	return bRetVal;
+}
 /**
  *
  * DESCRIPTION
@@ -189,123 +249,80 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		const char *pcAppName = std::getenv("AppName");
-		if(NULL == pcAppName)
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting Modbus_App ..."));
+		string sAppName;
+		if(!CommonUtils::readEnvVariable("AppName", sAppName))
 		{
 			std::cout << __func__ << ": AppName environment variable cannot be empty" << std::endl;
 			CLogger::getInstance().log(ERROR, LOGDETAILS(": AppName environment variable cannot be empty"));
 			exit(1);
 		}
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting Modbus_App ..."));
+
+		PublishJsonHandler::instance().setAppName(sAppName);
+
+		if (!CommonUtils::readCommonEnvVariables())
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Required env variables are not set."));
+			std::cout << "Required common env variables are not set.\n";
+			exit(1);
+		}
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
-		if(!CfgManager::Instance().IsClientCreated())
+
+		string sPortName, sBaudrate, sParity, sStopBit;
+		if (!((CommonUtils::readEnvVariable("PORT_NAME", sPortName)) &&
+				(CommonUtils::readEnvVariable("BAUD_RATE", sBaudrate)) &&
+				(CommonUtils::readEnvVariable("PARITY", sParity)) &&
+				(CommonUtils::readEnvVariable("STOPBIT", sStopBit))))
 		{
-			std::cout << __func__ << "ETCD client is not created ." <<endl;
-			CLogger::getInstance().log(ERROR, LOGDETAILS("ETCD client is not created"));
-			return -1;
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Required environment variables are not found for RTU"));
+			std::cout << "Required environment variables are not found for RTU\n";
+			exit(1);
 		}
-		char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("/RTU_Master_Config");
-		if((NULL == cEtcdValue) || (0 == *cEtcdValue))
+		else
 		{
-			std::cout << __func__ << "NULL JSON received from ETCD while reading RTU configuration data.." <<endl;
-			CLogger::getInstance().log(ERROR, LOGDETAILS("NULL JSON received from ETCD while reading RTU configuration data.."));
+			CLogger::getInstance().log(INFO, LOGDETAILS("Required environment variables are found for RTU"));
+		}
+		cout << "********************************************************************"<<endl;
+		cout << "Modbus RTU container is running with below configuration.."<<endl;
+		cout<<"Baud rate = "<< stoi(sBaudrate)<< endl;
+		cout<<"Port Name = "<< sPortName<< endl;
+		cout<<"Parity = "<< stoi(sParity)<< endl;
+		cout<<"StopBit = "<< stoi(sStopBit)<< endl;
+		cout << "********************************************************************"<<endl;
+
+		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus RTU container is running with below configuration.."));
+
+		CLogger::getInstance().log(INFO, LOGDETAILS("Baud rate = " + sBaudrate + " \n" +
+				"Port Name = " + sPortName + " \n" + "Parity = " + sParity + " \n" + "Stop Bit =" + sStopBit));
+
+		int fd = initSerialPort((uint8_t*)(sPortName.c_str()),
+				stoi(sBaudrate),
+				stoi(sParity),
+				stoi(sStopBit));
+		if(fd < 0)
+		{
+			cout << "Failed to initialize serial port for RTU."<<endl;
+			cout << "Connect the RTU device to serial port"<<endl;
+			cout << "Container will restart until the serial port is connected."<<endl;
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize serial port for RTU."));
+
+			CLogger::getInstance().log(ERROR, LOGDETAILS(temp = "File descriptor is set to ::" + to_string(fd)));
+
+			cout << "Error:: File descriptor is set to :: " << fd << endl;
 			return -1;
 		}
 		else
 		{
-			//parse from root element
-			cJSON *root = cJSON_Parse(cEtcdValue);
-			if(NULL == root)
-			{
-				std::cout << __func__ << "Failed to parse JSON received from ETCD." <<endl;
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to parse JSON received from ETCD."));
-				return -1;
-			}
-
-			CLogger::getInstance().log(INFO, LOGDETAILS("Parsing RTU configuration.."));
-			cout<<"Parsing RTU configuration.."<<endl;
-			if(!(isElementExistInJson(root,"baud_rate") && isElementExistInJson(root,"parity")
-					&&isElementExistInJson(root,"stop_bit")))
-			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Required element are missing from RTU_Master_Config JSON."));
-				cout << "Required keys are missing from RTU_Master_Config JSON."<<endl;
-				return -1;
-			}
-			string portName = cJSON_GetObjectItem(root,"port_name")->valuestring;
-			int baudrate = cJSON_GetObjectItem(root,"baud_rate")->valueint;
-			int parity = cJSON_GetObjectItem(root,"parity")->valueint;
-			int stopBit = cJSON_GetObjectItem(root,"stop_bit")->valueint;
-			cout<<"Done"<<endl;
-			CLogger::getInstance().log(INFO, LOGDETAILS("Done"));
-
-			cout << "********************************************************************"<<endl;
-			cout << "Modbus RTU container is running with below configuration.."<<endl;
-			cout<<"Port Name = "<< portName<< endl;
-			cout<<"Baud rate = "<< baudrate<< endl;
-			cout<<"Parity = "<< parity<< endl;
-			cout<<"StopBit = "<< stopBit<< endl;
-			cout << "********************************************************************"<<endl;
-
-			CLogger::getInstance().log(INFO, LOGDETAILS("Modbus RTU container is running with below configuration.."));
-
-			temp = "Port Name == ";
-			temp.append(portName);
-			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
-
-			temp = "Baud rate == ";
-			temp.append(to_string(baudrate));
-			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
-
-			temp = "Parity == ";
-			temp.append(to_string(parity));
-			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
-
-			temp = "StopBit == ";
-			temp.append(to_string(stopBit));
-			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
-
-			int fd = initSerialPort((uint8_t*)(portName.c_str()), baudrate, parity, stopBit);
-			if(fd < 0)
-			{
-				cout << "Failed to initialize serial port for RTU."<<endl;
-				cout << "Connect the RTU device to serial port"<<endl;
-				cout << "Container will restart until the serial port is connected."<<endl;
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize serial port for RTU."));
-
-				temp = "File descriptor is set to ::";
-				temp.append(to_string(fd));
-				CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
-
-				cout << "Error:: File descriptor is set to :: " << fd << endl;
-				return -1;
-			}
-			else
-			{
-				cout << "Initialize serial port for RTU is successful"<<endl;
-
-				temp = "File descriptor is set to ::";
-				temp.append(to_string(fd));
-				CLogger::getInstance().log(INFO, LOGDETAILS(temp));
-
-				cout << "File descriptor is set to :: " << fd << endl;
-			}
+			cout << "Initialize serial port for RTU is successful"<<endl;
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp = "File descriptor is set to ::" + to_string(fd)));
+			cout << "File descriptor is set to :: " << fd << endl;
 		}
 #endif
 
-	    // Setup signal handlers
-	    signal(SIGUSR1, signal_handler);
-	    signal(SIGALRM, LinuxTimer::timer_callback);
-
-		if(true == LinuxTimer::start_timer(1))
-		{
-			std::cout << "\nSuccessfully started read periodic timer\n";
-		}
-		else
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to start periodic read timer."));
-			std::cout << "Error: Failed to start periodic read timer" << std::endl;
-		}
+		// Setup signal handlers
+		signal(SIGUSR1, signal_handler);
+		signal(SIGALRM, LinuxTimer::timer_callback);
 
 		uint8_t	u8ReturnType = AppMbusMaster_StackInit();
 		if(0 != u8ReturnType)
@@ -321,9 +338,7 @@ int main(int argc, char* argv[])
 		// Initializing all the pub/sub topic base context for ZMQ
 		if(const char* pcPubTopic = std::getenv("PubTopics"))
 		{
-			temp = "List of topic configured for Pub are :: ";
-			temp.append(pcPubTopic);
-			CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+			CLogger::getInstance().log(INFO, LOGDETAILS("List of topic configured for Pub are :: " + std::string(pcPubTopic)));
 
 			bool bRes = zmq_handler::prepareCommonContext("pub");
 			if(!bRes)
@@ -333,9 +348,7 @@ int main(int argc, char* argv[])
 		}
 		if(const char* pcSubTopic = std::getenv("SubTopics"))
 		{
-			temp = "List of topic configured for Sub are :: ";
-			temp.append(pcSubTopic);
-			CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+			CLogger::getInstance().log(INFO, LOGDETAILS("List of topic configured for Sub are :: " + std::string(pcSubTopic)));
 
 			bool bRetVal = zmq_handler::prepareCommonContext("sub");
 			if(!bRetVal)
@@ -343,12 +356,6 @@ int main(int argc, char* argv[])
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Context creation failed for sub topic "));
 			}
 		}
-
-		std::string AppName(pcAppName);
-		std::string sDirToRegister = "/" + AppName + "/";
-
-		/// register callback for ETCD
-		CfgManager::Instance().registerCallbackOnChangeDir(const_cast<char *>(sDirToRegister.c_str()));
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 		/// store the yaml files in data structures
@@ -365,7 +372,7 @@ int main(int argc, char* argv[])
 
 		if(false == modWriteHandler::Instance().isWriteInitialized())
 		{
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("modWriteHandler is not initialized"));
+			CLogger::getInstance().log(ERROR, LOGDETAILS("modWriteHandler is not initialized"));
 		}
 		else
 		{
@@ -383,20 +390,31 @@ int main(int argc, char* argv[])
 
 		if(false == CPeriodicReponseProcessor::Instance().isInitialized())
 		{
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("CPeriodicReponseProcessor is not initialized"));
+			CLogger::getInstance().log(ERROR, LOGDETAILS("CPeriodicReponseProcessor is not initialized"));
 		}
 		else
 		{
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("CPeriodicReponseProcessor is properly initialized"));
+			CLogger::getInstance().log(INFO, LOGDETAILS("CPeriodicReponseProcessor is properly initialized"));
 			CPeriodicReponseProcessor::Instance().initRespHandlerThreads();
 		}
 
 		CLogger::getInstance().log(INFO, LOGDETAILS("Configuration done. Starting operations."));
 		CTimeMapper::instance().initTimerFunction();
+
+		if(true == LinuxTimer::start_timer(1))
+		{
+			std::cout << "\nSuccessfully started read periodic timer\n";
+		}
+		else
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to start periodic read timer."));
+			std::cout << "Error: Failed to start periodic read timer" << std::endl;
+		}
+
 #ifdef UNIT_TEST
 
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+		::testing::InitGoogleTest(&argc, argv);
+		return RUN_ALL_TESTS();
 
 #endif
 
@@ -410,7 +428,7 @@ int main(int argc, char* argv[])
 		cout << "********************** Exited Modbus container to apply new configurations from ETCD ***********" <<endl;
 		cout << "************************************************************************************************" <<endl;
 
-	    return EXIT_SUCCESS;
+		return EXIT_SUCCESS;
 	}
 	catch (const std::exception &e)
 	{

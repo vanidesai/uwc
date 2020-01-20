@@ -33,14 +33,14 @@ public:
      * @param key: name of the key
      * @return: nothing
      */
-	void registerCallbackOnChangeDir(char *key);
+	//void registerCallbackOnChangeDir(char *key);
 
     /** Register callback for specific key in ETCD
      *
      * @param key: name of the key
      * @return: nothing
      */
-	void registerCallbackOnChangeKey(char *key);
+	//void registerCallbackOnChangeKey(char *key);
 
     /** Returns the single instance of this class
      *
@@ -54,7 +54,7 @@ public:
      * @param key: name of the key
      * @return: value from ETCD against given key
      */
-	char* getETCDValuebyKey(const char *key);
+	//char* getETCDValuebyKey(const char *key);
 
     /** Returns the client status of creation
      *

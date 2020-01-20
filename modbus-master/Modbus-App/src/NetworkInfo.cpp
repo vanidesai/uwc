@@ -18,11 +18,10 @@
 #include "yaml-cpp/yaml.h"
 #include "utils/YamlUtil.hpp"
 #include "ConfigManager.hpp"
+#include "PublishJson.hpp"
 
 using namespace network_info;
 using namespace CommonUtils;
-
-std::vector<std::string> g_sWellSiteFileList1;
 
 // Set this if configuration YML files are kept in a docker volume
 // This is true for SPRINT 1
@@ -46,8 +45,8 @@ namespace
 			//unsigned int uiPoint = 0;
 			for(auto &objPt : objWellSiteDev.getDevInfo().getDataPoints())
 			{
-				std::string sUniqueId(a_oWellSite.getID() + SEPARATOR_CHAR + 
-										objWellSiteDev.getID() + SEPARATOR_CHAR +
+				std::string sUniqueId(SEPARATOR_CHAR + objWellSiteDev.getID()
+						+ SEPARATOR_CHAR + a_oWellSite.getID() + SEPARATOR_CHAR +
 										objPt.getID());
 				//CLogger::getInstance().log(INFO, LOGDETAILS(" " << sUniqueId;
 				
@@ -72,20 +71,7 @@ namespace
 		CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start: Reading site_list.yaml"));
 		try
 		{
-			if(!CfgManager::Instance().IsClientCreated())
-			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("ETCD client is not created .."));
-				return false;
-			}
-			char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("/Device_Config/site_list.yaml");
-			if(NULL == cEtcdValue)
-			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("No value received from ETCD  .."));
-				return false;
-			}
-			std::string sYamlStr(cEtcdValue);
-			YAML::Node Node = loadFromETCD(sYamlStr);
-			//YAML::Node Node = CommonUtils::loadYamlFile("site_list.yaml");
+			YAML::Node Node = CommonUtils::loadYamlFile(PublishJsonHandler::instance().getSiteListFileName());
 			CommonUtils::convertYamlToList(Node, g_sWellSiteFileList);
 		}
 		catch(YAML::Exception &e)
@@ -96,10 +82,7 @@ namespace
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
 		return true;
 	}
-
 	#endif
-	
-
 }
 
 int network_info::CDeviceInfo::addDataPoint(CDataPoint a_oDataPoint)
@@ -299,20 +282,7 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 
 			if(it.first.as<std::string>() == "deviceinfo")
 			{
-				if(!CfgManager::Instance().IsClientCreated())
-				{
-					CLogger::getInstance().log(ERROR, LOGDETAILS(" ETCD client is not created .."));
-					return;
-				}
-				char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(("/Device_Config/" +it.second.as<std::string>()).c_str());
-				if(NULL == cEtcdValue)
-				{
-					CLogger::getInstance().log(ERROR, LOGDETAILS(" No value received from ETCD  .."));
-					return;
-				}
-				std::string sYamlStr(cEtcdValue);
-
-				YAML::Node node = CommonUtils::loadFromETCD(sYamlStr);
+				YAML::Node node = CommonUtils::loadYamlFile(it.second.as<std::string>());
 				CDeviceInfo::build(node, a_oWellSiteDevInfo.getDevInfo1());
 			}
 		}
@@ -361,20 +331,7 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 			//a_oWellSite.m_sId = test["id"].as<std::string>();
 			if(test.first.as<std::string>() == "pointlist")
 			{
-				if(!CfgManager::Instance().IsClientCreated())
-				{
-					CLogger::getInstance().log(ERROR, LOGDETAILS(" ETCD client is not created .."));
-					return;
-				}
-				const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(( "/Device_Config/"+ test.second.as<std::string>()).c_str());
-				if(NULL == cEtcdValue)
-				{
-					CLogger::getInstance().log(ERROR, LOGDETAILS(" No value received from ETCD  .."));
-					return;
-				}
-				std::string sYamlStr(cEtcdValue);
-
-				YAML::Node node = CommonUtils::loadFromETCD(sYamlStr);
+				YAML::Node node = CommonUtils::loadYamlFile(test.second.as<std::string>());
 				string temp2 = " : pointlist found: ";
 				temp2.append(test.second.as<std::string>());
 				CLogger::getInstance().log(INFO, LOGDETAILS(temp2));
@@ -478,10 +435,12 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 		// Set default values
 		a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = 0;
 		a_oCDataPoint.m_stPollingConfig.m_bIsRealTime = false;
+		a_oCDataPoint.m_stPollingConfig.m_usQOS = "0";
 		
 		// Assign values from YML, if available
 		a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = a_oData["polling"]["pollinterval"].as<std::uint32_t>();
 		a_oCDataPoint.m_stPollingConfig.m_bIsRealTime =  a_oData["polling"]["realtime"].as<bool>();
+		a_oCDataPoint.m_stPollingConfig.m_usQOS = a_oData["polling"]["qos"].as<std::string>();
 	}
 	catch(exception &e)
 	{
@@ -617,21 +576,8 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 
 		try
 		{
-			/// get value from ETCD
-			if(!CfgManager::Instance().IsClientCreated())
-			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS(" ETCD client is not created .."));
-				return;
-			}
-			const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(( "/Device_Config/" + sWellSiteFile).c_str());
-			if(NULL == cEtcdValue)
-			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS(" No value received from ETCD  .."));
-				return;
-			}
-			std::string sYamlStr(cEtcdValue);
+			YAML::Node baseNode = CommonUtils::loadYamlFile(sWellSiteFile);
 
-			YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
 			CWellSiteInfo objWellSite;
 			CWellSiteInfo::build(baseNode, objWellSite);
 			oWellSiteList.push_back(objWellSite);

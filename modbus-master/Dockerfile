@@ -86,6 +86,7 @@ WORKDIR /
 ENV APP_WORK_DIR /opt/intel/app/
 RUN mkdir -p /opt/intel/app
 RUN mkdir -p /opt/intel/config
+RUN mkdir -p /opt/intel/eis/uwc_data
 
 WORKDIR ${APP_WORK_DIR}
 

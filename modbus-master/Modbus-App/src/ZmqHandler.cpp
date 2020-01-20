@@ -30,7 +30,6 @@ std::mutex __ctxMapLock;
 std::mutex __SubctxMapLock;
 std::mutex __PubctxMapLock;
 std::mutex __appSeqMapLock;
-publisher_ctx_t* g_pub_ctx;
 
 // Unnamed namespace to define globals
 namespace
@@ -48,6 +47,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 	msgbus_ret_t retVal = MSG_SUCCESS;
 	bool retValue = false;
 	recv_ctx_t* sub_ctx = NULL;
+	publisher_ctx_t* pub_ctx = NULL;
 
 	if(!(topicType != "pub" || topicType != "sub"))
 	{
@@ -81,11 +81,17 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 			zmq_handler::insertCTX(topic, objTempCtx);
 			if(topicType == "pub")
 			{
-				retVal = msgbus_publisher_new(msgbus_ctx, topic.c_str(), &g_pub_ctx);
+				retVal = msgbus_publisher_new(msgbus_ctx, topic.c_str(), &pub_ctx);
 
 				if(retVal != MSG_SUCCESS)
 				{
 					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize publisher errno: " + std::to_string(retVal)));
+				}
+				else
+				{
+					stZmqPubContext objTempPubCtx;
+					objTempPubCtx.m_pContext= pub_ctx;
+					zmq_handler::insertPubCTX(topic, objTempPubCtx);
 				}
 			}
 			else
@@ -168,7 +174,7 @@ void zmq_handler::removeCTX(std::string a_sTopic)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
 }
 
-stZmqPubContext zmq_handler::getPubCTX(std::string a_sTopic)
+stZmqPubContext& zmq_handler::getPubCTX(std::string a_sTopic)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
 	std::unique_lock<std::mutex> lck(__PubctxMapLock);
@@ -208,15 +214,25 @@ void zmq_handler::removePubCTX(std::string a_sTopic)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 
-stOnDemandRequest& zmq_handler::getOnDemandReqData(unsigned short seqno)
+bool zmq_handler::getOnDemandReqData(unsigned short seqno, stOnDemandRequest& reqData)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
-	std::unique_lock<std::mutex> lck(__appSeqMapLock);
+	bool bRet = true;
+	try
+	{
+		std::unique_lock<std::mutex> lck(__appSeqMapLock);
 
+		/// return the context
+		reqData = g_mapAppSeq.at(seqno);
+	}
+	catch(exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		bRet = false;
+	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 
-	/// return the context
-	return g_mapAppSeq.at(seqno);
+	return bRet;
 }
 
 bool zmq_handler::insertOnDemandReqData(unsigned short seqno, stOnDemandRequest reqData)

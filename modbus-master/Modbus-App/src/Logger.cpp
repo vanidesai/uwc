@@ -24,18 +24,13 @@ CLogger::CLogger() {
 
 	log4cpp::Category& root = log4cpp::Category::getRoot();
 
-/*	log4cpp::Category& mqttExport =
-		log4cpp::Category::getInstance(std::string("MQTT_Export"));*/
-
 	logger = &root;
 }
 CLogger::~CLogger() {
 	// TODO Auto-generated destructor stub
+	logger->removeAllAppenders();
 
-	log4cpp::Category::shutdown();
-
-	if(logger != NULL)
-		delete logger;
+	log4cpp::Category::shutdownForced();
 }
 
 void CLogger::LogInfo(std::string msg) {

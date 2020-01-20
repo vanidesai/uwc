@@ -31,7 +31,46 @@ extern sem_t g_semaphoreRespProcess;
 
 std::atomic<bool> g_shouldStop(false);
 
-std::string parse_msg(const char *json) {
+//add sourcetopic key in payload to publish on EIS
+bool addSrTopic(string &json, string& topic) {
+
+	cJSON *root = NULL;
+	try {
+
+		root = cJSON_Parse(json.c_str());
+		if (NULL == root) {
+			CLogger::getInstance().log(ERROR,
+					LOGDETAILS(
+							"Message received from ZMQ could not be parsed in json format"));
+
+			std::cout << __func__
+					<< "Message received from ZMQ could not be parsed in json format"
+					<< std::endl;
+			return false;
+		}
+
+		cJSON_AddStringToObject(root, "sourcetopic:", topic.c_str());
+
+		json.clear();
+		json = cJSON_Print(root);
+
+		if(root != NULL)
+			cJSON_Delete(root);
+
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Added sourcetopic " + topic + " in payload for EIS"));
+		return true;
+
+	} catch (exception &ex) {
+
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to add sourcetopic " + topic + " in payload for EIS"));
+		if(root != NULL)
+			cJSON_Delete(root);
+
+		return false;
+	}
+}
+
+std::string parse_msg(const char *json, int& qos) {
 
 	std::string topic_name = "";
 	try {
@@ -47,7 +86,7 @@ std::string parse_msg(const char *json) {
 			CLogger::getInstance().log(INFO, LOGDETAILS(" Message received from ZMQ does not have key : topic"));
 			std::cout << __func__ << "Message received from ZMQ does not have key : topic" << std::endl;
 			if (NULL != root)
-				free(root);
+				cJSON_Delete(root);
 
 			return topic_name;
 		}
@@ -58,17 +97,44 @@ std::string parse_msg(const char *json) {
 			std::cout << "Key 'topic' could not be found in message received from ZMQ" << std::endl;
 
 			if (NULL != root)
-				free(root);
+				cJSON_Delete(root);
 
 			return topic_name;
 		}
 
 		topic_name.assign(ctopic_name);
 
-		if (NULL != ctopic_name)
-			free(ctopic_name);
+		if(! cJSON_HasObjectItem(root, "qos")) {
+			CLogger::getInstance().log(INFO, LOGDETAILS("Message received from ZMQ does not have key : qos, using default QOS = 0"));
+			std::cout << __func__ << "Message received from ZMQ does not have key : qos, using default QOS = 0" << std::endl;
+
+			qos = 0;
+		}
+		else
+		{
+			char *c_qos = cJSON_GetObjectItem(root, "qos")->valuestring;
+			if (NULL == c_qos) {
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Key 'qos' could not be found in message received from ZMQ, using default QOS = 0"));
+				std::cout << "Key 'qos' could not be found in message received from ZMQ, using default QOS = 0" << std::endl;
+			}
+			else {
+				if((strcmp(c_qos, "0") == 0) || (strcmp(c_qos, "1") == 0) || (strcmp(c_qos, "2") == 0)) {
+					qos = atoi(c_qos);
+				}
+				else
+				{
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Received invalid value for QOS, using default QOS = 0"));
+					qos = 0;
+				}
+
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Using 'QOS' for message received from ZMQ : " + std::string(c_qos)));
+			}
+		}
+
+/*		if (NULL != ctopic_name)
+			free(ctopic_name);*/
 		if (NULL != root)
-			free(root);
+			cJSON_Delete(root);
 
 	} catch (std::exception &ex) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
@@ -116,7 +182,8 @@ void listenOnEIS(string topic, stZmqContext context,
 				//continue;
 			}
 			else if(NULL != parts) {
-				std::string revdTopic(parse_msg(parts[0].bytes));
+				int iQOS = 0;
+				std::string revdTopic(parse_msg(parts[0].bytes, iQOS));
 
 				if (revdTopic == "") {
 					string strTemp = "topic key not present in message: ";
@@ -125,13 +192,6 @@ void listenOnEIS(string topic, stZmqContext context,
 
 					std::cout << __func__ << strTemp << std::endl;
 				} else {
-
-					std::string mqttTopic = CTopicMapper::getInstance().GetMQTTopic(
-							revdTopic);
-					if (mqttTopic == "") {
-						CLogger::getInstance().log(ERROR, LOGDETAILS("Could not find mapped MQTT topic for ZMQ topic : " + revdTopic));
-						std::cout << __func__ << "Could not find mapped MQTT topic for ZMQ topic : " << revdTopic << std::endl;
-					} else {
 						string mqttMsg(parts[0].bytes);
 						//publish data to MQTT
 						std::cout << "ZMQ Message: Time: "
@@ -143,13 +203,15 @@ void listenOnEIS(string topic, stZmqContext context,
 							+ ", Msg: " + mqttMsg));
 
 						CMQTTHandler::instance().publish(mqttMsg,
-								mqttTopic.c_str());
-					}
+								revdTopic.c_str(), iQOS);
 				}
 				msgbus_msg_envelope_serialize_destroy(parts, num_parts);
 			}
-			msgbus_msg_envelope_destroy(msg);
-			msg = NULL;
+
+			if(msg != NULL) {
+				msgbus_msg_envelope_destroy(msg);
+				msg = NULL;
+			}
 			parts = NULL;
 		} catch (exception &ex) {
 			string temp = ex.what();
@@ -205,11 +267,9 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
 			// get and print key
 			device = device->next;
 		}
-		if (device)
-			delete (device);
 
 		if (root)
-			delete (root);
+			cJSON_Delete(root);
 
 		msgbus_publisher_publish(context.m_pContext,
 				(publisher_ctx_t*) pubContext.m_pContext, msg);
@@ -255,10 +315,24 @@ void postMsgsToEIS() {
 				continue;
 			}
 
-			std::string eisTopic = CTopicMapper::getInstance().GetZMQTopic(rcvdTopic);
+			std::string eisTopic = "";
+
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("Request received from MQTT for topic "
+					+ rcvdTopic));
+
+			//compare if request received for write or read
+			if(rcvdTopic.find("write") != std::string::npos) {
+				//write's getter'
+				eisTopic.assign(CTopicMapper::getInstance().getStrWriteRequest());
+
+			}else if(rcvdTopic.find("read") != std::string::npos) {
+				//read getter
+				eisTopic.assign(CTopicMapper::getInstance().getStrReadRequest());
+			}
+
 			if (eisTopic == "")
 			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Could not find mapped EIS topic for MQTT topic : "
+				CLogger::getInstance().log(ERROR, LOGDETAILS("EIS topic is not set to publish on EIS"
 						+ rcvdTopic));
 				continue;
 			}
@@ -266,6 +340,13 @@ void postMsgsToEIS() {
 			{
 				//publish data to EIS
 				CLogger::getInstance().log(DEBUG, LOGDETAILS("Received mapped EIS topic : " + eisTopic));
+
+				//add source topic name in payload
+				bool bRes = addSrTopic(strMsg, rcvdTopic);
+				if(bRes == false) {
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to add sourcetopic " + rcvdTopic + " in payload for EIS"));
+					continue;
+				}
 
 				//get EIS msg bus context
 				stZmqContext context;
@@ -361,9 +442,10 @@ bool initEISContext() {
 	bool retVal = true;
 
 	// Initializing all the pub/sub topic base context for ZMQ
-	if (std::getenv("PubTopics") != NULL) {
+	const char* env_pubTopics = std::getenv("PubTopics");
+	if (env_pubTopics != NULL) {
 		string temp = "List of topic configured for Pub are :: ";
-		temp.append(getenv("PubTopics"));
+		temp.append(env_pubTopics);
 		CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 		bool bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext(
 				"pub");
@@ -373,13 +455,14 @@ bool initEISContext() {
 		}
 	}
 	else {
-		CLogger::getInstance().log(INFO, LOGDETAILS("could not find PubTopics in environment variables"));
+		CLogger::getInstance().log(ERROR, LOGDETAILS("could not find PubTopics in environment variables"));
 		retVal = false;
 	}
 
-	if (std::getenv("SubTopics") != NULL) {
+	const char* env_subTopics = std::getenv("SubTopics");
+	if(env_subTopics != NULL) {
 		string temp = "List of topic configured for Sub are :: ";
-		temp.append(getenv("SubTopics"));
+		temp.append(env_subTopics);
 		CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 		bool bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext("sub");
 		if (!bRetVal) {
@@ -388,7 +471,7 @@ bool initEISContext() {
 		}
 	}
 	else {
-		CLogger::getInstance().log(INFO, LOGDETAILS("could not find SubTopics in environment variables"));
+		CLogger::getInstance().log(ERROR, LOGDETAILS("could not find SubTopics in environment variables"));
 		retVal = false;
 	}
 
@@ -429,9 +512,9 @@ int main(int argc, char *argv[]) {
 		}
 		std::string AppName(env_appname);
 
-		string keyToMonitor = "/" + AppName + "/";
-		CfgManager::Instance().registerCallbackOnChangeDir(const_cast<char *>(keyToMonitor.c_str()));
-		CfgManager::Instance().registerCallbackOnChangeKey(const_cast<char *>(keyToMonitor.c_str()));
+		//string keyToMonitor = "/" + AppName + "/";
+		//CfgManager::Instance().registerCallbackOnChangeDir(const_cast<char *>(keyToMonitor.c_str()));
+		//CfgManager::Instance().registerCallbackOnChangeKey(const_cast<char *>(keyToMonitor.c_str()));
 
 		//Create topic mapping
 		CTopicMapper::getInstance();

@@ -174,7 +174,7 @@ void CMQTTHandler::postPendingMsgsThread() {
 				}
 
 				bDoRun = true;
-				publish(msg.m_sMsg, msg.m_sTopic, true);
+				publish(msg.m_sMsg, msg.m_sTopic, msg.m_iQOS, true);
 #ifdef PERFTESTING
 				m_uiQReqTried++;
 #endif
@@ -204,7 +204,7 @@ void CMQTTHandler::setMQTTConfigState(Mqtt_Config_state_t tempConfigState) {
 	ConfigState = tempConfigState;
 }
 
-bool CMQTTHandler::publish(std::string a_sMsg, const char *topic) {
+bool CMQTTHandler::publish(std::string a_sMsg, const char *topic, int qos) {
 	static bool bIsFirst = true;
 	if (true == bIsFirst) {
 		connect();
@@ -214,7 +214,7 @@ bool CMQTTHandler::publish(std::string a_sMsg, const char *topic) {
 	std::string sTopic(topic);
 
 	try {
-		publish(a_sMsg, sTopic);
+		publish(a_sMsg, sTopic, qos);
 	} catch (const mqtt::exception &exc) {
 #ifdef PERFTESTING
 		m_ui32PublishExcep++;
@@ -225,7 +225,7 @@ bool CMQTTHandler::publish(std::string a_sMsg, const char *topic) {
 	return false;
 }
 
-bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic,
+bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQOS,
 		bool a_bFromQ) {
 	try {
 		std::lock_guard<std::mutex> lock(mqttMutexLock);
@@ -244,16 +244,16 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic,
 		CMQTTHandler::m_ui32PublishReq++;
 #endif
 		if (true == client.is_connected()) {
-			mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, 0,
+			mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, a_iQOS,
 					false);
 
 			client.publish(pubmsg, nullptr, listener);
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("Published message on EIS successfully"));
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("Published message on EIS successfully " + std::to_string(a_iQOS)));
 			std::cout << __func__ << "Published message on EIS successfully" << endl;
 
 			return true;
 		} else {
-			pushMsgInQ(stMsgData(a_sMsg, a_sTopic));
+			pushMsgInQ(stMsgData(a_sMsg, a_sTopic, a_iQOS));
 #ifdef PERFTESTING
 			CMQTTHandler::m_ui32Disconnected++;
 #endif
@@ -264,7 +264,7 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic,
 #ifdef PERFTESTING
 			m_ui32PublishStrExcep++;
 #endif
-			pushMsgInQ(stMsgData(a_sMsg, a_sTopic));
+			pushMsgInQ(stMsgData(a_sMsg, a_sTopic, a_iQOS));
 		} else {
 			//g_uiStrMsgNotPublished++;
 		}
@@ -344,11 +344,23 @@ bool CMQTTHandler::initSem()
 bool CMQTTHandler::subscribeToTopics() {
 
 	//get list of topics from topic mapper
-	std::vector<std::string> vMqttTopics =
-			CTopicMapper::getInstance().GetMqttTopics();
+	std::vector<std::string> vMqttEnvTopics;
+	vMqttEnvTopics.push_back("mqtt_SubReadTopic");
+	vMqttEnvTopics.push_back("mqtt_SubWriteTopic");
+
+	std::vector<std::string> vMqttTopics;
 
 	try
 	{
+		for (auto envTopic : vMqttEnvTopics) {
+			const char* env_pubWriteTopic = std::getenv(envTopic.c_str());
+			if(env_pubWriteTopic == NULL) {
+				CLogger::getInstance().log(ERROR, LOGDETAILS(envTopic + " Environment Variable is not set"));
+				continue;
+			}
+			vMqttTopics.push_back(env_pubWriteTopic);
+		}
+
 		for (auto topic : vMqttTopics) {
 			if(! topic.empty()) {
 				CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscribing topic : " + topic));

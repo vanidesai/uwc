@@ -25,20 +25,6 @@ using namespace eis::config_manager;
 class CfgManager {
 public:
 
-    /** register callback for specific directory in ETCD
-     *
-     * @param key: name of the key
-     * @return: nothing
-     */
-	void registerCallbackOnChangeDir(char *key);
-
-    /** Register callback for specific key in ETCD
-     *
-     * @param key: name of the key
-     * @return: nothing
-     */
-	void registerCallbackOnChangeKey(char *key);
-
     /** Returns the single instance of this class
      *
      * @param  : nothing
@@ -46,12 +32,6 @@ public:
      */
 	static CfgManager& Instance();
 
-    /** Returns the value from ETCD on specific key
-     *
-     * @param key: name of the key
-     * @return: value from ETCD against given key
-     */
-	char* getETCDValuebyKey(const char *key);
 
     /** Returns the client status of creation
      *

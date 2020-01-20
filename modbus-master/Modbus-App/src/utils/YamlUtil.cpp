@@ -10,59 +10,88 @@
 
 #include "utils/YamlUtil.hpp"
 #include<iostream>
+#include "Logger.hpp"
 
 using namespace std;
 
 namespace CommonUtils {
 
-std::vector<std::string> g_sWellSiteFileList1;
-
+/** This function is use to load YAML file from local files
+ *
+ * @filename : This variable is use to pass actual filename to load
+ * @return: YAML node
+ */
 YAML::Node loadYamlFile(const std::string& filename)
 {
-	std::string sBasePath{""};
-	const char* pcConfigPath = std::getenv("CONFIG_FILE_PATH");
-	if(NULL != pcConfigPath)
-	{
-		sBasePath = pcConfigPath;
-	}
-	YAML::Node baseNode = YAML::LoadFile( sBasePath + filename);
+	std::string sBasePath{BASE_PATH_YAML_FILE};
+	string sfileToRead = sBasePath + filename;
+
+	cout << "YAML file to be read is :: " + sfileToRead << endl;
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("YAML file to be read is :: " + sfileToRead));
+
+	YAML::Node baseNode = YAML::LoadFile(sfileToRead);
+
 	return baseNode;
 }
 
+/** This function is use to load YAML file from ETCD
+ *
+ * @filename : This variable is use to pass actual filename to load
+ * @return: YAML node
+ */
 YAML::Node loadFromETCD(const std::string& a_sYamlFileData)
 {
 	YAML::Node baseNode = YAML::Load(a_sYamlFileData);
 	return baseNode;
 }
 
-void convertYamlToList(YAML::Node &node, std::vector<std::string>& a_slist)
+/** This function is use to store YAML to list
+ *
+ * @filename : This variable is use to pass actual filename to load
+ * @vlist : variable to store values from YAML
+ * @return: true/false based on success or error
+ */
+bool convertYamlToList(YAML::Node &node, std::vector<std::string>& a_slist)
 {
+	// locals
+	bool bRetVal = false;
 	try
 	{
 		for (auto it : node)
 		{
 			if(it.second.IsSequence() && it.first.as<std::string>() == "wellsitelist")
 			{
-				//std::cout << "key is::" << it.first.as<std::string>() << std::endl;
 				const YAML::Node& list =  it.second;
 
 				cout << "Number of sites in yaml file are ::" << list.size() << std::endl;
+				CLogger::getInstance().log(INFO, LOGDETAILS("Number of sites in yaml file are ::" + list.size()));
 
 				for (auto element : list)
 				{
 					YAML::Node temp = element;
-					cout << "Wellsites are ::" << temp.as<std::string>() <<endl;
+					CLogger::getInstance().log(INFO, LOGDETAILS("Wellsite is :: " + temp.as<std::string>()));
+					cout << "Wellsite is ::" << temp.as<std::string>() <<endl;
 					a_slist.push_back(temp.as<std::string>());
 				}
+				bRetVal = true;
 			}
 		}
 	}
 	catch (YAML::Exception &e)
 	{
-			std::cerr << e.what() << "\n";
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Exception is :: " + std::string(e.what())));
+		std::cerr << e.what() << "\n";
 	}
+
+	return bRetVal;
 }
 
+/** This function is convert string to char array
+ *
+ * @srcString : string to convert
+ * @ptrIpAddr : char array to store tokenize key
+ * @return: Nothing
+ */
 void ConvertIPStringToCharArray(string strIPaddr, unsigned char *ptrIpAddr)
 {
 	std::string delimiter = ".";
@@ -76,15 +105,6 @@ void ConvertIPStringToCharArray(string strIPaddr, unsigned char *ptrIpAddr)
 		++i8Index;
 	}
 	ptrIpAddr[i8Index] = (uint8_t)stoi(strIPaddr.substr(0,pos).c_str());
-}
-
-YamlUtil::YamlUtil() {
-	// TODO Auto-generated constructor stub
-
-}
-
-YamlUtil::~YamlUtil() {
-	// TODO Auto-generated destructor stub
 }
 
 } /* namespace CommonUtils */

@@ -21,6 +21,7 @@ bool g_bThreadExit = false;
 Mutex_H LivSerSesslist_Mutex = NULL;
 extern stLiveSerSessionList_t *pstSesCtlThdLstHead;
 stDevConfig_t ModbusMasterConfig;
+extern int g_iResponseTimeout;
 
 /*
  * Description
@@ -80,12 +81,24 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	/*Local variable */
 	uint8_t eStatus = STACK_NO_ERROR;
 	thread_Create_t stThreadParam = { 0 };
+	char *ptr = NULL;
 
 	g_bThreadExit = false;
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	ModbusMasterConfig.m_u8MaxTcpConnection = MAXIMUM_TCP_CONNECTION;
 	ModbusMasterConfig.m_u8TcpConnectTimeout = MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC;
 	ModbusMasterConfig.m_u16TcpSessionTimeout = SESSION_TIMEOUT_IN_SEC;
+	const char *pcResponseTime = getenv("RESPONSE_TIMEOUT");
+	if(NULL == pcResponseTime)
+	{
+		eStatus = STACK_ERROR_INVALID_INPUT_PARAMETER;
+		printf("Response time is not configured.\n");
+		return eStatus;
+	}
+	else
+	{
+		g_iResponseTimeout = strtol(pcResponseTime, ptr, 10);
+	}
 	LivSerSesslist_Mutex = Osal_Mutex();
 #endif //#ifdef MODBUS_STACK_TCPIP_ENABLED
 

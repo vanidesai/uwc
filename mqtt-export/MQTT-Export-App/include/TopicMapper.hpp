@@ -25,16 +25,32 @@ private:
 	CTopicMapper(const CTopicMapper & obj){}
 	CTopicMapper& operator=(CTopicMapper const&);
 
-	void ParseJson();
-	std::map<std::string, std::string> m_MQTTopics;
-	std::map<std::string, std::string> m_ZMQTopics;
+	std::string m_strReadRequest;
+	std::string m_strWriteRequest;
 
 public:
 	virtual ~CTopicMapper();
 
-	std::string GetZMQTopic(std::string topic);
-	std::string GetMQTTopic(std::string topic);
-	std::vector<std::string> GetMqttTopics();
+	bool readCommonEnvVariables();
+	bool readEnvVariable(const char *pEnvVarName, std::string &storeVal);
+
+
+	const std::string& getStrReadRequest() const {
+		return m_strReadRequest;
+	}
+
+	void setStrReadRequest(const std::string &strReadRequest) {
+		m_strReadRequest = strReadRequest;
+	}
+
+	const std::string& getStrWriteRequest() const {
+		return m_strWriteRequest;
+	}
+
+	void setStrWriteRequest(const std::string &strWriteRequest) {
+		m_strWriteRequest = strWriteRequest;
+	}
+
 
 	static CTopicMapper& getInstance() {
 		static CTopicMapper _self;

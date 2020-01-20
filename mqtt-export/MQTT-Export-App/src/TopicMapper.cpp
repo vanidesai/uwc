@@ -14,126 +14,62 @@
 
 CTopicMapper::CTopicMapper() {
 	// TODO Auto-generated constructor stub
-	ParseJson();
+	//ParseJson();
+	readCommonEnvVariables();
 }
 
-void CTopicMapper::ParseJson() {
-	try {
-
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Parsing json for topic mapping"));
-
-		if(!CfgManager::Instance().IsClientCreated())
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("ETCD client is not created .."));
-			return;
-		}
-		char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey("config");
-		if(NULL == cEtcdValue)
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("No value received from ETCD"));
-			return;
-		}
-
-		//parse from root element
-		cJSON *root = cJSON_Parse(cEtcdValue);
-		if(NULL == root)
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not parse value received from ETCD."));
-			return;
-		}
-
-		if(! cJSON_HasObjectItem(root, "Mapping")) {
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Topic json does not have 'mappings' key"));
-			if (NULL != root)
-				free(root);
-
-			return;
-		}
-
-		// Now let's iterate through the Mapping array
-		cJSON *mappings = cJSON_GetObjectItem(root, "Mapping");
-		if(NULL == mappings)
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not get mapping from JSON config present in ETCD."));
-			cJSON_Delete(root);
-			return;
-		}
-
-		// Get the count
-		int mappings_count = cJSON_GetArraySize(mappings);
-
-		for (int i = 0; i < mappings_count; i++) {
-
-			// Get the JSON element and then get the values as before
-			cJSON *msgSrc = cJSON_GetArrayItem(mappings, i);
-			if(NULL == msgSrc)
-			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Could not get JSON object for iteration " + std::to_string(i)));
-				continue;
-			}
-
-			char *srcName =  cJSON_GetObjectItem(msgSrc, "MsgSource")->valuestring;
-			if(NULL == srcName)
-			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Wrong configuration: MsgSource key not found for iteration " + std::to_string(i)));
-				continue;
-			}
-
-			cJSON *topics = cJSON_GetObjectItem(msgSrc, "Topics");
-			if(NULL == topics)
-			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Wrong configuration: Topic mapper does not have Topics"));
-				continue;
-			}
-			std::string sourceName(srcName);
-
-			cJSON *topic = NULL;
-			cJSON_ArrayForEach(topic, topics)
-			{
-				if(NULL == topic)
-				{
-					// This should ideally not happen
-					continue;
-				}
-				if(NULL == topic->child->string)
-				{
-					// Again unlikely scenario
-					CLogger::getInstance().log(ERROR, LOGDETAILS("Key is not found"));
-					continue;
-				}
-
-				std::string strTopicName{topic->child->string};
-
-				if(NULL == topic->child->valuestring)
-				{
-					// Again unlikely scenario
-					CLogger::getInstance().log(ERROR, LOGDETAILS("Value is not found for key: " + strTopicName));
-					continue;
-				}
-
-				std::string strTopicValue{topic->child->valuestring};
-
-				if(sourceName == "MQTT") {
-					m_MQTTopics.insert(std::make_pair(strTopicName, strTopicValue));
-				}
-				else if(sourceName == "ZeroMQ") {
-					m_ZMQTopics.insert(std::make_pair(strTopicName, strTopicValue));
-				}
-			}
-		}
-
-		if(NULL != root)
-			cJSON_Delete(root);
-
-	} catch (std::exception &e) {
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+/** This function is used to read environment variable
+ *
+ * @sEnvVarName : environment variable to be read
+ * @storeVal : variable to store env variable value
+ * @return: true/false based on success or error
+ */
+bool CTopicMapper::readEnvVariable(const char *pEnvVarName, string &storeVal)
+{
+	bool bRetVal = false;
+	char *cEvar = getenv(pEnvVarName);
+	if (NULL != cEvar)
+	{
+		bRetVal = true;
+		std::string tmp (cEvar);
+		storeVal = tmp;
+		CLogger::getInstance().log(INFO, LOGDETAILS(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal));
 	}
+	else
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS(std::string(pEnvVarName) + " environment variable is not found"));
+
+	}
+	return bRetVal;
+}
+
+/** This function is used to read common environment variables
+ *
+ * @return: true/false based on success or error
+ */
+bool CTopicMapper::readCommonEnvVariables()
+{
+	bool bRetVal = false;
+
+	bRetVal = readEnvVariable("ReadRequest", m_strReadRequest);
+	if(!bRetVal)
+	{
+		return false;
+	}
+
+	bRetVal = readEnvVariable("WriteRequest", m_strWriteRequest);
+	if(!bRetVal)
+	{
+		return false;
+	}
+	return bRetVal;
 }
 
 CTopicMapper::~CTopicMapper() {
 	// TODO Auto-generated destructor stub
 }
 
+/*
 std::vector<std::string> CTopicMapper::GetMqttTopics()
 {
 	std::vector<std::string> allMQTTTopics;
@@ -193,5 +129,5 @@ std::string CTopicMapper::GetZMQTopic(std::string topic) {
 	return strZmqTopic;
 }
 
-
+*/
 

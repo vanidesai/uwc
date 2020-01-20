@@ -152,6 +152,25 @@ verifyDirectory()
     fi
 
 }
+
+# ----------------------------
+# Creating docker volume dir to store yaml files
+# ----------------------------
+createDockerVolumeDir()
+{
+    if [ ! -d /opt/intel/eis/uwc_data ]; then
+    	echo "${GREEN}uwc_data directory is not present in /opt/intel/eis/ directory.${NC}"
+    	echo "${GREEN}Creating /opt/intel/eis/uwc_data directory.${NC}"
+    	mkdir -p /opt/intel/eis/uwc_data
+	if [ "$?" -eq "0"]; then
+		echo "${GREEN}/opt/intel/eis/uwc_data is sucessfully created. ${NC}"
+	else
+        	echo "${RED}Failed to create docker volume directory${NC}"
+		exit 1;
+	fi
+    fi	
+}
+
 # ----------------------------
 # Copying UWC Containers in EIS
 # ----------------------------
@@ -163,8 +182,7 @@ addUWCContainersInEIS()
     cd UWC
     cp -r modbus-master/ MQTT/ mqtt-export/ ../
     cp -r docker-compose_DEV.yml ../docker_setup/docker-compose.yml
-    cp -r Others/ETCD_Config/UWC/ Others/ETCD_Config/etcd_pre_load.json ../docker_setup/provision/config/
-    cp Others/ETCD_Config/etcd_provision.py ../docker_setup/provision/dep/
+    cp -r Others/ETCD_Config/UWC/YAML_Config/* /opt/intel/eis/uwc_data
     echo "${GREEN}UWC containers are successfully copied.${NC}"
     echo "${BOLD}${GREEN}>>>>>${NC}"
 	echo "${BOLD}${GREEN}************************* This script is sucessfully executed ***************************************************"
@@ -534,6 +552,7 @@ installBasicPackages
 docker_verification_installation	"$@"
 docker_compose_verify_installation
 setdevmodetrue
+createDockerVolumeDir
 addUWCContainersInEIS
 changeFilePermissions
 
