@@ -215,6 +215,8 @@ services:
       Modbus_RTU_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5005"
       Modbus_RTU_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5006"
       Modbus_RTU_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5007"
+      ReadRequest: MQTT_Export_ReadRequest
+      WriteRequest: MQTT_Export_WriteRequest
       mqtt_SubReadTopic: "/+/+/+/read"
       mqtt_SubWriteTopic: "/+/+/+/write"
 
