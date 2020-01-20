@@ -162,7 +162,7 @@ createDockerVolumeDir()
     	echo "${GREEN}uwc_data directory is not present in /opt/intel/eis/ directory.${NC}"
     	echo "${GREEN}Creating /opt/intel/eis/uwc_data directory.${NC}"
     	mkdir -p /opt/intel/eis/uwc_data
-	if [ "$?" -eq "0"]; then
+	if [ "$?" -eq "0" ]; then
 		echo "${GREEN}/opt/intel/eis/uwc_data is sucessfully created. ${NC}"
 	else
         	echo "${RED}Failed to create docker volume directory${NC}"

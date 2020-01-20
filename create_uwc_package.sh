@@ -33,14 +33,15 @@ checkrootUser()
 
 createUWCPackage()
 {
-	rm -rf UWC.tar.gz
-	tar --exclude='docker-compose.yml' --exclude='modbus-master/bin'  --exclude='create_uwc_package.sh' --exclude='README.md' modbus-master/ MQTT/  mqtt-export/ Others/ docker-compose_DEV.yml -zcvf UWC.tar.gz
-
+	rm -rf ${Current_Dir}/Release/UWC.tar.gz
+	tar --exclude='docker-compose.yml' --exclude='modbus-master/bin'  --exclude='create_uwc_package.sh' --exclude='README.md' modbus-master/ MQTT/  mqtt-export/ Others/ docker-compose_DEV.yml -zcvf UWC.tar.gz 
+	
 	if [ "$?" -ne "0" ];then
 		echo "${RED}Failed to create UWC package.${NC}"
 		exit 1
 	else
 		echo "${GREEN}Successfully created UWC package.${NC}"
+		mv UWC.tar.gz  ${Current_Dir}/Release
 	fi
 	return 0
 }
