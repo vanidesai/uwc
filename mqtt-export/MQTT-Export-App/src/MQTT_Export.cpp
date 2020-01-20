@@ -49,7 +49,7 @@ bool addSrTopic(string &json, string& topic) {
 			return false;
 		}
 
-		cJSON_AddStringToObject(root, "sourcetopic:", topic.c_str());
+		cJSON_AddStringToObject(root, "sourcetopic", topic.c_str());
 
 		json.clear();
 		json = cJSON_Print(root);
