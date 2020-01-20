@@ -16,12 +16,12 @@ Thread_H SessionControl_ThreadId = 0;
 //Mutex_H TransactionId_Mutex = NULL;
 extern int32_t i32MsgQueIdSC;
 bool g_bThreadExit = false;
+extern int g_iResponseTimeout;
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 Mutex_H LivSerSesslist_Mutex = NULL;
 extern stLiveSerSessionList_t *pstSesCtlThdLstHead;
 stDevConfig_t ModbusMasterConfig;
-extern int g_iResponseTimeout;
 
 /*
  * Description
@@ -84,10 +84,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	char *ptr = NULL;
 
 	g_bThreadExit = false;
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-	ModbusMasterConfig.m_u8MaxTcpConnection = MAXIMUM_TCP_CONNECTION;
-	ModbusMasterConfig.m_u8TcpConnectTimeout = MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC;
-	ModbusMasterConfig.m_u16TcpSessionTimeout = SESSION_TIMEOUT_IN_SEC;
+
 	const char *pcResponseTime = getenv("RESPONSE_TIMEOUT");
 	if(NULL == pcResponseTime)
 	{
@@ -99,6 +96,11 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	{
 		g_iResponseTimeout = strtol(pcResponseTime, ptr, 10) * 1000;	// *1000 is to convert millisecond value to microsecond
 	}
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+	ModbusMasterConfig.m_u8MaxTcpConnection = MAXIMUM_TCP_CONNECTION;
+	ModbusMasterConfig.m_u8TcpConnectTimeout = MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC;
+	ModbusMasterConfig.m_u16TcpSessionTimeout = SESSION_TIMEOUT_IN_SEC;
 	LivSerSesslist_Mutex = Osal_Mutex();
 #endif //#ifdef MODBUS_STACK_TCPIP_ENABLED
 
