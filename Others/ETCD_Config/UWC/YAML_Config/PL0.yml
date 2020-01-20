@@ -15,3 +15,14 @@ devicelist:
     port: 502
     unitid: 1
 
+- deviceinfo: iou_device.yml
+  id: "iou"
+  protocol:
+    baud: '9600'
+    databits: '8'
+    parity: '0'
+    port: /dev/ttyUSB1
+    protocol: PROTOCOL_RTU
+    slaveid: '10'
+    start: '1'
+    stop: '2'

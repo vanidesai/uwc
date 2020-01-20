@@ -7,10 +7,22 @@ file:
 id: "PL1"
 description: "Well site 1"
 devicelist:
-- deviceinfo: "iou_device.yml"
+- deviceinfo: "iou_device1.yml"
   id: "flowmeter2"
   protocol:
     protocol: "PROTOCOL_TCP"
     ipaddress: "192.168.80.95"
     port: 502
     unitid: 1
+
+- deviceinfo: iou_device.yml
+  id: flowmeter4
+  protocol:
+    baud: '115200'
+    databits: '8'
+    parity: '1'
+    port: /dev/ttys1
+    protocol: PROTOCOL_RTU
+    slaveid: '10'
+    start: '1'
+    stop: '2'

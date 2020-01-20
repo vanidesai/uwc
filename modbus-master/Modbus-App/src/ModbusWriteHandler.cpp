@@ -186,7 +186,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	string strCommand, strValue, strWellhead, strVersion, strSourceTopic;
 	cJSON *root = cJSON_Parse(reqMsg.m_strMsg.c_str());
-	bool isWrite;
+	bool isWrite = false;
 	try
 	{
 		if(MBUS_STACK_NO_ERROR == eFunRetType)
