@@ -512,6 +512,13 @@ int main(int argc, char *argv[]) {
 		}
 		std::string AppName(env_appname);
 
+		const char* env_appVersion = std::getenv("APP_VERSION");
+		if(env_appVersion == NULL) {
+			CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT-Expprt container app version is set to :: " + std::string(env_appVersion)));
+			return -1;
+		}
+		CLogger::getInstance().log(INFO, LOGDETAILS("MQTT-Expprt container app version is set to :: "+  std::string(env_appVersion)));
+
 		//string keyToMonitor = "/" + AppName + "/";
 		//CfgManager::Instance().registerCallbackOnChangeDir(const_cast<char *>(keyToMonitor.c_str()));
 		//CfgManager::Instance().registerCallbackOnChangeKey(const_cast<char *>(keyToMonitor.c_str()));

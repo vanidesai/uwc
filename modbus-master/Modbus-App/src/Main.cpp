@@ -189,11 +189,12 @@ bool CommonUtils::readEnvVariable(const char *pEnvVarName, string &storeVal)
 		std::string tmp (cEvar);
 		storeVal = tmp;
 		CLogger::getInstance().log(INFO, LOGDETAILS(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal));
+		std::cout << std::string(pEnvVarName) + " environment variable is set to ::" + storeVal << endl;
 	}
 	else
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS(std::string(pEnvVarName) + " environment variable is not found"));
-
+		cout << std::string(pEnvVarName) + " environment variable is not found" <<endl;
 	}
 	return bRetVal;
 }
@@ -250,11 +251,19 @@ int main(int argc, char* argv[])
 	try
 	{
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting Modbus_App ..."));
+
+		string sAppVersion;
+		if(!CommonUtils::readEnvVariable("APP_VERSION", sAppVersion))
+		{
+			exit(1);
+		}
+
+		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus container app version is set to :: " + sAppVersion));
+		cout <<"\nModbus container app version is :: " + sAppVersion << "\n"<<endl;
+
 		string sAppName;
 		if(!CommonUtils::readEnvVariable("AppName", sAppName))
 		{
-			std::cout << __func__ << ": AppName environment variable cannot be empty" << std::endl;
-			CLogger::getInstance().log(ERROR, LOGDETAILS(": AppName environment variable cannot be empty"));
 			exit(1);
 		}
 
