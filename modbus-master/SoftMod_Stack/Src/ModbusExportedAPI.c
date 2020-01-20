@@ -97,7 +97,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	}
 	else
 	{
-		g_iResponseTimeout = strtol(pcResponseTime, ptr, 10);
+		g_iResponseTimeout = strtol(pcResponseTime, ptr, 10) * 1000;	// *1000 is to convert millisecond value to microsecond
 	}
 	LivSerSesslist_Mutex = Osal_Mutex();
 #endif //#ifdef MODBUS_STACK_TCPIP_ENABLED
@@ -629,7 +629,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -740,7 +740,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -849,7 +849,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -959,7 +959,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1065,7 +1065,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 1;	// On Demand Write Msg delay issue: Setting msg priority(1) higher than Read request (10)
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1170,7 +1170,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1291,7 +1291,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1421,7 +1421,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1579,7 +1579,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1747,7 +1747,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1914,7 +1914,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -2044,7 +2044,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;
+	stPostThreadMsg.MsgType = 10;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{

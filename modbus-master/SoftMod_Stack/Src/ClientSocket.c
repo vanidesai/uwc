@@ -808,8 +808,8 @@ int8_t checkforblockingread(void)
 	fd_set rset;
 	struct timeval tv;
 	//wait upto 1 seconds
-	tv.tv_sec = g_iResponseTimeout;
-	tv.tv_usec = 0;
+	tv.tv_sec = 0;
+	tv.tv_usec = g_iResponseTimeout;
 	FD_ZERO(&rset);
 
 	// If fd is not set correctly.
@@ -861,6 +861,17 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		recvBuff[pstMBusRequesPacket->m_stMbusTxData.m_u16Length++] = (crc & 0xFF00) >> 8;
 		recvBuff[pstMBusRequesPacket->m_stMbusTxData.m_u16Length++] = (crc & 0x00FF);
 		tcflush(fd, TCIOFLUSH);
+
+		// Multiple Slave issue: Adding Frame delay between two packets 
+		if(baud > 19200)
+		{
+			usleep(21000);
+		}
+		else
+		{		
+			usleep(44000);
+		}
+
 		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
 
 		//< Note: Below framing delay is commented intentionally as read function is having blocking read() call in which
@@ -877,6 +888,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		}*/
 
 		bytes = 0;
+		// Creating exception flag and setting it to false to check for to handle the msg with exception
 		bool expFlag = false;
 		if((READ_COIL_STATUS == (eModbusFuncCode_enum)(pstMBusRequesPacket->m_u8FunctionCode)) ||
 				(READ_INPUT_STATUS == (eModbusFuncCode_enum)(pstMBusRequesPacket->m_u8FunctionCode)))
@@ -903,6 +915,10 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 				if(bytes == 0){
 					break;
 				}
+				// If bytes read are greater than packet exception code position in data packet
+				// & exception flag is false,
+				// then check the packet for any exception code,
+				// If exception is present then read only the remaining bytes of exception packet.
 				else if((bytes >= PKT_EXP_LEN) && (!expFlag))
 				{
 					if((ServerReplyBuff[EXP_POS] & EXP_VAL) == EXP_VAL)
@@ -1087,26 +1103,69 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 	tios.c_cflag &= ~CSIZE;
 	tios.c_cflag |= CS8;
 
-	/* Stop bit (1 or 2) */
-	if (stop_bit == 1)
-		tios.c_cflag &=~ CSTOPB;
-	else /* 2 */
-		tios.c_cflag |= CSTOPB;
+/*
 
-	/* PARENB       Enable parity bit
-       PARODD       Use odd parity instead of even */
-	if (parity == NO_PARITY) {
-		/* None */
-		tios.c_cflag &=~ PARENB;
-	} else if (parity == EVEN_PARITY) {
-		/* Even */
-		tios.c_cflag |= PARENB;
-		tios.c_cflag &=~ PARODD;
-	} else {
-		/* Odd */
-		tios.c_cflag |= PARENB;
-		tios.c_cflag |= PARODD;
-	}
+Stop bit (1 or 2)
+if (stop_bit == 1)
+tios.c_cflag &=~ CSTOPB;
+else /* 2
+//tios.c_cflag |= CSTOPB;
+
+PARENB       Enable parity bit
+       PARODD       Use odd parity instead of even
+if (parity == NO_PARITY) {
+/* None
+tios.c_cflag &=~ PARENB;
+} else if (parity == EVEN_PARITY) {
+Even
+tios.c_cflag |= PARENB;
+tios.c_cflag &=~ PARODD;
+} else {
+Odd
+tios.c_cflag |= PARENB;
+tios.c_cflag |= PARODD;
+}*/
+
+/* PARENB       Enable parity bit
+
+      PARODD       Use odd parity instead of even */
+
+   if (parity == NO_PARITY) {
+
+       /* None */
+
+       //< tios.c_cflag &=~ PARENB;
+
+      tios.c_cflag &= ~(PARENB | PARODD); //< Disabled both even and odd parity
+
+      tios.c_cflag |= CSTOPB; //< When parity is none, add a stop bit at the place of parity to make 11 characters i.e. two stop bits
+
+   } else if (parity == EVEN_PARITY) {
+
+       /* Even */
+
+       tios.c_cflag |= PARENB;
+
+       tios.c_cflag &= ~PARODD;
+
+       tios.c_cflag &= ~CSTOPB;
+
+   } else {
+
+       /* Odd */
+
+       tios.c_cflag |= PARENB;
+
+       tios.c_cflag |= PARODD;
+
+       tios.c_cflag &= ~CSTOPB;
+
+   }
+
+	//Setting Hardware Flow
+	tios.c_cflag &= ~CRTSCTS;
+	//tios.c_cflag |= CRTSCTS;
+
 
 	/* Read the man page of termios if you need more information. */
 
@@ -1314,9 +1373,9 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 			{
 				if (errno == EINPROGRESS)
 				{
-					tv.tv_sec = g_iResponseTimeout;
+					tv.tv_sec = 0;
 					//tv.tv_usec = ModbusMasterConfig.m_u8TcpConnectTimeout;
-					tv.tv_usec = 0;
+					tv.tv_usec = g_iResponseTimeout;
 					FD_ZERO(&myset);
 					FD_SET(sockfd, &myset);
 					if (select(sockfd+1, NULL, &myset, NULL, &tv) > 0)
@@ -1372,9 +1431,9 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 
 		//setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 
-		tv.tv_sec = g_iResponseTimeout;
+		tv.tv_sec = 0;
 		//tv.tv_usec = ModbusMasterConfig.m_u8TcpConnectTimeout;
-		tv.tv_usec = 0;
+		tv.tv_usec = g_iResponseTimeout;
 		FD_ZERO(&myset);
 		FD_SET(sockfd, &myset);
 		if (select(sockfd+1, NULL, &myset, NULL, &tv) <= 0)
