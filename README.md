@@ -78,10 +78,10 @@ docker logs modbus-tcp-container > docker.log 2>&1
 1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL. (username - root , password- eis123)
 
 ## Docker Volume location for YAML file configuration
- '''
+ ```
  cd /opt/intel/eis/uwc_data/
  execute ls command to display all YAML files
- '''
+ ```
 
 ## Steps to create bundle out of sources - Optional 
 ```
