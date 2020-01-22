@@ -74,7 +74,7 @@ sudo docker ps
 docker logs modbus-tcp-container > docker.log 2>&1
 ```
 
-## ETCD UI access
+## ETCD UI access (*Note : This is not required since we are not storing any configuration data for UWC containers)
 1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL. (username - root , password- eis123)
 
 ## Steps to apply new configuration (i.e. YML files or docker-compose.yml)
