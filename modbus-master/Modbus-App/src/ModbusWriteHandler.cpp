@@ -281,7 +281,14 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 
 			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
 			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
-			stMbusApiPram.m_lPriority = ON_DEMAND_WRITE_PRIORITY;
+			if(true == isWrite)
+			{
+				stMbusApiPram.m_lPriority = ON_DEMAND_WRITE_PRIORITY;
+			}
+			else
+			{
+				stMbusApiPram.m_lPriority = ON_DEMAND_READ_PRIORITY;
+			}
 			network_info::eEndPointType eType = obj.getAddress().m_eType;
 
 			switch(eType)
