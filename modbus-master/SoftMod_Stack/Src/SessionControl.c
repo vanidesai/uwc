@@ -16,19 +16,37 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <sys/select.h>
+#include <sys/ioctl.h>
+
+#include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
+
 #include "SessionControl.h"
 
 //#define MODBUS_STACK_TCPIP_ENABLED
+int m_clientFd = 0, m_epollFd = 0;
+struct epoll_event m_event, *m_events = NULL;
+struct sockaddr_in m_clientAddr;
+#define MODBUS_HEADER_LENGTH 6 //no. of bytes till length paramater in header
+//array of accepted clients
+#define MAX_DEVICE_PER_SITE 300
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
+
 extern int fd;
+
 #endif
 
 int32_t i32MsgQueIdSC = 0;
 extern bool g_bThreadExit;
 
+#define READ_SIZE 1024
+#define MAXEVENTS 100
+#define EPOLL_TIMEOUT 1000
+#define MAXQUEUE 5
+
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+extern Mutex_H LivSerSesslist_Mutex;
+stTcpRecvData_t m_clientAccepted[MAX_DEVICE_PER_SITE];
 stLiveSerSessionList_t *pstSesCtlThdLstHead = NULL;
 extern stDevConfig_t ModbusMasterConfig;
 extern void* ServerSessTcpAndCbThread(void* threadArg);
@@ -66,6 +84,7 @@ void* SessionControlThread(void* threadArg)
 		{
 			u8NewDevEntryFalg = 0;
 			pstMBusReqPact = stScMsgQue.wParam;
+			pstMBusReqPact->m_lPriority = stScMsgQue.mtype;
 			Osal_Wait_Mutex (LivSerSesslist_Mutex,0);
 			pstLivSerSesslist = pstSesCtlThdLstHead;
 			if(NULL == pstLivSerSesslist)
@@ -135,7 +154,7 @@ void* SessionControlThread(void* threadArg)
 				stPostThreadMsg.idThread = pstLivSerSesslist->MsgQId;
 				stPostThreadMsg.lParam = pstMBusReqPact;
 				stPostThreadMsg.wParam = pstLivSerSesslist;
-				stPostThreadMsg.MsgType = 1;
+				stPostThreadMsg.MsgType = pstMBusReqPact->m_lPriority;
 
 				if(!OSAL_Post_Message(&stPostThreadMsg))
 				{
@@ -162,7 +181,7 @@ void* SessionControlThread(void* threadArg)
 				stPostThreadMsg.idThread = pstLivSerSesslist->MsgQId;
 				stPostThreadMsg.lParam = pstMBusReqPact;
 				stPostThreadMsg.wParam = pstLivSerSesslist;
-				stPostThreadMsg.MsgType = 1;
+				stPostThreadMsg.MsgType = pstMBusReqPact->m_lPriority;
 
 				if(!OSAL_Post_Message(&stPostThreadMsg))
 				{
@@ -182,6 +201,200 @@ void* SessionControlThread(void* threadArg)
 	}
 	return NULL;
 }
+
+int getClientIdFromList(int socketID) {
+	int socketIndex = -1;
+
+	for(int i = 0; i < 256; i++) {
+		if(m_clientAccepted[i].m_clientFD == socketID) {
+			return i;
+		}
+	}
+
+	return socketIndex;
+}
+
+void handleClientReponse(stTcpRecvData_t client, struct timespec ts)
+{
+	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
+	// TCP IP message format
+	// 2 bytes = TxID, 2 bytes = Protocol ID, 2 bytes = length, 1 byte = unit id
+	// Get TxID and unit-id from response
+	uByteOrder_t ustByteOrder = {0};
+
+	// Holds the received transaction ID
+	uint16_t u16TransactionID = 0;
+
+	// Holds the unit id
+	uint8_t  u8UnitID = 0;
+
+	// Transaction ID
+	ustByteOrder.u16Word = 0;
+	ustByteOrder.TwoByte.u8ByteTwo = client.m_readBuffer[0];
+	ustByteOrder.TwoByte.u8ByteOne = client.m_readBuffer[1];
+	u16TransactionID = ustByteOrder.u16Word;
+
+	// Get unit id
+	u8UnitID = client.m_readBuffer[6];
+
+	pstMBusRequesPacket = searchReqList(u8UnitID, u16TransactionID);
+	if(NULL != pstMBusRequesPacket)
+	{
+		pstMBusRequesPacket->m_state = RESP_RCVD_FROM_NETWORK;
+		removeReqFromListWithLock(pstMBusRequesPacket);
+		pstMBusRequesPacket->m_u8ProcessReturn = DecodeRxPacket(client.m_readBuffer, pstMBusRequesPacket);
+		addToRespQ(pstMBusRequesPacket);
+		pstMBusRequesPacket->m_ulRespProcess = get_nanos();
+	}
+}
+
+void resetClientStruct(stTcpRecvData_t* clientAccepted) {
+
+	clientAccepted->m_bytesRead = 0;
+	clientAccepted->m_bytesToBeRead = 0;
+	clientAccepted->m_len = 0;
+	memset(&clientAccepted->m_readBuffer, 0,
+			sizeof(clientAccepted->m_readBuffer));
+
+}
+
+struct timespec getEpochTime() {
+
+	struct timespec ts;
+	//struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+
+    return ts;
+}
+
+//epoll thread
+void* EpollRecvThread()
+{
+
+	int event_count = 0;
+	size_t bytes_read = 0;
+	size_t bytes_to_read = 0;
+
+	//allocate no of polling events
+	m_events = (struct epoll_event*) calloc(MAXEVENTS, sizeof(m_event));
+
+	int iClientCount = 0; //for array
+
+	while (1)
+	{
+		event_count = 0;
+
+		event_count = epoll_wait(m_epollFd, m_events, MAXEVENTS, EPOLL_TIMEOUT);
+		for (int i = 0; i < event_count; i++) {
+
+			int clientID = getClientIdFromList(m_events[i].data.fd);
+
+			if (clientID == -1) {
+				//this is a new client socket - add it to the list
+				clientID = ++iClientCount;
+
+				//resetClientStruct(&m_clientAccepted[clientID]);
+				m_clientAccepted[clientID].m_bytesRead = 0;
+				m_clientAccepted[clientID].m_bytesToBeRead = 0;
+				m_clientAccepted[clientID].m_len = 0;
+				memset(&m_clientAccepted[clientID].m_readBuffer, 0,
+						sizeof(m_clientAccepted[clientID].m_readBuffer));
+
+				//set client id = received socket descriptor
+				m_clientAccepted[clientID].m_clientFD = m_events[i].data.fd;
+			}
+
+			//if there are still bytes remaining to be read for this socket, adjust read size accordingly
+			if (m_clientAccepted[clientID].m_bytesToBeRead > 0) {
+				bytes_to_read = m_clientAccepted[clientID].m_bytesToBeRead;
+			} else {
+				bytes_read = 0;
+				bytes_to_read = MODBUS_HEADER_LENGTH; //read only header till length
+			}
+
+			//receive data from socket
+			bytes_read = recv(m_clientAccepted[clientID].m_clientFD,
+					m_clientAccepted[clientID].m_readBuffer+m_clientAccepted[clientID].m_bytesRead, bytes_to_read, 0);
+
+
+			if (bytes_read == 0)
+				continue;
+
+			//parse length if fd has 0 bytes read, otherwise rest packets are with actual data and not header
+			if (m_clientAccepted[clientID].m_bytesRead == 0) {
+				m_clientAccepted[clientID].m_len = (m_clientAccepted[clientID].m_readBuffer[4] << 8
+						| m_clientAccepted[clientID].m_readBuffer[5]);
+			}
+
+			if (bytes_to_read == bytes_read) {
+				m_clientAccepted[clientID].m_bytesRead += bytes_read;
+
+				m_clientAccepted[clientID].m_bytesToBeRead =
+						(m_clientAccepted[clientID].m_len + MODBUS_HEADER_LENGTH)
+								- m_clientAccepted[clientID].m_bytesRead;
+			}
+
+			//add one more recv to read response completely
+			if (m_clientAccepted[clientID].m_bytesToBeRead > 0) {
+
+				while (m_clientAccepted[clientID].m_bytesToBeRead != 0) {
+
+					//check if we have data on socket
+					int bytesPresentOnSocket = 0;
+					if(-1 == ioctl(m_clientAccepted[clientID].m_clientFD, FIONREAD,
+							&bytesPresentOnSocket))
+						printf("Error in ioctl\n");
+
+					if (bytesPresentOnSocket > 0) {
+						bytes_to_read =
+								m_clientAccepted[clientID].m_bytesToBeRead;
+
+						//receive data from socket
+						bytes_read = recv(m_clientAccepted[clientID].m_clientFD,
+								m_clientAccepted[clientID].m_readBuffer+m_clientAccepted[clientID].m_bytesRead,
+								bytes_to_read, 0);
+
+						if (bytes_read == 0)
+							continue;
+
+						m_clientAccepted[clientID].m_bytesRead += bytes_read;
+
+						m_clientAccepted[clientID].m_bytesToBeRead =
+								(m_clientAccepted[clientID].m_len + MODBUS_HEADER_LENGTH)
+										- m_clientAccepted[clientID].m_bytesRead;
+					}
+				}
+				//should have read response completely
+
+				if ((m_clientAccepted[clientID].m_len + MODBUS_HEADER_LENGTH)
+						== m_clientAccepted[clientID].m_bytesRead) {
+					struct timespec ts = getEpochTime();
+
+					handleClientReponse(m_clientAccepted[clientID], ts);
+
+					//clear socket struct for next iteration
+					resetClientStruct(&m_clientAccepted[clientID]);
+
+				} else {
+					//this case should never happen ideally
+					//continue to read for the same socket & epolling
+					continue;
+				}
+
+			}
+		}//for loop for sockets ends
+
+	} //while ends
+
+	//close client socket or push all the client sockets in a vector and close all
+	close(m_epollFd);
+
+	if(m_events != NULL)
+		free(m_events);
+
+	return NULL;
+}
+
 #else
 
 /**
@@ -220,6 +433,234 @@ void* SessionControlThread(void* threadArg)
 #endif
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+struct stReqList g_stReqList;
+struct stResProcessData g_stRespProcess;
+
+unsigned long get_nanos(void) {
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
+}
+
+void removeReqFromListNoLock(stMbusPacketVariables_t *pstMBusRequesPacket)
+{
+	if(NULL == pstMBusRequesPacket)
+	{
+		return;
+	}
+
+	// Get a lock to list
+	//Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
+	{
+		stMbusPacketVariables_t *pstPrev = pstMBusRequesPacket->__prev;
+		stMbusPacketVariables_t *pstNext = pstMBusRequesPacket->__next;
+
+		if(NULL != pstPrev)
+		{
+			pstPrev->__next = pstNext;
+		}
+		if(NULL != pstNext)
+		{
+			pstNext->__prev = pstPrev;
+		}
+		if(pstMBusRequesPacket == g_stReqList.m_pstStart)
+		{
+			g_stReqList.m_pstStart = pstNext;
+		}
+		if(pstMBusRequesPacket == g_stReqList.m_pstLast)
+		{
+			g_stReqList.m_pstLast = pstPrev;
+		}
+
+		pstMBusRequesPacket->__prev = NULL;
+		pstMBusRequesPacket->__next = NULL;
+	}
+	//Osal_Release_Mutex(g_stReqList.m_mutexReqList);
+}
+
+void removeReqFromListWithLock(stMbusPacketVariables_t *pstMBusRequesPacket)
+{
+	if(NULL == pstMBusRequesPacket)
+	{
+		return;
+	}
+
+	// Get a lock to list
+	Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
+	removeReqFromListNoLock(pstMBusRequesPacket);
+	Osal_Release_Mutex(g_stReqList.m_mutexReqList);
+}
+
+
+void addToRespQ(stMbusPacketVariables_t *a_pstReq)
+{
+	if(NULL != a_pstReq)
+	{
+		Post_Thread_Msg_t stPostThreadMsg = { 0 };
+		a_pstReq->m_ulRespRcvdTimebyStack = get_nanos();
+		// Add to queue
+		stPostThreadMsg.idThread = g_stRespProcess.m_i32RespMsgQueId;
+		stPostThreadMsg.wParam = NULL;
+		stPostThreadMsg.lParam = a_pstReq;
+		stPostThreadMsg.MsgType = a_pstReq->m_lPriority;
+
+		if(!OSAL_Post_Message(&stPostThreadMsg))
+		{
+			OSAL_Free(a_pstReq);
+		}
+
+		// Signal response timeout thread
+		sem_post(&g_stRespProcess.m_semaphoreResp);
+	}
+}
+
+void* resquestTimeOutThreadFunction(void* threadArg)
+{
+	stMbusPacketVariables_t *pstTemp = NULL;
+	stMbusPacketVariables_t *pstCur = NULL;
+
+	while(false == g_bThreadExit)
+	{
+		//unsigned long tm1, tm2;
+		//tm1 = get_nanos();
+		//printf("\n");
+		// Get a lock to list
+		Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
+		pstTemp = g_stReqList.m_pstStart;
+		while(NULL != pstTemp)
+		{
+			pstCur = pstTemp;
+			pstTemp = pstTemp->__next;
+
+			if(REQ_SENT_ON_NETWORK == pstCur->m_state)
+			{
+				--pstCur->m_u32MsTimeout;
+				if(pstCur->m_u32MsTimeout == 0)
+				{
+					removeReqFromListNoLock(pstCur);
+					pstCur->m_state = RESP_TIMEDOUT;
+					addToRespQ(pstCur);
+					printf("1");
+					pstCur->m_ulRespProcess = get_nanos();
+				}
+			}
+		}
+		Osal_Release_Mutex(g_stReqList.m_mutexReqList);
+		//tm2 = get_nanos();
+		// Sleep for 1 msec
+		usleep(1000);
+	}
+
+	return NULL;
+}
+
+void* postResponseToApp(void* threadArg)
+{
+	Linux_Msg_t stScMsgQue = { 0 };
+	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
+	int32_t i32RetVal = 0;
+	while(false == g_bThreadExit)
+	{
+		sem_wait(&g_stRespProcess.m_semaphoreResp);
+		memset(&stScMsgQue,00,sizeof(stScMsgQue));
+		i32RetVal = 0;
+		i32RetVal = OSAL_Get_NonBlocking_Message(&stScMsgQue, g_stRespProcess.m_i32RespMsgQueId);
+		if(i32RetVal > 0)
+		{
+			pstMBusRequesPacket = stScMsgQue.lParam;
+			if(NULL != pstMBusRequesPacket)
+			{
+				pstMBusRequesPacket->m_ulRespSentTimebyStack = get_nanos();
+				ApplicationCallBackHandler(pstMBusRequesPacket, pstMBusRequesPacket->m_u8ProcessReturn);
+				OSAL_Free(pstMBusRequesPacket);
+			}
+		}
+	}
+
+	return NULL;
+}
+
+int initReqListData()
+{
+	g_stReqList.m_mutexReqList = Osal_Mutex();
+	g_stReqList.m_pstStart = NULL;
+	g_stReqList.m_pstLast = NULL;
+
+	g_stRespProcess.m_i32RespMsgQueId = OSAL_Init_Message_Queue();
+
+	if(-1 == sem_init(&g_stRespProcess.m_semaphoreResp, 0, 0 /* Initial value of zero*/))
+	{
+	   printf("initReqListData::Could not create unnamed semaphore\n");
+	   return -1;
+	}
+
+	// Initiate request thread
+	{
+		thread_Create_t stThreadParam = { 0 };
+		stThreadParam.dwStackSize = 0;
+		stThreadParam.lpStartAddress = resquestTimeOutThreadFunction;
+		stThreadParam.lpParameter = &g_stRespProcess.m_i32RespMsgQueId;
+		stThreadParam.lpThreadId = &g_stReqList.m_threadIdReqTimeout;
+
+		g_stReqList.m_threadIdReqTimeout = Osal_Thread_Create(&stThreadParam);
+	}
+
+	// Initiate response thread
+	{
+		thread_Create_t stThreadParam1 = { 0 };
+		stThreadParam1.dwStackSize = 0;
+		stThreadParam1.lpStartAddress = postResponseToApp;
+		stThreadParam1.lpParameter = &g_stRespProcess.m_i32RespMsgQueId;
+		stThreadParam1.lpThreadId = &g_stRespProcess.m_threadIdRespToApp;
+
+		g_stRespProcess.m_threadIdRespToApp = Osal_Thread_Create(&stThreadParam1);
+	}
+	return 0;
+}
+
+void addReqToList(stMbusPacketVariables_t *pstMBusRequesPacket)
+{
+	if(NULL == pstMBusRequesPacket)
+	{
+		return;
+	}
+	pstMBusRequesPacket->__next = NULL;
+
+	// Get a lock to list
+	Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
+	pstMBusRequesPacket->__prev = g_stReqList.m_pstLast;
+	if(NULL == g_stReqList.m_pstStart)
+	{
+		g_stReqList.m_pstStart = pstMBusRequesPacket;
+		g_stReqList.m_pstLast = pstMBusRequesPacket;
+	}
+	else
+	{
+		g_stReqList.m_pstLast->__next = pstMBusRequesPacket;
+		g_stReqList.m_pstLast = pstMBusRequesPacket;
+	}
+	Osal_Release_Mutex(g_stReqList.m_mutexReqList);
+}
+
+stMbusPacketVariables_t* searchReqList(uint8_t a_u8UnitID, uint16_t a_u16TransactionID)
+{
+	stMbusPacketVariables_t *pstTemp = NULL;
+	// Get a lock to list
+	Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
+	pstTemp = g_stReqList.m_pstStart;
+	while(NULL != pstTemp)
+	{
+		if(a_u8UnitID == pstTemp->m_u8UnitID && a_u16TransactionID == pstTemp->m_u16TransactionID)
+		{
+			// Request found
+			break;
+		}
+		pstTemp = pstTemp->__next;
+	}
+	Osal_Release_Mutex(g_stReqList.m_mutexReqList);
+	return pstTemp;
+}
+
 /**
  *
  * Description
@@ -259,11 +700,25 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 			{
 				if(NULL != pstLivSerSesslist)
 				{
+					pstMBusRequesPacket->m_u32MsTimeout = 200;
+					addReqToList(pstMBusRequesPacket);
+					pstMBusRequesPacket->m_ulReqSentTimeByStack = get_nanos();
 					u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &pstLivSerSesslist->m_i32sockfd);
-					ApplicationCallBackHandler(pstMBusRequesPacket,u8ReturnType);
+					pstMBusRequesPacket->m_ulReqProcess = get_nanos();
+					pstMBusRequesPacket->m_u8ProcessReturn = u8ReturnType;
+					if(STACK_NO_ERROR == u8ReturnType)
+					{
+						pstMBusRequesPacket->m_state = REQ_SENT_ON_NETWORK;
+					}
+					else
+					{
+						pstMBusRequesPacket->m_state = REQ_PROCESS_ERROR;
+						removeReqFromListWithLock(pstMBusRequesPacket);
+						addToRespQ(pstMBusRequesPacket);
+					}
+
 					u32TimeCount = 0;
 				}
-				OSAL_Free(pstMBusRequesPacket);
 			}
 		}
 		else

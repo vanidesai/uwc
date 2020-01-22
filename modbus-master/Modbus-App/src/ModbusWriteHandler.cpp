@@ -61,7 +61,7 @@ eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
-	stWriteRequest writeReq;
+	stRequest writeReq;
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	unsigned char  m_u8FunCode;
 	MbusAPI_t stMbusApiPram = {};
@@ -73,22 +73,20 @@ eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 			sem_wait(&semaphoreWriteReq);
 			try
 			{
-				if(false == getWriteDataToProcess(writeReq))
+				if(false == getDataToProcess(writeReq))
 				{
 					return MBUS_STACK_ERROR_QUEUE_SEND;
 				}
 
-				CLogger::getInstance().log(ERROR, LOGDETAILS(" write Processing initiated :: " + writeReq.m_strMsg));
+				CLogger::getInstance().log(DEBUG, LOGDETAILS(" write Processing initiated :: " + writeReq.m_strMsg));
 
-				if(MBUS_STACK_NO_ERROR == eFunRetType)
-				{
-					eFunRetType = jsonParserForWrite(writeReq, stMbusApiPram, m_u8FunCode);
-				}
+				eFunRetType = jsonParserForOnDemandRequest(writeReq, stMbusApiPram, m_u8FunCode);
 
 				if(MBUS_STACK_NO_ERROR == eFunRetType)
 				{
 					if(MBUS_MIN_FUN_CODE != m_u8FunCode)
 					{
+						CLogger::getInstance().log(DEBUG, LOGDETAILS("On-Demand Process initiated..."));
 						eFunRetType = (eMbusStackErrorCode) Modbus_Stack_API_Call(
 								m_u8FunCode,
 								&stMbusApiPram,
@@ -178,7 +176,37 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 	return iOpCharPos;
 }
 
-eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
+bool modWriteHandler::validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand)
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	bool retValue = false;
+	try
+	{
+		std::string strSearchStrin = "/";
+		std::size_t found = stSourcetopic.find(strSearchStrin);
+		std::size_t found1 = stSourcetopic.find(strSearchStrin.c_str(), found+1);
+		std::size_t found2 = stSourcetopic.find(strSearchStrin.c_str(), found1+1);
+		std::string tempWellhead = stSourcetopic.substr(found1+1, found2-found1-1);
+
+		std::size_t found3 = stSourcetopic.find(strSearchStrin.c_str(), found2+1);
+		std::string tempCommand = stSourcetopic.substr(found2+1, found3-found2-1);
+
+		if(tempWellhead == stWellhead && tempCommand == stCommand)
+		{
+			retValue = true;
+		}
+	}
+	catch(const std::exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("i/p json wellhead or command mismatch with sourcetopic"));
+	}
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	return retValue;
+}
+
+eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& reqMsg,
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode)
 {
@@ -186,7 +214,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	string strCommand, strValue, strWellhead, strVersion, strSourceTopic;
 	cJSON *root = cJSON_Parse(reqMsg.m_strMsg.c_str());
-	bool isWrite = false;
+	bool isWrite = false, isValidJson = false;
 	try
 	{
 		if(MBUS_STACK_NO_ERROR == eFunRetType)
@@ -210,6 +238,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 
 			if(cmd && appseq && wellhead && version && timestamp && usec && sourcetopic)
 			{
+				isValidJson = true;
 				strCommand = cmd->valuestring;
 				strWellhead = wellhead->valuestring;
 				strVersion = version->valuestring;
@@ -218,12 +247,19 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 				isWrite = strSourceTopic.find("write") <= strSourceTopic.length() ? true : false;
 				if(true == isWrite)
 					strValue = value->valuestring;
+
+				isValidJson = validateInputJson(strSourceTopic, strWellhead, strCommand);
 			}
-			else
+			if(!isValidJson)
 			{
-				std::cout << __func__ << " Invalid input json parameter." << std::endl;
-				CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter."));
+				std::cout << __func__ << " Invalid input json parameter or topic." << std::endl;
+				CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter or topic."));
 				eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
+
+				if(NULL != root)
+					cJSON_Delete(root);
+
+				return eFunRetType;
 			}
 
 			string strSearchString = "/";
@@ -245,6 +281,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 
 			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
 			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
+			stMbusApiPram.m_lPriority = ON_DEMAND_WRITE_PRIORITY;
 			network_info::eEndPointType eType = obj.getAddress().m_eType;
 
 			switch(eType)
@@ -275,6 +312,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 				reqData.m_strMetric = strCommand;
 				reqData.m_strVersion = strVersion;
 				reqData.m_strWellhead = strWellhead;
+				reqData.m_strTopic = strSourceTopic;
 				zmq_handler::insertOnDemandReqData(refId, reqData);
 			}
 
@@ -332,7 +370,11 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 								!obj.getAddress().m_bIsByteSwap,
 								obj.getAddress().m_bIsWordSwap);
 					}
-					hex2bin(strValue, stMbusApiPram.m_u16ByteCount, stMbusApiPram.m_pu8Data);
+					int retVal = hex2bin(strValue, stMbusApiPram.m_u16ByteCount, stMbusApiPram.m_pu8Data);
+					if(-1 == retVal)
+					{
+						CLogger::getInstance().log(FATAL, LOGDETAILS("Mismatch in given write value and width."));
+					}
 				}
 				/*else
 				{
@@ -347,7 +389,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForWrite(stWriteRequest& reqMsg,
 			}
 			else
 			{
-				eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
+				eFunRetType = MBUS_JSON_APP_ERROR_MALLOC_FAILED;
 				CLogger::getInstance().log(ERROR, LOGDETAILS(" Unable to allocate memory. Request not sent"));
 			}
 		}
@@ -439,7 +481,7 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 
 			if(NULL != parts[0].bytes)
 			{
-				struct stWriteRequest stWriteRequestNode;
+				struct stRequest stWriteRequestNode;
 				std::string strMsg(parts[0].bytes);
 
 				stWriteRequestNode.m_strTopic = stTopic;
@@ -468,7 +510,7 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 	}
 }
 
-bool modWriteHandler::pushToWriteTCPQueue(struct stWriteRequest &stWriteRequestNode)
+bool modWriteHandler::pushToWriteTCPQueue(struct stRequest &stWriteRequestNode)
 {
 	try
 	{
@@ -509,22 +551,24 @@ void modWriteHandler::initWriteHandlerThreads()
 	}
 }
 
-bool modWriteHandler::getWriteDataToProcess(struct stWriteRequest &stWriteProcessNode)
+bool modWriteHandler::getDataToProcess(struct stRequest &stWriteProcessNode)
 {
 	CLogger::getInstance().log(ERROR, LOGDETAILS("Start"));
+	bool retvalue = false;
 	try
 	{
 		std::lock_guard<std::mutex> lock(__writeReqMutex);
 		stWriteProcessNode = stackTCPWriteReqQ.front();
 		stackTCPWriteReqQ.pop();
 
-		return true;
+		retvalue = true;
 	}
 	catch(const std::exception& e)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		retvalue = false;
 	}
 
 	CLogger::getInstance().log(ERROR, LOGDETAILS("End"));
-	return false;
+	return retvalue;
 }

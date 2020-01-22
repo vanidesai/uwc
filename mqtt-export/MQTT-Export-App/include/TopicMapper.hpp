@@ -27,6 +27,9 @@ private:
 
 	std::string m_strReadRequest;
 	std::string m_strWriteRequest;
+	std::string m_strAppName;
+	std::string m_strAppVersion;
+	std::string m_strMqttExportURL;
 
 public:
 	virtual ~CTopicMapper();
@@ -51,7 +54,29 @@ public:
 		m_strWriteRequest = strWriteRequest;
 	}
 
+	void setStrAppName(const std::string &strAppName) {
+		m_strAppName = strAppName;
+	}
 
+	const std::string& getStrAppName() const {
+		return m_strAppName;
+	}
+
+	void setStrAppVersion(const std::string &strAppVersion) {
+		m_strAppVersion = strAppVersion;
+	}
+
+	const std::string& getStrAppVersion() const {
+		return m_strAppVersion;
+	}
+
+	void setStrMqttExportURL(const std::string &strMqttExportURL) {
+		m_strMqttExportURL = strMqttExportURL;
+	}
+
+	const std::string& getStrMqttExportURL() const {
+		return m_strMqttExportURL;
+	}
 	static CTopicMapper& getInstance() {
 		static CTopicMapper _self;
 			return _self;

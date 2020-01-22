@@ -242,6 +242,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 											  uint8_t u8UnitId,
 											  uint8_t *pu8SerIpAddr,
 											  uint16_t u16Port,
+											  long lPriority,
+											  uint32_t u32mseTimeout,
 											  void* pFunCallBack);
 
 /// Read discrete input API
@@ -251,6 +253,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 														uint8_t u8UnitId,
 														uint8_t *pu8SerIpAddr,
 														uint16_t u16Port,
+														long lPriority,
+														uint32_t u32mseTimeout,
 														void* pFunCallBack);
 
 /// Read holding register API
@@ -260,6 +264,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 														  uint8_t u8UnitId,
 														  uint8_t *pu8SerIpAddr,
 														  uint16_t u16Port,
+														  long lPriority,
+														  uint32_t u32mseTimeout,
 														  void* pFunCallBack);
 
 /// Read input register API
@@ -269,6 +275,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 														uint8_t u8UnitId,
 														uint8_t *pu8SerIpAddr,
 														uint16_t u16Port,
+														long lPriority,
+														uint32_t u32mseTimeout,
 														void* pFunCallBack);
 
 /// write single coil API
@@ -278,6 +286,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 													 uint8_t u8UnitId,
 													 uint8_t *pu8SerIpAddr,
 													 uint16_t u16Port,
+													 long lPriority,
+													 uint32_t u32mseTimeout,
 													 void* pFunCallBack);
 
 /// write single register API
@@ -287,6 +297,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 														 uint8_t u8UnitId,
 														 uint8_t *pu8SerIpAddr,
 														 uint16_t u16Port,
+														 long lPriority,
+														 uint32_t u32mseTimeout,
 														 void* pFunCallBack);
 
 /// write multiple coils API
@@ -297,6 +309,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 													   uint8_t  u8UnitId,
 													   uint8_t  *pu8SerIpAddr,
 													   uint16_t u16Port,
+													   long lPriority,
+													   uint32_t u32mseTimeout,
 													   void*    pFunCallBack);
 
 /// write multiple registers API
@@ -307,6 +321,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 														   uint8_t  u8UnitId,
 														   uint8_t  *pu8SerIpAddr,
 														   uint16_t u16Port,
+														   long lPriority,
+														   uint32_t u32mseTimeout,
 														   void*    pFunCallBack);
 
 /// read file record API
@@ -317,6 +333,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 													uint8_t u8UnitId,
 													uint8_t *pu8SerIpAddr,
 													uint16_t u16Port,
+													long lPriority,
+													uint32_t u32mseTimeout,
 													void* pFunCallBack);
 
 /// write file record API
@@ -327,6 +345,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 													uint8_t u8UnitId,
 													uint8_t *pu8SerIpAddr,
 													uint16_t u16Port,
+													long lPriority,
+													uint32_t u32mseTimeout,
 													void* pFunCallBack);
 
 /// read write multiple registers API
@@ -340,6 +360,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 									uint8_t u8UnitId,
 									uint8_t *pu8SerIpAddr,
 									uint16_t u16Port,
+									long lPriority,
+									uint32_t u32mseTimeout,
 									void* pFunCallBack);
 
 /// Read device identification
@@ -351,6 +373,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 		uint8_t u8UnitId,
 		uint8_t *pu8SerIpAddr,
 		uint16_t u16Port,
+		long lPriority,
+		uint32_t u32mseTimeout,
 		void* pFunCallBack);
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED

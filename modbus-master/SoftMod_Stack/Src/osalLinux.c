@@ -216,13 +216,11 @@ bool OSAL_Get_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
 
 	MsgSize = sizeof(Linux_Msg_t) - sizeof(long);
 
-    /// Wait Till Message received or Error other than Signal interrupt
-        // On Demand Write Msg delay: Setting Msg Priority to -10 to recieved lower value msgs at high priority
-	// This Max number (-10) will be freezed shortly
-    while( (i32RetVal = msgrcv(msqid, pstQueueMsg, MsgSize, -10, 0)) == -1 && errno == EINTR )
-        continue;
+	/// Wait Till Message received or Error other than Signal interrupt
+	while( (i32RetVal = msgrcv(msqid, pstQueueMsg, MsgSize, MAX_RECV_PRIORITY, 0)) == -1 && errno == EINTR )
+		continue;
 
-    /// Returns Number of Bytes received or Error received
+	/// Returns Number of Bytes received or Error received
 	return( i32RetVal);
 }
 

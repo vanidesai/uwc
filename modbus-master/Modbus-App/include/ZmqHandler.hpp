@@ -24,6 +24,7 @@ struct stOnDemandRequest
 	std::string m_strWellhead;
 	std::string m_strMetric;
 	std::string m_strVersion;
+	std::string m_strTopic;
 	bool m_isByteSwap;
 	bool m_isWordSwap;
 };

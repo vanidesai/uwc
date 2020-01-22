@@ -34,7 +34,7 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		char *RootCAPath = getenv("PLBUS_ROOTCAPATH");
 		if(NULL == RootCAPath)
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("in reading PLBUS_ROOTCAPATH"));
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("in reading PLBUS_ROOTCAPATH"));
 			return;
 		}
 		sslopts.set_trust_store(RootCAPath);
@@ -42,7 +42,7 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		char *ClientCertPath = getenv("BACNET_PLBUS_CLIENT_CERT");
 		if(NULL == ClientCertPath)
 		{
-			CLogger::getInstance().log(FATAL, LOGDETAILS("Error in reading BACNET_PLBUS_CLIENT_CERT"));
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Error in reading BACNET_PLBUS_CLIENT_CERT"));
 			return;
 		}
 		sslopts.set_key_store(ClientCertPath);
@@ -65,11 +65,9 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		connectSubscriber();
 
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("MQTT initialized successfully"));
-		std::cout << __func__ << "MQTT initialized successfully" << std::endl;
 
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << "Exception : " << e.what() << std::endl;
 	}
 }
 
@@ -87,13 +85,11 @@ CMQTTHandler& CMQTTHandler::instance() {
 		/// check for null
 		if (NULL == mqttBrokerURL) {
 			CLogger::getInstance().log(ERROR, LOGDETAILS(":MQTT_URL_FOR_EXPORT Environment variable is not set"));
-			std::cout << __func__ << "ERROR: MQTT_URL_FOR_EXPORT Environment variable is not set" << endl;
 			exit(EXIT_FAILURE);
 		} else {
 			strPlBusUrl.assign(mqttBrokerURL);
 			CLogger::getInstance().log(DEBUG, LOGDETAILS(":MQTT_URL_FOR_EXPORT Environment variable is set to : "
 					+ strPlBusUrl));
-			std::cout << __func__ << "MQTT_URL_FOR_EXPORT Environment variable is set to : " << strPlBusUrl << endl;
 			bPlBusUrl = true;
 		}
 	}
@@ -115,7 +111,6 @@ bool CMQTTHandler::connect() {
 		 }*/
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << "Exception : " << e.what() << std::endl;
 
 		bFlag = false;
 	}
@@ -135,7 +130,6 @@ bool CMQTTHandler::getMsgFromQ(stMsgData &a_msg) {
 		}
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << "Exception : " << e.what() << std::endl;
 
 		bRet = false;
 	}
@@ -150,7 +144,6 @@ bool CMQTTHandler::pushMsgInQ(const stMsgData &a_msg) {
 		m_qMsgData.push(a_msg);
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << "Exception : " << e.what() << std::endl;
 
 		bRet = false;
 	}
@@ -182,7 +175,6 @@ void CMQTTHandler::postPendingMsgsThread() {
 		} while (true == bDoRun);
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << "Exception : " << e.what() << std::endl;
 
 #ifdef PERFTESTING
 		CMQTTHandler::m_ui32PublishSkipped++;
@@ -220,7 +212,6 @@ bool CMQTTHandler::publish(std::string a_sMsg, const char *topic, int qos) {
 		m_ui32PublishExcep++;
 #endif
 		CLogger::getInstance().log(FATAL, LOGDETAILS(exc.what()));
-		std::cout << __func__ << "Exception : " << exc.what() << std::endl;
 	}
 	return false;
 }
@@ -233,9 +224,9 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 		// Check if topic is blank
 		if (true == a_sTopic.empty()) {
 			if (true == a_sMsg.empty()) {
-				CLogger::getInstance().log(INFO, LOGDETAILS("Blank topic and blank Message"));
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Blank topic and blank Message"));
 			} else {
-				CLogger::getInstance().log(INFO, LOGDETAILS("Blank topic. Message not posted"));
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Blank topic. Message not posted"));
 			}
 			return false;
 		}
@@ -249,7 +240,6 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 
 			client.publish(pubmsg, nullptr, listener);
 			CLogger::getInstance().log(DEBUG, LOGDETAILS("Published message on EIS successfully " + std::to_string(a_iQOS)));
-			std::cout << __func__ << "Published message on EIS successfully" << endl;
 
 			return true;
 		} else {
@@ -270,7 +260,6 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 		}
 
 		CLogger::getInstance().log(FATAL, LOGDETAILS(exc.what()));
-		std::cout << __func__ << "Exception : " << exc.what() << std::endl;
 	}
 	return false;
 }
@@ -332,11 +321,10 @@ bool CMQTTHandler::initSem()
 {
 	int ok = sem_init(&g_semaphoreRespProcess, 0, 0 /* Initial value of zero*/);
 	if (ok == -1) {
-	   CLogger::getInstance().log(DEBUG, LOGDETAILS("could not create unnamed semaphore, exiting"));
+	   CLogger::getInstance().log(ERROR, LOGDETAILS("could not create unnamed semaphore, exiting"));
 	   exit(0);
 	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Sempaphores initialized successfully"));
-	std::cout << __func__ << "Semaphores initialized successfully" << std::endl;
 
 	return true;
 }
@@ -371,13 +359,11 @@ bool CMQTTHandler::subscribeToTopics() {
 	catch(exception &ex)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
-		std::cout << __func__ << "Exception : " << ex.what() << std::endl;
 
 		return false;
 	}
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscribed topics with MQTT broker"));
-	std::cout << __func__ << "Subscribed topics with MQTT broker" << std::endl;
 
 	return true;
 }
@@ -399,7 +385,6 @@ bool CMQTTHandler::connectSubscriber() {
 	}
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber connected successfully with MQTT broker"));
-	std::cout << __func__ << "Subscriber connected successfully with MQTT broker"<< std::endl;
 
 	return bFlag;
 }
@@ -417,7 +402,6 @@ bool CMQTTHandler::getSubMsgFromQ(mqtt::const_message_ptr &msg) {
 		}
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << "Exception : " << e.what() << std::endl;
 
 		bRet = false;
 	}

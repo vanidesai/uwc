@@ -123,7 +123,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		}
 
 		/// topic
-		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(sRespTopic.c_str());
+		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.append("Response").c_str());
 		msgbus_msg_envelope_put(msg, "topic", ptResTopic);
 		/// wellhead
 		msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());
@@ -173,11 +173,11 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 		}
 
-		std::string topic(sRespTopic);
-		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(topic);
-		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(topic);
+		//std::string topic(sRespTopic);
+		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(sRespTopic);
+		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(sRespTopic);
 
-		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, topic);
+		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, sRespTopic);
 	}
 	catch(const std::exception& e)
 	{
@@ -240,6 +240,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
+					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case READ_INPUT_STATUS:
@@ -250,6 +252,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
+					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case READ_HOLDING_REG:
@@ -260,6 +264,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
+					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case READ_INPUT_REG:
@@ -270,6 +276,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
+					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case WRITE_SINGLE_COIL:
@@ -282,6 +290,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
+					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			}
 			break;
@@ -297,6 +307,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
+					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			}
 			break;
@@ -309,6 +321,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
+					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case WRITE_MULTIPLE_REG:
@@ -320,6 +334,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8DevId,
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
+					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 

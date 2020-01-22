@@ -17,8 +17,10 @@
 #include <semaphore.h>
 #include <mutex>
 
+#define ON_DEMAND_WRITE_PRIORITY 1 	//Write-On Demand Priority set as highest(1)
+
 /// node for writerequest Q
-struct stWriteRequest
+struct stRequest
 {
 	std::string m_strTopic;
 	std::string m_strMsg;
@@ -26,7 +28,7 @@ struct stWriteRequest
 
 class modWriteHandler
 {
-	std::queue <stWriteRequest> stackTCPWriteReqQ;
+	std::queue <stRequest> stackTCPWriteReqQ;
 	std::mutex __writeReqMutex;
 	sem_t semaphoreWriteReq;
 	bool m_bIsWriteInitialized;
@@ -39,17 +41,17 @@ class modWriteHandler
 	BOOLEAN initWriteSem();
 
 	/// method to push write request to queue
-	BOOLEAN pushToWriteTCPQueue(struct stWriteRequest &stWriteRequestNode);
+	BOOLEAN pushToWriteTCPQueue(struct stRequest &stWriteRequestNode);
 
 	/// method to get data from q to process write.
-	BOOLEAN getWriteDataToProcess(struct stWriteRequest &stWriteProcessNode);
+	BOOLEAN getDataToProcess(struct stRequest &stWriteProcessNode);
 
 public:
 	static modWriteHandler& Instance();
 
 	eMbusStackErrorCode writeInfoHandler();
 
-	eMbusStackErrorCode jsonParserForWrite(stWriteRequest& reqMsg,
+	eMbusStackErrorCode jsonParserForOnDemandRequest(stRequest& reqMsg,
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode);
 
@@ -60,6 +62,8 @@ public:
 	bool isWriteInitialized() {return m_bIsWriteInitialized;}
 
 	void initWriteHandlerThreads();
+
+	bool validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand);
 };
 
 

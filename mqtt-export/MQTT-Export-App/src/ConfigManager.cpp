@@ -44,8 +44,6 @@ void etcdOnChangeKeyCb(char* key, char * val)
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
-	std::cout << __func__ << temp << endl;
-
 	exit(0);
 }
 
@@ -57,19 +55,17 @@ void etcdOnChangeKeyCb(char* key, char * val)
  */
 void etcdOnChangeDirCb(char* key, char * val)
 {
-	std::cout<< __func__ << " ETCD :: Change dir callback is called";
 	if(key == NULL || val == NULL) {
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("cannot restart application as key or value is null"));
 		return;
 	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Application is restarting to apply new changes from ETCD.."));
-	string temp = "New value to be apply key:";
+	string temp = "New value to apply key:";
 	temp.append(key);
 	temp.append(":");
 	temp.append(val);
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-	std::cout << __func__ << temp << endl;
 
 	//raised to call clean up routine
 	raise( SIGUSR1);

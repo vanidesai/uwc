@@ -19,6 +19,10 @@
 #include <errno.h>
 #include <stddef.h>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
+
 #include "SessionControl.h"
 #include "osalLinux.h"
 
@@ -38,6 +42,10 @@
 #define PKT_EXP_LEN 2
 #define EXP_VAL 0x80
 #define EXP_POS 1
+
+extern int m_epollFd;
+struct sockaddr_in m_serverAddr;
+struct epoll_event *m_events;
 
 /*CRC calculation is for Modbus RTU stack */
 #ifndef MODBUS_STACK_TCPIP_ENABLED
@@ -118,9 +126,6 @@ static uint16_t crc16(uint8_t *buffer, uint16_t buffer_length)
 }
 #endif //#ifndef MODBUS_STACK_TCPIP_ENABLED
 
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-extern stDevConfig_t ModbusMasterConfig;
-#endif
 int g_iResponseTimeout;
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
@@ -213,6 +218,9 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 		stException.m_u8ExcCode = eMbusStackErr;
 		pstMBusRequesPacket->m_stMbusRxData.m_u8Length = 0;
 	}
+
+    char buff[100];
+    strftime(buff, sizeof buff, "%D %T", gmtime(&pstMBusRequesPacket->m_ts.tv_sec));
 
 	switch(eMbusFunctionCode)
 	{
@@ -1103,28 +1111,6 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 	tios.c_cflag &= ~CSIZE;
 	tios.c_cflag |= CS8;
 
-/*
-
-Stop bit (1 or 2)
-if (stop_bit == 1)
-tios.c_cflag &=~ CSTOPB;
-else /* 2
-//tios.c_cflag |= CSTOPB;
-
-PARENB       Enable parity bit
-       PARODD       Use odd parity instead of even
-if (parity == NO_PARITY) {
-/* None
-tios.c_cflag &=~ PARENB;
-} else if (parity == EVEN_PARITY) {
-Even
-tios.c_cflag |= PARENB;
-tios.c_cflag &=~ PARODD;
-} else {
-Odd
-tios.c_cflag |= PARENB;
-tios.c_cflag |= PARODD;
-}*/
 
 /* PARENB       Enable parity bit
 
@@ -1313,35 +1299,21 @@ tios.c_cflag |= PARODD;
  */
 uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* pi32sockfd)
 {
+	/// local variables
 	int32_t sockfd = 0;
 	uint8_t u8CommunicationFalg = 1;
 	uint8_t u8ReturnType = STACK_NO_ERROR;
 	uint8_t recvBuff[260];
-	uint8_t ServerReplyBuff[260];
 	struct sockaddr_in serv_addr;
 	IP_address_t stTempIpAdd = {0};
 	long arg;
-	fd_set myset;
-	socklen_t lon;
-	int res, valopt;
-	struct timeval tv;
-	//tv.tv_sec = ModbusMasterConfig.m_u8TcpConnectTimeout;  /// 3 seconds timeout
-	tv.tv_usec = ModbusMasterConfig.m_u8TcpConnectTimeout;	/// 30k microseconds
+	int res = 0;
 
 	if(NULL == pstMBusRequesPacket || NULL == pi32sockfd)
 	{
 		u8ReturnType = STACK_ERROR_SEND_FAILED;
 		return u8ReturnType;
 	}
-
-	memset(&serv_addr, '0', sizeof(serv_addr));
-
-	stTempIpAdd.s_un.s_un_b.IP_1 = pstMBusRequesPacket->m_u8IpAddr[0];
-	stTempIpAdd.s_un.s_un_b.IP_2 = pstMBusRequesPacket->m_u8IpAddr[1];
-	stTempIpAdd.s_un.s_un_b.IP_3 = pstMBusRequesPacket->m_u8IpAddr[2];
-	stTempIpAdd.s_un.s_un_b.IP_4 = pstMBusRequesPacket->m_u8IpAddr[3];
-	serv_addr.sin_addr.s_addr = stTempIpAdd.s_un.s_addr;
-	serv_addr.sin_port = htons(pstMBusRequesPacket->u16Port);
 
 	memset(recvBuff, '0',sizeof(recvBuff));
 	memcpy_s(recvBuff,sizeof(pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields),
@@ -1362,106 +1334,84 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 			arg |= O_NONBLOCK;
 			fcntl(sockfd, F_SETFL, arg);
 
+			memset(&serv_addr, '0', sizeof(serv_addr));
+
+			stTempIpAdd.s_un.s_un_b.IP_1 = pstMBusRequesPacket->m_u8IpAddr[0];
+			stTempIpAdd.s_un.s_un_b.IP_2 = pstMBusRequesPacket->m_u8IpAddr[1];
+			stTempIpAdd.s_un.s_un_b.IP_3 = pstMBusRequesPacket->m_u8IpAddr[2];
+			stTempIpAdd.s_un.s_un_b.IP_4 = pstMBusRequesPacket->m_u8IpAddr[3];
+			serv_addr.sin_addr.s_addr = stTempIpAdd.s_un.s_addr;
+			serv_addr.sin_port = htons(pstMBusRequesPacket->u16Port);
+
 			/// Trying to connect with timeout
 			*pi32sockfd = sockfd;
 			serv_addr.sin_family = AF_INET;
-			//serv_addr.sin_port = htons(MODBUS_TCP_PORT);
-
 			res = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
 			if (res < 0)
 			{
 				if (errno == EINPROGRESS)
 				{
-					tv.tv_sec = 0;
-					//tv.tv_usec = ModbusMasterConfig.m_u8TcpConnectTimeout;
-					tv.tv_usec = g_iResponseTimeout;
-					FD_ZERO(&myset);
-					FD_SET(sockfd, &myset);
-					if (select(sockfd+1, NULL, &myset, NULL, &tv) > 0)
-					{
-						lon = sizeof(int);
-						getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon);
-						if (valopt)
-						{
-							u8ReturnType = STACK_ERROR_CONNECT_FAILED;
-							*pi32sockfd = 0;
-							/// closing socket on error.
-							close(sockfd);
-							break;
-						}
-					}
-					else
-					{
-						u8ReturnType = STACK_ERROR_CONNECT_FAILED;
-						*pi32sockfd = 0;
-						/// closing socket on error.
-						close(sockfd);
-						break;
-					}
+					printf("\nConnection with Modbus Server is in progress ...\n");
 				}
 				else
 				{
 					u8ReturnType = STACK_ERROR_CONNECT_FAILED;
 					*pi32sockfd = 0;
 					/// closing socket on error.
+					printf("Connection with Modbus slave failed, so closing socket descriptor %d\n", sockfd);
 					close(sockfd);
 					break;
 				}
 			}
-			/// Set to blocking mode again...
-			arg = fcntl(sockfd, F_GETFL, NULL);
-			arg &= (~O_NONBLOCK);
-			fcntl(sockfd, F_SETFL, arg);
+			else if(res == 0) {
+				printf("Modbus slave connection established on socket %d\n", sockfd);
+				//socket has been created and connected successfully, add it to epoll fd
+				struct epoll_event m_event;
+				m_event.events = EPOLLIN;
+				m_event.data.fd = sockfd;
+				if (epoll_ctl(m_epollFd, EPOLL_CTL_ADD, sockfd, &m_event)) {
+					fprintf(stderr, "Failed to add file descriptor to epoll\n");
+					close(m_epollFd);
+					return 1;
+				}
+				int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
+
+				if(res < 0)
+					/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
+				{
+					printf("1. Closing socket %d as error occurred while sending data\n", sockfd);
+					u8ReturnType = STACK_ERROR_SEND_FAILED;
+					close(sockfd);
+					*pi32sockfd = 0;
+					break;
+				}
+			}
 		}
 		else
 		{
 			sockfd = *pi32sockfd;
-		}
 
-		///		if(send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), 0) < 0)
-		if(send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL) < 0)
+			struct epoll_event m_event;
+			m_event.events = EPOLLIN;
+			m_event.data.fd = sockfd;
+			epoll_ctl(m_epollFd, EPOLL_CTL_ADD, sockfd, &m_event);
+
+			int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
+
 			/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
-		{
-			u8ReturnType = STACK_ERROR_SEND_FAILED;
-			close(sockfd);
-			*pi32sockfd = 0;
-			break;
+			if(res < 0)
+			{
+				printf("Error %d occurred while sending request on %d closing the socket\n", errno, sockfd);
+
+				close(sockfd);
+				*pi32sockfd = 0;
+				break;
+			}
 		}
 
-		//setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
-
-		tv.tv_sec = 0;
-		//tv.tv_usec = ModbusMasterConfig.m_u8TcpConnectTimeout;
-		tv.tv_usec = g_iResponseTimeout;
-		FD_ZERO(&myset);
-		FD_SET(sockfd, &myset);
-		if (select(sockfd+1, NULL, &myset, NULL, &tv) <= 0)
-		{
-			printf("\nselect before recv error: %d", errno);
-			u8ReturnType = STACK_ERROR_RECV_FAILED;
-			/// closing socket on error.
-			close(sockfd);
-			*pi32sockfd = 0;
-			break;
-		}
-
-		if(recv(sockfd, ServerReplyBuff, sizeof(ServerReplyBuff), 0) <= 0)
-		{
-			u8ReturnType = STACK_ERROR_RECV_FAILED;
-			/// closing socket on error.
-			close(sockfd);
-			*pi32sockfd = 0;
-			break;
-		}
-		else
-		{
-			u8CommunicationFalg = 0;
-		}
 		break;
 	}
-	if(0 == u8CommunicationFalg && STACK_NO_ERROR == u8ReturnType)
-		u8ReturnType = DecodeRxPacket(ServerReplyBuff,pstMBusRequesPacket);
 
 	pstMBusRequesPacket->m_u8CommandStatus = u8ReturnType;
 

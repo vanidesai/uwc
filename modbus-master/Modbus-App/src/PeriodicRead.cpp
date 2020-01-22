@@ -722,6 +722,7 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 		stMbusApiPram.m_u16StartAddr = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iAddress;
 		stMbusApiPram.m_u16Quantity = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
 		stMbusApiPram.m_u16ByteCount = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
+		stMbusApiPram.m_lPriority = a_stRdPrdObj.getDataPoint().getDataPoint().getPollingConfig().m_uiPollFreq;
 
 		// Coil and discrete input are single bytes. All others are 2 byte registers
 		if( 

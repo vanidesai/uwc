@@ -23,6 +23,7 @@
 #define WAIT_OBJECT_2 2
 #define WAIT_TIMEOUT -1
 #define INFINITE      0xFFFFFFFF  // Infinite timeout
+#define MAX_RECV_PRIORITY -10000
 
 typedef pthread_t  Thread_H;
 typedef pthread_mutex_t*  Mutex_H;
@@ -76,12 +77,18 @@ void OSAL_Free(void *pvPointer);
 /// The OSAL Thread create API will generate Thread for various OS
 Thread_H Osal_Thread_Create(thread_Create_t *pThreadParam);
 
+/// The OSAL Thread Terminate API will terminate Thread.
+bool Osal_Thread_Terminate(Thread_H pThreadTerminate);
+
 /// The OSAL Mutex create API will generate Mutex
 Mutex_H Osal_Mutex(void);
 /// The OSAL API Releases the Mutex acquired by process
 int32_t Osal_Wait_Mutex(Mutex_H pMtxHandle, int32_t i32Time);
 /// The OSAL API Releases the Mutex acquired by process
 int32_t Osal_Release_Mutex(Mutex_H pMtxHandle);
+
+/// close the mutex
+int32_t Osal_Close_Mutex( Mutex_H pMtxHandle);
 
 /// Copies a message to message queue
 int32_t OSAL_Init_Message_Queue();

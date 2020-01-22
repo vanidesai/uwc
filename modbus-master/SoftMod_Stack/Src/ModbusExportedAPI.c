@@ -11,16 +11,24 @@
 
 #include "SessionControl.h"
 #include <safe_lib.h>
+#include <unistd.h>
 
 Thread_H SessionControl_ThreadId = 0;
-//Mutex_H TransactionId_Mutex = NULL;
 extern int32_t i32MsgQueIdSC;
 bool g_bThreadExit = false;
 extern int g_iResponseTimeout;
 
+Thread_H EpollRecv_ThreadId = 0;
+pthread_t Rx_ThreadId;
+Mutex_H TransactionId_Mutex = NULL;
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 Mutex_H LivSerSesslist_Mutex = NULL;
 extern stLiveSerSessionList_t *pstSesCtlThdLstHead;
+Mutex_H EpollTcpRecv_Mutex = NULL;
+
+extern int32_t i32MsgQueIdSC;
+extern int m_epollFd;
+
 stDevConfig_t ModbusMasterConfig;
 
 /*
@@ -84,7 +92,12 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	char *ptr = NULL;
 
 	g_bThreadExit = false;
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+	thread_Create_t stEpollRecvThreadParam = { 0 };
 
+	ModbusMasterConfig.m_u8MaxTcpConnection = MAXIMUM_TCP_CONNECTION;
+	ModbusMasterConfig.m_u8TcpConnectTimeout = MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC;
+	ModbusMasterConfig.m_u16TcpSessionTimeout = SESSION_TIMEOUT_IN_SEC;
 	const char *pcResponseTime = getenv("RESPONSE_TIMEOUT");
 	if(NULL == pcResponseTime)
 	{
@@ -94,18 +107,34 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	}
 	else
 	{
-		g_iResponseTimeout = strtol(pcResponseTime, ptr, 10) * 1000;	// *1000 is to convert millisecond value to microsecond
+		g_iResponseTimeout = strtol(pcResponseTime, &ptr, 10) * 1000;	// *1000 is to convert millisecond value to microsecond
+	}
+	initReqListData();
+	LivSerSesslist_Mutex = Osal_Mutex();
+
+	//init epoll
+	m_epollFd = epoll_create1(0);
+	if (m_epollFd == -1) {
+		fprintf(stderr, "Failed to create epoll file descriptor\n");
+		return 1;
 	}
 
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-	ModbusMasterConfig.m_u8MaxTcpConnection = MAXIMUM_TCP_CONNECTION;
-	ModbusMasterConfig.m_u8TcpConnectTimeout = MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC;
-	ModbusMasterConfig.m_u16TcpSessionTimeout = SESSION_TIMEOUT_IN_SEC;
-	LivSerSesslist_Mutex = Osal_Mutex();
+
+	//mutext for epoll thread
+	EpollTcpRecv_Mutex = Osal_Mutex();
+
+	stEpollRecvThreadParam.dwStackSize = 0;
+	stEpollRecvThreadParam.lpStartAddress = EpollRecvThread;
+	stEpollRecvThreadParam.lpThreadId = &EpollRecv_ThreadId;
+
+	EpollRecv_ThreadId = Osal_Thread_Create(&stEpollRecvThreadParam);
+
 #endif //#ifdef MODBUS_STACK_TCPIP_ENABLED
 
 
 	i32MsgQueIdSC = OSAL_Init_Message_Queue();
+
+	printf("Initiating MODBUS send reuests from StackInit ...\n");
 
 	stThreadParam.dwStackSize = 0;
 	stThreadParam.lpStartAddress = SessionControlThread;
@@ -114,9 +143,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 
 	SessionControl_ThreadId = Osal_Thread_Create(&stThreadParam);
 
-	//TransactionId_Mutex = Osal_Mutex();
-
-	//LivSerSesslist_Mutex = Osal_Mutex();
+	TransactionId_Mutex = Osal_Mutex();
 
 	return eStatus;
 }
@@ -554,6 +581,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 											  uint8_t u8UnitId,
 											  uint8_t *pu8SerIpAddr,
 											  uint16_t u16Port,
+											  long lPriority,
+											  uint32_t u32mseTimeout,
 											  void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -631,7 +660,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -663,6 +692,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 														uint8_t u8UnitId,
 														uint8_t *pu8SerIpAddr,
 														uint16_t u16Port,
+														long lPriority,
+														uint32_t u32mseTimeout,
 														void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -742,7 +773,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -775,6 +806,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 														  uint8_t u8UnitId,
 														  uint8_t *pu8SerIpAddr,
 														  uint16_t u16Port,
+														  long lPriority,
+														  uint32_t u32mseTimeout,
 														  void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -851,7 +884,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -883,6 +916,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 														uint8_t u8UnitId,
 														uint8_t *pu8SerIpAddr,
 														uint16_t u16Port,
+														long lPriority,
+														uint32_t u32mseTimeout,
 														void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -961,7 +996,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -993,6 +1028,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 													 uint8_t u8UnitId,
 													 uint8_t *pu8SerIpAddr,
 													 uint16_t u16Port,
+													 long lPriority,
+													 uint32_t u32mseTimeout,
 													 void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1067,7 +1104,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 1;	// On Demand Write Msg delay issue: Setting msg priority(1) higher than Read request (10)
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1099,6 +1136,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 														 uint8_t u8UnitId,
 														 uint8_t *pu8SerIpAddr,
 														 uint16_t u16Port,
+														 long lPriority,
+														 uint32_t u32mseTimeout,
 														 void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1172,7 +1211,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1206,6 +1245,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 									   uint8_t  u8UnitId,
 									   uint8_t  *pu8SerIpAddr,
 									   uint16_t u16Port,
+									   long lPriority,
+									   uint32_t u32mseTimeout,
 									   void*    pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1293,7 +1334,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1327,6 +1368,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 									   uint8_t  u8UnitId,
 									   uint8_t  *pu8SerIpAddr,
 									   uint16_t u16Port,
+									   long lPriority,
+									   uint32_t u32mseTimeout,
 									   void*    pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1423,7 +1466,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1457,6 +1500,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 													uint8_t u8UnitId,
 													uint8_t *pu8SerIpAddr,
 													uint16_t u16Port,
+													long lPriority,
+													uint32_t u32mseTimeout,
 													void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1581,7 +1626,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1615,6 +1660,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 													 uint8_t u8UnitId,
 													 uint8_t *pu8SerIpAddr,
 													 uint16_t u16Port,
+													 long lPriority,
+													 uint32_t u32mseTimeout,
 													 void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1749,7 +1796,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1789,6 +1836,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 									uint8_t u8UnitId,
 									uint8_t *pu8SerIpAddr,
 									uint16_t u16Port,
+									long lPriority,
+									uint32_t u32mseTimeout,
 									void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -1916,7 +1965,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
@@ -1953,6 +2002,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 		uint8_t u8UnitId,
 		uint8_t *pu8SerIpAddr,
 		uint16_t u16Port,
+		long lPriority,
+		uint32_t u32mseTimeout,
 		void* pFunCallBack)
 {
 	uint8_t	u8ReturnType = STACK_NO_ERROR;
@@ -2046,7 +2097,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
 	stPostThreadMsg.wParam = pstMBusRequesPacket;
-	stPostThreadMsg.MsgType = 10;
+	stPostThreadMsg.MsgType = lPriority;
 
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{

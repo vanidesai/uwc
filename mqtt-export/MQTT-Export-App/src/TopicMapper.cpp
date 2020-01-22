@@ -33,7 +33,7 @@ bool CTopicMapper::readEnvVariable(const char *pEnvVarName, string &storeVal)
 		bRetVal = true;
 		std::string tmp (cEvar);
 		storeVal = tmp;
-		CLogger::getInstance().log(INFO, LOGDETAILS(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal));
+		CLogger::getInstance().log(DEBUG, LOGDETAILS(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal));
 	}
 	else
 	{
@@ -51,83 +51,32 @@ bool CTopicMapper::readCommonEnvVariables()
 {
 	bool bRetVal = false;
 
-	bRetVal = readEnvVariable("ReadRequest", m_strReadRequest);
-	if(!bRetVal)
+	std::list<std::string> topicList{"ReadRequest", "WriteRequest",
+						"AppName", "APP_VERSION", "MQTT_URL_FOR_EXPORT"};
+	std::map <std::string, std::string> envTopics;
+
+	for (auto topic : topicList)
 	{
-		return false;
+		std::string envVar = "";
+		bRetVal = readEnvVariable(topic.c_str(), envVar);
+		if(!bRetVal)
+		{
+			return false;
+		}
+		else
+		{
+			envTopics.emplace(topic, envVar);
+		}
 	}
 
-	bRetVal = readEnvVariable("WriteRequest", m_strWriteRequest);
-	if(!bRetVal)
-	{
-		return false;
-	}
-	return bRetVal;
+	setStrReadRequest(envTopics.at("ReadRequest"));
+	setStrWriteRequest(envTopics.at("WriteRequest"));
+	setStrAppName(envTopics.at("AppName"));
+	setStrAppVersion(envTopics.at("APP_VERSION"));
+	setStrMqttExportURL(envTopics.at("MQTT_URL_FOR_EXPORT"));
+	return true;
 }
 
 CTopicMapper::~CTopicMapper() {
 	// TODO Auto-generated destructor stub
 }
-
-/*
-std::vector<std::string> CTopicMapper::GetMqttTopics()
-{
-	std::vector<std::string> allMQTTTopics;
-	for(auto topic : m_MQTTopics) {
-		if(! topic.first.empty())
-			allMQTTTopics.push_back(topic.first);
-	}
-	return allMQTTTopics;
-}
-
-//return MQTT topic that is mapped with ZMQ
-std::string CTopicMapper::GetMQTTopic(std::string topic) {
-
-	//std::cout << "Topic to find : " << topic << "";
-	std::string strMqttTopic = "";
-
-	try{
-		if(m_ZMQTopics.empty()) {
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("ZMQ map is empty"));
-		}
-		else
-		{
-			//get topic from map
-			auto itrZMQTopic = m_ZMQTopics.find(topic);
-
-			if(itrZMQTopic != m_ZMQTopics.end())
-				strMqttTopic = itrZMQTopic->second;
-		}
-	} catch(std::exception &e) {
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-	}
-	//std::cout << "Found matching MQTT topic : " << strMqttTopic << "";
-	return strMqttTopic;
-}
-
-//return ZMQ topic that is mapped with MQTT
-std::string CTopicMapper::GetZMQTopic(std::string topic) {
-
-	std::string strZmqTopic = "";
-
-	try
-	{
-	if(m_MQTTopics.empty()){
-		CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT map is empty"));
-	}
-	else
-	{
-		//get topic from map
-		auto itrMQTTTopic = m_MQTTopics.find(topic);
-
-		if(itrMQTTTopic != m_MQTTopics.end())
-			strZmqTopic = itrMQTTTopic->second;
-	}
-	}catch(std::exception &e) {
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-	}
-	return strZmqTopic;
-}
-
-*/
-

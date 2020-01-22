@@ -13,6 +13,7 @@
 #define STACKCONFIG_H_
 
 #include "osalLinux.h"
+#include "semaphore.h"
 
 //#define MODBUS_STACK_TCPIP_ENABLED
 
@@ -109,6 +110,22 @@ typedef struct
 }MbusRXData_t;
 
 /**
+ @enum eTransactionState
+ @brief
+    This structure defines modbus index
+*/
+typedef enum
+{
+	REQ_RCVD_FROM_APP,
+	REQ_PROCESS_ERROR,
+	REQ_SENT_ON_NETWORK,
+	RESP_RCVD_FROM_NETWORK,
+	RESP_TIMEDOUT,
+	RESP_ERROR,
+	RESP_SENT_TO_APP,
+}eTransactionState;
+
+/**
 *
 * @struct  - stMbusPacketVariables_t
 *
@@ -124,10 +141,15 @@ typedef struct _stMbusPacketVariables
 	uint16_t m_u16TransactionID;
 	/** Holds the unit id  */
 	uint8_t  m_u8UnitID;
+	uint32_t m_u32MsTimeout;
+	eTransactionState m_state;
+	uint8_t  m_u8ProcessReturn;
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	/** Holds Ip address of salve/server device */
 	uint8_t m_u8IpAddr[4];
 	uint16_t u16Port;
+	struct _stMbusPacketVariables *__next;
+	struct _stMbusPacketVariables *__prev;
 #else
 	/** Received destination address */
 	uint8_t	m_u8ReceivedDestination;	
@@ -146,10 +168,38 @@ typedef struct _stMbusPacketVariables
 	/** Holds the Quantity  */
 	uint16_t  m_u16Quantity;
 	void *pFunc;
+	/** Holds the Msg Priority  */
+	long m_lPriority;
+	/** Holds the Mse Timeout  */
+	uint32_t m_u32mseTimeout;
+	unsigned long m_ulReqProcess;
+	unsigned long m_ulReqSentTimeByStack;
+	unsigned long m_ulRespProcess;
+	unsigned long m_ulRespRcvdTimebyStack;
+	unsigned long m_ulRespSentTimebyStack;
+
+	struct timespec m_ts;
 
 }stMbusPacketVariables_t;
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+
+struct stReqList {
+	stMbusPacketVariables_t *m_pstStart;
+	stMbusPacketVariables_t *m_pstLast;
+	Mutex_H m_mutexReqList;
+	Thread_H m_threadIdReqTimeout;
+};
+
+struct stResProcessData {
+	sem_t m_semaphoreResp;
+
+	int32_t m_i32RespMsgQueId;
+	Thread_H m_threadIdRespToApp;
+};
+
+int initReqListData();
+
 /**
  @struct IP_address
  @brief

@@ -119,6 +119,10 @@ typedef struct MbusAPI
 	unsigned short  m_u16StartAddr;
 	unsigned short  m_u16ByteCount;
 	unsigned char  *m_pu8Data;
+	/** Holds the Msg Priority  */
+	long m_lPriority;
+	/** Holds the Mse Timeout  */
+	uint32_t m_u32mseTimeout;
 }MbusAPI_t;
 
 // This structure defines request parameters for read periodic
