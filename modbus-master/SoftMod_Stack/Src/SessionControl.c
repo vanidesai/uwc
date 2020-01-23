@@ -672,7 +672,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 			{
 				if(NULL != pstLivSerSesslist)
 				{
-					pstMBusRequesPacket->m_u32MsTimeout = g_iResponseTimeout;
+					pstMBusRequesPacket->m_u32MsTimeout = g_iResponseTimeout/1000; /// convert to millisecond
 					addReqToList(pstMBusRequesPacket);
 					pstMBusRequesPacket->m_ulReqSentTimeByStack = get_nanos();
 					u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &stIPConnect);
@@ -743,10 +743,13 @@ void addToHandleRespQ(stTcpRecvData_t a_pstReq)
 	if(0 != a_pstReq.m_bytesRead)
 	{
 		mesg_data_t stLocalData;
+		size_t MsgSize = 0;
 		memcpy_s(stLocalData.m_readBuffer,sizeof(stLocalData.m_readBuffer),
 				a_pstReq.m_readBuffer,sizeof(a_pstReq.m_readBuffer));
 
-		int32_t iStatus = msgsnd( g_stHandleResp.m_i32HandleRespMsgQueId, &stLocalData, sizeof(mesg_data_t), 0);
+		stLocalData.mesg_type = 1;
+		MsgSize = sizeof(stLocalData) - sizeof(long);
+		int32_t iStatus = msgsnd(g_stHandleResp.m_i32HandleRespMsgQueId, &stLocalData, MsgSize, 0);
 
 		if(iStatus == 0)
 		{
@@ -755,7 +758,8 @@ void addToHandleRespQ(stTcpRecvData_t a_pstReq)
 		}
 		else
 		{
-			printf("Post failed %d\n", iStatus);
+			static int count = 0;
+			printf("Post failed error = %d,%d count = %d\n", iStatus, errno, count++);
 		}
 	}
 	return;
@@ -786,7 +790,11 @@ void* handleClientReponseThreadFunction(void* threadArg)
 		memset(&stLocalData,00,sizeof(stLocalData));
 		i32RetVal = 0;
 
-		i32RetVal = msgrcv(g_stHandleResp.m_i32HandleRespMsgQueId, &stLocalData, sizeof(stLocalData), 0, MSG_NOERROR | IPC_NOWAIT);
+		size_t MsgSize = 0;
+
+		MsgSize = sizeof(stLocalData) - sizeof(long);
+
+		i32RetVal = msgrcv(g_stHandleResp.m_i32HandleRespMsgQueId, &stLocalData, MsgSize, 0, MSG_NOERROR | IPC_NOWAIT);
 		if(errno == ENOMSG && (-1 == i32RetVal))
 		   	i32RetVal = -1;
 

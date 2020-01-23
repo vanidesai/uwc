@@ -85,7 +85,7 @@ typedef struct TcpRecvData
 	int m_len;
 	int m_bytesRead;
 	int m_bytesToBeRead;
-	unsigned char m_readBuffer[1024];
+	unsigned char m_readBuffer[256];
 }stTcpRecvData_t;
 
 struct stHandleRespData {
@@ -97,8 +97,9 @@ struct stHandleRespData {
 
 typedef struct mesg_data
 {
-	/// array
-	unsigned char m_readBuffer[1024];
+	long mesg_type;
+	/// data buffer
+	unsigned char m_readBuffer[256];
 }mesg_data_t;
 
 int initHandleResponseContext();
