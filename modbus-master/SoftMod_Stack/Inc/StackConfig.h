@@ -15,6 +15,10 @@
 #include "osalLinux.h"
 #include "semaphore.h"
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
+
 //#define MODBUS_STACK_TCPIP_ENABLED
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
@@ -125,6 +129,29 @@ typedef enum
 	RESP_SENT_TO_APP,
 }eTransactionState;
 
+typedef enum
+{
+	SOCK_CONNECT_SUCCESS,
+	SOCK_CONNECT_FAILED,
+	SOCK_CONNECT_INPROGRESS,
+	SOCK_CREATE_FAILED,
+	SOCK_CREATE_SUCCESS,
+	SOCK_SEND_FAILED,
+	SOCK_NOT_CONNECTED
+}eSockConnect_enum;
+
+#define MAX_RETRY_COUNT 10
+
+typedef struct IP_Connect
+{
+	int32_t m_retryCount;
+	struct sockaddr_in m_servAddr;
+	int32_t m_sockfd;
+	eSockConnect_enum m_lastConnectStatus;
+	uint32_t m_timeOut;
+	bool m_bIsAddedToEPoll;
+}IP_Connect_t;
+
 /**
 *
 * @struct  - stMbusPacketVariables_t
@@ -177,7 +204,6 @@ typedef struct _stMbusPacketVariables
 	unsigned long m_ulRespProcess;
 	unsigned long m_ulRespRcvdTimebyStack;
 	unsigned long m_ulRespSentTimebyStack;
-
 	struct timespec m_ts;
 
 }stMbusPacketVariables_t;
@@ -273,9 +299,12 @@ typedef enum
 void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,
 		eStackErrorCode eMbusStackErr);
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
+		IP_Connect_t *m_pstIPConnect);
+#else
 /// Function to send packet on network
 uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
 		int32_t *pi32sockfd);
-
-
+#endif
 #endif /* STACKCONFIG_H_ */

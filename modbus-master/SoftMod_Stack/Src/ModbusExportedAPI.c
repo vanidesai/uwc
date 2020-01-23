@@ -92,12 +92,6 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	char *ptr = NULL;
 
 	g_bThreadExit = false;
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-	thread_Create_t stEpollRecvThreadParam = { 0 };
-
-	ModbusMasterConfig.m_u8MaxTcpConnection = MAXIMUM_TCP_CONNECTION;
-	ModbusMasterConfig.m_u8TcpConnectTimeout = MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC;
-	ModbusMasterConfig.m_u16TcpSessionTimeout = SESSION_TIMEOUT_IN_SEC;
 	const char *pcResponseTime = getenv("RESPONSE_TIMEOUT");
 	if(NULL == pcResponseTime)
 	{
@@ -109,7 +103,15 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	{
 		g_iResponseTimeout = strtol(pcResponseTime, &ptr, 10) * 1000;	// *1000 is to convert millisecond value to microsecond
 	}
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+	thread_Create_t stEpollRecvThreadParam = { 0 };
+
+	ModbusMasterConfig.m_u8MaxTcpConnection = MAXIMUM_TCP_CONNECTION;
+	ModbusMasterConfig.m_u8TcpConnectTimeout = MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC;
+	ModbusMasterConfig.m_u16TcpSessionTimeout = SESSION_TIMEOUT_IN_SEC;
+
 	initReqListData();
+	initHandleResponseContext();
 	LivSerSesslist_Mutex = Osal_Mutex();
 
 	//init epoll

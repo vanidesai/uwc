@@ -19,14 +19,8 @@
 #include <errno.h>
 #include <stddef.h>
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
-
 #include "SessionControl.h"
 #include "osalLinux.h"
-
-//#define MODBUS_STACK_TCPIP_ENABLED
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 #include <sys/socket.h>
@@ -219,8 +213,6 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 		pstMBusRequesPacket->m_stMbusRxData.m_u8Length = 0;
 	}
 
-    char buff[100];
-    strftime(buff, sizeof buff, "%D %T", gmtime(&pstMBusRequesPacket->m_ts.tv_sec));
 
 	switch(eMbusFunctionCode)
 	{
@@ -1287,6 +1279,17 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 
+void Mark_Sock_Fail(IP_Connect_t *stIPConnect) {
+	if(NULL != stIPConnect)
+	{
+		close(stIPConnect->m_sockfd);
+		stIPConnect->m_sockfd = 0;
+		stIPConnect->m_retryCount = 0;
+		stIPConnect->m_lastConnectStatus = SOCK_CONNECT_FAILED;
+		stIPConnect->m_bIsAddedToEPoll = false;
+	}
+}
+
 /**
  * Description
  * Function to send packet on network
@@ -1297,11 +1300,10 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
  * @return uint8_t [out] respective error codes
  *
  */
-uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* pi32sockfd)
+uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Connect_t *a_pstIPConnect)
 {
 	/// local variables
 	int32_t sockfd = 0;
-	uint8_t u8CommunicationFalg = 1;
 	uint8_t u8ReturnType = STACK_NO_ERROR;
 	uint8_t recvBuff[260];
 	struct sockaddr_in serv_addr;
@@ -1309,7 +1311,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 	long arg;
 	int res = 0;
 
-	if(NULL == pstMBusRequesPacket || NULL == pi32sockfd)
+	if(NULL == pstMBusRequesPacket || NULL == a_pstIPConnect)
 	{
 		u8ReturnType = STACK_ERROR_SEND_FAILED;
 		return u8ReturnType;
@@ -1320,15 +1322,32 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 			pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields,
 			pstMBusRequesPacket->m_stMbusTxData.m_u16Length);
 
-	while(u8CommunicationFalg)
+	// There are following cases to be handled:
+	// 1. Socket is not created. Here socket = 0
+	// 2. Socket is created and connection is in progress. Here connectionstatus = EINPROGRESS
+	// 3. Connection is established
+
+	do
 	{
-		if(0 == (*pi32sockfd))
+		// Case 1: Socket is not created
+		if(0 == a_pstIPConnect->m_sockfd)
 		{
+			a_pstIPConnect->m_lastConnectStatus = SOCK_NOT_CONNECTED;
+			a_pstIPConnect->m_bIsAddedToEPoll = false;
+			a_pstIPConnect->m_retryCount = 0;
 			if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 			{
 				u8ReturnType = STACK_ERROR_SOCKET_FAILED;
 				break;
 			}
+
+			a_pstIPConnect->m_sockfd = sockfd;
+		}
+		sockfd = a_pstIPConnect->m_sockfd;
+		if((SOCK_NOT_CONNECTED == a_pstIPConnect->m_lastConnectStatus) &&
+			(0 != a_pstIPConnect->m_sockfd))
+		{
+			a_pstIPConnect->m_retryCount = 0;
 
 			arg = fcntl(sockfd, F_GETFL, NULL);
 			arg |= O_NONBLOCK;
@@ -1343,8 +1362,6 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 			serv_addr.sin_addr.s_addr = stTempIpAdd.s_un.s_addr;
 			serv_addr.sin_port = htons(pstMBusRequesPacket->u16Port);
 
-			/// Trying to connect with timeout
-			*pi32sockfd = sockfd;
 			serv_addr.sin_family = AF_INET;
 			res = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
@@ -1352,29 +1369,24 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 			{
 				if (errno == EINPROGRESS)
 				{
+					a_pstIPConnect->m_lastConnectStatus = SOCK_CONNECT_INPROGRESS;
 					printf("\nConnection with Modbus Server is in progress ...\n");
 				}
 				else
 				{
 					u8ReturnType = STACK_ERROR_CONNECT_FAILED;
-					*pi32sockfd = 0;
 					/// closing socket on error.
+					Mark_Sock_Fail(a_pstIPConnect);
 					printf("Connection with Modbus slave failed, so closing socket descriptor %d\n", sockfd);
-					close(sockfd);
 					break;
 				}
 			}
-			else if(res == 0) {
+			else if(res == 0)
+			{
+				a_pstIPConnect->m_lastConnectStatus = SOCK_CONNECT_SUCCESS;
 				printf("Modbus slave connection established on socket %d\n", sockfd);
 				//socket has been created and connected successfully, add it to epoll fd
-				struct epoll_event m_event;
-				m_event.events = EPOLLIN;
-				m_event.data.fd = sockfd;
-				if (epoll_ctl(m_epollFd, EPOLL_CTL_ADD, sockfd, &m_event)) {
-					fprintf(stderr, "Failed to add file descriptor to epoll\n");
-					close(m_epollFd);
-					return 1;
-				}
+
 				int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
 
 				if(res < 0)
@@ -1382,40 +1394,92 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t* 
 				{
 					printf("1. Closing socket %d as error occurred while sending data\n", sockfd);
 					u8ReturnType = STACK_ERROR_SEND_FAILED;
-					close(sockfd);
-					*pi32sockfd = 0;
+					Mark_Sock_Fail(a_pstIPConnect);
 					break;
 				}
 			}
 		}
-		else
+		if((SOCK_CONNECT_INPROGRESS == a_pstIPConnect->m_lastConnectStatus) &&
+					(0 != a_pstIPConnect->m_sockfd))
 		{
-			sockfd = *pi32sockfd;
-
-			struct epoll_event m_event;
-			m_event.events = EPOLLIN;
-			m_event.data.fd = sockfd;
-			epoll_ctl(m_epollFd, EPOLL_CTL_ADD, sockfd, &m_event);
-
-			int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
-
-			/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
-			if(res < 0)
+			//
+			a_pstIPConnect->m_retryCount++;
+			if(a_pstIPConnect->m_retryCount > MAX_RETRY_COUNT)
 			{
-				printf("Error %d occurred while sending request on %d closing the socket\n", errno, sockfd);
+				printf("Connect status INPROGRESS. Max retries done %d\n", a_pstIPConnect->m_sockfd);
 
-				close(sockfd);
-				*pi32sockfd = 0;
+				Mark_Sock_Fail(a_pstIPConnect);
+				//bReturnVal = false;
+				u8ReturnType = STACK_ERROR_CONNECT_FAILED;
 				break;
+			}
+			struct timeval tv;
+			fd_set myset;
+			tv.tv_sec = 0;
+			tv.tv_usec = 20000;
+			FD_ZERO(&myset);
+			FD_SET(sockfd, &myset);
+			int r1 = select(sockfd+1, NULL, &myset, NULL, &tv);
+			if (r1 > 0)
+			{
+				socklen_t lon = sizeof(int);
+				int valopt;
+				getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon);
+				if (valopt)
+				{
+					printf("getsockopt failed : %d", valopt);
+					u8ReturnType = STACK_ERROR_CONNECT_FAILED;
+					Mark_Sock_Fail(a_pstIPConnect);
+					break;
+				}
+				else
+				{
+					printf("getsockopt passed\n");
+				}
+			}
+			else if(r1 < 0)
+			{
+				printf("select failed : %d", errno);
+				u8ReturnType = STACK_ERROR_CONNECT_FAILED;
+				Mark_Sock_Fail(a_pstIPConnect);
+				break;
+			}
+			else
+			{
+				printf("select timed out\n");
 			}
 		}
 
-		break;
-	}
+		if((false == a_pstIPConnect->m_bIsAddedToEPoll) && (0 != a_pstIPConnect->m_sockfd))
+		{
+			struct epoll_event m_event;
+			m_event.events = EPOLLIN;
+			m_event.data.fd = sockfd;
+			if (epoll_ctl(m_epollFd, EPOLL_CTL_ADD, sockfd, &m_event)) {
+				u8ReturnType = STACK_ERROR_SOCKET_LISTEN_FAILED;
+				fprintf(stderr, "Failed to add file descriptor to epoll\n");
+				Mark_Sock_Fail(a_pstIPConnect);
+				break;
+			}
+			printf("Added to listen \n");
+			a_pstIPConnect->m_bIsAddedToEPoll = true;
+		}
+
+		int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
+
+		/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
+		if(res < 0)
+		{
+			printf("Error %d occurred while sending request on %d closing the socket\n", errno, sockfd);
+			u8ReturnType = STACK_ERROR_SEND_FAILED;
+			Mark_Sock_Fail(a_pstIPConnect);
+			break;
+		}
+		a_pstIPConnect->m_lastConnectStatus = SOCK_CONNECT_SUCCESS;
+	} while(0);
 
 	pstMBusRequesPacket->m_u8CommandStatus = u8ReturnType;
 
 	return u8ReturnType;
 }
-
 #endif

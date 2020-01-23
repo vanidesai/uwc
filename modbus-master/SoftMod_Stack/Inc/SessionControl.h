@@ -88,10 +88,27 @@ typedef struct TcpRecvData
 	unsigned char m_readBuffer[1024];
 }stTcpRecvData_t;
 
+struct stHandleRespData {
+	sem_t m_semaphoreHandleResp;
+
+	int32_t m_i32HandleRespMsgQueId;
+	Thread_H m_threadIdHandleResp;
+};
+
+typedef struct mesg_data
+{
+	/// array
+	unsigned char m_readBuffer[1024];
+}mesg_data_t;
+
+int initHandleResponseContext();
+
 void removeReqFromListWithLock(stMbusPacketVariables_t *pstMBusRequesPacket);
 void addToRespQ(stMbusPacketVariables_t *a_pstReq);
+void addToHandleRespQ(stTcpRecvData_t a_pstReq);
 stMbusPacketVariables_t* searchReqList(uint8_t a_u8UnitID, uint16_t a_u16TransactionID);
 unsigned long get_nanos(void);
+void Mark_Sock_Fail(IP_Connect_t *stIPConnect);
 #endif
 uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBusRequesPacket);
 #endif /* INC_SESSIONCONTROL_H_ */

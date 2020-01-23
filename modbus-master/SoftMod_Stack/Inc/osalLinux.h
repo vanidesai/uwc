@@ -23,7 +23,7 @@
 #define WAIT_OBJECT_2 2
 #define WAIT_TIMEOUT -1
 #define INFINITE      0xFFFFFFFF  // Infinite timeout
-#define MAX_RECV_PRIORITY -10000
+#define MAX_RECV_PRIORITY -100000
 
 typedef pthread_t  Thread_H;
 typedef pthread_mutex_t*  Mutex_H;

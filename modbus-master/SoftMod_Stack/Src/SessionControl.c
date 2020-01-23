@@ -38,6 +38,7 @@ extern int fd;
 
 int32_t i32MsgQueIdSC = 0;
 extern bool g_bThreadExit;
+extern int g_iResponseTimeout;
 
 #define READ_SIZE 1024
 #define MAXEVENTS 100
@@ -214,40 +215,6 @@ int getClientIdFromList(int socketID) {
 	return socketIndex;
 }
 
-void handleClientReponse(stTcpRecvData_t client, struct timespec ts)
-{
-	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
-	// TCP IP message format
-	// 2 bytes = TxID, 2 bytes = Protocol ID, 2 bytes = length, 1 byte = unit id
-	// Get TxID and unit-id from response
-	uByteOrder_t ustByteOrder = {0};
-
-	// Holds the received transaction ID
-	uint16_t u16TransactionID = 0;
-
-	// Holds the unit id
-	uint8_t  u8UnitID = 0;
-
-	// Transaction ID
-	ustByteOrder.u16Word = 0;
-	ustByteOrder.TwoByte.u8ByteTwo = client.m_readBuffer[0];
-	ustByteOrder.TwoByte.u8ByteOne = client.m_readBuffer[1];
-	u16TransactionID = ustByteOrder.u16Word;
-
-	// Get unit id
-	u8UnitID = client.m_readBuffer[6];
-
-	pstMBusRequesPacket = searchReqList(u8UnitID, u16TransactionID);
-	if(NULL != pstMBusRequesPacket)
-	{
-		pstMBusRequesPacket->m_state = RESP_RCVD_FROM_NETWORK;
-		removeReqFromListWithLock(pstMBusRequesPacket);
-		pstMBusRequesPacket->m_u8ProcessReturn = DecodeRxPacket(client.m_readBuffer, pstMBusRequesPacket);
-		addToRespQ(pstMBusRequesPacket);
-		pstMBusRequesPacket->m_ulRespProcess = get_nanos();
-	}
-}
-
 void resetClientStruct(stTcpRecvData_t* clientAccepted) {
 
 	clientAccepted->m_bytesRead = 0;
@@ -261,7 +228,6 @@ void resetClientStruct(stTcpRecvData_t* clientAccepted) {
 struct timespec getEpochTime() {
 
 	struct timespec ts;
-	//struct timespec ts;
     timespec_get(&ts, TIME_UTC);
 
     return ts;
@@ -368,9 +334,8 @@ void* EpollRecvThread()
 
 				if ((m_clientAccepted[clientID].m_len + MODBUS_HEADER_LENGTH)
 						== m_clientAccepted[clientID].m_bytesRead) {
-					struct timespec ts = getEpochTime();
 
-					handleClientReponse(m_clientAccepted[clientID], ts);
+					addToHandleRespQ(m_clientAccepted[clientID]);
 
 					//clear socket struct for next iteration
 					resetClientStruct(&m_clientAccepted[clientID]);
@@ -433,6 +398,7 @@ void* SessionControlThread(void* threadArg)
 #endif
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+struct stHandleRespData g_stHandleResp;
 struct stReqList g_stReqList;
 struct stResProcessData g_stRespProcess;
 
@@ -682,6 +648,13 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 	int32_t i32RetVal = 0;
 	//int32_t i32sockfd = 0;
 	uint32_t u32TimeCount = 0;
+	IP_Connect_t stIPConnect;
+
+	stIPConnect.m_bIsAddedToEPoll = false;
+	stIPConnect.m_sockfd = 0;
+	stIPConnect.m_retryCount = 0;
+	stIPConnect.m_timeOut = 200;
+	stIPConnect.m_lastConnectStatus = SOCK_NOT_CONNECTED;
 
 	i32MsgQueIdSSTC = *((int32_t *)threadArg);
 
@@ -700,10 +673,10 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 			{
 				if(NULL != pstLivSerSesslist)
 				{
-					pstMBusRequesPacket->m_u32MsTimeout = 200;
+					pstMBusRequesPacket->m_u32MsTimeout = g_iResponseTimeout;
 					addReqToList(pstMBusRequesPacket);
 					pstMBusRequesPacket->m_ulReqSentTimeByStack = get_nanos();
-					u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &pstLivSerSesslist->m_i32sockfd);
+					u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &stIPConnect);
 					pstMBusRequesPacket->m_ulReqProcess = get_nanos();
 					pstMBusRequesPacket->m_u8ProcessReturn = u8ReturnType;
 					if(STACK_NO_ERROR == u8ReturnType)
@@ -766,4 +739,113 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 	return NULL;
 }
 
+void addToHandleRespQ(stTcpRecvData_t a_pstReq)
+{
+	if(0 != a_pstReq.m_bytesRead)
+	{
+		mesg_data_t stLocalData;
+		memcpy_s(stLocalData.m_readBuffer,sizeof(stLocalData.m_readBuffer),
+				a_pstReq.m_readBuffer,sizeof(a_pstReq.m_readBuffer));
+
+		int32_t iStatus = msgsnd( g_stHandleResp.m_i32HandleRespMsgQueId, &stLocalData, sizeof(mesg_data_t), 0);
+
+		if(iStatus == 0)
+		{
+			// Signal response timeout thread
+			sem_post(&g_stHandleResp.m_semaphoreHandleResp);
+		}
+		else
+		{
+			printf("Post failed %d\n", iStatus);
+		}
+	}
+	return;
+}
+
+void* handleClientReponseThreadFunction(void* threadArg)
+{
+
+	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
+
+	// TCP IP message format
+	// 2 bytes = TxID, 2 bytes = Protocol ID, 2 bytes = length, 1 byte = unit id
+	// Get TxID and unit-id from response
+	uByteOrder_t ustByteOrder = {0};
+
+	// Holds the received transaction ID
+	uint16_t u16TransactionID = 0;
+
+	// Holds the unit id
+	uint8_t  u8UnitID = 0;
+
+	mesg_data_t *pstLocalData;
+	mesg_data_t stLocalData;
+	int32_t i32RetVal = 0;
+	while(false == g_bThreadExit)
+	{
+		sem_wait(&g_stHandleResp.m_semaphoreHandleResp);
+		memset(&stLocalData,00,sizeof(stLocalData));
+		i32RetVal = 0;
+
+		i32RetVal = msgrcv(g_stHandleResp.m_i32HandleRespMsgQueId, &stLocalData, sizeof(stLocalData), 0, MSG_NOERROR | IPC_NOWAIT);
+		if(errno == ENOMSG && (-1 == i32RetVal))
+		   	i32RetVal = -1;
+
+		if(i32RetVal > 0)
+		{
+			///pstRecvData = stScMsgQue.lParam;
+			pstLocalData = &stLocalData;
+			if(NULL != pstLocalData)
+			{
+				// Transaction ID
+				ustByteOrder.u16Word = 0;
+				ustByteOrder.TwoByte.u8ByteTwo = pstLocalData->m_readBuffer[0];
+				ustByteOrder.TwoByte.u8ByteOne = pstLocalData->m_readBuffer[1];
+				u16TransactionID = ustByteOrder.u16Word;
+
+				// Get unit id
+				u8UnitID = pstLocalData->m_readBuffer[6];
+
+				pstMBusRequesPacket = searchReqList(u8UnitID, u16TransactionID);
+				if(NULL != pstMBusRequesPacket)
+				{
+					pstMBusRequesPacket->m_state = RESP_RCVD_FROM_NETWORK;
+					removeReqFromListWithLock(pstMBusRequesPacket);
+					pstMBusRequesPacket->m_u8ProcessReturn = DecodeRxPacket(pstLocalData->m_readBuffer, pstMBusRequesPacket);
+					addToRespQ(pstMBusRequesPacket);
+					pstMBusRequesPacket->m_ulRespProcess = get_nanos();
+				}
+				else
+				{
+					printf("handleClientReponseThreadFunction: not found: %d %d\n", u8UnitID, u16TransactionID);
+				}
+			}
+		}
+	}
+
+	return NULL;
+}
+
+int initHandleResponseContext()
+{
+	g_stHandleResp.m_i32HandleRespMsgQueId = OSAL_Init_Message_Queue();
+
+	if(-1 == sem_init(&g_stHandleResp.m_semaphoreHandleResp, 0, 0 /* Initial value of zero*/))
+	{
+	   printf("initHandleResponseContext::Could not create unnamed semaphore\n");
+	   return -1;
+	}
+
+	// Initiate response thread
+	{
+		thread_Create_t stThreadParam1 = { 0 };
+		stThreadParam1.dwStackSize = 0;
+		stThreadParam1.lpStartAddress = handleClientReponseThreadFunction;
+		stThreadParam1.lpParameter = &g_stHandleResp.m_i32HandleRespMsgQueId;
+		stThreadParam1.lpThreadId = &g_stHandleResp.m_threadIdHandleResp;
+
+		g_stHandleResp.m_threadIdHandleResp = Osal_Thread_Create(&stThreadParam1);
+	}
+	return 0;
+}
 #endif
