@@ -110,7 +110,8 @@ std::string parse_msg(const char *json, int& qos) {
 			}
 			else {
 				if((strcmp(c_qos, "0") == 0) || (strcmp(c_qos, "1") == 0) || (strcmp(c_qos, "2") == 0)) {
-					qos = atoi(c_qos);
+					std::string::size_type sz;   // alias of size_t
+					qos = std::stoi(c_qos, &sz);
 				}
 				else
 				{
