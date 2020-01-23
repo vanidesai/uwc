@@ -506,7 +506,6 @@ void* resquestTimeOutThreadFunction(void* threadArg)
 					removeReqFromListNoLock(pstCur);
 					pstCur->m_state = RESP_TIMEDOUT;
 					addToRespQ(pstCur);
-					printf("1");
 					pstCur->m_ulRespProcess = get_nanos();
 				}
 			}
