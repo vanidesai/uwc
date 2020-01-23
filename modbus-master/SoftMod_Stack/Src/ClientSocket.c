@@ -1416,7 +1416,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			struct timeval tv;
 			fd_set myset;
 			tv.tv_sec = 0;
-			tv.tv_usec = 20000;
+			tv.tv_usec = 50000;
 			FD_ZERO(&myset);
 			FD_SET(sockfd, &myset);
 			int r1 = select(sockfd+1, NULL, &myset, NULL, &tv);
