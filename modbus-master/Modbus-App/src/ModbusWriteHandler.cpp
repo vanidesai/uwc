@@ -29,7 +29,6 @@
 /// stop thread flag
 extern std::atomic<bool> g_stopThread;
 /// reference if to store request data
-std::atomic<unsigned short> refId;
 
 modWriteHandler::modWriteHandler() : m_bIsWriteInitialized(false)
 {
@@ -219,13 +218,13 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 	{
 		if(MBUS_STACK_NO_ERROR == eFunRetType)
 		{
-			refId++;
+
+			/*Enter TX Id*/
+			stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();//(unsigned short)g_u16TxId.load();
+
 			/// restarting refId once reached max. limit.
-			if(refId >= 65535)
-				refId = 1;
 
 			stMbusApiPram.m_pu8Data = NULL;
-			stMbusApiPram.m_u16TxId = refId;
 
 			cJSON *appseq = cJSON_GetObjectItem(root,"app_seq");
 			cJSON *cmd=cJSON_GetObjectItem(root,"command");
@@ -320,7 +319,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 				reqData.m_strVersion = strVersion;
 				reqData.m_strWellhead = strWellhead;
 				reqData.m_strTopic = strSourceTopic;
-				zmq_handler::insertOnDemandReqData(refId, reqData);
+				zmq_handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
 			}
 
 			if(WRITE_MULTIPLE_REG == funcCode)

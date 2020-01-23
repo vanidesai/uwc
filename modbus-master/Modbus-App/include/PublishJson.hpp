@@ -47,6 +47,7 @@ class PublishJsonHandler
 	std::string m_siteListFileName;
 
 	std::string m_sAppName;
+	std::atomic<unsigned short> m_u16TxId;
 
 public:
 	// function to get single instance of this class
@@ -107,6 +108,12 @@ public:
 
 	void setSiteListFileName(const std::string &siteListFileName) {
 		m_siteListFileName = siteListFileName;
+	}
+
+	unsigned short getTxId()
+	{
+		m_u16TxId++;
+		return m_u16TxId;
 	}
 };
 

@@ -147,11 +147,12 @@ namespace network_info
 		const CWellSiteInfo &m_rWellSite;
 		const CWellSiteDevInfo &m_rWellSiteDev;
 		const CDataPoint &m_rPoint;
-		
-		public:
+		mutable bool m_bIsAwaitResp;
+
+	public:
 		CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
 				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint);
-		
+
 		//std::string getID() {return m_sId;}
 		//const CWellSiteInfo& getWellSite() {return m_rWellSite;}
 		//const CWellSiteDevInfo& getWellSiteDev() {return m_rWellSiteDev;}
@@ -164,7 +165,11 @@ namespace network_info
 
 		//unsigned int getMyRollID() {return m_uiMyRollID;}
 		unsigned int getMyRollID() const {return m_uiMyRollID;}
-	};
+
+		bool isIsAwaitResp() const;
+
+		void setIsAwaitResp(bool isAwaitResp) const;
+};
 
 	void buildNetworkInfo(bool a_bIsTCP);
 	const std::map<std::string, CWellSiteInfo>& getWellSiteList();

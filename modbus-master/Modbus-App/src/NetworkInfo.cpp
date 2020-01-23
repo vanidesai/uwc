@@ -636,7 +636,16 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 CUniqueDataPoint::CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
 				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint) :
 				m_uiMyRollID{((unsigned int)g_usTotalCnt)+1}, m_sId{a_sId},
-				m_rWellSite{a_rWellSite}, m_rWellSiteDev{a_rWellSiteDev}, m_rPoint{a_rPoint}
+				m_rWellSite{a_rWellSite}, m_rWellSiteDev{a_rWellSiteDev}, m_rPoint{a_rPoint}, m_bIsAwaitResp{false}
 {
 	++g_usTotalCnt;
+}
+
+bool CUniqueDataPoint::isIsAwaitResp() const {
+	//return false;
+	return m_bIsAwaitResp;
+}
+
+void CUniqueDataPoint::setIsAwaitResp(bool isAwaitResp) const {
+	m_bIsAwaitResp = isAwaitResp;
 }

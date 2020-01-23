@@ -58,7 +58,6 @@ extern "C" {
 
 using namespace std;
 
-std::atomic<unsigned short> g_u16TxId;
 
 /// variable to store timer instance
 timer_t gTimerid;
@@ -156,8 +155,10 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		{
 			msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string("");
 			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
+			msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(to_string(a_stResp.u8Reason).c_str());
 			msgbus_msg_envelope_put(msg, "value", ptValue);
 			msgbus_msg_envelope_put(msg, "status", ptStatus);
+			msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
 		}
 	}
     catch(const std::exception& e)
@@ -169,23 +170,22 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 	return bRetValue;
 }
 
-BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
+BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling& a_objReqData)
 {
 	msg_envelope_t* g_msg = NULL;
 
 	try
 	{
 		std::string sTopic("");
-		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(a_stResp.u16TransacID);
-		if(FALSE == prepareResponseJson(&g_msg, objReqData, a_stResp))
+		if(FALSE == prepareResponseJson(&g_msg, a_objReqData, a_stResp))
 		{
 			CLogger::getInstance().log(INFO, LOGDETAILS( " Error in preparing response"));
 			return FALSE;
 		}
 		else
 		{
-			if(true == PublishJsonHandler::instance().publishJson(g_msg, objReqData.getBusContext().m_pContext,
-					objReqData.getPubContext().m_pContext,
+			if(true == PublishJsonHandler::instance().publishJson(g_msg, a_objReqData.getBusContext().m_pContext,
+					a_objReqData.getPubContext().m_pContext,
 					PublishJsonHandler::instance().getPolledDataTopic()))
 			{
 				msg_envelope_serialized_part_t* parts = NULL;
@@ -215,12 +215,58 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 	catch(const std::exception& e)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what()  << "Tx ID::" << a_stResp.u16TransacID<< std::endl;
+		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what()  << "Tx ID::" << a_stResp.u16TransacID << std::endl;
 	}
 
 	if(NULL != g_msg)
 	{
 		msgbus_msg_envelope_destroy(g_msg);
+	}
+
+	// return true on success
+	return TRUE;
+}
+
+BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(const CRefDataForPolling& a_objReqData)
+{
+	try
+	{
+		// Prepare dummy response
+		stStackResponse stResp;
+		stResp.bIsValPresent = false;
+		stResp.m_Value.clear();
+		stResp.u16TransacID = 0;
+		stResp.u8Reason = 100;
+
+		cout << "Posting dummy messages..." << endl;
+
+		// Post it
+		postResponseJSON(stResp, a_objReqData);
+	}
+	catch(const std::exception& e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what() << std::endl;
+	}
+
+	// return true on success
+	return TRUE;
+}
+
+BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
+{
+	try
+	{
+		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(a_stResp.u16TransacID);
+		// Response is received. Reset response awaited status
+		objReqData.getDataPoint().setIsAwaitResp(false);
+
+		postResponseJSON(a_stResp, objReqData);
+	}
+	catch(const std::exception& e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what()  << "Tx ID::" << a_stResp.u16TransacID<< std::endl;
 	}
 
 	// return true on success
@@ -578,6 +624,13 @@ void CRequestInitiator::threadReqInit()
 				for(auto a_oReqData: a_vReqData)
 				{
 					CRefDataForPolling objReqData = a_oReqData;
+					// Check if a response is already awaited
+					if(true == objReqData.getDataPoint().isIsAwaitResp())
+					{
+						// waiting for response. Send BAD response
+						CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData);
+						continue;
+					}
 
 					//if(true == bIsFound)
 					{
@@ -585,6 +638,7 @@ void CRequestInitiator::threadReqInit()
 						// Send a request
 						if (true == sendRequest(objReqData))
 						{
+							objReqData.getDataPoint().setIsAwaitResp(true);
 							// Request is sent successfully
 							// No action
 		#ifdef PERFTESTING // will be removed afterwards
@@ -735,11 +789,11 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 		}
 
 		/*Enter TX Id*/
-		stMbusApiPram.m_u16TxId = (unsigned short)g_u16TxId.load();
+		stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
+
 #ifdef UNIT_TEST
 		stMbusApiPram.m_u16TxId = 5;
 #endif
-		g_u16TxId++;
 		//a_stRdPrdObj.m_u16TxId = stMbusApiPram.m_u16TxId;
 
 		CRequestInitiator::instance().insertTxIDReqData(stMbusApiPram.m_u16TxId, a_stRdPrdObj);

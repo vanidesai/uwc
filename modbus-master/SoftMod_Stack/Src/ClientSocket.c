@@ -1416,7 +1416,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			struct timeval tv;
 			fd_set myset;
 			tv.tv_sec = 0;
-			tv.tv_usec = 50000;
+			tv.tv_usec = g_iResponseTimeout;
 			FD_ZERO(&myset);
 			FD_SET(sockfd, &myset);
 			int r1 = select(sockfd+1, NULL, &myset, NULL, &tv);
@@ -1437,16 +1437,12 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 					printf("getsockopt passed\n");
 				}
 			}
-			else if(r1 < 0)
+			else if(r1 <= 0)
 			{
 				printf("select failed : %d", errno);
 				u8ReturnType = STACK_ERROR_CONNECT_FAILED;
 				Mark_Sock_Fail(a_pstIPConnect);
 				break;
-			}
-			else
-			{
-				printf("select timed out\n");
 			}
 		}
 

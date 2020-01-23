@@ -53,6 +53,7 @@ private:
 	BOOLEAN getDataToProcess(struct stStackResponse &a_stStackResNode);
 
 	BOOLEAN prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp);
+	BOOLEAN postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling& a_objReqData);
 	BOOLEAN postResponseJSON(stStackResponse& a_stResp);
 
 	BOOLEAN initSem();
@@ -75,6 +76,7 @@ public:
 						 uint16_t  u16Quantity);
 	bool isInitialized() {return m_bIsInitialized;}
 	void initRespHandlerThreads();
+	BOOLEAN postDummyBADResponse(const CRefDataForPolling& a_objReqData);
 };
 
 eMbusStackErrorCode SubscibeOrUnSubPeriodicRead(RestRdPeriodicTagPart_t &lRdPeridList);
