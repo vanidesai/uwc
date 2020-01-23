@@ -1461,6 +1461,10 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			a_pstIPConnect->m_bIsAddedToEPoll = true;
 		}
 
+		/// forcefully sleep for 50ms to complete previous send request
+		/// This is to match the speed between master and slave
+		usleep(50000);
+
 		int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
 
 		/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
