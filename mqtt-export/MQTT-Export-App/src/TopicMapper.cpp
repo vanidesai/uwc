@@ -38,6 +38,7 @@ bool CTopicMapper::readEnvVariable(const char *pEnvVarName, string &storeVal)
 	else
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS(std::string(pEnvVarName) + " environment variable is not found"));
+		std::cout << __func__ << ":" << __LINE__ << " Error : " + std::string(pEnvVarName) + " environment variable is not found" <<  std::endl;
 
 	}
 	return bRetVal;
@@ -49,31 +50,37 @@ bool CTopicMapper::readEnvVariable(const char *pEnvVarName, string &storeVal)
  */
 bool CTopicMapper::readCommonEnvVariables()
 {
-	bool bRetVal = false;
-
-	std::list<std::string> topicList{"ReadRequest", "WriteRequest",
-						"AppName", "APP_VERSION", "MQTT_URL_FOR_EXPORT"};
-	std::map <std::string, std::string> envTopics;
-
-	for (auto topic : topicList)
+	try
 	{
-		std::string envVar = "";
-		bRetVal = readEnvVariable(topic.c_str(), envVar);
-		if(!bRetVal)
-		{
-			return false;
-		}
-		else
-		{
-			envTopics.emplace(topic, envVar);
-		}
-	}
+		bool bRetVal = false;
 
-	setStrReadRequest(envTopics.at("ReadRequest"));
-	setStrWriteRequest(envTopics.at("WriteRequest"));
-	setStrAppName(envTopics.at("AppName"));
-	setStrAppVersion(envTopics.at("APP_VERSION"));
-	setStrMqttExportURL(envTopics.at("MQTT_URL_FOR_EXPORT"));
+		std::list<std::string> topicList{"ReadRequest", "WriteRequest",
+							"AppName", "APP_VERSION", "MQTT_URL_FOR_EXPORT"};
+		std::map <std::string, std::string> envTopics;
+
+		for (auto topic : topicList)
+		{
+			std::string envVar = "";
+			bRetVal = readEnvVariable(topic.c_str(), envVar);
+			if(!bRetVal)
+			{
+				return false;
+			}
+			else
+			{
+				envTopics.emplace(topic, envVar);
+			}
+		}
+
+		setStrReadRequest(envTopics.at("ReadRequest"));
+		setStrWriteRequest(envTopics.at("WriteRequest"));
+		setStrAppName(envTopics.at("AppName"));
+		setStrAppVersion(envTopics.at("APP_VERSION"));
+		setStrMqttExportURL(envTopics.at("MQTT_URL_FOR_EXPORT"));
+	}
+	catch(exception &ex) {
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
+	}
 	return true;
 }
 

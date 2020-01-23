@@ -29,6 +29,7 @@ CfgManager& CfgManager::Instance()
  * @param value: changed value
  * @return: nothing
  */
+/*
 void etcdOnChangeKeyCb(char* key, char * val)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Change key callback is called"));
@@ -46,13 +47,14 @@ void etcdOnChangeKeyCb(char* key, char * val)
 
 	exit(0);
 }
-
+*/
 /** ETCD callback on changing directory
  *
  * @param key: changed key
  * @param value: changed value
  * @return: nothing
  */
+/*
 void etcdOnChangeDirCb(char* key, char * val)
 {
 	if(key == NULL || val == NULL) {
@@ -70,7 +72,7 @@ void etcdOnChangeDirCb(char* key, char * val)
 	//raised to call clean up routine
 	raise( SIGUSR1);
 }
-
+*/
 /** register callback for specific directory in ETCD
  *
  * @param key: name of the key

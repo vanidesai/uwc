@@ -81,7 +81,7 @@ void CLogger::log(LogLevel lvl, std::string msg) {
 		}
 
 	} catch (std::exception &e) {
-		std::cout << __func__ << ": Exception: " << e.what() << std::endl;
+		std::cout << __func__ << ":" << __LINE__ << "Exception : " << e.what() << std::endl;
 	}
 }
 

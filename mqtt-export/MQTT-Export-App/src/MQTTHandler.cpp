@@ -43,6 +43,7 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		if(NULL == ClientCertPath)
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("Error in reading BACNET_PLBUS_CLIENT_CERT"));
+			std::cout << __func__ << ":" << __LINE__ << " Error : Error in reading BACNET_PLBUS_CLIENT_CERT" <<  std::endl;
 			return;
 		}
 		sslopts.set_key_store(ClientCertPath);
@@ -68,6 +69,7 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 	}
 }
 
@@ -85,6 +87,7 @@ CMQTTHandler& CMQTTHandler::instance() {
 		/// check for null
 		if (NULL == mqttBrokerURL) {
 			CLogger::getInstance().log(ERROR, LOGDETAILS(":MQTT_URL_FOR_EXPORT Environment variable is not set"));
+			std::cout << __func__ << ":" << __LINE__ << " Error : MQTT_URL_FOR_EXPORT Environment variable is not set" <<  std::endl;
 			exit(EXIT_FAILURE);
 		} else {
 			strPlBusUrl.assign(mqttBrokerURL);
@@ -111,6 +114,7 @@ bool CMQTTHandler::connect() {
 		 }*/
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 
 		bFlag = false;
 	}
@@ -130,6 +134,7 @@ bool CMQTTHandler::getMsgFromQ(stMsgData &a_msg) {
 		}
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 
 		bRet = false;
 	}
@@ -144,7 +149,7 @@ bool CMQTTHandler::pushMsgInQ(const stMsgData &a_msg) {
 		m_qMsgData.push(a_msg);
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 		bRet = false;
 	}
 	return bRet;
@@ -175,7 +180,7 @@ void CMQTTHandler::postPendingMsgsThread() {
 		} while (true == bDoRun);
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 #ifdef PERFTESTING
 		CMQTTHandler::m_ui32PublishSkipped++;
 #endif
@@ -212,6 +217,7 @@ bool CMQTTHandler::publish(std::string a_sMsg, const char *topic, int qos) {
 		m_ui32PublishExcep++;
 #endif
 		CLogger::getInstance().log(FATAL, LOGDETAILS(exc.what()));
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << exc.what() << std::endl;
 	}
 	return false;
 }
@@ -225,8 +231,10 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 		if (true == a_sTopic.empty()) {
 			if (true == a_sMsg.empty()) {
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Blank topic and blank Message"));
+				std::cout << __func__ << ":" << __LINE__ << " Error : Blank topic and blank Message" <<  std::endl;
 			} else {
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Blank topic. Message not posted"));
+				std::cout << __func__ << ":" << __LINE__ << " Error : Blank topic. Message not posted" <<  std::endl;
 			}
 			return false;
 		}
@@ -249,7 +257,7 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 #endif
 		}
 	} catch (const mqtt::exception &exc) {
-
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << exc.what() << std::endl;
 		if (false == a_bFromQ) {
 #ifdef PERFTESTING
 			m_ui32PublishStrExcep++;
@@ -322,6 +330,7 @@ bool CMQTTHandler::initSem()
 	int ok = sem_init(&g_semaphoreRespProcess, 0, 0 /* Initial value of zero*/);
 	if (ok == -1) {
 	   CLogger::getInstance().log(ERROR, LOGDETAILS("could not create unnamed semaphore, exiting"));
+	   std::cout << __func__ << ":" << __LINE__ << " Error : could not create unnamed semaphore, exiting" <<  std::endl;
 	   exit(0);
 	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Sempaphores initialized successfully"));
@@ -344,6 +353,7 @@ bool CMQTTHandler::subscribeToTopics() {
 			const char* env_pubWriteTopic = std::getenv(envTopic.c_str());
 			if(env_pubWriteTopic == NULL) {
 				CLogger::getInstance().log(ERROR, LOGDETAILS(envTopic + " Environment Variable is not set"));
+				std::cout << __func__ << ":" << __LINE__ << " Error : " + envTopic + " Environment Variable is not set" <<  std::endl;
 				continue;
 			}
 			vMqttTopics.push_back(env_pubWriteTopic);
@@ -359,7 +369,7 @@ bool CMQTTHandler::subscribeToTopics() {
 	catch(exception &ex)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
-
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
 		return false;
 	}
 
@@ -381,6 +391,7 @@ bool CMQTTHandler::connectSubscriber() {
 		 }*/
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 		bFlag = false;
 	}
 
@@ -402,7 +413,7 @@ bool CMQTTHandler::getSubMsgFromQ(mqtt::const_message_ptr &msg) {
 		}
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 		bRet = false;
 	}
 	return bRet;
@@ -422,6 +433,7 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg) {
 
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 		bRet = false;
 	}
 	return bRet;
