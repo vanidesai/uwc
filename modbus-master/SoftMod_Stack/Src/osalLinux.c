@@ -376,3 +376,4 @@ int32_t Osal_Close_Mutex( Mutex_H pMtxHandle)
        return 0;
    }
 }
+
