@@ -1,105 +1,151 @@
-  
 pipeline {
     agent { label 'rbhe' }
     options {
         timestamps()
+        disableConcurrentBuilds()
     }
     environment {
-        // optional, default 'checkmarx,protex', available: protex,checkmarx,sonarqube,klocwork,protecode
+        // the following options are for the rbheStaticCodeScan block
+        // For UWC, we will only leverage checkmarx and protex
         SCANNERS = 'checkmarx,protex'
-        SCANNERTYPE= 'c,c++'
-
         PROJECT_NAME = 'UWC'
+
         SLACK_SUCCESS = '#indu-uwc'
         SLACK_FAIL   = '#indu-uwc'
+
+        PROFILING_MODE = false
+        EIS_BRANCH = 'v2.1-Alpha-RC4'
     }
     stages {
-        stage('Build') {
-		  when { branch "UWC-Sprint5" }
-		  steps {
-			  echo 'Hello..'
-			  sh "apt update"
-			  sh "apt install git -y"
-			  sh "git --version"
-			  script {
-				  withCredentials([
-					usernamePassword(credentialsId: 'GITLAB_UP',
-					  usernameVariable: 'username',
-					  passwordVariable: 'password')
-				  ]) {
-					print 'username=' + username + 'password=' + password
-					upass = username+":"+password
-					sh "set +x; git clone --single-branch --branch v2.1-Alpha-RC4 https://"+upass+"@gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights"
-					
-				  }
-				}
-			  sh "cp -r ./Release/* ./IEdgeInsights/"
-			  sh "cd ./IEdgeInsights/; ls -la"
-			  //sh "echo \"http_proxy=http://proxy-chain.intel.com:911\" >> /etc/environment"
-			  //sh "echo \"https_proxy=http://proxy-chain.intel.com:912\" >> /etc/environment"
-			  //sh "echo \"HTTP_PROXY=http://proxy-chain.intel.com:911\" >> /etc/environment"
-			  //sh "echo \"HTTPS_PROXY=http://proxy-chain.intel.com:912\" >> /etc/environment"
-			  //sh "source /etc/environment"
-
-			  sh "apt-get -y install systemd"
-			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
-			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
-			  sh "cd ./IEdgeInsights/; chmod 777 ./03_DeployEIS.sh; ./03_DeployEIS.sh; "
-			  
-		  }
-          
-        }
-	stage('KW-Scan') {
-		  when { branch "UWC-Sprint5" }
-		  steps {
-			  echo 'Hello..'
-			  sh "apt update"
-			  sh "apt install git -y"
-			  sh "git --version"
-			  script {
-				  withCredentials([
-					usernamePassword(credentialsId: 'GITLAB_UP',
-					  usernameVariable: 'username',
-					  passwordVariable: 'password')
-				  ]) {
-					print 'username=' + username + 'password=' + password
-					upass = username+":"+password
-					sh "set +x; git clone --single-branch --branch v2.1-Alpha-RC4 https://"+upass+"@gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights"
-					
-				  }
-				}
-			  sh "cp -r ./Release/* ./IEdgeInsights/"
-			  sh "cd ./IEdgeInsights/; ls -la"
-			  sh "echo \"http_proxy=http://proxy-chain.intel.com:911\" >> /etc/environment"
-			  sh "echo \"https_proxy=http://proxy-chain.intel.com:912\" >> /etc/environment"
-			  sh "echo \"HTTP_PROXY=http://proxy-chain.intel.com:911\" >> /etc/environment"
-			  sh "echo \"HTTPS_PROXY=http://proxy-chain.intel.com:912\" >> /etc/environment"
-			  //sh "source /etc/environment"
-			  sh "cp ./.kw/modbus-master/*  ./IEdgeInsights/modbus-master/;"
-			  sh "cp ./.kw/mqtt-export/*  ./IEdgeInsights/mqtt-export/;"
-			  
-			  sh "apt-get -y install systemd"
-			  sh "cd ./IEdgeInsights/; chmod 777 ./01_pre-requisites.sh; ./01_pre-requisites.sh --proxy proxy-us.intel.com:911; "
-			  sh "cd ./IEdgeInsights/; chmod 777 ./02_provisionEIS.sh; ./02_provisionEIS.sh; "
-			  sh "cd ./IEdgeInsights/; chmod 777 ./03_DeployEIS.sh; ./03_DeployEIS.sh; "
-			  
-		  }
-          
-        }
-        stage('Static Scanners') {
-	    //when { branch "UWC-Sprint5" }
+        stage('Prep Builder Image') {
             steps {
-                echo 'Protex, checkmarx Scan..'
+                script {
+                    // Need to install docker-compose
+                    // https://docs.docker.com/compose/install/
+                    def dockerfile = '''
+                    FROM ubuntu:18.04
+                    COPY --from=docker:latest /usr/local/bin/docker /usr/local/bin/docker
+                    RUN apt-get update && apt-get install -y curl git
+                    RUN curl -L "https://github.com/docker/compose/releases/download/1.25.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                    RUN chmod +x /usr/local/bin/docker-compose
+                    '''
+
+                    writeFile file: 'Dockerfile.build', text: dockerfile
+
+                    docker.build('uwc_builder', '-f Dockerfile.build --build-arg http_proxy=http://proxy-chain.intel.com:911 --build-arg https_proxy=http://proxy-chain.intel.com:912 .')
+                }
+            }
+        }
+
+        stage('Build') {
+            agent {
+                docker {
+                    image 'uwc_builder'
+                    reuseNode true
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
+            stages {
+                stage('Verify') {
+                    steps {
+                        // verify docker-compose is installed properly
+                        sh 'docker-compose --version'
+                    }
+                }
+
+                // let's clone the IEdgeInsights project into the workspace
+                stage('Clone IEdgeInsights') {
+                    steps {
+                        dir('IEdgeInsights') {
+                            checkout scm: [
+                                $class: 'GitSCM',
+                                userRemoteConfigs: [
+                                    [ url: 'https://gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights.git', credentialsId: 'owr-jenkins-gitlab' ]
+                                ],
+                                branches: [[name: env.EIS_BRANCH]]
+                            ], poll: false
+                        }
+
+                        // copy docker-compose
+                        sh 'cp docker-compose.yml IEdgeInsights/docker_setup/'
+
+                        // Copy source code into IEdgeInsights directory
+                        sh 'cp -r modbus-master IEdgeInsights/'
+                        sh 'cp -r MQTT IEdgeInsights/'
+                        sh 'cp -r mqtt-export IEdgeInsights/'
+                    }
+                }
+
+                stage('Prep EIS Base Layers') {
+                    steps {
+                        // this is temporary for v2.1-Alpha-RC4, it looks to have been fixed in v2.1
+                        sh 'patch IEdgeInsights/common/dockerfiles/Dockerfile.eisbase Release/Dockerfile.eisbase.patch'
+
+                        //base
+                        sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy ia_eisbase'
+                        // common
+                        sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy ia_common'
+                    }
+                }
+
+                stage('Klockwork Prep') {
+                    environment { 
+                        //https://jenkins.io/doc/book/pipeline/syntax/#parameters
+                        // this will expose KW_USR and KW_PSW, this will be used to write a file for Klocwork
+                        KW = credentials('sys_rrpprotx_kw')
+                    }
+                    steps {
+                        // copy Dockerfiles
+                        sh 'cp .kw/modbus-master/* IEdgeInsights/modbus-master/'
+                        sh 'cp .kw/mqtt-export/* IEdgeInsights/mqtt-export/'
+
+                        sh 'echo "$KW_USR\n$KW_PSW" > IEdgeInsights/modbus-master/kwcreds'
+                        sh 'echo "$KW_USR\n$KW_PSW" > IEdgeInsights/mqtt-export/kwcreds'
+                    }
+                }
+
+                stage('Klockwork') {
+                    stages {
+                        stage('Modbus TCP') {
+                            steps {
+                                sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy --build-arg GIT_BRANCH --build-arg BUILD_NUMBER modbus-tcp-master'
+                            }
+                        }
+                        stage('Modbus RTU') {
+                            steps {
+                                sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy --build-arg GIT_BRANCH --build-arg BUILD_NUMBER modbus-rtu-master'
+                            }
+                        }
+                        stage('MQTT Export') {
+                            steps {
+                                sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy --build-arg GIT_BRANCH --build-arg BUILD_NUMBER mqtt-export'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('RBHE Static Code Scan') {
+            steps {
                 rbheStaticCodeScan()
             }
         }
-      
+
+        // this validation is just an example of how validation can be done on a different node
+        // no need to spawn another job, it can just be done inline. If validation is long running,
+        // I would suggest only running validation on a cron, not each commit
+        /*stage('Validation') {
+            when {
+                environment name: 'VALIDATION_REQUIRED', value: 'true'
+            }
+            agent { label 'uwc-validation' }
+            steps {
+                sh './execute-validation.sh'
+            }
+        }*/
     }
-    
     post {
-        always {
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'bandit_scan.txt'
-        }
         failure {
             slackBuildNotify([failed: true, slackFailureChannel: env.SLACK_FAIL]) {}
         }
