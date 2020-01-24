@@ -147,15 +147,17 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 			{
 				msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string("");
 				msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
+				msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcCode))).c_str());
 				msgbus_msg_envelope_put(msg, "value", ptValue);
 				msgbus_msg_envelope_put(msg, "status", ptStatus);
+				msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
 			}
 		}
 		else
 		{
 			msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string("");
 			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
-			msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(to_string(a_stResp.u8Reason).c_str());
+			msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcCode))).c_str());
 			msgbus_msg_envelope_put(msg, "value", ptValue);
 			msgbus_msg_envelope_put(msg, "status", ptStatus);
 			msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
@@ -237,8 +239,9 @@ BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(const CRefDataForPolling
 		stResp.m_Value.clear();
 		stResp.u16TransacID = 0;
 		stResp.u8Reason = 100;
+		stResp.m_stException.m_u8ExcCode = 100;
+		stResp.m_stException.m_u8ExcStatus = 100;
 
-		cout << "Posting dummy messages..." << endl;
 
 		// Post it
 		postResponseJSON(stResp, a_objReqData);

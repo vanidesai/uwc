@@ -51,6 +51,7 @@ void populatePollingRefData()
 	// 4. if 2 and 3 are yes, create polling ref data
 
 	const std::map<std::string, CUniqueDataPoint> &mapUniquePoint = network_info::getUniquePointList();
+	int iCount = 1;
 	for(auto &pt: mapUniquePoint)
 	{
 		const CUniqueDataPoint &a = mapUniquePoint.at(pt.first);
@@ -73,7 +74,7 @@ void populatePollingRefData()
 
 			CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
-			std::cout << "Topic for context search: " << sTopic << std::endl;
+			std::cout << "Point to poll: " << a.getID() << ", " << iCount++ << std::endl;
 			zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX(sTopic);
 			zmq_handler::stZmqPubContext &pubCTX = zmq_handler::getPubCTX(sTopic);
 

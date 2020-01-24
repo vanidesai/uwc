@@ -459,11 +459,27 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 		a_oCDataPoint.m_stAddress.m_iWidth =  a_oData["attributes"]["width"].as<std::int32_t>();
 		if (a_oData["attributes"]["byteswap"])
 		{
-			a_oCDataPoint.m_stAddress.m_bIsByteSwap =  a_oData["attributes"]["byteswap"].as<bool>();
+			try
+			{
+				a_oCDataPoint.m_stAddress.m_bIsByteSwap =  a_oData["attributes"]["byteswap"].as<bool>();
+			}
+			catch(YAML::Exception &e)
+			{
+				a_oCDataPoint.m_stAddress.m_bIsByteSwap = false;
+				CLogger::getInstance().log(WARN, LOGDETAILS("ByteSwap value is incorrect. Set to default."));
+			}
 		}
 		if (a_oData["attributes"]["wordswap"])
 		{
-			a_oCDataPoint.m_stAddress.m_bIsWordSwap =  a_oData["attributes"]["wordswap"].as<bool>();
+			try
+			{
+				a_oCDataPoint.m_stAddress.m_bIsWordSwap =  a_oData["attributes"]["wordswap"].as<bool>();
+			}
+			catch(YAML::Exception &e)
+			{
+				a_oCDataPoint.m_stAddress.m_bIsWordSwap = false;
+				CLogger::getInstance().log(WARN, LOGDETAILS("WordSwap value is incorrect. Set to default."));
+			}
 		}
 	}
 	catch(YAML::Exception &e)

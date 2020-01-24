@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 #include <fcntl.h>
 #include <safe_lib.h>
 #include <errno.h>
@@ -1342,6 +1343,11 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			}
 
 			a_pstIPConnect->m_sockfd = sockfd;
+			{
+				int i = 1;
+				int rc = setsockopt(sockfd, SOL_TCP, TCP_NODELAY, (void*)&i, sizeof(i));
+				printf("\nsetsocketopt on socket %d for TCP_NODELAY, status %d, error %d", sockfd, rc, errno);
+			}
 		}
 		sockfd = a_pstIPConnect->m_sockfd;
 		if((SOCK_NOT_CONNECTED == a_pstIPConnect->m_lastConnectStatus) &&
@@ -1463,7 +1469,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 
 		/// forcefully sleep for 50ms to complete previous send request
 		/// This is to match the speed between master and slave
-		usleep(50000);
+		usleep(10000);
 
 		int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
 

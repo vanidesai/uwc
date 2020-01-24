@@ -244,6 +244,11 @@ void* EpollRecvThread()
 	//allocate no of polling events
 	m_events = (struct epoll_event*) calloc(MAXEVENTS, sizeof(m_event));
 
+	if(NULL == m_events)
+	{
+		return NULL;
+	}
+
 	int iClientCount = 0; //for array
 
 	while (1)
@@ -505,6 +510,8 @@ void* resquestTimeOutThreadFunction(void* threadArg)
 				{
 					removeReqFromListNoLock(pstCur);
 					pstCur->m_state = RESP_TIMEDOUT;
+					pstCur->m_u8ProcessReturn = STACK_ERROR_RECV_TIMEOUT;
+					pstCur->m_stMbusRxData.m_u8Length = 0;
 					addToRespQ(pstCur);
 					pstCur->m_ulRespProcess = get_nanos();
 				}
