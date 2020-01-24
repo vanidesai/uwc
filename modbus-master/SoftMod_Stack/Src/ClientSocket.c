@@ -870,7 +870,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		}
 		else
 		{		
-			usleep(44000);
+			usleep(30000);
 		}
 
 		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
