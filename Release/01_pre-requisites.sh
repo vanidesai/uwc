@@ -183,6 +183,9 @@ addUWCContainersInEIS()
     cp -r modbus-master/ MQTT/ mqtt-export/ ../
     cp -r docker-compose_DEV.yml ../docker_setup/docker-compose.yml
     cp -r Others/ETCD_Config/UWC/YAML_Config/* /opt/intel/eis/uwc_data
+
+    ## added temporary 
+    cp Others/Dockerfile.eisbase ../common/dockerfiles/
     echo "${GREEN}UWC containers are successfully copied.${NC}"
     echo "${BOLD}${GREEN}>>>>>${NC}"
 	echo "${BOLD}${GREEN}************************* This script is sucessfully executed ***************************************************"
