@@ -243,7 +243,7 @@ int32_t OSAL_Get_NonBlocking_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
 	MsgSize = sizeof(Linux_Msg_t) - sizeof(long);
 
     /// Wait Till Message received or Error other than Signal interrupt
-    i32RetVal = msgrcv(msqid, pstQueueMsg, MsgSize, 0, MSG_NOERROR | IPC_NOWAIT);
+    i32RetVal = msgrcv(msqid, pstQueueMsg, MsgSize, MAX_RECV_PRIORITY, MSG_NOERROR | IPC_NOWAIT);
     if(errno == ENOMSG && (-1 == i32RetVal))
     	i32RetVal = -1;
 
@@ -376,4 +376,3 @@ int32_t Osal_Close_Mutex( Mutex_H pMtxHandle)
        return 0;
    }
 }
-
