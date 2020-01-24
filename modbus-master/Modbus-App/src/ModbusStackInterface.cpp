@@ -150,7 +150,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		if(pu8IpAddr != NULL && pstException->m_u8ExcCode == 0 && pstException->m_u8ExcStatus ==0)
 		{
 			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
-			msgbus_msg_envelope_put(msg, "Status", ptStatus);
+			msgbus_msg_envelope_put(msg, "status", ptStatus);
 
 			temp = "Info::";
 			temp.append("::function_code:");
@@ -166,14 +166,16 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		else
 		{
 			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
-			msgbus_msg_envelope_put(msg, "Status", ptStatus);
+			msgbus_msg_envelope_put(msg, "status", ptStatus);
+
+			msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(pstException->m_u8ExcCode)) + ", " +  (to_string(pstException->m_u8ExcStatus))).c_str());
+			msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
 
 			temp = "Info::";
 			temp.append("NULL Pointer is Received from stack");
 			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 		}
 
-		//std::string topic(sRespTopic);
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(sRespTopic);
 		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(sRespTopic);
 
