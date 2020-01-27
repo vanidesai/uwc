@@ -80,7 +80,7 @@ services:
     restart: unless-stopped
     environment:
       AppName: "Modbus_TCP_Master"
-      APP_VERSION: 0.0.0.1
+      APP_VERSION: 0.0.0.2
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       TCP_ENABLED : 1
@@ -127,7 +127,7 @@ services:
     restart: unless-stopped
     environment:
       AppName: "Modbus_RTU_Master"
-      APP_VERSION: 0.0.0.1
+      APP_VERSION: 0.0.0.2
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
@@ -199,7 +199,7 @@ services:
     restart: unless-stopped
     environment:
       AppName: "MQTT_Export"
-      APP_VERSION: 0.0.0.1
+      APP_VERSION: 0.0.0.2
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
