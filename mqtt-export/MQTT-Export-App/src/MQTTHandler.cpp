@@ -15,6 +15,7 @@
 
 sem_t g_semaphoreRespProcess;
 std::mutex g_mqttSubMutexLock;
+std::mutex g_mqttPublishMutexLock;
 
 // constructor
 CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
@@ -246,9 +247,13 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 			mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, a_iQOS,
 					false);
 
-			client.publish(pubmsg, nullptr, listener);
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("Published message on EIS successfully " + std::to_string(a_iQOS)));
 
+			//this need since paho c++ spawns different threads in case of async client
+			{
+				std::lock_guard<std::mutex> lock(g_mqttPublishMutexLock);
+				client.publish(pubmsg, nullptr, listener);
+			}
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("Published message on MQTT broker successfully " + std::to_string(a_iQOS)));
 			return true;
 		} else {
 			pushMsgInQ(stMsgData(a_sMsg, a_sTopic, a_iQOS));
