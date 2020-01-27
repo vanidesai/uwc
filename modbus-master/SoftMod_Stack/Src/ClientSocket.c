@@ -1422,7 +1422,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			struct timeval tv;
 			fd_set myset;
 			tv.tv_sec = 0;
-			tv.tv_usec = g_iResponseTimeout;
+			tv.tv_usec = 50000;
 			FD_ZERO(&myset);
 			FD_SET(sockfd, &myset);
 			int r1 = select(sockfd+1, NULL, &myset, NULL, &tv);
@@ -1445,10 +1445,13 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			}
 			else if(r1 <= 0)
 			{
-				printf("select failed : %d", errno);
-				u8ReturnType = STACK_ERROR_CONNECT_FAILED;
-				Mark_Sock_Fail(a_pstIPConnect);
-				break;
+				if (errno != EINPROGRESS)
+				{
+					printf("select failed : %d", errno);
+					u8ReturnType = STACK_ERROR_CONNECT_FAILED;
+					Mark_Sock_Fail(a_pstIPConnect);
+					break;
+				}
 			}
 		}
 
@@ -1463,11 +1466,11 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 				Mark_Sock_Fail(a_pstIPConnect);
 				break;
 			}
-			printf("Added to listen \n");
+			printf("socket is added for epoll \n");
 			a_pstIPConnect->m_bIsAddedToEPoll = true;
 		}
 
-		/// forcefully sleep for 50ms to complete previous send request
+		/// forcefully sleep for 10ms to complete previous send request
 		/// This is to match the speed between master and slave
 		usleep(10000);
 
