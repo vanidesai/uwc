@@ -52,7 +52,7 @@ checkrootUser()
 uninstallEIS()
 {
 	docker rm -f $(docker ps -a -q)
-	docker system prune -a --volumes
+	docker system prune -af --volumes
 	rm -rf UWC/
 	rm -rf modbus-master/ MQTT/ mqtt-export/
     	rm -rf docker_setup/provision/config/UWC/
