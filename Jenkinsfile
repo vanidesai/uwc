@@ -128,6 +128,8 @@ pipeline {
 
         stage('RBHE Static Code Scan') {
             steps {
+                // remove IEdgeInsights before staticCodeScan to only scan the relavant code
+                sh 'rm -rf IEdgeInsights'
                 rbheStaticCodeScan()
             }
         }
