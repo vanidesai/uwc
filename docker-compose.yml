@@ -60,7 +60,13 @@ services:
       - ca_etcd
       - etcd_root_cert
       - etcd_root_key
- 
+
+ # UWC containers
+ # 1. modbus-tcp-master
+ # 2. modbus-rtu-master
+ # 3. mqtt_container
+ # 4. mqtt-export
+
   modbus-tcp-master:
     depends_on:
       - ia_eisbase
@@ -77,28 +83,42 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      AppName: "Modbus-TCP-Master"
+      AppName: "Modbus_TCP_Master"
+      APP_VERSION: 0.0.0.2
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       TCP_ENABLED : 1
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 5
       MODBUS_MASTER_CONNECT_TIMEOUT: 30000
       MODBUS_MASTER_SESSION_TIMEOUT: 10
+      RESPONSE_TIMEOUT: 250
+      INTERFRAME_DEALY: 5
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      Clients: "MQTT-Export"
-      WRITE_RESPONSE_TOPIC: "PL0_flowmeter1_write_response"
-      SubTopics: "MQTT-Export/PL0_flowmeter1_write"
-      PubTopics: "PL0_flowmeter1,PL0_flowmeter1_write_response"
-      PL0_flowmeter1_cfg: "zmq_tcp,127.0.0.1:5656"
-      PL0_flowmeter1_write_cfg: "zmq_tcp,127.0.0.1:5858"
-      PL0_flowmeter1_write_response_cfg: "zmq_tcp,127.0.0.1:9999"
-    #user: ${EIS_UID}
+      Clients: "MQTT_Export"
+      SITE_LIST_FILE_NAME: "site_list.yml"
+      PubTopics: "Modbus_TCP_Master_PolledData,Modbus_TCP_Master_ReadResponse,Modbus_TCP_Master_WriteResponse"
+      PolledData: "Modbus_TCP_Master_PolledData"
+      ReadResponse: "Modbus_TCP_Master_ReadResponse"
+      WriteResponse: "Modbus_TCP_Master_WriteResponse"
+      Modbus_TCP_Master_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_TCP_Master_ReadResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_TCP_Master_WriteResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
+      ReadRequest: "MQTT_Export_ReadRequest"
+      WriteRequest: "MQTT_Export_WriteRequest"
+      MQTT_Export_ReadRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WriteRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+    volumes:
+      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "vol_uwc_socket:${SOCKET_DIR}"
+    user: ${EIS_UID}
     secrets:
       - ca_etcd
-      - etcd_Modbus-TCP-Master_cert
-      - etcd_Modbus-TCP-Master_key
+      - etcd_Modbus_TCP_Master_cert
+      - etcd_Modbus_TCP_Master_key
 
   modbus-rtu-master:
     depends_on:
@@ -116,27 +136,48 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      AppName: "Modbus-RTU-Master"
+      AppName: "Modbus_RTU_Master"
+      APP_VERSION: 0.0.0.2
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       TCP_ENABLED : 1
       ZMQ_RECV_HWM: "1000"
+      RESPONSE_TIMEOUT: 250
+      INTERFRAME_DEALY: 30
+      BAUD_RATE: 9600
+      PARITY: 1
+      PORT_NAME: "tty/USB0"
+      STOPBIT: 1
       MY_APP_ID: 5
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      Clients: "MQTT-Export"
-      WRITE_RESPONSE_TOPIC: "PL0_flowmeter1_write_response"
-      SubTopics: "MQTT-Export/PL0_flowmeter1_write"
-      PL0_flowmeter1_write_cfg: "zmq_tcp,127.0.0.1:5858"
-      PubTopics: "PL0_flowmeter1,PL0_flowmeter1_write_response"
-      PL0_flowmeter1_cfg: "zmq_tcp,127.0.0.1:5656"
-      PL0_flowmeter1_write_response_cfg: "zmq_tcp,127.0.0.1:9999"
-    user: ${EIS_UID}
+      Clients: "MQTT_Export"
+      SITE_LIST_FILE_NAME: "site_list.yml"
+      PubTopics: "Modbus_RTU_Master_PolledData,Modbus_RTU_Master_ReadResponse,Modbus_RTU_Master_WriteResponse"
+      PolledData: "Modbus_RTU_Master_PolledData"
+      ReadResponse: "Modbus_RTU_Master_ReadResponse"
+      WriteResponse: "Modbus_RTU_Master_WriteResponse"
+      Modbus_RTU_Master_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_ReadResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_WriteResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
+      ReadRequest: "MQTT_Export_ReadRequest"
+      WriteRequest: "MQTT_Export_WriteRequest"
+      MQTT_Export_ReadRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WriteRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+    volumes:
+      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "vol_uwc_socket:${SOCKET_DIR}"
+    #user: ${EIS_UID}
+    devices:
+      - /dev:/dev
+    privileged: true
     secrets:
       - ca_etcd
-      - etcd_Modbus-RTU-Master_cert
-      - etcd_Modbus-RTU-Master_key
-      
+      - etcd_Modbus_RTU_Master_cert
+      - etcd_Modbus_RTU_Master_key
+
   mqtt_container:
     depends_on:
       - ia_eisbase
@@ -155,6 +196,7 @@ services:
       AppName: "MQTT"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+    user: ${EIS_UID}
 
   mqtt-export:
     depends_on:
@@ -172,21 +214,46 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      AppName: "MQTT-Export"
+      AppName: "MQTT_Export"
+      APP_VERSION: 0.0.0.2
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000" 
       MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:1883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      SubTopics: "Modbus-TCP-Master/PL0_flowmeter1"
-      PL0_flowmeter1_cfg: "zmq_tcp,127.0.0.1:5656"
-    #user: ${EIS_UID}
+      Clients: "Modbus_TCP_Master,Modbus_RTU_Master"
+      SubTopics: "Modbus_TCP_Master/Modbus_TCP_Master_PolledData,Modbus_TCP_Master/Modbus_TCP_Master_ReadResponse,Modbus_TCP_Master/Modbus_TCP_Master_WriteResponse,Modbus_RTU_Master/Modbus_RTU_Master_PolledData,Modbus_RTU_Master/Modbus_RTU_Master_ReadResponse,Modbus_RTU_Master/Modbus_RTU_Master_WriteResponse"
+      PubTopics: "MQTT_Export_ReadRequest,MQTT_Export_WriteRequest"
+      Modbus_TCP_Master_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_ReadRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WriteRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_TCP_Master_ReadResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_TCP_Master_WriteResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_ReadResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_WriteResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      ReadRequest: MQTT_Export_ReadRequest
+      WriteRequest: MQTT_Export_WriteRequest
+      mqtt_SubReadTopic: "/+/+/+/read"
+      mqtt_SubWriteTopic: "/+/+/+/write"
+    user: ${EIS_UID}
+    volumes:
+      - "vol_uwc_socket:${SOCKET_DIR}"
     secrets:
       - ca_etcd
-      - etcd_MQTT-Export_cert
-      - etcd_MQTT-Export_key
- 
+      - etcd_MQTT_Export_cert
+      - etcd_MQTT_Export_key
+
+volumes:
+  vol_uwc_socket:
+    driver: local
+    driver_opts:
+      type: local
+      o: bind
+      device: ${EIS_INSTALL_PATH}/sockets
+
 secrets:
   ca_etcd:
     file: provision/Certificates/ca/ca_certificate.pem
@@ -194,15 +261,15 @@ secrets:
     file: provision/Certificates/root/root_client_certificate.pem
   etcd_root_key:
     file: provision/Certificates/root/root_client_key.pem
-  etcd_Modbus-TCP-Master_cert:
-    file: provision/Certificates/Modbus-TCP-Master/Modbus-TCP-Master_client_certificate.pem
-  etcd_Modbus-TCP-Master_key:
-    file: provision/Certificates/Modbus-TCP-Master/Modbus-TCP-Master_client_key.pem
-  etcd_Modbus-RTU-Master_cert:
-    file: provision/Certificates/Modbus-RTU-Master/Modbus-RTU-Master_client_certificate.pem
-  etcd_Modbus-RTU-Master_key:
-    file: provision/Certificates/Modbus-RTU-Master/Modbus-RTU-Master_client_key.pem
-  etcd_MQTT-Export_cert:
-    file: provision/Certificates/MQTT-Export/MQTT-Export_client_certificate.pem
-  etcd_MQTT-Export_key:
-    file: provision/Certificates/MQTT-Export/MQTT-Export_client_key.pem
+  etcd_Modbus_TCP_Master_cert:
+    file: provision/Certificates/Modbus_TCP_Master/Modbus_TCP_Master_client_certificate.pem
+  etcd_Modbus_TCP_Master_key:
+    file: provision/Certificates/Modbus_TCP_Master/Modbus_TCP_Master_client_key.pem
+  etcd_Modbus_RTU_Master_cert:
+    file: provision/Certificates/Modbus_RTU_Master/Modbus_RTU_Master_client_certificate.pem
+  etcd_Modbus_RTU_Master_key:
+    file: provision/Certificates/Modbus_RTU_Master/Modbus_RTU_Master_client_key.pem
+  etcd_MQTT_Export_cert:
+    file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
+  etcd_MQTT_Export_key:
+    file: provision/Certificates/MQTT_Export/MQTT_Export_client_key.pem

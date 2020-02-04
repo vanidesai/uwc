@@ -90,6 +90,7 @@ services:
       MODBUS_MASTER_CONNECT_TIMEOUT: 30000
       MODBUS_MASTER_SESSION_TIMEOUT: 10
       RESPONSE_TIMEOUT: 250
+      INTERFRAME_DEALY: 5
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
@@ -98,16 +99,17 @@ services:
       PolledData: "Modbus_TCP_Master_PolledData"
       ReadResponse: "Modbus_TCP_Master_ReadResponse"
       WriteResponse: "Modbus_TCP_Master_WriteResponse"
-      Modbus_TCP_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5000"
-      Modbus_TCP_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5001"
-      Modbus_TCP_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5002"
+      Modbus_TCP_Master_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_TCP_Master_ReadResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_TCP_Master_WriteResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
       SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
       ReadRequest: "MQTT_Export_ReadRequest"
       WriteRequest: "MQTT_Export_WriteRequest"
-      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:5003"
-      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:5004"
+      MQTT_Export_ReadRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WriteRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "vol_uwc_socket:${SOCKET_DIR}"
     user: ${EIS_UID}
 
   modbus-rtu-master:
@@ -134,6 +136,7 @@ services:
       TCP_ENABLED : 1
       ZMQ_RECV_HWM: "1000"
       RESPONSE_TIMEOUT: 250
+      INTERFRAME_DEALY: 30
       BAUD_RATE: 9600
       PARITY: 1
       PORT_NAME: "tty/USB0"
@@ -147,16 +150,17 @@ services:
       PolledData: "Modbus_RTU_Master_PolledData"
       ReadResponse: "Modbus_RTU_Master_ReadResponse"
       WriteResponse: "Modbus_RTU_Master_WriteResponse"
-      Modbus_RTU_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5005"
-      Modbus_RTU_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5006"
-      Modbus_RTU_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5007"
+      Modbus_RTU_Master_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_ReadResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_WriteResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
       SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
       ReadRequest: "MQTT_Export_ReadRequest"
       WriteRequest: "MQTT_Export_WriteRequest"
-      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:5003"
-      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:5004"
+      MQTT_Export_ReadRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WriteRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "vol_uwc_socket:${SOCKET_DIR}"
     #user: ${EIS_UID}
     devices:
       - /dev:/dev
@@ -210,17 +214,26 @@ services:
       Clients: "Modbus_TCP_Master,Modbus_RTU_Master"
       SubTopics: "Modbus_TCP_Master/Modbus_TCP_Master_PolledData,Modbus_TCP_Master/Modbus_TCP_Master_ReadResponse,Modbus_TCP_Master/Modbus_TCP_Master_WriteResponse,Modbus_RTU_Master/Modbus_RTU_Master_PolledData,Modbus_RTU_Master/Modbus_RTU_Master_ReadResponse,Modbus_RTU_Master/Modbus_RTU_Master_WriteResponse"
       PubTopics: "MQTT_Export_ReadRequest,MQTT_Export_WriteRequest"
-      Modbus_TCP_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5000"
-      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:5003"
-      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:5004"
-      Modbus_TCP_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5001"
-      Modbus_TCP_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5002"
-      Modbus_RTU_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5005"
-      Modbus_RTU_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5006"
-      Modbus_RTU_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5007"
+      Modbus_TCP_Master_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_ReadRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WriteRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_TCP_Master_ReadResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_TCP_Master_WriteResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_ReadResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      Modbus_RTU_Master_WriteResponse_cfg: "zmq_ipc,${SOCKET_DIR}/"
       ReadRequest: MQTT_Export_ReadRequest
       WriteRequest: MQTT_Export_WriteRequest
       mqtt_SubReadTopic: "/+/+/+/read"
       mqtt_SubWriteTopic: "/+/+/+/write"
-
+    volumes:
+      - "vol_uwc_socket:${SOCKET_DIR}"
     user: ${EIS_UID}
+
+volumes:
+  vol_uwc_socket:
+    driver: local
+    driver_opts:
+      type: local
+      o: bind
+      device: ${EIS_INSTALL_PATH}/sockets
