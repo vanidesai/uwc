@@ -88,7 +88,25 @@ pipeline {
                     }
                 }
 
+                // This stage would only run when not on the master branch...so it skips Klocwork
+                stage('Compile') {
+                    when { not { branch 'master' } }
+                    steps {
+                        script {
+                            parallel(['Modbus TCP': {
+                                sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy modbus-tcp-master'
+                            }, 'Modbus RTU': {
+                                sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy modbus-rtu-master'
+                            }, 'MQTT Export': {
+                                sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy mqtt-export'
+                            }])
+                        }
+                    }
+                }
+
+                // Klocwork only happens on the master branch
                 stage('Klockwork Prep') {
+                    when { branch 'master' }
                     environment { 
                         //https://jenkins.io/doc/book/pipeline/syntax/#parameters
                         // this will expose KW_USR and KW_PSW, this will be used to write a file for Klocwork
@@ -104,7 +122,9 @@ pipeline {
                     }
                 }
 
+                // Klocwork only happens on the master branch
                 stage('Klockwork') {
+                    when { branch 'master' }
                     stages {
                         stage('Modbus TCP') {
                             steps {
