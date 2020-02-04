@@ -90,8 +90,6 @@ services:
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 5
-      MODBUS_MASTER_CONNECT_TIMEOUT: 30000
-      MODBUS_MASTER_SESSION_TIMEOUT: 10
       RESPONSE_TIMEOUT: 250
       INTERFRAME_DEALY: 5
       CertType: "zmq"

@@ -363,8 +363,8 @@ int main(int argc, char* argv[])
 		}while(fd < 0);
 #endif
 
-			// Setup signal handlers
-			signal(SIGUSR1, signal_handler);
+		// Setup signal handlers
+		signal(SIGUSR1, signal_handler);
 		signal(SIGALRM, LinuxTimer::timer_callback);
 
 		uint8_t	u8ReturnType = AppMbusMaster_StackInit();
