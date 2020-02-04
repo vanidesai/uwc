@@ -32,9 +32,9 @@ The directory comprises of following:
 
 ## Install pre-requisites
 ```
-1. EdgeInsightsSoftware-v2.1-Alpha version of EIS should be available on deploy machine before deployment. 
-2. Copy files from "Release" diectory (e.g. all shell scripts, tar.gz file, etc.) into "EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights" directory. Please ensure that shell scripts have "execute" permission (sudo chmod +x <script name>).
-3. Open a terminal and go to EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory.
+1. EdgeInsightsSoftware-v2.1-PV version of EIS should be available on deploy machine before deployment. 
+2. Copy files from "Release" diectory (e.g. all shell scripts, tar.gz file, etc.) into "EdgeInsightsSoftware-v2.1-PV/IEdgeInsights" directory. Please ensure that shell scripts have "execute" permission (sudo chmod +x <script name>).
+3. Open a terminal and go to EdgeInsightsSoftware-v2.1-PV/IEdgeInsights directory.
 4. Uninstall previously deployed and running UWC containers, using "sudo ./04_uninstall_EIS.sh" command on terminal.
 5. Run below command on terminal to install all pre-requisites required to deploy UWC containers.
 sudo ./01_pre-requisites.sh
