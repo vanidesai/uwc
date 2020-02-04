@@ -80,7 +80,6 @@ services:
     restart: unless-stopped
     environment:
       AppName: "Modbus_TCP_Master"
-      APP_VERSION: 0.0.0.2
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       TCP_ENABLED : 1
@@ -129,7 +128,6 @@ services:
     restart: unless-stopped
     environment:
       AppName: "Modbus_RTU_Master"
-      APP_VERSION: 0.0.0.2
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
@@ -137,6 +135,7 @@ services:
       ZMQ_RECV_HWM: "1000"
       RESPONSE_TIMEOUT: 250
       INTERFRAME_DEALY: 30
+      SERIAL_PORT_RETRY_INTERVAL: 1
       BAUD_RATE: 9600
       PARITY: 1
       PORT_NAME: "tty/USB0"
@@ -203,7 +202,6 @@ services:
     restart: unless-stopped
     environment:
       AppName: "MQTT_Export"
-      APP_VERSION: 0.0.0.2
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"

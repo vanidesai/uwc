@@ -36,6 +36,8 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
+#define APP_VERSION "0.0.0.4"
+
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
 
@@ -133,21 +135,21 @@ void signal_handler(int signo)
 
 	CLogger::getInstance().log(INFO, LOGDETAILS("Signal Handler called.."));
 
-    std::unique_lock<std::mutex> lck(mtx);
+	std::unique_lock<std::mutex> lck(mtx);
 
-    /// stop all running threads
-    g_stopThread = true;
-    AppMbusMaster_StackDeInit();
+	/// stop all running threads
+	g_stopThread = true;
+	AppMbusMaster_StackDeInit();
 
-    /// stop the read periodic timer
-    bool retVal = LinuxTimer::stop_timer();
+	/// stop the read periodic timer
+	bool retVal = LinuxTimer::stop_timer();
 
-    (retVal == true) ? std::cout<< "Periodic Timer is stopped successfully\n":std::cout<< "Error while stopping Periodic timer\n";
+	(retVal == true) ? std::cout<< "Periodic Timer is stopped successfully\n":std::cout<< "Error while stopping Periodic timer\n";
 
-    CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 
-    // Signal main to stop
-    cv.notify_one();
+	// Signal main to stop
+	cv.notify_one();
 }
 
 /// function to check Main thread exit
@@ -279,14 +281,8 @@ int main(int argc, char* argv[])
 	{
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting Modbus_App ..."));
 
-		string sAppVersion;
-		if(!CommonUtils::readEnvVariable("APP_VERSION", sAppVersion))
-		{
-			exit(1);
-		}
-
-		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus container app version is set to :: " + sAppVersion));
-		cout <<"\nModbus container app version is :: " + sAppVersion << "\n"<<endl;
+		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus container app version is set to :: " + std::string(APP_VERSION)));
+		cout <<"\nModbus container app version is :: " + std::string(APP_VERSION) << "\n"<<endl;
 
 		string sAppName;
 		if(!CommonUtils::readEnvVariable("AppName", sAppName))
@@ -332,32 +328,43 @@ int main(int argc, char* argv[])
 		CLogger::getInstance().log(INFO, LOGDETAILS("Baud rate = " + sBaudrate + " \n" +
 				"Port Name = " + sPortName + " \n" + "Parity = " + sParity + " \n" + "Stop Bit =" + sStopBit));
 
-		int fd = initSerialPort((uint8_t*)(sPortName.c_str()),
-				stoi(sBaudrate),
-				stoi(sParity),
-				stoi(sStopBit));
-		if(fd < 0)
-		{
-			cout << "Failed to initialize serial port for RTU."<<endl;
-			cout << "Connect the RTU device to serial port"<<endl;
-			cout << "Container will restart until the serial port is connected."<<endl;
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize serial port for RTU."));
+		int fd;
+		long l_serialPortOpenDelay;
+		std::string s_serialPortOpenDelay;
+		std::string::size_type sz;   // alias of size_t
+		CommonUtils::readEnvVariable("SERIAL_PORT_RETRY_INTERVAL", s_serialPortOpenDelay);
+		l_serialPortOpenDelay = std::stol (s_serialPortOpenDelay, &sz);
 
-			CLogger::getInstance().log(ERROR, LOGDETAILS(temp = "File descriptor is set to ::" + to_string(fd)));
+		do{
+			fd = initSerialPort((uint8_t*)(sPortName.c_str()),
+					stoi(sBaudrate),
+					stoi(sParity),
+					stoi(sStopBit));
+			if(fd < 0)
+			{
+				cout << "Failed to initialize serial port for RTU."<<endl;
+				cout << "Connect the RTU device to serial port"<<endl;
+				//cout << "Container will restart until the serial port is connected."<<endl;
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize serial port for RTU."));
 
-			cout << "Error:: File descriptor is set to :: " << fd << endl;
-			return -1;
-		}
-		else
-		{
-			cout << "Initialize serial port for RTU is successful"<<endl;
-			CLogger::getInstance().log(INFO, LOGDETAILS(temp = "File descriptor is set to ::" + to_string(fd)));
-			cout << "File descriptor is set to :: " << fd << endl;
-		}
+				CLogger::getInstance().log(ERROR, LOGDETAILS(temp = "File descriptor is set to ::" + to_string(fd)));
+
+				cout << "Error:: File descriptor is set to :: " << fd << endl;
+				cout << "Attempting to Open Serial Port again :: " << endl;
+				//return -1;
+			}
+			else
+			{
+				cout << "Initialize serial port for RTU is successful"<<endl;
+				CLogger::getInstance().log(INFO, LOGDETAILS(temp = "File descriptor is set to ::" + to_string(fd)));
+				cout << "File descriptor is set to :: " << fd << endl;
+			}
+			sleep(l_serialPortOpenDelay);
+		}while(fd < 0);
 #endif
 
-		// Setup signal handlers
-		signal(SIGUSR1, signal_handler);
+			// Setup signal handlers
+			signal(SIGUSR1, signal_handler);
 		signal(SIGALRM, LinuxTimer::timer_callback);
 
 		uint8_t	u8ReturnType = AppMbusMaster_StackInit();

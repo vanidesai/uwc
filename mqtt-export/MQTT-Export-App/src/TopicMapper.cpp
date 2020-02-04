@@ -57,7 +57,7 @@ bool CTopicMapper::readCommonEnvVariables()
 		bool bRetVal = false;
 
 		std::list<std::string> topicList{"ReadRequest", "WriteRequest",
-			"AppName", "APP_VERSION", "MQTT_URL_FOR_EXPORT", "DEV_MODE"};
+			"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE"};
 		std::map <std::string, std::string> envTopics;
 
 		for (auto topic : topicList)
@@ -77,7 +77,6 @@ bool CTopicMapper::readCommonEnvVariables()
 		setStrReadRequest(envTopics.at("ReadRequest"));
 		setStrWriteRequest(envTopics.at("WriteRequest"));
 		setStrAppName(envTopics.at("AppName"));
-		setStrAppVersion(envTopics.at("APP_VERSION"));
 		setStrMqttExportURL(envTopics.at("MQTT_URL_FOR_EXPORT"));
 
 		string devMode = envTopics.at("DEV_MODE");

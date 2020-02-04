@@ -31,6 +31,8 @@ extern sem_t g_semaphoreRespProcess;
 
 std::atomic<bool> g_shouldStop(false);
 
+#define APP_VERSION "0.0.0.4"
+
 //add sourcetopic key in payload to publish on EIS
 bool addSrTopic(string &json, string& topic) {
 
@@ -522,15 +524,8 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 
-		string AppVersion = CTopicMapper::getInstance().getStrAppVersion();
-		if(AppVersion.empty()) {
-			CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT-Expprt container app version is not set."));
-			std::cout << __func__ << ":" << __LINE__ << " Error : MQTT-Expprt container app version is not set" <<  std::endl;
-			return -1;
-		}
-
-		CLogger::getInstance().log(INFO, LOGDETAILS("MQTT-Expprt container app version is set to :: "+  AppVersion));
-		cout << "MQTT-Expprt container app version is set to :: "+  AppVersion << endl;
+		CLogger::getInstance().log(INFO, LOGDETAILS("MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION)));
+		cout << "MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION) << endl;
 
 		//string keyToMonitor = "/" + AppName + "/";
 		//CfgManager::Instance().registerCallbackOnChangeDir(const_cast<char *>(keyToMonitor.c_str()));
