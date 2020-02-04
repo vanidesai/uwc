@@ -15,12 +15,12 @@
 #include <string.h>
 #include<unistd.h>
 #include <eis/config_manager/env_config.h>
-#include "eis/config_manager/config_manager.h"
+#include <eis/config_manager/config_manager.h>
 #include <iostream>
+#include "PublishJson.hpp"
 
 #define DIR_PATH "/config"
 
-using namespace eis::config_manager;
 
 class CfgManager {
 public:
@@ -40,27 +40,59 @@ public:
      */
 	bool IsClientCreated();
 
-	/** Returns client from EIS Config library
+	/** Returns client from EIS Env library
 	 *
 	 * @param : Nothing
 	 * @return: Configuration object
 	 */
-	/*const EnvConfig& getEnvConfig() const {
-		return env_config;
-	}*/
+	const config_mgr_t* getConfigClient() const {
+		return config_mgr_client;
+	}
 
-	EnvConfig& getEnvConfig() {
-		return env_config;
+	/** Returns client from EIS Config library
+	 *
+	 * @param : Nothing
+	 * @return: ENV object
+	 */
+	const env_config_t* getEnvClient() const {
+		return env_config_client;
 	}
 
 private:
 
+	/// True for success and false for failure
+	bool isClientCreated;
+
+	/// Local object for EIS ENV Manager
+	env_config_t* env_config_client;
+
 	/// Local object for EIS Config Manager
-	EnvConfig env_config;
+	config_mgr_t* config_mgr_client;
 
     /** Constructor
      */
-	CfgManager(){};
+	CfgManager(){
+
+		env_config_client = env_config_new();
+
+		if(PublishJsonHandler::instance().isDevMode())
+		{
+			/// create client without certificates
+			config_mgr_client = config_mgr_new((char *)"etcd", (char *)"", (char *)"", (char *)"");
+		}
+		else
+		{
+			/// create client with certificates
+			string sCert = "/run/secrets/etcd_" + PublishJsonHandler::instance().getAppName() + "_cert";
+			string sKey = "/run/secrets/etcd_" + PublishJsonHandler::instance().getAppName() + "_key";
+			config_mgr_client = config_mgr_new((char *)"etcd", (char *)sCert.c_str(),
+					(char *)sKey.c_str(),
+					(char *)"/run/secrets/ca_etcd");
+		}
+
+		isClientCreated = false;
+
+	};
 
     /** copy constructor is private
      */

@@ -19,6 +19,7 @@
 #include <cstring>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include "YamlUtil.hpp"
 #include "ConfigManager.hpp"
 #include "ModbusWriteHandler.hpp"
@@ -208,7 +209,7 @@ bool CommonUtils::readCommonEnvVariables()
 {
 	bool bRetVal = false;
 	std::list<std::string> topicList{"PolledData", "ReadResponse", "WriteResponse",
-		"ReadRequest", "WriteRequest", "SITE_LIST_FILE_NAME"};
+		"ReadRequest", "WriteRequest", "SITE_LIST_FILE_NAME", "DEV_MODE"};
 	std::map <std::string, std::string> envTopics;
 
 	for (auto topic : topicList)
@@ -231,6 +232,31 @@ bool CommonUtils::readCommonEnvVariables()
 	PublishJsonHandler::instance().setSReadRequestTopic(envTopics.at("ReadRequest"));
 	PublishJsonHandler::instance().setSWriteRequestTopic(envTopics.at("WriteRequest"));
 	PublishJsonHandler::instance().setSiteListFileName(envTopics.at("SITE_LIST_FILE_NAME"));
+
+
+	string devMode = envTopics.at("DEV_MODE");
+	transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
+
+	if (devMode == "TRUE")
+	{
+		PublishJsonHandler::instance().setDevMode(true);
+		CLogger::getInstance().log(INFO, LOGDETAILS("DEV_MODE is set to true"));
+		cout << "DEV_MODE is set to true\n";
+
+	}
+	else if (devMode == "FALSE")
+	{
+		PublishJsonHandler::instance().setDevMode(false);
+		CLogger::getInstance().log(INFO, LOGDETAILS("DEV_MODE is set to false"));
+		cout << "DEV_MODE is set to false\n";
+	}
+	else
+	{
+		/// default set to false
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid value for DEV_MODE env variable"));
+		CLogger::getInstance().log(INFO, LOGDETAILS("Set the dev mode to default (i.e. true)"));
+		cout << "DEV_MODE is set to default false\n";
+	}
 
 	return bRetVal;
 }

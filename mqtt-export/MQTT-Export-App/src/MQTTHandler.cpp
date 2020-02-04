@@ -367,6 +367,7 @@ bool CMQTTHandler::subscribeToTopics() {
 		for (auto topic : vMqttTopics) {
 			if(! topic.empty()) {
 				CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscribing topic : " + topic));
+				cout << "MQTT Subscribing topic : " <<  topic << endl;
 				subscriber.subscribe(topic, QOS, nullptr, listener);
 			}
 		}

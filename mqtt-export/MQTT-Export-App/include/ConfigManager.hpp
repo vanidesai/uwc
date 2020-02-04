@@ -19,28 +19,13 @@
 #include <iostream>
 
 #include "Logger.hpp"
+#include "TopicMapper.hpp"
 
-#define APP_NAME getenv("AppName")
 //#define DIR_PATH "/config"
 
-using namespace eis::config_manager;
 
 class CfgManager {
 public:
-
-    /** register callback for specific directory in ETCD
-     *
-     * @param key: name of the key
-     * @return: nothing
-     */
-	//void registerCallbackOnChangeDir(char *key);
-
-    /** Register callback for specific key in ETCD
-     *
-     * @param key: name of the key
-     * @return: nothing
-     */
-	//void registerCallbackOnChangeKey(char *key);
 
     /** Returns the single instance of this class
      *
@@ -49,12 +34,6 @@ public:
      */
 	static CfgManager& Instance();
 
-    /** Returns the value from ETCD on specific key
-     *
-     * @param key: name of the key
-     * @return: value from ETCD against given key
-     */
-	//char* getETCDValuebyKey(const char *key);
 
     /** Returns the client status of creation
      *
@@ -63,27 +42,58 @@ public:
      */
 	bool IsClientCreated();
 
-	/** Returns client from EIS Config library
+	/** Returns client from EIS Env library
 	 *
 	 * @param : Nothing
 	 * @return: Configuration object
 	 */
-	EnvConfig& getEnvConfig() {
-		return env_config;
+	const config_mgr_t* getConfigClient() const {
+		return config_mgr_client;
+	}
+
+	/** Returns client from EIS Config library
+	 *
+	 * @param : Nothing
+	 * @return: ENV object
+	 */
+	const env_config_t* getEnvClient() const {
+		return env_config_client;
 	}
 
 private:
 
 	/// True for success and false for failure
-	bool m_isClientCreated;
+	bool isClientCreated;
+
+	/// Local object for EIS ENV Manager
+	env_config_t* env_config_client;
 
 	/// Local object for EIS Config Manager
-	EnvConfig env_config;
+	config_mgr_t* config_mgr_client;
 
     /** Constructor
      */
 	CfgManager(){
-		m_isClientCreated = false;
+
+		env_config_client = env_config_new();
+
+		if(CTopicMapper::getInstance().isDevMode())
+		{
+			/// create client without certificates
+			config_mgr_client = config_mgr_new((char *)"etcd", (char *)"", (char *)"", (char *)"");
+		}
+		else
+		{
+			/// create client with certificates
+			string sCert = "/run/secrets/etcd_" + CTopicMapper::getInstance().getStrAppName() + "_cert";
+			string sKey = "/run/secrets/etcd_" + CTopicMapper::getInstance().getStrAppName() + "_key";
+			config_mgr_client = config_mgr_new((char *)"etcd", (char *)sCert.c_str(),
+					(char *)sKey.c_str(),
+					(char *)"/run/secrets/ca_etcd");
+		}
+
+		isClientCreated = false;
+
 	};
 
     /** copy constructor is private

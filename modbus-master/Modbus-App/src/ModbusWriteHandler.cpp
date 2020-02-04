@@ -14,6 +14,8 @@
 #include "utils/YamlUtil.hpp"
 #include <thread>
 #include <mutex>
+#include <functional>
+
 #include "cjson/cJSON.h"
 #include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
@@ -146,7 +148,7 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 		iLen = iLen - i;
 		if((iLen / 2) != iOpLen)
 		{
-			std::cout << "\n Input length: " << iLen << ", Output length: " << iOpLen << " Mismatch";
+			std::cout << "\n Input length: " << iLen << ", Output length: " << iOpLen << " Mismatch" << std::endl;
 			return -1;
 		}
 		iLen = iLen + i;
@@ -251,7 +253,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 			}
 			if(!isValidJson)
 			{
-				std::cout << __func__ << " Invalid input json parameter or topic." << std::endl;
+				std::cout << __func__ << "::Invalid input json parameter or topic." << std::endl;
 				CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter or topic."));
 				eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
 
@@ -293,7 +295,8 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 			switch(eType)
 			{
 			case network_info::eEndPointType::eCoil:
-				funcCode = isWrite ? stMbusApiPram.m_u16Quantity == 1 ? WRITE_SINGLE_COIL: WRITE_MULTIPLE_COILS : READ_COIL_STATUS;
+				//funcCode = isWrite ? stMbusApiPram.m_u16Quantity == 1 ? WRITE_SINGLE_COIL: WRITE_MULTIPLE_COILS : READ_COIL_STATUS;
+				funcCode = isWrite ? WRITE_SINGLE_COIL: READ_COIL_STATUS;
 				break;
 			case network_info::eEndPointType::eHolding_Register:
 				funcCode = isWrite ? stMbusApiPram.m_u16Quantity == 1 ? WRITE_SINGLE_REG: WRITE_MULTIPLE_REG : READ_HOLDING_REG;
@@ -322,6 +325,21 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 				zmq_handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
 			}
 
+			std::cout <<"****************************************************************" <<endl;
+			std::cout << "on-demand request received with following parameters ::" << endl;
+			std::cout << "app_seq: " << appseq->valuestring<< endl;;
+			std::cout << "byte_swap: "<< obj.getAddress().m_bIsByteSwap<< endl;;
+			std::cout << "word_swap: "<< obj.getAddress().m_bIsWordSwap<< endl;;
+			std::cout <<"command: "<< strCommand << endl;
+			std::cout <<"version: "<<strVersion<< endl;
+			std::cout <<"wellhead: "<<strWellhead<< endl;;
+			std::cout <<"topic: "<<strSourceTopic<< endl;;
+			if(isWrite)
+			{
+				std::cout <<"value: "<<strValue<< endl;
+			}
+			std::cout <<"****************************************************************" <<endl;
+
 			if(WRITE_MULTIPLE_REG == funcCode)
 			{
 				stMbusApiPram.m_u16ByteCount = stMbusApiPram.m_u16Quantity*2;
@@ -345,7 +363,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 				if(WRITE_SINGLE_COIL == funcCode)
 				{
 					// If value is 0x01, then write 0xFF00
-					if( (0 == strValue.compare("0x00")) || (0 == strValue.compare("0X00"))
+					/*if( (0 == strValue.compare("0x00")) || (0 == strValue.compare("0X00"))
 							|| (0 == strValue.compare("00")) || (0 == strValue.compare("0")))
 					{
 						strValue = "0x0000";
@@ -353,7 +371,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 					else
 					{
 						strValue = "0xFF00";
-					}
+					}*/
 				}
 				if(true == isWrite && funcCode != WRITE_MULTIPLE_COILS)
 				{
@@ -379,7 +397,14 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 					int retVal = hex2bin(strValue, stMbusApiPram.m_u16ByteCount, stMbusApiPram.m_pu8Data);
 					if(-1 == retVal)
 					{
-						CLogger::getInstance().log(FATAL, LOGDETAILS("Mismatch in given write value and width."));
+						std::cout << __func__ << "::Invalid value in request json." << std::endl;
+						CLogger::getInstance().log(FATAL, LOGDETAILS("Invalid value in request json."));
+						eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
+
+						if(NULL != root)
+							cJSON_Delete(root);
+
+						return eFunRetType;
 					}
 				}
 				/*else
@@ -417,35 +442,15 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 void modWriteHandler::createWriteListener()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
-	if(getenv("SubTopics") == NULL)
-	{
-		cout<< __func__<<" Error:: SubTopics are not configured.." << endl;
-		return;
-	}
 
-	/// parse all the subtopics
-	std::vector<std::string> stTopics = CfgManager::Instance().getEnvConfig().get_topics_from_env("sub");
-
-	if(stTopics.empty())
-	{
-		std::cout << __func__ << " sub topic is not available. " << std::endl;
-		CLogger::getInstance().log(INFO, LOGDETAILS("No subscribe topic is available."));
-
-		return;
-	}
-
+	std::vector<std::string> stTopics = PublishJsonHandler::instance().getSubTopicList();
 	for(auto sTopic : stTopics)
 	{
-		std::size_t pos = sTopic.find('/');
-		if (std::string::npos != pos)
-		{
-			std::string subTopic(sTopic.substr(pos + 1));
-			std::thread(&modWriteHandler::subscribeDeviceListener, this, subTopic).detach();
+		if(sTopic.empty()) {
+			CLogger::getInstance().log(ERROR, LOGDETAILS("SubTopics are not configured"));
+			continue;
 		}
-		else
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Incorrect topic name format:" + sTopic));
-		}
+		std::thread(&modWriteHandler::subscribeDeviceListener, this, sTopic).detach();
 	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
@@ -495,7 +500,7 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 				string initiate = " write initiated for msg:: ";
 				initiate.append(strMsg);
 
-				CLogger::getInstance().log(ERROR, LOGDETAILS("initiate"));
+				CLogger::getInstance().log(INFO, LOGDETAILS(initiate));
 				/// pushing write request to q to process.
 				pushToWriteTCPQueue(stWriteRequestNode);
 			}

@@ -29,7 +29,7 @@ CfgManager& CfgManager::Instance()
  */
 bool CfgManager::IsClientCreated()
 {
-	config_mgr_t* cfgMangr = env_config.get_config_mgr_client();
-	bool isClientCreated = (cfgMangr !=NULL)?true:false;
+	//config_mgr_t* cfgMangr = env_config.get_config_mgr_client();
+	bool isClientCreated = (getConfigClient() !=NULL)?true:false;
 	return isClientCreated;
 }

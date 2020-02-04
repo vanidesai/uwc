@@ -15,6 +15,7 @@
 #include <sstream>
 #include <ctime>
 #include <chrono>
+#include <functional>
 
 /// flag to check thread stop condition
 std::atomic<bool> g_stopThread;

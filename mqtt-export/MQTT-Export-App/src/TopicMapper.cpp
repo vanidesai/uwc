@@ -11,6 +11,8 @@
 #include "TopicMapper.hpp"
 
 #include "ConfigManager.hpp"
+#include <algorithm>
+
 
 CTopicMapper::CTopicMapper() {
 	// TODO Auto-generated constructor stub
@@ -55,7 +57,7 @@ bool CTopicMapper::readCommonEnvVariables()
 		bool bRetVal = false;
 
 		std::list<std::string> topicList{"ReadRequest", "WriteRequest",
-							"AppName", "APP_VERSION", "MQTT_URL_FOR_EXPORT"};
+			"AppName", "APP_VERSION", "MQTT_URL_FOR_EXPORT", "DEV_MODE"};
 		std::map <std::string, std::string> envTopics;
 
 		for (auto topic : topicList)
@@ -77,6 +79,30 @@ bool CTopicMapper::readCommonEnvVariables()
 		setStrAppName(envTopics.at("AppName"));
 		setStrAppVersion(envTopics.at("APP_VERSION"));
 		setStrMqttExportURL(envTopics.at("MQTT_URL_FOR_EXPORT"));
+
+		string devMode = envTopics.at("DEV_MODE");
+		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
+
+		if (devMode == "TRUE")
+		{
+			setDevMode(true);
+			CLogger::getInstance().log(INFO, LOGDETAILS("DEV_MODE is set to true"));
+			cout << "DEV_MODE is set to true\n";
+
+		}
+		else if (devMode == "FALSE")
+		{
+			setDevMode(false);
+			CLogger::getInstance().log(INFO, LOGDETAILS("DEV_MODE is set to false"));
+			cout << "DEV_MODE is set to false\n";
+		}
+		else
+		{
+			/// default set to false
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid value for DEV_MODE env variable"));
+			CLogger::getInstance().log(INFO, LOGDETAILS("Set the dev mode to default (i.e. true)"));
+			cout << "DEV_MODE is set to default false\n";
+		}
 	}
 	catch(exception &ex) {
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;

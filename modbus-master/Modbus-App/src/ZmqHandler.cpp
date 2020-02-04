@@ -56,11 +56,30 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 	}
 	if(CfgManager::Instance().IsClientCreated())
 	{
-		std::vector<std::string> Topics = CfgManager::Instance().getEnvConfig().get_topics_from_env(topicType);
+		std::vector<std::string> Topics;// = CfgManager::Instance().getEnvConfig().get_topics_from_env(topicType);
+
+		/// parse all the topics
+		char** data = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+		if(NULL != data)
+		{
+			while (*data != NULL)
+			{
+				Topics.push_back(*data);
+				data++;
+			}
+		}
+		else
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("topic list is empty"));
+			cout << "topic list is empty" << endl;
+			return false;
+		}
+
 		for (auto topic : Topics)
 		{
 			retValue = true;
-			config_t* config = CfgManager::Instance().getEnvConfig().get_messagebus_config(topic, topicType);
+			config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(CfgManager::Instance().getConfigClient(), topic.c_str(), topicType.c_str());
 			if(config == NULL) {
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to get publisher message bus config ::" + topic));
 				continue;
@@ -74,18 +93,21 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 				continue;
 			}
 
-			/// method to store msgbus_ctx as per the topic
-			stZmqContext objTempCtx;
-			objTempCtx.m_pContext = msgbus_ctx;
 
-			zmq_handler::insertCTX(topic, objTempCtx);
 			if(topicType == "pub")
 			{
+				/// method to store msgbus_ctx as per the topic
+				stZmqContext objTempCtx;
+				objTempCtx.m_pContext = msgbus_ctx;
+
+				zmq_handler::insertCTX(topic, objTempCtx);
+
 				retVal = msgbus_publisher_new(msgbus_ctx, topic.c_str(), &pub_ctx);
 
 				if(retVal != MSG_SUCCESS)
 				{
 					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize publisher errno: " + std::to_string(retVal)));
+					zmq_handler::removeCTX(topic);
 				}
 				else
 				{
@@ -96,17 +118,36 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 			}
 			else
 			{
-				std::cout << __func__ << " Context created and stored for config for topic :: " << topic << std::endl;
-				retVal = msgbus_subscriber_new(msgbus_ctx, topic.c_str(), NULL, &sub_ctx);
-				if(retVal != MSG_SUCCESS)
+				std::size_t pos = topic.find('/');
+				if (std::string::npos != pos)
 				{
-					std::cout <<__func__ << "Failed to create subscriber context. errno: "<< retVal << std::endl;
-				}
-				else
-				{
-					stZmqSubContext objTempSubCtx;
-					objTempSubCtx.sub_ctx= sub_ctx;
-					zmq_handler::insertSubCTX(topic, objTempSubCtx);
+
+					std::string subTopic(topic.substr(pos + 1));
+					std::cout << __func__ << " Context created and stored for config for topic :: " << subTopic << std::endl;
+
+					std::cout << "Topic for ZMQ subscribe is :: "<< subTopic <<  endl;
+
+					/// add topic in list
+					PublishJsonHandler::instance().insertSubTopicInList(subTopic);
+
+					/// method to store msgbus_ctx as per the topic
+					stZmqContext objTempCtx;
+					objTempCtx.m_pContext = msgbus_ctx;
+
+					zmq_handler::insertCTX(subTopic, objTempCtx);
+
+					retVal = msgbus_subscriber_new(msgbus_ctx, subTopic.c_str(), NULL, &sub_ctx);
+					if(retVal != MSG_SUCCESS)
+					{
+						std::cout <<__func__ << "Failed to create subscriber context. errno: "<< retVal << std::endl;
+						zmq_handler::removeCTX(subTopic);
+					}
+					else
+					{
+						stZmqSubContext objTempSubCtx;
+						objTempSubCtx.sub_ctx= sub_ctx;
+						zmq_handler::insertSubCTX(subTopic, objTempSubCtx);
+					}
 				}
 			}
 			CLogger::getInstance().log(INFO, LOGDETAILS("Context created and stored for config for topic :: " + topic));

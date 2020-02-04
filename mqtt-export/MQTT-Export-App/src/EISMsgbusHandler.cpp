@@ -38,14 +38,32 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 	}
 	if(CfgManager::Instance().IsClientCreated())
 	{
-		std::vector<std::string> Topics = CfgManager::Instance().getEnvConfig().get_topics_from_env(topicType);
+		std::vector<std::string> Topics;// = CfgManager::Instance().getEnvConfig().get_topics_from_env(topicType);
+
+		char** data = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+		if(NULL != data)
+		{
+			while (*data != NULL)
+			{
+				Topics.push_back(*data);
+				data++;
+			}
+		}
+		else
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("topic list is empty"));
+			cout << "topic list is empty" << endl;
+			return false;
+		}
 
 		for (auto topic : Topics)
 		{
 			try
 			{
 			retValue = true;
-			config_t* config = CfgManager::Instance().getEnvConfig().get_messagebus_config(topic, topicType);
+			config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(CfgManager::Instance().getConfigClient(),
+					topic.c_str(), topicType.c_str());
 			if(config == NULL) {
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to get publisher message bus config ::" + topic));
 				std::cout << __func__ << ":" << __LINE__ << " Error : Failed to get publisher message bus config ::" + topic <<  std::endl;
@@ -115,50 +133,61 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 			}
 			else
 			{
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Cfg client is not connected"));
-				retVal = msgbus_subscriber_new(msgbus_ctx, topic.c_str(), NULL, &sub_ctx);
-				if(retVal != MSG_SUCCESS)
+				std::size_t pos = topic.find('/');
+				if (std::string::npos != pos)
 				{
-					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to create subscriber context. errno: " + std::to_string(retVal)));
-					std::cout << __func__ << ":" << __LINE__ << " Error : Failed to create subscriber context. errno: " + std::to_string(retVal) <<  std::endl;
-					if(msgbus_ctx != NULL)
-						msgbus_destroy(msgbus_ctx);
+					std::string subTopic(topic.substr(pos + 1));
 
-					if(config != NULL)
-						config_destroy(config);
-
-					continue;
-				}
-				else
-				{
-					// method to store msgbus_ctx as per the topic
-					stZmqContext objTempCtx;
-					objTempCtx.m_pContext = msgbus_ctx;
-
-					if(false == insertCTX(topic, objTempCtx))
+					CLogger::getInstance().log(DEBUG, LOGDETAILS("Cfg client is not connected"));
+					retVal = msgbus_subscriber_new(msgbus_ctx, subTopic.c_str(), NULL, &sub_ctx);
+					if(retVal != MSG_SUCCESS)
 					{
-						CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to insert context for topic  : " + topic));
-						std::cout << __func__ << ":" << __LINE__ << " Error : Failed to insert context for topic  : " + topic <<  std::endl;
+						CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to create subscriber context. errno: " + std::to_string(retVal)));
+						std::cout << __func__ << ":" << __LINE__ << " Error : Failed to create subscriber context. errno: " + std::to_string(retVal) <<  std::endl;
 						if(msgbus_ctx != NULL)
 							msgbus_destroy(msgbus_ctx);
 
 						if(config != NULL)
 							config_destroy(config);
 
-						continue; //continue with next topic
+						continue;
 					}
-					CLogger::getInstance().log(DEBUG, LOGDETAILS("Context created and stored for config for topic :: " + topic));
-
-					stZmqSubContext objTempSubCtx;
-					objTempSubCtx.m_pContext = sub_ctx;
-
-					if(false == insertSubCTX(topic, objTempSubCtx))
+					else
 					{
-						CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to insert sub context for topic  : " + topic));
-						if(config != NULL)
-							config_destroy(config);
-						//remove msgbus context
-						removeCTX(topic);
+						std::cout << "Topic for ZMQ subscribe is :: "<< subTopic <<  endl;
+
+						/// add topic in list
+						CEISMsgbusHandler::Instance().insertSubTopicInList(subTopic);
+
+						// method to store msgbus_ctx as per the topic
+						stZmqContext objTempCtx;
+						objTempCtx.m_pContext = msgbus_ctx;
+
+						if(false == insertCTX(subTopic, objTempCtx))
+						{
+							CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to insert context for topic  : " + subTopic));
+							std::cout << __func__ << ":" << __LINE__ << " Error : Failed to insert context for topic  : " + subTopic <<  std::endl;
+							if(msgbus_ctx != NULL)
+								msgbus_destroy(msgbus_ctx);
+
+							if(config != NULL)
+								config_destroy(config);
+
+							continue; //continue with next topic
+						}
+						CLogger::getInstance().log(DEBUG, LOGDETAILS("Context created and stored for config for topic :: " + subTopic));
+
+						stZmqSubContext objTempSubCtx;
+						objTempSubCtx.m_pContext = sub_ctx;
+
+						if(false == insertSubCTX(subTopic, objTempSubCtx))
+						{
+							CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to insert sub context for topic  : " + subTopic));
+							if(config != NULL)
+								config_destroy(config);
+							//remove msgbus context
+							removeCTX(subTopic);
+						}
 					}
 				}
 			}

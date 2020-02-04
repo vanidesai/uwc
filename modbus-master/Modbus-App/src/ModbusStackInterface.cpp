@@ -103,18 +103,22 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 				u8FunCode == READ_INPUT_REG)
 		{
 			sRespTopic = PublishJsonHandler::instance().getSReadResponseTopic();
-			std::vector<uint8_t> datavt;
-			for (uint8_t index=0; index<u8numBytes; index++)
+			msg_envelope_elem_body_t* ptData = msgbus_msg_envelope_new_string("");;
+			if(NULL != pu8data && u8numBytes > 0)
 			{
-				datavt.push_back(pu8data[index]);
-			}
+				std::vector<uint8_t> datavt;
+				for (uint8_t index=0; index<u8numBytes; index++)
+				{
+					datavt.push_back(pu8data[index]);
+				}
 
-			/// word swap is always false.
-			std:: string strdata = zmq_handler::swapConversion(datavt,
-															onDemandReqData.m_isByteSwap,
-															onDemandReqData.m_isWordSwap);
-			/// value
-			msg_envelope_elem_body_t* ptData = msgbus_msg_envelope_new_string(strdata.c_str());
+				/// word swap is always false.
+				std:: string strdata = zmq_handler::swapConversion(datavt,
+						onDemandReqData.m_isByteSwap,
+						onDemandReqData.m_isWordSwap);
+				/// value
+				ptData = msgbus_msg_envelope_new_string(strdata.c_str());
+			}
 			msgbus_msg_envelope_put(msg, "value", ptData);
 		}
 		else
@@ -178,6 +182,19 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(sRespTopic);
 		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(sRespTopic);
+
+		std::cout <<"****************************************************************" <<endl;
+		std::cout << "on-demand response received with following parameters ::" << endl;
+		std::cout << "app_seq: " << onDemandReqData.m_strAppSeq<< endl;;
+		std::cout << "byte_swap: "<< onDemandReqData.m_isByteSwap<< endl;;
+		std::cout << "word_swap: "<< onDemandReqData.m_isWordSwap<< endl;;
+		std::cout <<"metric: "<< onDemandReqData.m_strMetric << endl;
+		std::cout <<"version: "<<onDemandReqData.m_strVersion<< endl;
+		std::cout <<"wellhead: "<<onDemandReqData.m_strWellhead<< endl;;
+		std::cout <<"topic: "<<onDemandReqData.m_strTopic<< endl;
+		std::cout <<"usec: "<<strUsec<< endl;
+		std::cout <<"timestamp: "<<strTimestamp<< endl;
+		std::cout <<"****************************************************************" <<endl;
 
 		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, sRespTopic);
 	}

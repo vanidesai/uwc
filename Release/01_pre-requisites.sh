@@ -15,6 +15,7 @@ GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
 NC=$(tput sgr0)
 BOLD=$(tput bold)
+INFO=$(tput setaf 3)   # YELLOW (used for informative messages)
 
  # Variable to store user proxy provided by command line
 USER_PROXY=""
@@ -56,18 +57,9 @@ check_for_errors()
 # ----------------------------
 # Set dev mode to true
 # ----------------------------
-setdevmodetrue()
+setHostIP()
 {
-   echo "Setting dev mode to true..."    
-   sed -i 's/DEV_MODE=false/DEV_MODE=true/g' $working_dir/docker_setup/.env
-   if [ "$?" -ne "0" ]; then
-	echo "${RED}Failed to set dev mode to true."
-	echo "${GREEN}Kinldy set DEV_MODE to true manualy in .env file and then re--run this script"
-	exit 1
-   else
-	echo "${GREEN}Dev Mode is set to true.${NC}"
-   fi
-   echo "${GREEN}Setting HOST_IP to 127.0.0.1 in .env file of EIS..${NC}"
+   echo "${INFO}Setting HOST_IP to 127.0.0.1 in .env file of EIS..${NC}"
    if grep -Fxq 'HOST_IP=127.0.0.1' $working_dir/docker_setup/.env
    then
    	echo "${GREEN}HOST_IP=127.0.0.1 variable already present in <>docker_setup/.env${NC}"
@@ -84,7 +76,7 @@ setdevmodetrue()
 # ----------------------------
 checkrootUser()
 {
-   echo "Checking for root user..."    
+   echo "${INFO}Checking for root user...${NC}"    
    if [[ $EUID -ne 0 ]]; then
     	echo "${RED}This script must be run as root.${NC}"
 	echo "${GREEN}E.g. sudo ./<script_name>${NC}"
@@ -100,7 +92,7 @@ checkrootUser()
 # ----------------------------
 checkInternetConnection()
 {
-    echo "Checking for Internet Connection..."    
+    echo "${INFO}Checking for Internet Connection...${NC}"    
     wget http://www.google.com > /dev/null 2>&1
     if [ "$?" != 0 ]; then
         echo "${RED}No Internet Connection. Please check your internet connection...!${NC}" 
@@ -118,7 +110,7 @@ checkInternetConnection()
 
 installBasicPackages()
 {
-    echo "Executing Pre-requisites Edge Insights Software ${iei_version}"
+    echo "${INFO}Executing Pre-requisites Edge Insights Software ${iei_version}${NC}"
     # Installing dependent packages
     sudo apt-get -y install build-essential python3-pip wget curl > /dev/null 2>&1
     if [ "$?" -ne "0" ]; then
@@ -137,7 +129,7 @@ changeFilePermissions()
 
 verifyDirectory()
 {
-    echo "Verifying the directory..."    
+    echo "${INFO}Verifying the directory...${NC}"    
     if [ ! -d ${working_dir}/docker_setup ]; then
     	echo "${RED}UWC installer files are not placed in right directory.${NC}"
 	echo "${GREEN}Copy UWC installer files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory and re-run this script.${NC}"
@@ -176,20 +168,24 @@ createDockerVolumeDir()
 # ----------------------------
 addUWCContainersInEIS()
 {
-    echo "Copying UWC Containers in EIS..."   
+    echo "${INFO}Copying UWC Containers in EIS...${NC}"   
     rm -rf UWC/ && mkdir UWC
     tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
     cd UWC
     cp -r modbus-master/ MQTT/ mqtt-export/ ../
-    cp -r docker-compose_DEV.yml ../docker_setup/docker-compose.yml
-    cp -r Others/ETCD_Config/UWC/YAML_Config/* /opt/intel/eis/uwc_data
-
-    ## added temporary 
-    cp Others/Dockerfile.eisbase ../common/dockerfiles/
-    echo "${GREEN}UWC containers are successfully copied.${NC}"
-    echo "${BOLD}${GREEN}>>>>>${NC}"
-	echo "${BOLD}${GREEN}************************* This script is sucessfully executed ***************************************************"
-    echo "${BOLD}${GREEN}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
+    cp docker-compose.yml ../docker_setup/docker-compose.yml
+    cp -r Others/ETCD_Config/UWC/YML_Config/* /opt/intel/eis/uwc_data
+    cp Others/ETCD_Config/UWC/etcd_pre_load.json ../docker_setup/provision/config/
+    copy_verification=$(echo $?)
+    if [ "$copy_verification" -eq "0" ]; then
+        echo "${GREEN}UWC containers are successfully copied ${NC}"
+    else
+        echo "${RED}failed to copy UWC containers.${NC}"
+	return 1
+    fi
+    echo "${GREEN}>>>>>${NC}"
+	echo "${GREEN}************************* This script is sucessfully executed ***************************************************"
+    echo "${GREEN}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
     cd ${working_dir}/ && rm -rf UWC/
     return 0
 }
@@ -512,7 +508,7 @@ docker_compose_verify_installation()
     if [ "$installation_verification" -eq "0" ]; then
         echo "${GREEN}docker-compose is already installed ${NC}"
     else
-        echo "${RED}docker-compose needs to be Installed.${NC} "
+        echo "${INFO}docker-compose needs to be Installed.${NC} "
         echo "${GREEN}Installing docker-compose${NC}"
         docker_compose_install
     fi
@@ -539,7 +535,7 @@ docker_verification_installation()
     if [ "$installation_verification" -eq "0" ]; then
         echo "${GREEN}Docker is already installed ${NC}"
     else
-        echo "${RED}Docker needs to be Installed.${NC} "
+        echo "${INFO}Docker needs to be Installed.${NC} "
         echo "${GREEN}Installing Docker${NC}"
         docker_install
     fi
@@ -554,7 +550,7 @@ checkInternetConnection
 installBasicPackages
 docker_verification_installation	"$@"
 docker_compose_verify_installation
-setdevmodetrue
+setHostIP
 createDockerVolumeDir
 addUWCContainersInEIS
 changeFilePermissions

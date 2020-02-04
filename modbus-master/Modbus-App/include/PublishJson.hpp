@@ -46,7 +46,10 @@ class PublishJsonHandler
 	std::string m_sWriteRequestTopic;
 	std::string m_siteListFileName;
 
+	std::vector<std::string> subTopicList;
+
 	std::string m_sAppName;
+	bool m_devMode;
 	std::atomic<unsigned short> m_u16TxId;
 
 public:
@@ -114,6 +117,22 @@ public:
 	{
 		m_u16TxId++;
 		return m_u16TxId;
+	}
+
+	bool isDevMode() const {
+		return m_devMode;
+	}
+
+	void setDevMode(bool devMode) {
+		m_devMode = devMode;
+	}
+
+	const std::vector<std::string>& getSubTopicList() const {
+		return subTopicList;
+	}
+
+	void insertSubTopicInList(const std::string &a_sTopic) {
+		subTopicList.push_back(a_sTopic);
 	}
 };
 

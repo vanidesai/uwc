@@ -404,8 +404,9 @@ void postMsgstoMQTT() {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Entered"));
 
 	//start listening on EIS msg bus
-	vector<string> vFullTopics =
-			CfgManager::Instance().getEnvConfig().get_topics_from_env("sub");
+
+	/// get sub topic list
+	vector<string> vFullTopics = CEISMsgbusHandler::Instance().getSubTopicList();
 
 	for (auto topic : vFullTopics) {
 
@@ -415,38 +416,30 @@ void postMsgstoMQTT() {
 			continue;
 		}
 
-		std::size_t pos = topic.find('/');
-		if (std::string::npos != pos) {
-			std::string subTopic(topic.substr(pos + 1));
-			stZmqContext context;
+		stZmqContext context;
 
-			if (!CEISMsgbusHandler::Instance().getCTX(subTopic, context)) {
-				CLogger::getInstance().log(ERROR, LOGDETAILS("cannot find msgbus context for topic : " + subTopic));
-				std::cout << __func__ << ":" << __LINE__ << " Error : cannot find msgbus context for topic : " + subTopic <<  std::endl;
-				continue;		//go to next topic
-			}
-
-			//will give topic context
-			stZmqSubContext subContext;
-			if (!CEISMsgbusHandler::Instance().getSubCTX(subTopic,
-					subContext)) {
-				CLogger::getInstance().log(ERROR, LOGDETAILS("cannot find sub context context for topic : "
-						+ subTopic));
-				std::cout << __func__ << ":" << __LINE__ << " Error : cannot find sub context context for topic : "
-						+ subTopic <<  std::endl;
-				continue;		//go to next topic
-			}
-
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("Full topic - " + topic + " AND listening on: " + subTopic));
-
-			g_vThreads.push_back(
-					std::thread(listenOnEIS, subTopic, context, subContext));
-		} else {
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Incorrect topic name format: " + topic));
-			std::cout << __func__ << ":" << __LINE__ << " Error : Incorrect topic name format: " + topic <<  std::endl;
+		if (!CEISMsgbusHandler::Instance().getCTX(topic, context)) {
+			CLogger::getInstance().log(ERROR, LOGDETAILS("cannot find msgbus context for topic : " + topic));
+			std::cout << __func__ << ":" << __LINE__ << " Error : cannot find msgbus context for topic : " + topic <<  std::endl;
+			continue;		//go to next topic
 		}
-	}
 
+		//will give topic context
+		stZmqSubContext subContext;
+		if (!CEISMsgbusHandler::Instance().getSubCTX(topic,
+				subContext)) {
+			CLogger::getInstance().log(ERROR, LOGDETAILS("cannot find sub context context for topic : "
+					+ topic));
+			std::cout << __func__ << ":" << __LINE__ << " Error : cannot find sub context context for topic : "
+					+ topic <<  std::endl;
+			continue;		//go to next topic
+		}
+
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Full topic - " + topic + " AND listening on: " + topic));
+
+		g_vThreads.push_back(
+				std::thread(listenOnEIS, topic, context, subContext));
+	}
 }
 
 //create EIS msg bus context and topic context for publisher and subscriber both
@@ -537,6 +530,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		CLogger::getInstance().log(INFO, LOGDETAILS("MQTT-Expprt container app version is set to :: "+  AppVersion));
+		cout << "MQTT-Expprt container app version is set to :: "+  AppVersion << endl;
 
 		//string keyToMonitor = "/" + AppName + "/";
 		//CfgManager::Instance().registerCallbackOnChangeDir(const_cast<char *>(keyToMonitor.c_str()));

@@ -37,6 +37,7 @@ class CEISMsgbusHandler {
 	CEISMsgbusHandler();
 	CEISMsgbusHandler(const CEISMsgbusHandler &obj);
 	CEISMsgbusHandler operator=(const CEISMsgbusHandler &obj);
+	std::vector<std::string> subTopicList;
 
 public:
 	static CEISMsgbusHandler& Instance() {
@@ -77,6 +78,14 @@ public:
 
 	/// function to remove entry from the map
 	void removePubCTX(std::string, stZmqContext& zmqCtx);
+
+	const std::vector<std::string>& getSubTopicList() const {
+		return subTopicList;
+	}
+
+	void insertSubTopicInList(const std::string a_sTopic) {
+		subTopicList.push_back(a_sTopic);
+	}
 };
 
 #endif

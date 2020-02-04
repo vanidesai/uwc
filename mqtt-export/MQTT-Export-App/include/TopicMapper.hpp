@@ -14,9 +14,13 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <algorithm>
+#include <list>
 /*
  * TopicMapper Class to map MQTT topics with ZMQ topics
  */
+
+using namespace std;
 
 class CTopicMapper {
 private:
@@ -30,6 +34,7 @@ private:
 	std::string m_strAppName;
 	std::string m_strAppVersion;
 	std::string m_strMqttExportURL;
+	bool m_devMode;
 
 public:
 	virtual ~CTopicMapper();
@@ -80,6 +85,14 @@ public:
 	static CTopicMapper& getInstance() {
 		static CTopicMapper _self;
 			return _self;
+	}
+
+	bool isDevMode() const {
+		return m_devMode;
+	}
+
+	void setDevMode(bool devMode) {
+		m_devMode = devMode;
 	}
 };
 
