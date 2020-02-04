@@ -19,36 +19,36 @@ FROM ia_common:$EIS_VERSION as common
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
 RUN git clone --branch v1.3.1 https://github.com/eclipse/paho.mqtt.c.git \
-    &&	cd paho.mqtt.c \
-    &&	mkdir build && cd build \
-    &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=ON \
-	-DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS=OFF .. \
-    &&	make -s \
-    &&	make install
+  && cd paho.mqtt.c \
+  && mkdir build && cd build \
+  && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=ON \
+  -DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS=OFF .. \
+  && make -s \
+  && make install
 
 
 # Build Paho CPP Library
 FROM eisbase as build-pahocpp
 COPY --from=build-pahoc /usr/paho-c /usr/.
 RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
-    && cd paho.mqtt.cpp \
-    && mkdir build && cd build \
-    && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_MQTT_C_PATH=/usr/paho-c \
-	-DCMAKE_INSTALL_PREFIX=/usr/paho-cpp  -DPAHO_BUILD_SAMPLES:BOOL=OFF \
-	-DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON  .. \
-    && make -s \
-    && make install
+  && cd paho.mqtt.cpp \
+  && mkdir build && cd build \
+  && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_MQTT_C_PATH=/usr/paho-c \
+  -DCMAKE_INSTALL_PREFIX=/usr/paho-cpp  -DPAHO_BUILD_SAMPLES:BOOL=OFF \
+  -DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON  .. \
+  && make -s \
+  && make install
 
 
 # Build log4cpp Library
 FROM eisbase as build-log4cpp
 
 RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
-    && tar -zxvf log4cpp-1.1.3.tar.gz \
-    && cd log4cpp && mkdir build \
-    && ./configure --enable-static=no --prefix=$PWD/build \
-    && make \
-    && make install
+  && tar -zxvf log4cpp-1.1.3.tar.gz \
+  && cd log4cpp && mkdir build \
+  && ./configure --enable-static=no --prefix=$PWD/build \
+  && make \
+  && make install
 
 
 # Build MQTT-Export application
@@ -65,47 +65,41 @@ COPY --from=build-pahoc /usr/paho-c/include/MQTT* /MQTT-Export-App/include/
 COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
 COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
 
-RUN mkdir kw10 ; \
-       export http_proxy="http://proxy-chain.intel.com:911"; \
-       export https_proxy="http://proxy-chain.intel.com:911"; \
-       export all_proxy="http://proxy-chain.intel.com:911"; \
+# begin kw ######################
+RUN dpkg --add-architecture i386 \
+  && apt-get update -y \
+  && apt-get install -y lsb-core \
+  libc6:i386 \
+  libgcc1:i386 \
+  lib32tinfo5 \
+  libncursesw5:i386 \
+  libnuma1
 
-       dpkg --add-architecture i386 ;\
-       apt-get update -y ;\
-       apt-get install lsb-core -y ;\
-       apt-get install libc6:i386 libgcc1:i386 -y ;\
-       apt-get install lib32tinfo5 -y ;\
-       apt-get install libncursesw:i386 -y ;\
-       apt-get install libnuma1 -y ;\
-
-       adduser --disabled-password --no-create-home --gecos "" hadi ;\
-       chown -R hadi kw10 ; \
-       su hadi -c "echo Hadi is here*******"; \
-       wget https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW12.3/Linux/kw-server-installer.12.3.0.819.linux64.sh ;\
-       chmod 755 kw-server-installer.12.3.0.819.linux64.sh ;\
-       su hadi -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /kw10 --license-server kwlic.intel.com:7500" ;\
-       ls kw10 ;
-
-RUN  ls -la ~
-RUN  mkdir .klocwork ;
-ADD  ltoken .klocwork/
-
-RUN mv .klocwork ~
-RUN ls -la ~/.klocwork
-
+RUN mkdir /klocwork \
+  && adduser --disabled-password --no-create-home --gecos "" klocwork \
+  && chown -R klocwork /klocwork \
+  && wget https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW12.3/Linux/kw-server-installer.12.3.0.819.linux64.sh \
+  && chmod 755 kw-server-installer.12.3.0.819.linux64.sh \
+  && su klocwork -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /klocwork --license-server kwlic.intel.com:7500"
 
 RUN cd /MQTT-Export-App/Release \
-    &&	export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
-    &&  export INCLUDE_DIR='/bin' \
-    &&	/kw10/bin/kwinject make clean all -s
+  && export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
+  && export INCLUDE_DIR='/bin' \
+  && /klocwork/bin/kwinject --output /tmp/kwinject.out make clean all -s
 
+ARG KW_SERVER="https://klocwork-jf6.devtools.intel.com:8100"
+ARG KW_TABLES="/tmp/tables_UWC"
+ARG GIT_BRANCH=master
+ARG BUILD_NUMBER=-1
 
-RUN cd /MQTT-Export-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
-       /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
-       cp test.log tables_UWC/build.log ;\
-       cp parse_errors.log tables_UWC/parse_errors.log ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC ;
+# this file is written by Jenkins, do not commit credentials to Git
+COPY kwcreds /tmp/kwcreds
 
+RUN /klocwork/bin/kwauth --url "${KW_SERVER}" < /tmp/kwcreds \
+  && /klocwork/bin/kwdeploy sync --url ${KW_SERVER} \
+  && /klocwork/bin/kwbuildproject --verbose --url "${KW_SERVER}/UWC" --tables-directory "${KW_TABLES}" --incremental /tmp/kwinject.out --log-file "${KW_TABLES}/build.log" \
+  && /klocwork/bin/kwadmin --url "${KW_SERVER}" load UWC "${KW_TABLES}" --name KWReport_MQTT-Export_${GIT_BRANCH}_${BUILD_NUMBER}
+# end kw ######################
 
 # Build mqtt export container service
 FROM eisbase as mqtt-export-service

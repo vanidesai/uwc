@@ -15,29 +15,50 @@ ARG EIS_UID
 
 FROM ia_common:$EIS_VERSION as common
 
+# install klocwork in it's own named layer ####################################
+FROM eisbase as klocwork
+
+RUN dpkg --add-architecture i386 \
+  && apt-get update -y \
+  && apt-get install -y lsb-core \
+  libc6:i386 \
+  libgcc1:i386 \
+  lib32tinfo5 \
+  libncursesw5:i386 \
+  libnuma1
+
+RUN mkdir /klocwork \
+  && adduser --disabled-password --no-create-home --gecos "" klocwork \
+  && chown -R klocwork /klocwork \
+  && wget https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW12.3/Linux/kw-server-installer.12.3.0.819.linux64.sh \
+  && chmod 755 kw-server-installer.12.3.0.819.linux64.sh \
+  && su klocwork -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /klocwork --license-server kwlic.intel.com:7500"
+
+###############################################################################
+
 # Build log4cpp Library
 FROM eisbase as build-log4cpp
 
 RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
-    && tar -zxvf log4cpp-1.1.3.tar.gz \
-    && cd log4cpp && mkdir build \
-    && ./configure --enable-static=no --prefix=$PWD/build \
-    && make \
-    && make install
+  && tar -zxvf log4cpp-1.1.3.tar.gz \
+  && cd log4cpp && mkdir build \
+  && ./configure --enable-static=no --prefix=$PWD/build \
+  && make \
+  && make install
 
 # yaml build
 FROM eisbase as build-yaml
 
 RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
-    && cd yaml-cpp \
-    &&	mkdir build && cd build \
-    &&	cmake -DYAML_BUILD_SHARED_LIBS=ON ../ \
-    &&	make yaml-cpp \
-    &&	mkdir -p /usr/yaml \
-    &&  mkdir -p /usr/yaml/lib \
-    &&  cp lib* /usr/yaml/lib \
-    &&  cp -r ../include /usr/yaml \
-    && cd ../../
+  && cd yaml-cpp \
+  && mkdir build && cd build \
+  && cmake -DYAML_BUILD_SHARED_LIBS=ON ../ \
+  && make yaml-cpp \
+  && mkdir -p /usr/yaml \
+  && mkdir -p /usr/yaml/lib \
+  && cp lib* /usr/yaml/lib \
+  && cp -r ../include /usr/yaml \
+  && cd ../../
 
 # Build Modbus Stack
 FROM eisbase as modbus-lib
@@ -47,47 +68,36 @@ WORKDIR /
 COPY --from=common /usr/local/include/safe_* /usr/local/include/
 COPY --from=common /usr/local/lib/libsafestring.so /usr/local/lib/
 
-RUN mkdir kw10 ; \
-       export http_proxy="http://proxy-chain.intel.com:911"; \
-       export https_proxy="http://proxy-chain.intel.com:911"; \
-       export all_proxy="http://proxy-chain.intel.com:911"; \
-
-       dpkg --add-architecture i386 ;\
-       apt-get update -y ;\
-       apt-get install lsb-core -y ;\
-       apt-get install libc6:i386 libgcc1:i386 -y ;\
-       apt-get install lib32tinfo5 -y ;\
-       apt-get install libncursesw:i386 -y ;\
-       apt-get install libnuma1 -y ;\
-
-       adduser --disabled-password --no-create-home --gecos "" hadi ;\
-       chown -R hadi kw10 ; \
-       su hadi -c "echo Hadi is here*******"; \
-       wget https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW12.3/Linux/kw-server-installer.12.3.0.819.linux64.sh ;\
-       chmod 755 kw-server-installer.12.3.0.819.linux64.sh ;\
-       su hadi -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /kw10 --license-server kwlic.intel.com:7500" ;\
-       ls kw10 ;
-
-RUN  ls -la ~
-RUN  mkdir .klocwork ;
-ADD  ltoken .klocwork/
-
-RUN mv .klocwork ~
-RUN ls -la ~/.klocwork
+# begin kw ######################
+COPY --from=klocwork /klocwork /klocwork
+RUN dpkg --add-architecture i386 \
+  && apt-get update -y \
+  && apt-get install -y lsb-core \
+  libc6:i386 \
+  libgcc1:i386 \
+  lib32tinfo5 \
+  libncursesw5:i386 \
+  libnuma1
 
 COPY SoftMod_Stack /SoftMod_Stack/.
-WORKDIR SoftMod_Stack
-RUN cd Release ; make clean ;\
-     /kw10/bin/kwinject --output kwinject.out make all -s;
+WORKDIR /SoftMod_Stack
+RUN cd Release \
+  && make clean \
+  && /klocwork/bin/kwinject --output /tmp/kwinject.out make all -s
 
-RUN ls -la Release
+ARG KW_SERVER="https://klocwork-jf6.devtools.intel.com:8100"
+ARG KW_TABLES="/tmp/tables_UWC"
+ARG GIT_BRANCH=master
+ARG BUILD_NUMBER=-1
 
-       #/kw10/bin/kwauth --url https://klocwork-jf6.devtools.intel.com:8100 ;\
-RUN cd Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
-       /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
-       cp test.log tables_UWC/build.log ;\
-       cp parse_errors.log tables_UWC/parse_errors.log ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
+# this file is written by Jenkins, do not commit credentials to Git
+COPY kwcreds /tmp/kwcreds
+
+RUN /klocwork/bin/kwauth --url "${KW_SERVER}" < /tmp/kwcreds \
+  && /klocwork/bin/kwdeploy sync --url ${KW_SERVER} \
+  && /klocwork/bin/kwbuildproject --verbose --url "${KW_SERVER}/UWC" --tables-directory "${KW_TABLES}" --incremental /tmp/kwinject.out --log-file "${KW_TABLES}/build.log" \
+  && /klocwork/bin/kwadmin --url "${KW_SERVER}" load UWC "${KW_TABLES}" --name "KWReport_SoftMod_Stack_${GIT_BRANCH}_${BUILD_NUMBER}_TCP"
+# end kw ######################
 
 # Build Modbus application
 FROM eisbase as modbus-app
@@ -106,47 +116,35 @@ COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
 COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
 COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /Modbus-App/lib/
 
-RUN mkdir kw10 ; \
-       export http_proxy="http://proxy-chain.intel.com:911"; \
-       export https_proxy="http://proxy-chain.intel.com:911"; \
-       export all_proxy="http://proxy-chain.intel.com:911"; \
+# begin kw ######################
+COPY --from=klocwork /klocwork /klocwork
+RUN dpkg --add-architecture i386 \
+  && apt-get update -y \
+  && apt-get install -y lsb-core \
+  libc6:i386 \
+  libgcc1:i386 \
+  lib32tinfo5 \
+  libncursesw5:i386 \
+  libnuma1
 
-       dpkg --add-architecture i386 ;\
-       apt-get update -y ;\
-       apt-get install lsb-core -y ;\
-       apt-get install libc6:i386 libgcc1:i386 -y ;\
-       apt-get install lib32tinfo5 -y ;\
-       apt-get install libncursesw:i386 -y ;\
-       apt-get install libnuma1 -y ;\
+ARG KW_SERVER="https://klocwork-jf6.devtools.intel.com:8100"
+ARG KW_TABLES="/tmp/tables_UWC"
+ARG GIT_BRANCH=master
+ARG BUILD_NUMBER=-1
 
-       adduser --disabled-password --no-create-home --gecos "" hadi ;\
-       chown -R hadi kw10 ; \
-       su hadi -c "echo Hadi is here*******"; \
-       wget https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW12.3/Linux/kw-server-installer.12.3.0.819.linux64.sh ;\
-       chmod 755 kw-server-installer.12.3.0.819.linux64.sh ;\
-       su hadi -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /kw10 --license-server kwlic.intel.com:7500" ;\
-       ls kw10 ;
+# this file is written by Jenkins, do not commit credentials to Git
+COPY kwcreds /tmp/kwcreds
 
-RUN  ls -la ~
-RUN  mkdir .klocwork ;
-ADD  ltoken .klocwork/
+RUN cd /Modbus-App/Release && \
+  export LD_LIBRARY_PATH='/Modbus-App/lib:/usr/local/lib:/bin/yaml-cpp/lib' && \
+  export INCLUDE_DIR='/bin' && \
+  /klocwork/bin/kwinject --output /tmp/kwinject.out make clean all -s
 
-RUN mv .klocwork ~
-RUN ls -la ~/.klocwork
-
-
-RUN cd /Modbus-App/Release \
-    &&	export LD_LIBRARY_PATH='/Modbus-App/lib:/usr/local/lib\
-    :/bin/yaml-cpp/lib' \
-    &&  export INCLUDE_DIR='/bin' \
-    &&	/kw10/bin/kwinject make clean all -s
-
-       #/kw10/bin/kwauth --url https://klocwork-jf6.devtools.intel.com:8100 ;\
-RUN cd /Modbus-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
-       /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
-       cp test.log tables_UWC/build.log ;\
-       cp parse_errors.log tables_UWC/parse_errors.log ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC ;
+RUN /klocwork/bin/kwauth --url "${KW_SERVER}" < /tmp/kwcreds \
+  && /klocwork/bin/kwdeploy sync --url ${KW_SERVER} \
+  && /klocwork/bin/kwbuildproject --verbose --url "${KW_SERVER}/UWC" --tables-directory "${KW_TABLES}" --incremental /tmp/kwinject.out --log-file "${KW_TABLES}/build.log" \
+  && /klocwork/bin/kwadmin --url "${KW_SERVER}" load UWC "${KW_TABLES}" --name "KWReport_Modbus-App_${GIT_BRANCH}_${BUILD_NUMBER}_TCP"
+# end kw ######################
 
 # Build Modbus container service
 FROM eisbase as modbus-service

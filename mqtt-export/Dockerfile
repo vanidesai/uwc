@@ -19,36 +19,35 @@ FROM ia_common:$EIS_VERSION as common
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
 RUN git clone --branch v1.3.1 https://github.com/eclipse/paho.mqtt.c.git \
-    &&	cd paho.mqtt.c \
-    &&	mkdir build && cd build \
-    &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=ON \
-	-DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS=OFF .. \
-    &&	make -s \
-    &&	make install
-
+  && cd paho.mqtt.c \
+  && mkdir build && cd build \
+  && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=ON \
+  -DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS=OFF .. \
+  && make -s \
+  && make install
 
 # Build Paho CPP Library
 FROM eisbase as build-pahocpp
 COPY --from=build-pahoc /usr/paho-c /usr/.
 RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
-    && cd paho.mqtt.cpp \
-    && mkdir build && cd build \
-    && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_MQTT_C_PATH=/usr/paho-c \
-	-DCMAKE_INSTALL_PREFIX=/usr/paho-cpp  -DPAHO_BUILD_SAMPLES:BOOL=OFF \
-	-DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON  .. \
-    && make -s \
-    && make install
+  && cd paho.mqtt.cpp \
+  && mkdir build && cd build \
+  && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_MQTT_C_PATH=/usr/paho-c \
+  -DCMAKE_INSTALL_PREFIX=/usr/paho-cpp  -DPAHO_BUILD_SAMPLES:BOOL=OFF \
+  -DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON  .. \
+  && make -s \
+  && make install
 
 
 # Build log4cpp Library
 FROM eisbase as build-log4cpp
 
 RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
-    && tar -zxvf log4cpp-1.1.3.tar.gz \
-    && cd log4cpp && mkdir build \
-    && ./configure --enable-static=no --prefix=$PWD/build \
-    && make \
-    && make install
+  && tar -zxvf log4cpp-1.1.3.tar.gz \
+  && cd log4cpp && mkdir build \
+  && ./configure --enable-static=no --prefix=$PWD/build \
+  && make \
+  && make install
 
 
 # Build MQTT-Export application
@@ -65,9 +64,9 @@ COPY --from=build-pahoc /usr/paho-c/include/MQTT* /MQTT-Export-App/include/
 COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
 COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
 RUN cd /MQTT-Export-App/Release \
-    &&	export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
-    &&  export INCLUDE_DIR='/bin' \
-    &&	make clean all -s
+  && export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
+  && export INCLUDE_DIR='/bin' \
+  && make clean all -s
 
 
 # Build mqtt export container service
