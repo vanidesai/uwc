@@ -20,6 +20,7 @@
 #include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
 
 //#define MODBUS_STACK_TCPIP_ENABLED
+#define MAX_REQUESTS 1000
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	#define TCP_MODBUS_ADU_LENGTH 260
@@ -127,6 +128,7 @@ typedef enum
 	RESP_TIMEDOUT,
 	RESP_ERROR,
 	RESP_SENT_TO_APP,
+	IdleState,
 }eTransactionState;
 
 typedef enum
@@ -206,7 +208,18 @@ typedef struct _stMbusPacketVariables
 	unsigned long m_ulRespSentTimebyStack;
 	struct timespec m_ts;
 
+	bool m_bIsAvailable;
+	unsigned int m_ulMyId;
 }stMbusPacketVariables_t;
+
+struct stReqManager {
+	stMbusPacketVariables_t m_objReqArray[MAX_REQUESTS];
+	Mutex_H m_mutexReqArray;
+};
+
+void initReqManager();
+stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq);
+void freeReqNode(stMbusPacketVariables_t* a_pobjReq);
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 

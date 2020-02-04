@@ -26,6 +26,9 @@
 int m_clientFd = 0, m_epollFd = 0;
 struct epoll_event m_event, *m_events = NULL;
 struct sockaddr_in m_clientAddr;
+
+struct stReqManager g_objReqManager;
+
 #define MODBUS_HEADER_LENGTH 6 //no. of bytes till length paramater in header
 //array of accepted clients
 #define MAX_DEVICE_PER_SITE 300
@@ -53,6 +56,105 @@ extern stDevConfig_t ModbusMasterConfig;
 extern void* ServerSessTcpAndCbThread(void* threadArg);
 extern Mutex_H LivSerSesslist_Mutex;
 #endif
+
+void printReqListNoLock(char *a_pFuncName)
+{
+/*	//Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
+	printf("%s: (pos, state): ", a_pFuncName);
+	for (int iCount = 0; iCount < MAX_REQUESTS; iCount++)
+	{
+		printf("(%u, %d), ", g_objReqManager.m_objReqArray[iCount].m_ulMyId, g_objReqManager.m_objReqArray[iCount].m_bIsAvailable);
+	}
+	printf("\n");*/
+	//Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
+}
+
+void printReqList(char *a_pFuncName)
+{
+	Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
+	printReqListNoLock(a_pFuncName);
+	Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
+}
+
+void initReqManager()
+{
+	printf("initReqManager start\n");
+	unsigned int iCount = 0;
+	for (; iCount < MAX_REQUESTS; iCount++)
+	{
+		g_objReqManager.m_objReqArray[iCount].m_ulMyId = iCount;
+		g_objReqManager.m_objReqArray[iCount].m_bIsAvailable = true;
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+		g_objReqManager.m_objReqArray[iCount].__next = NULL;
+		g_objReqManager.m_objReqArray[iCount].__prev = NULL;
+#endif
+		g_objReqManager.m_objReqArray[iCount].m_state = IdleState;
+	}
+	//printReqListNoLock("initReqManager");
+	g_objReqManager.m_mutexReqArray = Osal_Mutex();
+	printf("initReqManager end\n");
+}
+
+stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq)
+{
+	if(NULL == a_pObjTempReq)
+	{
+		return NULL;
+	}
+	//printf("getNodeForNewRequest: start\n");
+	stMbusPacketVariables_t* ptr = NULL;
+	long iCount = 0;
+	Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
+	for (; iCount < MAX_REQUESTS; iCount++)
+	{
+		if(true == g_objReqManager.m_objReqArray[iCount].m_bIsAvailable)
+		{
+			ptr = &g_objReqManager.m_objReqArray[iCount];
+
+			// Init the object from temp object
+			memcpy_s(ptr, sizeof(stMbusPacketVariables_t),
+						a_pObjTempReq, sizeof(stMbusPacketVariables_t));
+
+			ptr->m_bIsAvailable = false;
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+			ptr->__next = NULL;
+			ptr->__prev = NULL;
+#endif
+			ptr->m_state = REQ_RCVD_FROM_APP;
+			ptr->m_ulMyId = iCount;
+
+			//printf("getNodeForNewRequest: %u, time: %lu\n", ptr->m_ulMyId, get_nanos());
+			break;
+		}
+	}
+	//printReqListNoLock("getNodeForNewRequest");
+	Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
+	if(NULL == ptr)
+	{
+		printf("getNodeForNewRequest: No empty node !\n");
+	}
+	//printf("getNodeForNewRequest: end\n");
+	return ptr;
+}
+
+void freeReqNode(stMbusPacketVariables_t* a_pobjReq)
+{
+	Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
+	if(NULL != a_pobjReq)
+	{
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+		a_pobjReq->__next = NULL;
+		a_pobjReq->__prev = NULL;
+#endif
+		a_pobjReq->m_state = IdleState;
+		a_pobjReq->m_bIsAvailable = true;
+
+		//printf("freeReqNode after: %u, time: %lu\n", a_pobjReq->m_ulMyId, get_nanos());
+	}
+	//printReqListNoLock("freeReqNode");
+	Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
+}
+
 /**
  *
  * Description
@@ -96,6 +198,7 @@ void* SessionControlThread(void* threadArg)
 					ApplicationCallBackHandler(pstMBusReqPact,
 							STACK_ERROR_MALLOC_FAILED);
 					Osal_Release_Mutex (LivSerSesslist_Mutex);
+					freeReqNode(pstMBusReqPact);
 					continue;
 				}
 				else
@@ -135,6 +238,7 @@ void* SessionControlThread(void* threadArg)
 					{
 						ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_MALLOC_FAILED);
 						Osal_Release_Mutex (LivSerSesslist_Mutex);
+						freeReqNode(pstMBusReqPact);
 						continue;
 					}
 					pstLivSerSesslist = pstTempLivSerSesslist->m_pNextElm;
@@ -161,6 +265,7 @@ void* SessionControlThread(void* threadArg)
 				{
 					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_SEND);
 					Osal_Release_Mutex (LivSerSesslist_Mutex);
+					freeReqNode(pstMBusReqPact);
 					continue;
 				}
 
@@ -174,6 +279,7 @@ void* SessionControlThread(void* threadArg)
 				{
 					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_THREAD_CREATE);
 					Osal_Release_Mutex (LivSerSesslist_Mutex);
+					freeReqNode(pstMBusReqPact);
 					continue;
 				}
 			}
@@ -188,6 +294,7 @@ void* SessionControlThread(void* threadArg)
 				{
 					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_SEND);
 					Osal_Release_Mutex (LivSerSesslist_Mutex);
+					freeReqNode(pstMBusReqPact);
 					continue;
 				}
 			}
@@ -196,6 +303,7 @@ void* SessionControlThread(void* threadArg)
 		else
 		{
 			ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_RECIVE);
+			freeReqNode(pstMBusReqPact);
 			continue;
 		}
 		fflush(stdin);
@@ -393,8 +501,8 @@ void* SessionControlThread(void* threadArg)
 			pstMBusReqPact = stScMsgQue.wParam;
 			u8ReturnType = Modbus_SendPacket(pstMBusReqPact, &fd);
 			ApplicationCallBackHandler(pstMBusReqPact, u8ReturnType);
-			OSAL_Free(pstMBusReqPact);
-
+			//OSAL_Free(pstMBusReqPact);
+			freeReqNode(pstMBusReqPact);
 		}
 		fflush(stdin);
 	}
@@ -477,11 +585,14 @@ void addToRespQ(stMbusPacketVariables_t *a_pstReq)
 
 		if(!OSAL_Post_Message(&stPostThreadMsg))
 		{
-			OSAL_Free(a_pstReq);
+			//OSAL_Free(a_pstReq);
+			freeReqNode(a_pstReq);
 		}
-
-		// Signal response timeout thread
-		sem_post(&g_stRespProcess.m_semaphoreResp);
+		else
+		{
+			// Signal response timeout thread
+			sem_post(&g_stRespProcess.m_semaphoreResp);
+		}
 	}
 }
 
@@ -544,7 +655,8 @@ void* postResponseToApp(void* threadArg)
 			{
 				pstMBusRequesPacket->m_ulRespSentTimebyStack = get_nanos();
 				ApplicationCallBackHandler(pstMBusRequesPacket, pstMBusRequesPacket->m_u8ProcessReturn);
-				OSAL_Free(pstMBusRequesPacket);
+				//OSAL_Free(pstMBusRequesPacket);
+				freeReqNode(pstMBusRequesPacket);
 			}
 		}
 	}

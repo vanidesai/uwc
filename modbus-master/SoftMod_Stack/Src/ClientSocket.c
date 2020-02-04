@@ -121,7 +121,10 @@ static uint16_t crc16(uint8_t *buffer, uint16_t buffer_length)
 }
 #endif //#ifndef MODBUS_STACK_TCPIP_ENABLED
 
-int g_iResponseTimeout;
+int g_iResponseTimeout = 0;
+
+// variable to store interframe gap delay
+int32_t g_i32InterframeDelay = 0;
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 int fd;
@@ -866,11 +869,11 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		// Multiple Slave issue: Adding Frame delay between two packets 
 		if(baud > 19200)
 		{
-			usleep(21000);
+			usleep(g_i32InterframeDelay);
 		}
 		else
 		{		
-			usleep(30000);
+			usleep(g_i32InterframeDelay);
 		}
 
 		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
@@ -963,13 +966,13 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 	flags = O_RDWR | O_NOCTTY | O_NDELAY | O_EXCL;
 	//flags = O_RDWR | O_NOCTTY | O_NDELAY | O_SYNC;
 
-	fd = open((const char*)portName, flags);
+		fd = open((const char*)portName, flags);
 
-	if (fd == -1) {
-		printf("ERROR Can't open the device %s (%s)\n",
-				portName, strerror(errno));
-		return -1;
-	}
+		if (fd == -1) {
+			printf("ERROR Can't open the device %s (%s)\n",
+					portName, strerror(errno));
+			return -1;
+		}
 
 	/* Save */
 	// tcgetattr(fd, &old_tios);
@@ -1105,41 +1108,41 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 	tios.c_cflag |= CS8;
 
 
-/* PARENB       Enable parity bit
+	/* PARENB       Enable parity bit
 
       PARODD       Use odd parity instead of even */
 
-   if (parity == NO_PARITY) {
+	if (parity == NO_PARITY) {
 
-       /* None */
+		/* None */
 
-       //< tios.c_cflag &=~ PARENB;
+		//< tios.c_cflag &=~ PARENB;
 
-      tios.c_cflag &= ~(PARENB | PARODD); //< Disabled both even and odd parity
+		tios.c_cflag &= ~(PARENB | PARODD); //< Disabled both even and odd parity
 
-      tios.c_cflag |= CSTOPB; //< When parity is none, add a stop bit at the place of parity to make 11 characters i.e. two stop bits
+		tios.c_cflag |= CSTOPB; //< When parity is none, add a stop bit at the place of parity to make 11 characters i.e. two stop bits
 
-   } else if (parity == EVEN_PARITY) {
+	} else if (parity == EVEN_PARITY) {
 
-       /* Even */
+		/* Even */
 
-       tios.c_cflag |= PARENB;
+		tios.c_cflag |= PARENB;
 
-       tios.c_cflag &= ~PARODD;
+		tios.c_cflag &= ~PARODD;
 
-       tios.c_cflag &= ~CSTOPB;
+		tios.c_cflag &= ~CSTOPB;
 
-   } else {
+	} else {
 
-       /* Odd */
+		/* Odd */
 
-       tios.c_cflag |= PARENB;
+		tios.c_cflag |= PARENB;
 
-       tios.c_cflag |= PARODD;
+		tios.c_cflag |= PARODD;
 
-       tios.c_cflag &= ~CSTOPB;
+		tios.c_cflag &= ~CSTOPB;
 
-   }
+	}
 
 	//Setting Hardware Flow
 	tios.c_cflag &= ~CRTSCTS;
@@ -1351,7 +1354,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 		}
 		sockfd = a_pstIPConnect->m_sockfd;
 		if((SOCK_NOT_CONNECTED == a_pstIPConnect->m_lastConnectStatus) &&
-			(0 != a_pstIPConnect->m_sockfd))
+				(0 != a_pstIPConnect->m_sockfd))
 		{
 			a_pstIPConnect->m_retryCount = 0;
 
@@ -1406,7 +1409,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			}
 		}
 		if((SOCK_CONNECT_INPROGRESS == a_pstIPConnect->m_lastConnectStatus) &&
-					(0 != a_pstIPConnect->m_sockfd))
+				(0 != a_pstIPConnect->m_sockfd))
 		{
 			//
 			a_pstIPConnect->m_retryCount++;
@@ -1422,7 +1425,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			struct timeval tv;
 			fd_set myset;
 			tv.tv_sec = 0;
-			tv.tv_usec = 50000;
+			tv.tv_usec = g_i32InterframeDelay;
 			FD_ZERO(&myset);
 			FD_SET(sockfd, &myset);
 			int r1 = select(sockfd+1, NULL, &myset, NULL, &tv);
@@ -1445,13 +1448,10 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			}
 			else if(r1 <= 0)
 			{
-				if (errno != EINPROGRESS)
-				{
-					printf("select failed : %d", errno);
-					u8ReturnType = STACK_ERROR_CONNECT_FAILED;
-					Mark_Sock_Fail(a_pstIPConnect);
-					break;
-				}
+				printf("select failed : %d", errno);
+				u8ReturnType = STACK_ERROR_CONNECT_FAILED;
+				Mark_Sock_Fail(a_pstIPConnect);
+				break;
 			}
 		}
 
@@ -1466,11 +1466,11 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 				Mark_Sock_Fail(a_pstIPConnect);
 				break;
 			}
-			printf("socket is added for epoll \n");
+			printf("Added to listen \n");
 			a_pstIPConnect->m_bIsAddedToEPoll = true;
 		}
 
-		/// forcefully sleep for 10ms to complete previous send request
+		/// forcefully sleep for 50ms to complete previous send request
 		/// This is to match the speed between master and slave
 		usleep(10000);
 

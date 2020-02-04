@@ -17,6 +17,7 @@ Thread_H SessionControl_ThreadId = 0;
 extern int32_t i32MsgQueIdSC;
 bool g_bThreadExit = false;
 extern int g_iResponseTimeout;
+extern int32_t g_i32InterframeDelay;
 
 Thread_H EpollRecv_ThreadId = 0;
 pthread_t Rx_ThreadId;
@@ -96,13 +97,28 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	if(NULL == pcResponseTime)
 	{
 		eStatus = STACK_ERROR_INVALID_INPUT_PARAMETER;
-		printf("Response time is not configured.\n");
+		printf("RESPONSE_TIMEOUT environment variable is not set .\n");
 		return eStatus;
 	}
 	else
 	{
 		g_iResponseTimeout = strtol(pcResponseTime, &ptr, 10) * 1000;	// *1000 is to convert millisecond value to microsecond
+		printf("RESPONSE_TIMEOUT is set to :: %d us\n", g_iResponseTimeout);
 	}
+
+	const char *pcInterframeDelay= getenv("INTERFRAME_DEALY");
+	if(NULL == pcInterframeDelay)
+	{
+		eStatus = STACK_ERROR_INVALID_INPUT_PARAMETER;
+		printf("INTERFRAME_DEALY environment variable is not set .\n");
+		return eStatus;
+	}
+	else
+	{
+		g_i32InterframeDelay = strtol(pcInterframeDelay, &ptr, 10) * 1000;	// *1000 is to convert millisecond value to microsecond
+		printf("INTERFRAME_DEALY is set to :: %d us\n", g_i32InterframeDelay);
+	}
+
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	thread_Create_t stEpollRecvThreadParam = { 0 };
 
@@ -133,6 +149,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 
 #endif //#ifdef MODBUS_STACK_TCPIP_ENABLED
 
+	initReqManager();
 
 	i32MsgQueIdSC = OSAL_Init_Message_Queue();
 
@@ -650,14 +667,15 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
-
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//		&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -667,7 +685,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -763,14 +782,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-				&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -780,7 +801,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -874,14 +896,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-				&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -891,7 +915,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -986,14 +1011,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-				&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -1003,7 +1030,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -1094,14 +1122,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//		&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -1111,7 +1141,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -1201,14 +1232,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//		&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -1218,7 +1251,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -1324,14 +1358,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-	&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -1341,7 +1377,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -1456,14 +1493,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-				&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -1473,7 +1512,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -1616,14 +1656,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//		&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -1633,7 +1675,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -1786,14 +1829,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	///pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//		&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -1803,7 +1848,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -1955,14 +2001,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//		&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -1972,7 +2020,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
@@ -2087,14 +2136,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
 	}
 
-	pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
 	if(NULL == pstMBusRequesPacket)
 	{
-		return STACK_ERROR_MALLOC_FAILED;
+		//return STACK_ERROR_MALLOC_FAILED;
+		return STACK_ERROR_MAX_REQ_SENT;
 	}
 
-	memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
-			&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
+	//memcpy_s(pstMBusRequesPacket,sizeof(stMbusPacketVariables_t),
+	//		&stMBusRequesPacket,sizeof(stMbusPacketVariables_t));
 
 	stPostThreadMsg.idThread = i32MsgQueIdSC;
 	stPostThreadMsg.lParam = NULL;
@@ -2104,7 +2155,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	if(!OSAL_Post_Message(&stPostThreadMsg))
 	{
 		u8ReturnType = STACK_ERROR_QUEUE_SEND;
-		free(pstMBusRequesPacket);
+		//free(pstMBusRequesPacket);
+		freeReqNode(pstMBusRequesPacket);
 	}
 
 	return u8ReturnType;
