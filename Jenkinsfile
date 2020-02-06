@@ -45,9 +45,9 @@ pipeline {
                     args '-v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
-            environment {
-                DOCKER_REGISTRY = "uwc_${GIT_BRANCH}_"
-            }
+            // environment { //Dockerfiles do not adhere to the DOCKER_REGISTRY syntax, so this fails on fresh builds
+            //     DOCKER_REGISTRY = "uwc_${GIT_BRANCH}_"
+            // }
             stages {
                 stage('Verify') {
                     steps {
