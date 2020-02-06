@@ -45,6 +45,9 @@ pipeline {
                     args '-v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
+            environment {
+                DOCKER_REGISTRY = "uwc_${GIT_BRANCH}_"
+            }
             stages {
                 stage('Verify') {
                     steps {
