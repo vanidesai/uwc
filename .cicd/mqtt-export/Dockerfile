@@ -104,7 +104,7 @@ RUN cd /MQTT-Export-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork
        /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
        cp test.log tables_UWC/build.log ;\
        cp parse_errors.log tables_UWC/parse_errors.log ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC ;
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
 
 
 # Build mqtt export container service
