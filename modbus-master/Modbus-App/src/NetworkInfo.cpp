@@ -13,6 +13,7 @@
 #include <atomic>
 #include <map>
 #include <algorithm>
+#include <arpa/inet.h>
 #include "NetworkInfo.hpp"
 #include "yaml-cpp/eventhandler.h"
 #include "yaml-cpp/yaml.h"
@@ -171,18 +172,28 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 				for (auto nodes : list)
 				{
 					CWellSiteDevInfo objWellsiteDev;
+					int32_t i32RetVal = 0;
 					CWellSiteDevInfo::build(nodes, objWellsiteDev);
-					if(0 == a_oWellSite.addDevice(objWellsiteDev))
+					i32RetVal = a_oWellSite.addDevice(objWellsiteDev);
+					if(0 == i32RetVal)
 					{
 						string temp = " : Added device with id: ";
 						temp.append(objWellsiteDev.getID());
 						CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 					}
-					else
+					else if(-1 == i32RetVal)
 					{
-						string temp = " : Ignored device with id : " ;
+						string temp = "Ignoring device with id : " ;
 						temp.append(objWellsiteDev.getID());
-						CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+						CLogger::getInstance().log(ERROR, LOGDETAILS(temp + ", since this point name is already present. Ignore this point."));
+						std::cout << temp << ", since this point name is already present. Ignore this point."<< endl;
+					}
+					else if(-2 == i32RetVal)
+					{
+						string temp = "Ignoring device with id : " ;
+						temp.append(objWellsiteDev.getID());
+						CLogger::getInstance().log(ERROR, LOGDETAILS(temp + ", since Device type and network type are not matching."));
+						std::cout << temp << ", since Device type and network type are not matching."<< endl;
 					}
 				}
 			}
@@ -191,6 +202,7 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 		{
 			CLogger::getInstance().log(FATAL, LOGDETAILS(" Site without id is found. Ignoring this site."));
 			throw YAML::Exception(YAML::Mark::null_mark(), "Id key not found");
+			cout << "Site without id is found. Ignoring this site."<<endl;
 		}
 	}
 	catch(YAML::Exception &e)
@@ -199,6 +211,14 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 		throw;
 	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(" End"));
+}
+
+// function to validate IP address
+bool network_info::validateIpAddress(const string &ipAddress)
+{
+    struct sockaddr_in sa;
+    int result = inet_pton(AF_INET, ipAddress.c_str(), &(sa.sin_addr));
+    return result != 0;
 }
 
 void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteDevInfo &a_oWellSiteDevInfo)
@@ -246,6 +266,7 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 					catch(exception &e)
 					{
 						CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+						std::cout << __func__ << "Required keys not found in PROTOCOL_RTU" << endl;
 						throw YAML::Exception(YAML::Mark::null_mark(), "Required keys not found in PROTOCOL_RTU");
 					}
 				}
@@ -253,19 +274,44 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 				{
 					try
 					{
-						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress = tempMap.at("ipaddress");
+						if(tempMap.at("ipaddress") == "" || tempMap.at("port") == "" || tempMap.at("unitid") == "")
+						{
+							std::cout << " ERROR:: ipaddress or port or unitid cannot be empty" <<endl;
+							std::cout << " Given parameters:: " <<endl;
+							std::cout << " ipaddress:: " << tempMap.at("ipaddress")<<endl;
+							std::cout  << " port:: " << tempMap.at("port")<<endl;
+							std::cout  << " unitid:: " <<tempMap.at("unitid")<<endl;
+							CLogger::getInstance().log(ERROR, LOGDETAILS("ipaddress or port or unitid cannot be empty"));
+							CLogger::getInstance().log(ERROR, LOGDETAILS("Given parameters are following ::"));
+							CLogger::getInstance().log(ERROR, LOGDETAILS("ipaddress:: " + tempMap.at("ipaddress")));
+							CLogger::getInstance().log(ERROR, LOGDETAILS("unitid:: " + tempMap.at("unitid")));
+							CLogger::getInstance().log(ERROR, LOGDETAILS("port:: " + tempMap.at("port")));
+							return;
+						}
+
+						if(validateIpAddress(tempMap.at("ipaddress")))
+						{
+							a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress = tempMap.at("ipaddress");
+						}
+						else
+						{
+							std::cout << "ERROR : IP address is invalid!!" <<tempMap.at("ipaddress") <<endl;
+							CLogger::getInstance().log(ERROR, LOGDETAILS("IP address is invalid " + tempMap.at("ipaddress")));
+						}
+
 						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber = atoi(tempMap.at("port").c_str());
 						a_oWellSiteDevInfo.m_stAddress.a_NwType = network_info::eNetworkType::eTCP;
 						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_uiUnitID = atoi(tempMap.at("unitid").c_str());
 						bIsProtocolPresent = true;
 						string tempVar = " : TCP protocol: ";
 						tempVar.append(a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress);
-						tempVar.append(std::to_string(a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber));
+						tempVar.append(":" +std::to_string(a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber));
 						CLogger::getInstance().log(INFO, LOGDETAILS(tempVar));
 					}
 					catch(exception &e)
 					{
 						CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+						std::cout << "Required keys not found in PROTOCOL_TCP"<<endl;
 						throw YAML::Exception(YAML::Mark::null_mark(), "Required keys not found in PROTOCOL_TCP");
 					}
 				}
@@ -275,7 +321,8 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 					string temp = " : Unknown protocol: ";
 					temp.append(tempMap.at("protocol"));
 				//	CLogger::getInstance().log(FATAL, LOGDETAILS(" : Unknown protocol: " << tempMap.at("protocol");
-					CLogger::getInstance().log(FATAL, LOGDETAILS(temp));
+					CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+					std::cout << __func__<< temp << endl;
 					throw YAML::Exception(YAML::Mark::null_mark(), "Unknown protocol found");
 				}
 			}
@@ -289,17 +336,21 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 		if(false == bIsIdPresent)
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS(" Site device without id is found. Ignoring this well device."));
+			std::cout << __func__ << " Site device without id is found. Ignoring this well device."<<endl;
 			throw YAML::Exception(YAML::Mark::null_mark(), "Id key not found");
+
 		}
 		if(false == bIsProtocolPresent)
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS(" Site device without protocol is found. Ignoring it."));
+			std::cout << __func__ << " Site device without protocol is found. Ignoring it.."<<endl;
 			throw YAML::Exception(YAML::Mark::null_mark(), "Protocol key not found");
 		}
 	}
 	catch(YAML::Exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		CLogger::getInstance().log(ERROR, LOGDETAILS(e.what()));
+		std::cout << __func__<<" Exception :: " << e.what()<<endl;
 		throw;
 	}
 	
@@ -351,15 +402,14 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 							CDataPoint::build(it1, objCDataPoint);
 							if(0 == a_oCDeviceInfo.addDataPoint(objCDataPoint))
 							{
-								string temp3 = " : Added point with id: ";
+								string temp3 = "Added point with id: ";
 								temp3.append(objCDataPoint.getID());
 								CLogger::getInstance().log(INFO, LOGDETAILS(temp3));
 							}
 							else
 							{
-								string temp5 = " : Ignored point with id : ";
-								temp5.append(objCDataPoint.getID());
-								CLogger::getInstance().log(ERROR, LOGDETAILS(temp5));
+								CLogger::getInstance().log(ERROR, LOGDETAILS("Ignoring duplicate point ID from polling :"+ objCDataPoint.getID()));
+								std::cout << "ERROR: Ignoring duplicate point ID from polling :"<< objCDataPoint.getID() <<endl;
 							}
 						}
 					}
@@ -436,17 +486,52 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 		a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = 0;
 		a_oCDataPoint.m_stPollingConfig.m_bIsRealTime = false;
 		a_oCDataPoint.m_stPollingConfig.m_usQOS = "0";
-		
-		// Assign values from YML, if available
-		a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = a_oData["polling"]["pollinterval"].as<std::uint32_t>();
-		a_oCDataPoint.m_stPollingConfig.m_bIsRealTime =  a_oData["polling"]["realtime"].as<bool>();
-		a_oCDataPoint.m_stPollingConfig.m_usQOS = a_oData["polling"]["qos"].as<std::string>();
+
+		if(!(a_oData["polling"]["qos"] && a_oData["polling"]["pollinterval"] && a_oData["polling"]["realtime"]))
+		{
+			std::cout << "WARNING :: qos or pollinterval or realtime parameter is not present "
+					"!! setting it to default (i.e. zero)";
+			CLogger::getInstance().log(WARN, LOGDETAILS("qos or pollinterval or realtime parameter is not present !! "
+					"setting it to default (i.e. zero)"));
+		}
+		else if(a_oData["polling"]["qos"].as<std::string>() == ""
+				|| a_oData["polling"]["pollinterval"].as<std::string>() == ""
+				|| a_oData["polling"]["realtime"].as<std::string>() == "")
+		{
+			std::cout << "WARNING :: qos or pollinterval or realtime parameter is either empty or invalid !! setting it to default (i.e. zero)\n";
+			CLogger::getInstance().log(WARN, LOGDETAILS("qos or pollinterval or realtime parameter is empty !! setting it to default (i.e. zero)"));
+		}
+
+		if(a_oData["polling"]["qos"].as<std::string>() != "")
+		{
+			a_oCDataPoint.m_stPollingConfig.m_usQOS = a_oData["polling"]["qos"].as<std::string>();
+		}
+
+		if(a_oData["polling"]["pollinterval"].as<std::string>() != "")
+		{
+			a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = a_oData["polling"]["pollinterval"].as<std::uint32_t>();
+		}
+		if(a_oData["polling"]["realtime"].as<std::string>() != "")
+		{
+			a_oCDataPoint.m_stPollingConfig.m_bIsRealTime =  a_oData["polling"]["realtime"].as<bool>();
+		}
+
+		if(stoi(a_oData["polling"]["qos"].as<std::string>().c_str()) > 2)
+		{
+			std::cout << "WARNING :: qos parameters is out of range (i.e. expected value is between 0 to 1)!! setting it to default (i.e. zero)\n";
+			std::cout << "Current qos value in yml is :: "<< stoi(a_oData["polling"]["qos"].as<std::string>().c_str()) <<endl;
+			CLogger::getInstance().log(WARN, LOGDETAILS("qos parameters is out of range (i.e. expected value is between 0 to 1)!! setting it to default (i.e. zero)"));
+			CLogger::getInstance().log(WARN, LOGDETAILS("Current qos value in yml is :: " + a_oData["polling"]["qos"].as<std::string>()));
+			a_oCDataPoint.m_stPollingConfig.m_usQOS = "0";
+		}
+
 	}
 	catch(exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		CLogger::getInstance().log(ERROR, LOGDETAILS(e.what()));
+		std::cout << "Exception :: " <<e.what()<<endl;
 	}
-	
+
 	// Check mandatory parameters
 	try
 	{

@@ -25,7 +25,6 @@
 #include <fstream>
 #include <cstdlib>
 #include <stdio.h>
-#include "eis/msgbus/msgbus.h"
 #include "eis/utils/json_config.h"
 
 /// stop thread flag
@@ -56,6 +55,67 @@ bool modWriteHandler::initWriteSem()
 	   return false;
 	}
 	return true;
+}
+
+void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
+		eMbusStackErrorCode errorCode, uint8_t  u8FunCode, std::string &strTopic)
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+
+	if( u8FunCode == READ_COIL_STATUS ||
+			u8FunCode == READ_HOLDING_REG ||
+			u8FunCode == READ_INPUT_STATUS ||
+			u8FunCode == READ_INPUT_REG)
+	{
+		strTopic = PublishJsonHandler::instance().getSReadResponseTopic();
+	}
+	else
+	{
+		strTopic = PublishJsonHandler::instance().getSWriteResponseTopic();
+	}
+
+	unsigned short txId = PublishJsonHandler::instance().getTxId();
+	stOnDemandRequest onDemandReqData;
+	zmq_handler::getOnDemandReqData(txId, onDemandReqData);
+
+	msg_envelope_t *msg = NULL;
+	msg = msgbus_msg_envelope_new(CT_JSON);
+
+	msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string((
+			(to_string(1)) + ", " +  (to_string(errorCode))).c_str());
+	msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
+
+	msg_envelope_elem_body_t* ptErrorStatus = msgbus_msg_envelope_new_string("Bad");
+	msgbus_msg_envelope_put(msg, "status", ptErrorStatus);
+
+	/// topic
+	msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.c_str());
+	msgbus_msg_envelope_put(msg, "topic", ptResTopic);
+	/// wellhead
+	msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());
+	msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
+	/// application sequence
+	msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(onDemandReqData.m_strAppSeq.c_str());
+	msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
+	/// metric
+	msg_envelope_elem_body_t* ptMetric = msgbus_msg_envelope_new_string(onDemandReqData.m_strMetric.c_str());
+	msgbus_msg_envelope_put(msg, "metric", ptMetric);
+	/// version
+	msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string(onDemandReqData.m_strVersion.c_str());
+	msgbus_msg_envelope_put(msg, "version", ptVersion);
+
+	std::string strTimestamp, strUsec;
+	zmq_handler::getTimeParams(strTimestamp, strUsec);
+	/// usec
+	msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(strUsec.c_str());
+	msgbus_msg_envelope_put(msg, "usec", ptUsec);
+	/// timestamp
+	msg_envelope_elem_body_t* ptTimestamp = msgbus_msg_envelope_new_string(strTimestamp.c_str());
+	msgbus_msg_envelope_put(msg, "timestamp", ptTimestamp);
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+
+	*ptMsg = msg;
 }
 
 eMbusStackErrorCode modWriteHandler::writeInfoHandler()
@@ -93,6 +153,18 @@ eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 								&stMbusApiPram,
 								(void*)ModbusMaster_AppCallback);
 					}
+				}
+
+				else
+				{
+					msg_envelope_t *msg = NULL;
+					std::string strTopic = "";
+					createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic);
+
+					zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(strTopic);
+					zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(strTopic);
+
+					PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, strTopic);
 				}
 			}
 			catch(const std::exception &e)
@@ -213,8 +285,10 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
-	string strCommand, strValue, strWellhead, strVersion, strSourceTopic;
+	string strCommand, strValue, strWellhead, strVersion, strSourceTopic, strAppSeq;
 	cJSON *root = cJSON_Parse(reqMsg.m_strMsg.c_str());
+	stOnDemandRequest reqData;
+	network_info::CDataPoint obj;
 	bool isWrite = false, isValidJson = false;
 	try
 	{
@@ -222,9 +296,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 		{
 
 			/*Enter TX Id*/
-			stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();//(unsigned short)g_u16TxId.load();
-
-			/// restarting refId once reached max. limit.
+			stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
 
 			stMbusApiPram.m_pu8Data = NULL;
 
@@ -240,6 +312,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 			if(cmd && appseq && wellhead && version && timestamp && usec && sourcetopic)
 			{
 				isValidJson = true;
+				strAppSeq = appseq->valuestring;
 				strCommand = cmd->valuestring;
 				strWellhead = wellhead->valuestring;
 				strVersion = version->valuestring;
@@ -256,11 +329,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 				std::cout << __func__ << "::Invalid input json parameter or topic." << std::endl;
 				CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter or topic."));
 				eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
-
-				if(NULL != root)
-					cJSON_Delete(root);
-
-				return eFunRetType;
 			}
 
 			string strSearchString = "/";
@@ -270,7 +338,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 			std::map<std::string, network_info::CUniqueDataPoint> mpp = network_info::getUniquePointList();
 			struct network_info::stModbusAddrInfo addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
 
-			network_info::CDataPoint obj = mpp.at(stTopic).getDataPoint();
+			obj = mpp.at(stTopic).getDataPoint();
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 			string stIpAddress = addrInfo.m_stTCP.m_sIPAddress;
 			stMbusApiPram.m_u16Port = addrInfo.m_stTCP.m_ui16PortNumber;
@@ -312,22 +380,9 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 				break;
 			}
 
-			if(NULL != appseq)
-			{
-				stOnDemandRequest reqData;
-				reqData.m_strAppSeq = appseq->valuestring;
-				reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
-				reqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
-				reqData.m_strMetric = strCommand;
-				reqData.m_strVersion = strVersion;
-				reqData.m_strWellhead = strWellhead;
-				reqData.m_strTopic = strSourceTopic;
-				zmq_handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
-			}
-
 			std::cout <<"****************************************************************" <<endl;
 			std::cout << "on-demand request received with following parameters ::" << endl;
-			std::cout << "app_seq: " << appseq->valuestring<< endl;;
+			std::cout << "app_seq: " << strAppSeq << endl;;
 			std::cout << "byte_swap: "<< obj.getAddress().m_bIsByteSwap<< endl;;
 			std::cout << "word_swap: "<< obj.getAddress().m_bIsWordSwap<< endl;;
 			std::cout <<"command: "<< strCommand << endl;
@@ -363,15 +418,22 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 				if(WRITE_SINGLE_COIL == funcCode)
 				{
 					// If value is 0x01, then write 0xFF00
-					/*if( (0 == strValue.compare("0x00")) || (0 == strValue.compare("0X00"))
-							|| (0 == strValue.compare("00")) || (0 == strValue.compare("0")))
+					if( (0 == strValue.compare("0x00")) ||
+							(0 == strValue.compare("0X00"))  ||
+							(0 == strValue.compare("00")))
 					{
 						strValue = "0x0000";
 					}
-					else
+					else if( (0 == strValue.compare("0x01")) ||
+							(0 == strValue.compare("0X01")) ||
+							(0 == strValue.compare("01")))
 					{
 						strValue = "0xFF00";
-					}*/
+					}
+					else
+					{
+						eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
+					}
 				}
 				if(true == isWrite && funcCode != WRITE_MULTIPLE_COILS)
 				{
@@ -400,11 +462,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 						std::cout << __func__ << "::Invalid value in request json." << std::endl;
 						CLogger::getInstance().log(FATAL, LOGDETAILS("Invalid value in request json."));
 						eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
-
-						if(NULL != root)
-							cJSON_Delete(root);
-
-						return eFunRetType;
 					}
 				}
 				/*else
@@ -430,6 +487,15 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 		eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
+
+	reqData.m_strAppSeq = strAppSeq;
+	reqData.m_strMetric = strCommand;
+	reqData.m_strVersion = strVersion;
+	reqData.m_strWellhead = strWellhead;
+	reqData.m_strTopic = strSourceTopic;
+	reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
+	reqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
+	zmq_handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
 
 	if(NULL != root)
 		cJSON_Delete(root);

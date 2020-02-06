@@ -12,21 +12,20 @@
 
 void CMQTTCallback::connection_lost(const std::string& cause)
 {
-	CMQTTHandler::instance().setMQTTConfigState(MQTT_CLIENT_CONNECT_STATE);
-	CMQTTHandler::instance().setMQTTSubConfigState(MQTT_SUSCRIBE_CONNECT_STATE);
+	CMQTTHandler::instance().setMQTTSubConfigState(MQTT_SUSCRIBER_CONNECT_STATE);
 
 	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT Connection lost"));
-	std::cout << __func__ << ":" << __LINE__ << "ERROR: MQTT Connection lost" << std::endl;
+	std::cout << __func__ << ":" << __LINE__ << " ERROR: Subscriber lost MQTT Connection" << std::endl;
 
 
 	if (!cause.empty())
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT Connection lost cause:  " + cause));
-		std::cout << __func__ << ":" << __LINE__ << "MQTT Connection lost cause:  " + cause << std::endl;
+		std::cout << __func__ << ":" << __LINE__ << " MQTT Connection lost cause:  " + cause << std::endl;
 	}
 #ifdef PERFTESTING
 	CLogger::getInstance().log(ERROR, LOGDETAILS("CMQTTCallback:connection_lost:" + cause));
-	std::cout << __func__ << ":" << __LINE__ << "MQTT Connection lost cause:  " + cause << std::endl;
+	std::cout << __func__ << ":" << __LINE__ << " MQTT Connection lost cause:  " + cause << std::endl;
 	CMQTTHandler::m_ui32ConnectionLost++;
 	CMQTTHandler::printCounters();
 #endif
@@ -34,25 +33,21 @@ void CMQTTCallback::connection_lost(const std::string& cause)
 
 void CMQTTCallback::connected(const std::string& cause)
 {
-	CMQTTHandler::instance().setMQTTConfigState(MQTT_PUBLISH_STATE);
-	CMQTTHandler::instance().setMQTTSubConfigState(MQTT_SUBSCRIBE_STATE);
+	CMQTTHandler::instance().setMQTTSubConfigState(MQTT_SUSCRIBER_SUBSCRIBE_STATE);
 
 #ifdef PERFTESTING
 	CMQTTHandler::m_ui32Connection++;
 	CMQTTHandler::printCounters();
 #endif
-
-
-	CMQTTHandler::instance().postPendingMsgs();
 	CMQTTHandler::instance().subscribeToTopics();
 }
-
+/*
 void CMQTTCallback::delivery_complete(mqtt::delivery_token_ptr tok)
 {
 #ifdef PERFTESTING
 	CMQTTHandler::m_ui32DelComplete++;
 #endif
-}
+}*/
 
 void CMQTTCallback::message_arrived(mqtt::const_message_ptr msg)
 {
@@ -67,7 +62,7 @@ void CMQTTCallback::message_arrived(mqtt::const_message_ptr msg)
 void CMQTTActionListener::on_failure(const mqtt::token& tok)
 {
 	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT action (connect/message sending) failed"));
-	std::cout << __func__ << ":" << __LINE__ << "ERROR:  MQTT action (connect/message sending) failed" << std::endl;
+	std::cout << __func__ << ":" << __LINE__ << " ERROR:  MQTT action (connect/message sending) failed" << std::endl;
 #ifdef PERFTESTING
 	CMQTTHandler::m_ui32PublishFailed++;
 	CLogger::getInstance().log(ERROR, LOGDETAILS("CMQTTActionListener::on_failure:" + std::to_string(tok.get_message_id())));
@@ -79,5 +74,45 @@ void CMQTTActionListener::on_success(const mqtt::token& tok)
 {
 #ifdef PERFTESTING
 	CMQTTHandler::m_ui32Published++;
+#endif
+}
+
+void CSyncCallback::connection_lost(const std::string& cause)
+{
+	CMQTTHandler::instance().setMQTTConfigState(MQTT_PUBLISHER_CONNECT_STATE);
+
+	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher lost MQTT Connection"));
+	std::cout << __func__ << ":" << __LINE__ << " ERROR: MQTT publisher lost MQTT Connection" << std::endl;
+
+	if (!cause.empty())
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher lost MQTT Connection : cause:  " + cause));
+		std::cout << __func__ << ":" << __LINE__ << " MQTT publisher lost MQTT Connection : cause:  " + cause << std::endl;
+	}
+#ifdef PERFTESTING
+	CMQTTHandler::m_ui32ConnectionLost++;
+	CMQTTHandler::printCounters();
+#endif
+}
+
+void CSyncCallback::connected(const std::string& cause)
+{
+	CMQTTHandler::instance().setMQTTConfigState(MQTT_PUBLISHER_PUBLISH_STATE);
+
+#ifdef PERFTESTING
+	CMQTTHandler::m_ui32Connection++;
+	CMQTTHandler::printCounters();
+#endif
+
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
+	std::cout << __func__ << ":" << __LINE__ << " MQTT publisher connected with broker, publishing pending msgs" << std::endl;
+	CMQTTHandler::instance().postPendingMsgs();
+#endif
+}
+
+void CSyncCallback::delivery_complete(mqtt::delivery_token_ptr tok)
+{
+#ifdef PERFTESTING
+	CMQTTHandler::m_ui32DelComplete++;
 #endif
 }

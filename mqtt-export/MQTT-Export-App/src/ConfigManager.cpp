@@ -12,6 +12,30 @@
 
 using namespace std;
 
+/** Constructor
+*/
+CfgManager:: CfgManager()
+{
+	env_config_client = env_config_new();
+
+	if(CTopicMapper::getInstance().isDevMode())
+	{
+		/// create client without certificates
+		config_mgr_client = config_mgr_new((char *)"etcd", (char *)"", (char *)"", (char *)"");
+	}
+	else
+	{
+		/// create client with certificates
+		string sCert = "/run/secrets/etcd_" + CTopicMapper::getInstance().getStrAppName() + "_cert";
+		string sKey = "/run/secrets/etcd_" + CTopicMapper::getInstance().getStrAppName() + "_key";
+		config_mgr_client = config_mgr_new((char *)"etcd", (char *)sCert.c_str(),
+				(char *)sKey.c_str(),
+				(char *)"/run/secrets/ca_etcd");
+	}
+
+	isClientCreated = false;
+}
+
 /** Returns the single instance of this class
  *
  * @param  : nothing
@@ -30,6 +54,6 @@ CfgManager& CfgManager::Instance()
  */
 bool CfgManager::IsClientCreated()
 {
-	bool isClientCreated = (getConfigClient() !=NULL)?true:false;
+	bool isClientCreated = (getConfigClient() !=NULL && getEnvClient() !=NULL)?true:false;
 	return isClientCreated;
 }

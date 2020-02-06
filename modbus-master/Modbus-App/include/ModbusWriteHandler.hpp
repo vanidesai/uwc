@@ -16,6 +16,7 @@
 #include <queue>
 #include <semaphore.h>
 #include <mutex>
+#include "eis/msgbus/msgbus.h"
 
 #define ON_DEMAND_WRITE_PRIORITY 1 	//Write-On Demand Priority set as highest(1)
 #define ON_DEMAND_READ_PRIORITY 2 	//Read-On Demand Priority set as 2
@@ -65,6 +66,8 @@ public:
 	void initWriteHandlerThreads();
 
 	bool validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand);
+
+	void createErrorResponse(msg_envelope_t** ptMsg, eMbusStackErrorCode errorCode, uint8_t  u8FunCode , std::string &strTopic);
 };
 
 

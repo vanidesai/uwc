@@ -174,6 +174,7 @@ namespace network_info
 	void buildNetworkInfo(bool a_bIsTCP);
 	const std::map<std::string, CWellSiteInfo>& getWellSiteList();
 	const std::map<std::string, CUniqueDataPoint>& getUniquePointList();
+	bool validateIpAddress(const string &ipAddress);
 }
 
 #endif /* INCLUDE_INC_NETWORKINFO_HPP_ */

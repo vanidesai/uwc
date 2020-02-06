@@ -71,28 +71,7 @@ private:
 
     /** Constructor
      */
-	CfgManager(){
-
-		env_config_client = env_config_new();
-
-		if(PublishJsonHandler::instance().isDevMode())
-		{
-			/// create client without certificates
-			config_mgr_client = config_mgr_new((char *)"etcd", (char *)"", (char *)"", (char *)"");
-		}
-		else
-		{
-			/// create client with certificates
-			string sCert = "/run/secrets/etcd_" + PublishJsonHandler::instance().getAppName() + "_cert";
-			string sKey = "/run/secrets/etcd_" + PublishJsonHandler::instance().getAppName() + "_key";
-			config_mgr_client = config_mgr_new((char *)"etcd", (char *)sCert.c_str(),
-					(char *)sKey.c_str(),
-					(char *)"/run/secrets/ca_etcd");
-		}
-
-		isClientCreated = false;
-
-	};
+	CfgManager();
 
     /** copy constructor is private
      */

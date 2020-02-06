@@ -499,7 +499,7 @@ void signalHandler( int signum ) {
 
    CEISMsgbusHandler::Instance().cleanup();
 
-   CLogger::getInstance().log(WARN, LOGDETAILS("Application will restart to apply ETCD changes"));
+   CLogger::getInstance().log(WARN, LOGDETAILS("MQTT-Export is restarting..."));
 }
 
 int main(int argc, char *argv[]) {
@@ -510,6 +510,7 @@ int main(int argc, char *argv[]) {
 #endif
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting MQTT Export ..."));
+	std::cout << __func__ << ":" << __LINE__ << " ------------- Starting MQTT Export Container -------------" << std::endl;
 
 	// register signal SIGINT and signal handler
 	signal(SIGINT, signalHandler);
@@ -526,10 +527,6 @@ int main(int argc, char *argv[]) {
 
 		CLogger::getInstance().log(INFO, LOGDETAILS("MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION)));
 		cout << "MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION) << endl;
-
-		//string keyToMonitor = "/" + AppName + "/";
-		//CfgManager::Instance().registerCallbackOnChangeDir(const_cast<char *>(keyToMonitor.c_str()));
-		//CfgManager::Instance().registerCallbackOnChangeKey(const_cast<char *>(keyToMonitor.c_str()));
 
 		//Create topic mapping
 		CTopicMapper::getInstance();
@@ -563,5 +560,6 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
+	std::cout << __func__ << ":" << __LINE__ << " ------------- Exiting MQTT Export Container -------------" << std::endl;
 	return 0;
 }

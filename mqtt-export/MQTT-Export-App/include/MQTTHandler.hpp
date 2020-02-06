@@ -13,6 +13,7 @@
 
 #include <atomic>
 #include "mqtt/async_client.h"
+#include "mqtt/client.h"
 #include "MQTTCallback.hpp"
 #include "TopicMapper.hpp"
 #include "EISMsgbusHandler.hpp"
@@ -30,17 +31,17 @@ using namespace std;
 typedef enum MQTT_CONFIG_STATE
 {
 	//	MQTT_CREATE_CLIENT_STATE,
-	MQTT_CLIENT_CONNECT_STATE,
-	MQTT_PUBLISH_STATE
+	MQTT_PUBLISHER_CONNECT_STATE,
+	MQTT_PUBLISHER_PUBLISH_STATE
 }Mqtt_Config_state_t;
 
 typedef enum MQTT_SUBSCRIBER_CONFIG_STATE
 {
-	MQTT_SUSCRIBE_CONNECT_STATE,
-	MQTT_SUBSCRIBE_STATE
+	MQTT_SUSCRIBER_CONNECT_STATE,
+	MQTT_SUSCRIBER_SUBSCRIBE_STATE
 }Mqtt_Sub_Config_state_t;
 
-
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 struct stMsgData
 {
 	std::string m_sMsg;
@@ -52,6 +53,7 @@ struct stMsgData
 
 	stMsgData():m_iQOS(0) {}
 };
+#endif
 
 class CMQTTHandler
 {
@@ -62,24 +64,29 @@ class CMQTTHandler
 	CMQTTHandler(const CMQTTHandler&) = delete;	 			// Copy construct
 	CMQTTHandler& operator=(const CMQTTHandler&) = delete;	// Copy assign
 
-	mqtt::async_client client;
+	mqtt::client publisher;
 	mqtt::async_client subscriber;
 
 	mqtt::connect_options conopts;
+	mqtt::connect_options syncConnOpts;
 	mqtt::token_ptr conntok;
 	mqtt::delivery_token_ptr pubtok;
 
 	CMQTTCallback callback;
+	CSyncCallback syncCallback;
 	CMQTTActionListener listener;
 
 	std::atomic<Mqtt_Config_state_t> ConfigState;
 	std::atomic<Mqtt_Sub_Config_state_t> subConfigState;
 
 	std::mutex mqttMutexLock;
-	std::mutex m_mutexMsgQ;
 	std::mutex m_mutexSubMsgQ;
 
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
+	std::mutex m_mutexMsgQ;
 	std::queue <stMsgData> m_qMsgData;
+
+#endif
 	std::queue <mqtt::const_message_ptr> m_qSubMsgData;
 
 
@@ -94,6 +101,7 @@ class CMQTTHandler
  	Mqtt_Sub_Config_state_t getMQTTSubConfigState();
 
 	friend class CMQTTCallback;
+	friend class CSyncCallback;
 	friend class CMQTTActionListener;
 
 #ifdef PERFTESTING
@@ -118,11 +126,11 @@ class CMQTTHandler
 	static std::atomic<uint32_t> m_ui32SubscribeSkipped;
 #endif
 
-
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 	void postPendingMsgsThread();
 	bool getMsgFromQ(stMsgData &a_msg);
 	bool pushMsgInQ(const stMsgData &a_msg);
-
+#endif
 	bool publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQOS, bool a_bFromQ = false);
 
 public:
@@ -130,7 +138,9 @@ public:
 	~CMQTTHandler();
 	static CMQTTHandler& instance(); //function to get single instance of this class
 	bool publish(std::string a_sMsg, const char *topic, int qos);
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 	void postPendingMsgs();
+#endif
 	bool connect();
  	bool getSubMsgFromQ(mqtt::const_message_ptr &msg);
  	bool pushSubMsgInQ(mqtt::const_message_ptr msg);

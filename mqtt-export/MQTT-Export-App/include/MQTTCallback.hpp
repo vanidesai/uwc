@@ -12,6 +12,7 @@
 #define MQTTCALLBACK_HPP_
 
 #include "mqtt/async_client.h"
+#include "mqtt/client.h"
 
 /**
  * A callback class for use with the main MQTT client.
@@ -21,7 +22,6 @@ class CMQTTCallback : public virtual mqtt::callback
 public:
 	void connection_lost(const std::string& cause) override;
 	void connected(const std::string& cause) override;
-	void delivery_complete(mqtt::delivery_token_ptr tok) override;
 	void message_arrived(mqtt::const_message_ptr msg) override;
 };
 
@@ -33,6 +33,15 @@ class CMQTTActionListener : public virtual mqtt::iaction_listener
 protected:
 	void on_failure(const mqtt::token& tok) override;
 	void on_success(const mqtt::token& tok) override;
+};
+
+// Class to receive sync callbacks
+class CSyncCallback : public virtual mqtt::callback
+{
+public:
+	void connection_lost(const std::string& cause) override;
+	void delivery_complete(mqtt::delivery_token_ptr tok) override;
+	void connected(const std::string& cause) override;
 };
 
 #endif

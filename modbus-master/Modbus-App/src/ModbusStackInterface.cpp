@@ -19,31 +19,6 @@ extern "C" {
 
 std::mutex g_RWCommonCallbackMutex;
 
-void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
-{
-	a_sTimeStamp.clear();
-	a_sUsec.clear();
-
-	const auto p1 = std::chrono::system_clock::now();
-
-	std::time_t rawtime = std::chrono::system_clock::to_time_t(p1);
-	std::tm* timeinfo = std::gmtime(&rawtime);
-	if(NULL == timeinfo)
-	{
-		return;
-	}
-	char buffer [80];
-
-	std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
-	a_sTimeStamp.insert(0, buffer);
-
-	{
-		std::stringstream ss;
-		ss << std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count();
-		a_sUsec.insert(0, ss.str());
-	}
-}
-
 /**
  *
  * DESCRIPTION
@@ -103,7 +78,6 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 				u8FunCode == READ_INPUT_REG)
 		{
 			sRespTopic = PublishJsonHandler::instance().getSReadResponseTopic();
-			msg_envelope_elem_body_t* ptData = msgbus_msg_envelope_new_string("");;
 			if(NULL != pu8data && u8numBytes > 0)
 			{
 				std::vector<uint8_t> datavt;
@@ -117,9 +91,19 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 						onDemandReqData.m_isByteSwap,
 						onDemandReqData.m_isWordSwap);
 				/// value
-				ptData = msgbus_msg_envelope_new_string(strdata.c_str());
+				msg_envelope_elem_body_t* ptData = msgbus_msg_envelope_new_string(strdata.c_str());
+
+				if(NULL != ptData)
+				{
+					msgbus_msg_envelope_put(msg, "value", ptData);
+				}
+				else
+				{
+					//error
+					std::cout << "Pointer is null " << endl;
+				}
 			}
-			msgbus_msg_envelope_put(msg, "value", ptData);
+
 		}
 		else
 		{
@@ -127,7 +111,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		}
 
 		/// topic
-		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.append("Response").c_str());
+		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.c_str());
 		msgbus_msg_envelope_put(msg, "topic", ptResTopic);
 		/// wellhead
 		msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());
@@ -143,7 +127,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		msgbus_msg_envelope_put(msg, "version", ptVersion);
 
 		std::string strTimestamp, strUsec;
-		getTimeParams(strTimestamp, strUsec);
+		zmq_handler::getTimeParams(strTimestamp, strUsec);
 		/// usec
 		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(strUsec.c_str());
 		msgbus_msg_envelope_put(msg, "usec", ptUsec);

@@ -85,6 +85,9 @@ namespace zmq_handler
 
 	/// function for byteswap and wordswap
 	std::string swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap = false, bool a_bIsWordSwap = false);
+
+	/// function to read current time and usec
+	void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
 }
 
 #endif /* INCLUDE_INC_ZMQHANDLDER_HPP_ */

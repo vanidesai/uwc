@@ -13,60 +13,41 @@
 #include "cjson/cJSON.h"
 #include <semaphore.h>
 
+
 sem_t g_semaphoreRespProcess;
 std::mutex g_mqttSubMutexLock;
 std::mutex g_mqttPublishMutexLock;
 
 // constructor
 CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
-		client(strPlBusUrl, CLIENTID), subscriber(strPlBusUrl, SUBSCRIBERID), ConfigState(MQTT_CLIENT_CONNECT_STATE), subConfigState(
-				MQTT_SUSCRIBE_CONNECT_STATE) {
+		publisher(strPlBusUrl, CLIENTID), subscriber(strPlBusUrl, SUBSCRIBERID), ConfigState(MQTT_PUBLISHER_CONNECT_STATE), subConfigState(
+				MQTT_SUSCRIBER_CONNECT_STATE) {
 	try {
+
+		//connect options for async subscriber
 		mqtt::message willmsg("MQTTConfiguration", LWT_PAYLOAD, QOS, true);
 		mqtt::will_options will(willmsg);
 		conopts.set_will(will);
-
-		conopts.set_keep_alive_interval(60);
+		conopts.set_keep_alive_interval(20);
 		conopts.set_clean_session(true);
 		conopts.set_automatic_reconnect(1, 10);
 
-#ifdef TLSENABLED
-		mqtt::ssl_options sslopts;
-		char *RootCAPath = getenv("PLBUS_ROOTCAPATH");
-		if(NULL == RootCAPath)
-		{
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("in reading PLBUS_ROOTCAPATH"));
-			return;
-		}
-		sslopts.set_trust_store(RootCAPath);
+		//connect options for sync publisher/client
+		syncConnOpts.set_keep_alive_interval(20);
+		syncConnOpts.set_clean_session(true);
+		syncConnOpts.set_automatic_reconnect(1, 10);
 
-		char *ClientCertPath = getenv("BACNET_PLBUS_CLIENT_CERT");
-		if(NULL == ClientCertPath)
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Error in reading BACNET_PLBUS_CLIENT_CERT"));
-			std::cout << __func__ << ":" << __LINE__ << " Error : Error in reading BACNET_PLBUS_CLIENT_CERT" <<  std::endl;
-			return;
-		}
-		sslopts.set_key_store(ClientCertPath);
-		char *ClientKeyPath = getenv("BACNET_PLBUS_CLIENT_KEY");
-		if(NULL == ClientKeyPath)
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Error in reading BACNET_PLBUS_CLIENT_KEY"));
-			return;
-		}
-		sslopts.set_private_key(ClientKeyPath);
-		sslopts.set_enable_server_cert_auth(true);
-		conopts.set_ssl(sslopts);
-#endif
-		client.set_callback(callback);
-
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 		initSem();
+#endif
 
+		publisher.set_callback(syncCallback);
 		subscriber.set_callback(callback);
 
 		connectSubscriber();
 
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("MQTT initialized successfully"));
+
 
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
@@ -103,16 +84,13 @@ CMQTTHandler& CMQTTHandler::instance() {
 }
 
 bool CMQTTHandler::connect() {
+
 	bool bFlag = true;
 	try {
-		std::lock_guard<std::mutex> lock(mqttMutexLock);
-		conntok = client.connect(conopts, nullptr, listener);
-		/// Wait for 2 seconds to get connected
-		/*if (false == conntok->wait_for(2000))
-		 {
-		 CLogger::getInstance().log(DEBUG, LOGDETAILS("Error::Failed to connect to the platform bus ";
-		 bFlag = false;
-		 }*/
+
+		publisher.connect(syncConnOpts);
+	    std::cout << __func__ << ":" << __LINE__ << " MQTT publisher connected with MQTT broker" << std::endl;
+
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
@@ -122,7 +100,10 @@ bool CMQTTHandler::connect() {
 	return bFlag;
 }
 
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 bool CMQTTHandler::getMsgFromQ(stMsgData &a_msg) {
+	CLogger::getInstance().log(DEBUG, "Pre-publish Q msgs count: " + m_qMsgData.size());
+
 	bool bRet = true;
 	try {
 		std::lock_guard<std::mutex> lock(m_mutexMsgQ);
@@ -143,11 +124,14 @@ bool CMQTTHandler::getMsgFromQ(stMsgData &a_msg) {
 }
 
 bool CMQTTHandler::pushMsgInQ(const stMsgData &a_msg) {
+
 	bool bRet = true;
 	try {
 		/// Ensure that only on thread can execute at a time
 		std::lock_guard<std::mutex> lock(m_mutexMsgQ);
 		m_qMsgData.push(a_msg);
+
+		CLogger::getInstance().log(DEBUG, "Total msgs pushed in publish Q : " + m_qMsgData.size());
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
@@ -158,16 +142,17 @@ bool CMQTTHandler::pushMsgInQ(const stMsgData &a_msg) {
 }
 
 void CMQTTHandler::postPendingMsgsThread() {
+	CLogger::getInstance().log(DEBUG, "Starting thread to publish pending data");
 	bool bDoRun = false;
 	try {
 		stMsgData msg;
 		do {
-			{
-				if (false == client.is_connected()) {
+				if (false == publisher.is_connected()) {
 					bDoRun = false;
 					break;
 				}
 				if (false == getMsgFromQ(msg)) {
+					CLogger::getInstance().log(DEBUG, "No msgs to send, Q is empty, stopping thread");
 					bDoRun = false;
 					break;
 				}
@@ -177,7 +162,6 @@ void CMQTTHandler::postPendingMsgsThread() {
 #ifdef PERFTESTING
 				m_uiQReqTried++;
 #endif
-			}
 		} while (true == bDoRun);
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
@@ -186,6 +170,7 @@ void CMQTTHandler::postPendingMsgsThread() {
 		CMQTTHandler::m_ui32PublishSkipped++;
 #endif
 	}
+	CLogger::getInstance().log(DEBUG, "--Stopping thread to publish pending data");
 }
 
 void CMQTTHandler::postPendingMsgs() {
@@ -193,6 +178,7 @@ void CMQTTHandler::postPendingMsgs() {
 	std::thread { std::bind(&CMQTTHandler::postPendingMsgsThread,
 			std::ref(*this)) }.detach();
 }
+#endif
 
 Mqtt_Config_state_t CMQTTHandler::getMQTTConfigState() {
 	return ConfigState;
@@ -203,6 +189,7 @@ void CMQTTHandler::setMQTTConfigState(Mqtt_Config_state_t tempConfigState) {
 }
 
 bool CMQTTHandler::publish(std::string a_sMsg, const char *topic, int qos) {
+
 	static bool bIsFirst = true;
 	if (true == bIsFirst) {
 		connect();
@@ -210,7 +197,6 @@ bool CMQTTHandler::publish(std::string a_sMsg, const char *topic, int qos) {
 	}
 
 	std::string sTopic(topic);
-
 	try {
 		publish(a_sMsg, sTopic, qos);
 	} catch (const mqtt::exception &exc) {
@@ -225,6 +211,7 @@ bool CMQTTHandler::publish(std::string a_sMsg, const char *topic, int qos) {
 
 bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQOS,
 		bool a_bFromQ) {
+
 	try {
 		std::lock_guard<std::mutex> lock(mqttMutexLock);
 
@@ -243,33 +230,40 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 #ifdef PERFTESTING
 		CMQTTHandler::m_ui32PublishReq++;
 #endif
-		if (true == client.is_connected()) {
-			mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, a_iQOS,
-					false);
 
+		if(false == publisher.is_connected()) {
+			std::cout << __func__ << ":" << __LINE__ << " Failed to publish msg on MQTT for topic: " << a_sTopic << " , msg: " << a_sMsg << std::endl;
 
-			//this need since paho c++ spawns different threads in case of async client
-			{
-				std::lock_guard<std::mutex> lock(g_mqttPublishMutexLock);
-				client.publish(pubmsg, nullptr, listener);
-			}
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("Published message on MQTT broker successfully " + std::to_string(a_iQOS)));
-			return true;
-		} else {
+			CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher is not connected with MQTT broker" + std::to_string(a_iQOS)));
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to publish msg on MQTT : " + a_sMsg));
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 			pushMsgInQ(stMsgData(a_sMsg, a_sTopic, a_iQOS));
-#ifdef PERFTESTING
-			CMQTTHandler::m_ui32Disconnected++;
 #endif
+#ifdef PERFTESTING
+			m_ui32ConnectionLost++;
+			m_ui32PublishFailed++;
+#endif
+			return false;
 		}
+
+		publisher.publish(mqtt::message(a_sTopic, a_sMsg, a_iQOS, false));
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Published message on MQTT broker successfully with QOS:"
+									+ std::to_string(a_iQOS)));
+		return true;
+
 	} catch (const mqtt::exception &exc) {
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << exc.what() << std::endl;
 		if (false == a_bFromQ) {
 #ifdef PERFTESTING
 			m_ui32PublishStrExcep++;
 #endif
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 			pushMsgInQ(stMsgData(a_sMsg, a_sTopic, a_iQOS));
+#endif
 		} else {
-			//g_uiStrMsgNotPublished++;
+#ifdef PERFTESTING
+			m_ui32PublishExcep++;
+#endif
 		}
 
 		CLogger::getInstance().log(FATAL, LOGDETAILS(exc.what()));
@@ -312,7 +306,9 @@ void CMQTTHandler::printCounters()
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("*****Str Req: " + std::to_string(m_ui32PublishStrReq)));
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("*****Str Req err: " + std::to_string(m_ui32PublishStrReqErr)));
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("*****Str Req excep: " + std::to_string(m_ui32PublishStrExcep)));
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("----Pending Q Size: " + std::to_string(instance().m_qMsgData.size())));
+#endif
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("++++Req posted from Q: " + std::to_string(m_uiQReqTried)));
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("$$$$Delivery completed: " + std::to_string(m_ui32DelComplete)));
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber tried to publish message:" + std::to_string(m_uiSubscribeQReqTried)));
@@ -328,7 +324,6 @@ Mqtt_Sub_Config_state_t CMQTTHandler::getMQTTSubConfigState() {
 void CMQTTHandler::setMQTTSubConfigState(Mqtt_Sub_Config_state_t tempConfigState) {
 	subConfigState = tempConfigState;
 }
-
 
 bool CMQTTHandler::initSem()
 {
@@ -367,10 +362,10 @@ bool CMQTTHandler::subscribeToTopics() {
 		for (auto topic : vMqttTopics) {
 			if(! topic.empty()) {
 				CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscribing topic : " + topic));
-				cout << "MQTT Subscribing topic : " <<  topic << endl;
 				subscriber.subscribe(topic, QOS, nullptr, listener);
 			}
 		}
+		std::cout << __func__ << ":" << __LINE__ << "Subscribed topics with MQTT broker" << std::endl;
 	}
 	catch(exception &ex)
 	{
@@ -385,16 +380,20 @@ bool CMQTTHandler::subscribeToTopics() {
 }
 
 bool CMQTTHandler::connectSubscriber() {
+
 	bool bFlag = true;
 	try {
 		std::lock_guard<std::mutex> lock(g_mqttSubMutexLock);
+
 		subscriber.connect(conopts, nullptr, listener);
+
 		// Wait for 2 seconds to get connected
 		/*if (false == conntok->wait_for(2000))
 		 {
 		 CLogger::getInstance().log(DEBUG, LOGDETAILS("Error::Failed to connect to the platform bus ";
 		 bFlag = false;
 		 }*/
+		std::cout << __func__ << ":" << __LINE__ << " Subscriber connected successfully with MQTT broker" << std::endl;
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
@@ -407,6 +406,7 @@ bool CMQTTHandler::connectSubscriber() {
 }
 
 bool CMQTTHandler::getSubMsgFromQ(mqtt::const_message_ptr &msg) {
+
 	bool bRet = true;
 	try {
 		std::lock_guard<std::mutex> lock(m_mutexSubMsgQ);
@@ -427,6 +427,7 @@ bool CMQTTHandler::getSubMsgFromQ(mqtt::const_message_ptr &msg) {
 
 //this should push message in queue
 bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg) {
+
 	bool bRet = true;
 	try {
 		/// Ensure that only on thread can execute at a time
@@ -451,17 +452,19 @@ void CMQTTHandler::cleanup()
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroying CMQTTHandler instance ..."));
 
 	conopts.set_automatic_reconnect(0);
-	client.disable_callbacks();
 
 	subscriber.disable_callbacks();
 
-	if(client.is_connected())
-		client.disconnect();
+	if(publisher.is_connected())
+		publisher.disconnect();
 
 	if(subscriber.is_connected())
 		subscriber.disconnect();
 
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 	m_qMsgData = {};
+#endif
+
 	m_qSubMsgData = {};
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroyed CMQTTHandler instance"));

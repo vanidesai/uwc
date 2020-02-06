@@ -204,9 +204,10 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 
 		}
 	}
-	else {
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to prepare contexts as config manager client is not connected"));
-		retValue = false;
+	else
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Context creation failed !! config manager client is empty!! "));
+		std::cout << "Context creation failed !! config manager client is empty!! " <<endl;
 	}
 	return retValue;
 }
