@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'rbhe' }
+    agent { label 'rbhe-uwc' }
     options {
         timestamps()
         disableConcurrentBuilds()
