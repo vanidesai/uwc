@@ -89,7 +89,7 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	msgbus_msg_envelope_put(msg, "status", ptErrorStatus);
 
 	/// topic
-	msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.c_str());
+	msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.append("Response").c_str());
 	msgbus_msg_envelope_put(msg, "topic", ptResTopic);
 	/// wellhead
 	msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());
@@ -510,13 +510,14 @@ void modWriteHandler::createWriteListener()
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
 	std::vector<std::string> stTopics = PublishJsonHandler::instance().getSubTopicList();
-	for(auto sTopic : stTopics)
+	//for(auto sTopic : stTopics)
+	for(std::vector<std::string>::iterator it = stTopics.begin(); it != stTopics.end(); ++it)
 	{
-		if(sTopic.empty()) {
+		if(it->empty()) {
 			CLogger::getInstance().log(ERROR, LOGDETAILS("SubTopics are not configured"));
 			continue;
 		}
-		std::thread(&modWriteHandler::subscribeDeviceListener, this, sTopic).detach();
+		std::thread(&modWriteHandler::subscribeDeviceListener, this, *it).detach();
 	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }

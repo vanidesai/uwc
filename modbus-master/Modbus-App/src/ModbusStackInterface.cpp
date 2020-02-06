@@ -111,7 +111,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		}
 
 		/// topic
-		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.c_str());
+		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.append("Response").c_str());
 		msgbus_msg_envelope_put(msg, "topic", ptResTopic);
 		/// wellhead
 		msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());

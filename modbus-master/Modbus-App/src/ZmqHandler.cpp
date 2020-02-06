@@ -101,7 +101,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 			return false;
 		}
 
-		for (auto topic : Topics)
+		for (auto &topic : Topics)
 		{
 			retValue = true;
 			config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(CfgManager::Instance().getConfigClient(), topic.c_str(), topicType.c_str());

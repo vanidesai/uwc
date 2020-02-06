@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.0.4"
+#define APP_VERSION "0.0.0.5"
 
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
@@ -214,7 +214,7 @@ bool CommonUtils::readCommonEnvVariables()
 		"ReadRequest", "WriteRequest", "SITE_LIST_FILE_NAME", "DEV_MODE"};
 	std::map <std::string, std::string> envTopics;
 
-	for (auto topic : topicList)
+	for (auto &topic : topicList)
 	{
 		std::string envVar = "";
 		bRetVal = readEnvVariable(topic.c_str(), envVar);

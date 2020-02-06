@@ -90,7 +90,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	/*Local variable */
 	uint8_t eStatus = STACK_NO_ERROR;
 	thread_Create_t stThreadParam = { 0 };
-	char *ptr = NULL;
+	//char *ptr = NULL;
 
 	g_bThreadExit = false;
 	const char *pcResponseTime = getenv("RESPONSE_TIMEOUT");
@@ -102,7 +102,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	}
 	else
 	{
-		g_iResponseTimeout = strtol(pcResponseTime, &ptr, 10) * 1000;	// *1000 is to convert millisecond value to microsecond
+		g_iResponseTimeout = atoi(pcResponseTime) * 1000;	// *1000 is to convert millisecond value to microsecond
 		printf("RESPONSE_TIMEOUT is set to :: %d us\n", g_iResponseTimeout);
 	}
 
@@ -115,7 +115,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	}
 	else
 	{
-		g_i32InterframeDelay = strtol(pcInterframeDelay, &ptr, 10) * 1000;	// *1000 is to convert millisecond value to microsecond
+		g_i32InterframeDelay = atoi(pcInterframeDelay) * 1000;	// *1000 is to convert millisecond value to microsecond
 		printf("INTERFRAME_DEALY is set to :: %d us\n", g_i32InterframeDelay);
 	}
 
