@@ -59,6 +59,15 @@ check_for_errors()
 # ----------------------------
 setHostIP()
 {
+   echo "${INFO}Setting dev mode to true...${NC}"    
+   sed -i 's/DEV_MODE=false/DEV_MODE=true/g' $working_dir/docker_setup/.env
+   if [ "$?" -ne "0" ]; then
+	echo "${RED}Failed to set dev mode to true."
+	echo "${GREEN}Kinldy set DEV_MODE to true manualy in .env file and then re--run this script"
+	exit 1
+   else
+	echo "${GREEN}Dev Mode is set to true.${NC}"
+   fi
    echo "${INFO}Setting HOST_IP to 127.0.0.1 in .env file of EIS..${NC}"
    if grep -Fxq 'HOST_IP=127.0.0.1' $working_dir/docker_setup/.env
    then
@@ -173,7 +182,7 @@ addUWCContainersInEIS()
     tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
     cd UWC
     cp -r modbus-master/ MQTT/ mqtt-export/ ../
-    cp docker-compose.yml ../docker_setup/docker-compose.yml
+    cp docker-compose_TCP_DEV.yml ../docker_setup/docker-compose.yml
     cp -r Others/ETCD_Config/UWC/YML_Config/* /opt/intel/eis/uwc_data
     cp Others/ETCD_Config/UWC/etcd_pre_load.json ../docker_setup/provision/config/
     copy_verification=$(echo $?)
