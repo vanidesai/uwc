@@ -91,7 +91,7 @@ services:
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 5
       RESPONSE_TIMEOUT: 250
-      INTERFRAME_DEALY: 5
+      INTERFRAME_DEALY: 1
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
