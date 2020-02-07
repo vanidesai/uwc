@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'rbhe' }
+    agent { label 'rbhe-uwc' }
     options {
         timestamps()
         disableConcurrentBuilds()
@@ -14,7 +14,7 @@ pipeline {
         SLACK_FAIL   = '#indu-uwc'
 
         PROFILING_MODE = false
-        EIS_BRANCH = 'v2.1-Alpha-RC4'
+        EIS_BRANCH = 'v2.1'
     }
     stages {
         stage('Prep Builder Image') {
@@ -45,6 +45,9 @@ pipeline {
                     args '-v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
+            // environment { //Dockerfiles do not adhere to the DOCKER_REGISTRY syntax, so this fails on fresh builds
+            //     DOCKER_REGISTRY = "uwc_${GIT_BRANCH}_"
+            // }
             stages {
                 stage('Verify') {
                     steps {
@@ -79,7 +82,7 @@ pipeline {
                 stage('Prep EIS Base Layers') {
                     steps {
                         // this is temporary for v2.1-Alpha-RC4, it looks to have been fixed in v2.1
-                        sh 'patch IEdgeInsights/common/dockerfiles/Dockerfile.eisbase Release/Dockerfile.eisbase.patch'
+                        // sh 'patch IEdgeInsights/common/dockerfiles/Dockerfile.eisbase Release/Dockerfile.eisbase.patch'
 
                         //base
                         sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy ia_eisbase'
