@@ -28,6 +28,7 @@
 //#include "Httprest.hpp"
 #include "cjson/cJSON.h"
 #include "PublishJson.hpp"
+#include "API.h"
 
 /// node for response Q
 struct stStackResponse
@@ -37,6 +38,7 @@ struct stStackResponse
 	bool bIsValPresent;
 	uint8_t u8Reason;
 	uint16_t u16TransacID;
+	stTimeStamps m_objStackTimestamps;
 };
 
 class CRefDataForPolling; 
@@ -73,7 +75,8 @@ public:
 						 uint8_t  u8numBytes,
 						 uint8_t* pu8data,
 						 uint16_t  u16StartAddress,
-						 uint16_t  u16Quantity);
+						 uint16_t  u16Quantity,
+						 stTimeStamps a_objStackTimestamps);
 	bool isInitialized() {return m_bIsInitialized;}
 	void initRespHandlerThreads();
 	BOOLEAN postDummyBADResponse(const CRefDataForPolling& a_objReqData);

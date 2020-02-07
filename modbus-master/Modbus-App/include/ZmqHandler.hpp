@@ -27,6 +27,7 @@ struct stOnDemandRequest
 	std::string m_strTopic;
 	bool m_isByteSwap;
 	bool m_isWordSwap;
+	struct timespec m_obtReqRcvdTS;
 };
 
 namespace zmq_handler 

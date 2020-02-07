@@ -210,6 +210,7 @@ typedef struct _stMbusPacketVariables
 
 	bool m_bIsAvailable;
 	unsigned int m_ulMyId;
+	stTimeStamps m_objTimeStamps;
 }stMbusPacketVariables_t;
 
 struct stReqManager {

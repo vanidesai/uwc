@@ -200,7 +200,8 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint8_t  u8numBytes,
 							 uint8_t* pu8data,
 							 uint16_t  u16StartAdd,
-							 uint16_t  u16Quantity);
+							 uint16_t  u16Quantity,
+							 stTimeStamps a_objStackTimestamps);
 #else
 /// This function is for application callback for common read write coils and registers function codes.
 void ModbusMaster_AppCallback(uint8_t  u8UnitID,
@@ -211,7 +212,8 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint8_t  u8numBytes,
 							 uint8_t* pu8data,
 							 uint16_t  u16StartAdd,
-							 uint16_t  u16Quantity);
+							 uint16_t  u16Quantity,
+							 stTimeStamps a_objStackTimestamps);
 #endif
 
 class modbusInterface

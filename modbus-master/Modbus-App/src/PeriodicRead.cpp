@@ -98,6 +98,10 @@ void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_s
 	}
 }
 
+static unsigned long get_nanos(struct timespec ts) {
+    return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
+}
+
 BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp)
 {
 	bool bRetValue = true;
@@ -117,6 +121,12 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		msg_envelope_elem_body_t* ptMetric = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getDataPoint().getID().c_str());
 		msg_envelope_elem_body_t* ptQos =  msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getDataPoint().getPollingConfig().m_usQOS.c_str());
 
+		// add timestamps from stack
+		msg_envelope_elem_body_t* ptStackTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsReqRcvd))).c_str() );
+		msg_envelope_elem_body_t* ptStackTSReqSent = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsReqSent))).c_str() );
+		msg_envelope_elem_body_t* ptStackTSRespRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsRespRcvd))).c_str() );
+		msg_envelope_elem_body_t* ptStackTSRespPosted = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsRespSent))).c_str() );
+
 		msg = msgbus_msg_envelope_new(CT_JSON);
 		msgbus_msg_envelope_put(msg, "version", ptVersion);
 		msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
@@ -126,6 +136,12 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
 		msgbus_msg_envelope_put(msg, "metric", ptMetric);
 		msgbus_msg_envelope_put(msg, "qos", ptQos);
+
+		// add timestamps
+		msgbus_msg_envelope_put(msg, "reqRcvdInStack", ptStackTSReqRcvd);
+		msgbus_msg_envelope_put(msg, "reqSentByStack", ptStackTSReqSent);
+		msgbus_msg_envelope_put(msg, "respRcvdByStack", ptStackTSRespRcvd);
+		msgbus_msg_envelope_put(msg, "respPostedByStack", ptStackTSRespPosted);
 
 		//// fill value
 		*a_pMsg = msg;
@@ -425,7 +441,8 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 					 uint8_t  u8numBytes,
 					 uint8_t* pu8data,
 					 uint16_t  u16StartAddress,
-					 uint16_t  u16Quantity)
+					 uint16_t  u16Quantity,
+					 stTimeStamps a_objStackTimestamps)
 {
 	struct stStackResponse stStackResNode;
 	stStackResNode.bIsValPresent = false;
@@ -444,6 +461,7 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 			stStackResNode.m_stException.m_u8ExcStatus = pstException->m_u8ExcStatus;
 
 			stStackResNode.u16TransacID = u16TransacID;
+			memcpy(&stStackResNode.m_objStackTimestamps, &a_objStackTimestamps, sizeof(stTimeStamps));
 
 			if((0 == pstException->m_u8ExcStatus) &&
 					(0 == pstException->m_u8ExcCode))
@@ -482,7 +500,8 @@ eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 										 uint8_t  u8numBytes,
 										 uint8_t* pu8data,
 										 uint16_t  u16StartAddress,
-										 uint16_t  u16Quantity)
+										 uint16_t  u16Quantity,
+										 stTimeStamps a_objStackTimestamps)
 #else
 eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 										 uint16_t u16TransacID,
@@ -492,7 +511,8 @@ eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 										 uint8_t  u8numBytes,
 										 uint8_t* pu8data,
 										 uint16_t  u16StartAddress,
-										 uint16_t  u16Quantity)
+										 uint16_t  u16Quantity,
+										 stTimeStamps a_objStackTimestamps)
 #endif
 {
 	/// validate pointer
@@ -504,7 +524,7 @@ eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 
 	// handle response
 	CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, pstException,
-			u8numBytes, pu8data, u16StartAddress, u16Quantity);
+			u8numBytes, pu8data, u16StartAddress, u16Quantity, a_objStackTimestamps);
 
 	return MBUS_STACK_NO_ERROR;
 }
@@ -658,6 +678,7 @@ void CRequestInitiator::threadReqInit()
 						}
 						else
 						{
+							printf("sendRequest failed\n");
 						}
 					}
 				}

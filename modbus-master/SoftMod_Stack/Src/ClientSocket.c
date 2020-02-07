@@ -149,7 +149,8 @@ void (*ModbusMaster_ApplicationCallback)(uint8_t  ,
 		uint8_t  ,
 		uint8_t* ,
 		uint16_t,
-		uint16_t);
+		uint16_t,
+		stTimeStamps);
 
 void (*ReadFileRecord_CallbackFunction)(uint8_t, uint8_t*,uint16_t, uint16_t,uint8_t,
 		stException_t *,
@@ -171,7 +172,8 @@ void (*ModbusMaster_ApplicationCallback)(uint8_t  ,
 		uint8_t  ,
 		uint8_t* ,
 		uint16_t,
-		uint16_t);
+		uint16_t,
+		stTimeStamps);
 
 void (*ReadFileRecord_CallbackFunction)(uint8_t, uint8_t*, uint16_t,uint8_t,
 		stException_t *,
@@ -220,6 +222,8 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 		pstMBusRequesPacket->m_stMbusRxData.m_u8Length = 0;
 	}
 
+	// Init resp posted timestamp
+	timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsRespSent), TIME_UTC);
 
 	switch(eMbusFunctionCode)
 	{
@@ -250,7 +254,8 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 					pstMBusRequesPacket->m_stMbusRxData.m_u8Length,
 					pstMBusRequesPacket->m_stMbusRxData.m_au8DataFields,
 					pstMBusRequesPacket->m_u16StartAdd,
-					pstMBusRequesPacket->m_u16Quantity);
+					pstMBusRequesPacket->m_u16Quantity,
+					pstMBusRequesPacket->m_objTimeStamps);
 
 #else
 			ModbusMaster_ApplicationCallback(
@@ -262,7 +267,8 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 					pstMBusRequesPacket->m_stMbusRxData.m_u8Length,
 					pstMBusRequesPacket->m_stMbusRxData.m_au8DataFields,
 					pstMBusRequesPacket->m_u16StartAdd,
-					pstMBusRequesPacket->m_u16Quantity);
+					pstMBusRequesPacket->m_u16Quantity,
+					pstMBusRequesPacket->m_objTimeStamps);
 
 #endif
 		}
@@ -780,6 +786,9 @@ uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBus
 
 	u8FunctionCode = ServerReplyBuff[u16BuffInex++];
 
+	// Init resp received timestamp
+	timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsRespRcvd), TIME_UTC);
+
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	if((pstMBusRequesPacket->m_u16TransactionID != u16TransactionID) ||
 			(pstMBusRequesPacket->m_u8UnitID != u8UnitID) ||
@@ -882,6 +891,9 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		}
 
 		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
+
+		// Init req sent timestamp
+		timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsReqSent), TIME_UTC);
 
 		//< Note: Below framing delay is commented intentionally as read function is having blocking read() call in which
 		//< select() function is having response waiting time of 1000 mSec as well as it is having blocking read call.
@@ -1505,6 +1517,9 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 		usleep(g_lInterframeDelay);
 
 		int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
+
+		// Init req sent timestamp
+		timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsReqSent), TIME_UTC);
 
 		/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
 		if(res < 0)

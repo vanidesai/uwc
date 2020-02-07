@@ -223,6 +223,14 @@ typedef struct DevConfig
 }stDevConfig_t;
 #endif
 
+typedef struct TimeStamps
+{
+	struct timespec tsReqRcvd;
+	struct timespec tsReqSent;
+	struct timespec tsRespRcvd;
+	struct timespec tsRespSent;
+}stTimeStamps;
+
 /// Modbus master stack initialization function
 MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void);
 

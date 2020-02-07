@@ -89,6 +89,12 @@ void initReqManager()
 		g_objReqManager.m_objReqArray[iCount].__prev = NULL;
 #endif
 		g_objReqManager.m_objReqArray[iCount].m_state = IdleState;
+
+		// Init timestamps to 0
+		g_objReqManager.m_objReqArray[iCount].m_objTimeStamps.tsReqRcvd = (struct timespec){0};
+		g_objReqManager.m_objReqArray[iCount].m_objTimeStamps.tsReqSent = (struct timespec){0};
+		g_objReqManager.m_objReqArray[iCount].m_objTimeStamps.tsRespRcvd = (struct timespec){0};
+		g_objReqManager.m_objReqArray[iCount].m_objTimeStamps.tsRespSent = (struct timespec){0};
 	}
 	//printReqListNoLock("initReqManager");
 	g_objReqManager.m_mutexReqArray = Osal_Mutex();
@@ -123,6 +129,13 @@ stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempRe
 			ptr->m_state = REQ_RCVD_FROM_APP;
 			ptr->m_ulMyId = iCount;
 
+			// Init req rcvd timestamp
+			timespec_get(&(ptr->m_objTimeStamps.tsReqRcvd), TIME_UTC);
+			// Init other timestamps to 0
+			ptr->m_objTimeStamps.tsReqSent = (struct timespec){0};
+			ptr->m_objTimeStamps.tsRespRcvd = (struct timespec){0};
+			ptr->m_objTimeStamps.tsRespSent = (struct timespec){0};
+
 			//printf("getNodeForNewRequest: %u, time: %lu\n", ptr->m_ulMyId, get_nanos());
 			break;
 		}
@@ -149,6 +162,11 @@ void freeReqNode(stMbusPacketVariables_t* a_pobjReq)
 		a_pobjReq->m_state = IdleState;
 		a_pobjReq->m_bIsAvailable = true;
 
+		// Init timestamps to 0
+		a_pobjReq->m_objTimeStamps.tsReqRcvd = (struct timespec){0};
+		a_pobjReq->m_objTimeStamps.tsReqSent = (struct timespec){0};
+		a_pobjReq->m_objTimeStamps.tsRespRcvd = (struct timespec){0};
+		a_pobjReq->m_objTimeStamps.tsRespSent = (struct timespec){0};
 		//printf("freeReqNode after: %u, time: %lu\n", a_pobjReq->m_ulMyId, get_nanos());
 	}
 	//printReqListNoLock("freeReqNode");

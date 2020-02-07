@@ -511,6 +511,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 	reqData.m_strTopic = strSourceTopic;
 	reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
 	reqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
+	timespec_get(&reqData.m_obtReqRcvdTS, TIME_UTC);
 	zmq_handler::insertOnDemandReqData(txID, reqData);
 
 	if(NULL != root)

@@ -12,12 +12,17 @@
 #include "ZmqHandler.hpp"
 #include "Logger.hpp"
 #include "PeriodicReadFeature.hpp"
+#include "API.h"
 
 extern "C" {
 	#include <safe_lib.h>
 }
 
 std::mutex g_RWCommonCallbackMutex;
+
+static unsigned long get_nanos(struct timespec ts) {
+    return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
+}
 
 /**
  *
@@ -46,7 +51,8 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint8_t  u8numBytes,
 							 uint8_t* pu8data,
 							 uint16_t  u16StartAdd,
-							 uint16_t  u16Quantity)
+							 uint16_t  u16Quantity,
+							 stTimeStamps a_objStackTimestamps)
 #else
 void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		 	 	 	 	 	 uint16_t u16TransacID,
@@ -56,7 +62,8 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 							 uint8_t  u8numBytes,
 							 uint8_t* pu8data,
 							 uint16_t  u16StartAdd,
-							 uint16_t  u16Quantity)
+							 uint16_t  u16Quantity,
+							 stTimeStamps a_objStackTimestamps)
 #endif
 {
 	string temp; //temporary string for logging
@@ -134,6 +141,21 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		/// timestamp
 		msg_envelope_elem_body_t* ptTimestamp = msgbus_msg_envelope_new_string(strTimestamp.c_str());
 		msgbus_msg_envelope_put(msg, "timestamp", ptTimestamp);
+
+		// add timestamps from stack
+		msg_envelope_elem_body_t* ptStackTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_objStackTimestamps.tsReqRcvd))).c_str() );
+		msg_envelope_elem_body_t* ptStackTSReqSent = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_objStackTimestamps.tsReqSent))).c_str() );
+		msg_envelope_elem_body_t* ptStackTSRespRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_objStackTimestamps.tsRespRcvd))).c_str() );
+		msg_envelope_elem_body_t* ptStackTSRespPosted = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_objStackTimestamps.tsRespSent))).c_str() );
+
+		msgbus_msg_envelope_put(msg, "reqRcvdInStack", ptStackTSReqRcvd);
+		msgbus_msg_envelope_put(msg, "reqSentByStack", ptStackTSReqSent);
+		msgbus_msg_envelope_put(msg, "respRcvdByStack", ptStackTSRespRcvd);
+		msgbus_msg_envelope_put(msg, "respPostedByStack", ptStackTSRespPosted);
+
+		// add timestamps for req recvd by app
+		msg_envelope_elem_body_t* ptAppTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(onDemandReqData.m_obtReqRcvdTS))).c_str() );
+		msgbus_msg_envelope_put(msg, "reqRcvdByApp", ptAppTSReqRcvd);
 
 		if(pu8IpAddr != NULL && pstException->m_u8ExcCode == 0 && pstException->m_u8ExcStatus ==0)
 		{
