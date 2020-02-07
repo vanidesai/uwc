@@ -551,7 +551,8 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 			catch(YAML::Exception &e)
 			{
 				a_oCDataPoint.m_stAddress.m_bIsByteSwap = false;
-				CLogger::getInstance().log(WARN, LOGDETAILS("ByteSwap value is incorrect. Set to default."));
+				CLogger::getInstance().log(WARN, LOGDETAILS("ByteSwap value is incorrect. Set to default with exception ::" + std::string(e.what())));
+				cout << "ByteSwap value is incorrect. Set to default with exception :: "<< e.what();
 			}
 		}
 		if (a_oData["attributes"]["wordswap"])

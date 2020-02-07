@@ -16,8 +16,8 @@
 Thread_H SessionControl_ThreadId = 0;
 extern int32_t i32MsgQueIdSC;
 bool g_bThreadExit = false;
-extern int g_iResponseTimeout;
-extern int32_t g_i32InterframeDelay;
+extern long g_lResponseTimeout;
+extern long g_lInterframeDelay;
 
 Thread_H EpollRecv_ThreadId = 0;
 pthread_t Rx_ThreadId;
@@ -102,8 +102,12 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	}
 	else
 	{
-		g_iResponseTimeout = atoi(pcResponseTime) * 1000;	// *1000 is to convert millisecond value to microsecond
-		printf("RESPONSE_TIMEOUT is set to :: %d us\n", g_iResponseTimeout);
+		int resTimeout = atoi(pcResponseTime);
+		if(resTimeout != 0)
+		{
+			g_lResponseTimeout = resTimeout *1000; // *1000 is to convert millisecond value to microsecond
+		}
+		printf("RESPONSE_TIMEOUT is set to :: %ld us\n", g_lResponseTimeout);
 	}
 
 	const char *pcInterframeDelay= getenv("INTERFRAME_DEALY");
@@ -115,8 +119,12 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	}
 	else
 	{
-		g_i32InterframeDelay = atoi(pcInterframeDelay) * 1000;	// *1000 is to convert millisecond value to microsecond
-		printf("INTERFRAME_DEALY is set to :: %d us\n", g_i32InterframeDelay);
+		int IFDelay = atoi(pcInterframeDelay);
+		if(IFDelay != 0)
+		{
+			g_lInterframeDelay = IFDelay * 1000;	// *1000 is to convert millisecond value to microsecond
+		}
+		printf("INTERFRAME_DEALY is set to :: %ld us\n", g_lInterframeDelay);
 	}
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED

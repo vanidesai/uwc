@@ -60,7 +60,7 @@ bool CTopicMapper::readCommonEnvVariables()
 			"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE"};
 		std::map <std::string, std::string> envTopics;
 
-		for (auto topic : topicList)
+		for (auto &topic : topicList)
 		{
 			std::string envVar = "";
 			bRetVal = readEnvVariable(topic.c_str(), envVar);

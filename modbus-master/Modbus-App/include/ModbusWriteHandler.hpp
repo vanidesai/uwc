@@ -51,11 +51,12 @@ class modWriteHandler
 public:
 	static modWriteHandler& Instance();
 
-	eMbusStackErrorCode writeInfoHandler();
+	eMbusStackErrorCode onDemandInfoHandler();
 
 	eMbusStackErrorCode jsonParserForOnDemandRequest(stRequest& reqMsg,
 											MbusAPI_t &stMbusApiPram,
-											unsigned char& funcCode);
+											unsigned char& funcCode,
+											unsigned short txID);
 
 	void createWriteListener();
 
@@ -67,7 +68,11 @@ public:
 
 	bool validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand);
 
-	void createErrorResponse(msg_envelope_t** ptMsg, eMbusStackErrorCode errorCode, uint8_t  u8FunCode , std::string &strTopic);
+	void createErrorResponse(msg_envelope_t** ptMsg,
+			eMbusStackErrorCode errorCode,
+			uint8_t  u8FunCode ,
+			std::string &strTopic,
+			unsigned short txID);
 };
 
 

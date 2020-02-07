@@ -106,7 +106,7 @@ int initHandleResponseContext();
 
 void removeReqFromListWithLock(stMbusPacketVariables_t *pstMBusRequesPacket);
 void addToRespQ(stMbusPacketVariables_t *a_pstReq);
-void addToHandleRespQ(stTcpRecvData_t a_pstReq);
+void addToHandleRespQ(stTcpRecvData_t *a_pstReq);
 stMbusPacketVariables_t* searchReqList(uint8_t a_u8UnitID, uint16_t a_u16TransactionID);
 unsigned long get_nanos(void);
 void Mark_Sock_Fail(IP_Connect_t *stIPConnect);

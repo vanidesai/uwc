@@ -57,7 +57,7 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 			return false;
 		}
 
-		for (auto topic : Topics)
+		for (auto &topic : Topics)
 		{
 			try
 			{

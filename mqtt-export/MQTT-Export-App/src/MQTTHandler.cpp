@@ -232,7 +232,7 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 #endif
 
 		if(false == publisher.is_connected()) {
-			std::cout << __func__ << ":" << __LINE__ << " Failed to publish msg on MQTT for topic: " << a_sTopic << " , msg: " << a_sMsg << std::endl;
+			//std::cout << __func__ << ":" << __LINE__ << " Failed to publish msg on MQTT for topic: " << a_sTopic << " , msg: " << a_sMsg << std::endl;
 
 			CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher is not connected with MQTT broker" + std::to_string(a_iQOS)));
 			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to publish msg on MQTT : " + a_sMsg));
@@ -349,7 +349,7 @@ bool CMQTTHandler::subscribeToTopics() {
 
 	try
 	{
-		for (auto envTopic : vMqttEnvTopics) {
+		for (auto &envTopic : vMqttEnvTopics) {
 			const char* env_pubWriteTopic = std::getenv(envTopic.c_str());
 			if(env_pubWriteTopic == NULL) {
 				CLogger::getInstance().log(ERROR, LOGDETAILS(envTopic + " Environment Variable is not set"));
@@ -359,7 +359,7 @@ bool CMQTTHandler::subscribeToTopics() {
 			vMqttTopics.push_back(env_pubWriteTopic);
 		}
 
-		for (auto topic : vMqttTopics) {
+		for (auto &topic : vMqttTopics) {
 			if(! topic.empty()) {
 				CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscribing topic : " + topic));
 				subscriber.subscribe(topic, QOS, nullptr, listener);

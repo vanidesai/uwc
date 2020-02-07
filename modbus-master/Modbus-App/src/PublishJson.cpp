@@ -26,7 +26,9 @@ std::mutex publishJsonMutex;
 using namespace zmq_handler;
 
 PublishJsonHandler::PublishJsonHandler()
-{}
+{
+	m_devMode = true;
+}
 
 PublishJsonHandler& PublishJsonHandler::instance()
 {

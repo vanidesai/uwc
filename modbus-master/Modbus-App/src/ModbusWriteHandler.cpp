@@ -58,7 +58,7 @@ bool modWriteHandler::initWriteSem()
 }
 
 void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
-		eMbusStackErrorCode errorCode, uint8_t  u8FunCode, std::string &strTopic)
+		eMbusStackErrorCode errorCode, uint8_t  u8FunCode, std::string &strTopic, unsigned short txID)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
@@ -74,9 +74,9 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 		strTopic = PublishJsonHandler::instance().getSWriteResponseTopic();
 	}
 
-	unsigned short txId = PublishJsonHandler::instance().getTxId();
+	//unsigned short txId = PublishJsonHandler::instance().getTxId();
 	stOnDemandRequest onDemandReqData;
-	zmq_handler::getOnDemandReqData(txId, onDemandReqData);
+	zmq_handler::getOnDemandReqData(txID, onDemandReqData);
 
 	msg_envelope_t *msg = NULL;
 	msg = msgbus_msg_envelope_new(CT_JSON);
@@ -118,7 +118,7 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	*ptMsg = msg;
 }
 
-eMbusStackErrorCode modWriteHandler::writeInfoHandler()
+eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
@@ -139,9 +139,12 @@ eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 					return MBUS_STACK_ERROR_QUEUE_SEND;
 				}
 
-				CLogger::getInstance().log(DEBUG, LOGDETAILS(" write Processing initiated :: " + writeReq.m_strMsg));
+				CLogger::getInstance().log(DEBUG, LOGDETAILS(" On-Demand Processing initiated :: " + writeReq.m_strMsg));
 
-				eFunRetType = jsonParserForOnDemandRequest(writeReq, stMbusApiPram, m_u8FunCode);
+				/// Enter TX Id
+				stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
+
+				eFunRetType = jsonParserForOnDemandRequest(writeReq, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId);
 
 				if(MBUS_STACK_NO_ERROR == eFunRetType)
 				{
@@ -157,14 +160,17 @@ eMbusStackErrorCode modWriteHandler::writeInfoHandler()
 
 				else
 				{
-					msg_envelope_t *msg = NULL;
-					std::string strTopic = "";
-					createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic);
+					if(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST != eFunRetType)
+					{
+						msg_envelope_t *msg = NULL;
+						std::string strTopic = "";
+						createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
 
-					zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(strTopic);
-					zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(strTopic);
+						zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(strTopic);
+						zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(strTopic);
 
-					PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, strTopic);
+						PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, strTopic);
+					}
 				}
 			}
 			catch(const std::exception &e)
@@ -281,9 +287,11 @@ bool modWriteHandler::validateInputJson(std::string stSourcetopic, std::string s
 
 eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& reqMsg,
 											MbusAPI_t &stMbusApiPram,
-											unsigned char& funcCode)
+											unsigned char& funcCode,
+											unsigned short txID)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	string strCommand, strValue, strWellhead, strVersion, strSourceTopic, strAppSeq;
 	cJSON *root = cJSON_Parse(reqMsg.m_strMsg.c_str());
@@ -294,10 +302,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 	{
 		if(MBUS_STACK_NO_ERROR == eFunRetType)
 		{
-
-			/*Enter TX Id*/
-			stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
-
 			stMbusApiPram.m_pu8Data = NULL;
 
 			cJSON *appseq = cJSON_GetObjectItem(root,"app_seq");
@@ -336,7 +340,19 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 			string stTopic = strSourceTopic.substr(0, found);
 
 			std::map<std::string, network_info::CUniqueDataPoint> mpp = network_info::getUniquePointList();
-			struct network_info::stModbusAddrInfo addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
+			struct network_info::stModbusAddrInfo addrInfo;
+			try
+			{
+				addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
+			}
+			catch(const std::out_of_range& oor)
+			{
+				CLogger::getInstance().log(INFO, LOGDETAILS(" Request is not for this application."));
+				if(NULL != root)
+					cJSON_Delete(root);
+
+				return MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST;
+			}
 
 			obj = mpp.at(stTopic).getDataPoint();
 #ifdef MODBUS_STACK_TCPIP_ENABLED
@@ -495,7 +511,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 	reqData.m_strTopic = strSourceTopic;
 	reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
 	reqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
-	zmq_handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
+	zmq_handler::insertOnDemandReqData(txID, reqData);
 
 	if(NULL != root)
 		cJSON_Delete(root);
@@ -617,7 +633,7 @@ void modWriteHandler::initWriteHandlerThreads()
 			// Spawn 5 thread to process write request
 			//for (int i = 0; i < 5; i++)
 			{
-				std::thread{std::bind(&modWriteHandler::writeInfoHandler, std::ref(*this))}.detach();
+				std::thread{std::bind(&modWriteHandler::onDemandInfoHandler, std::ref(*this))}.detach();
 			}
 			bWriteSpawned = true;
 		}

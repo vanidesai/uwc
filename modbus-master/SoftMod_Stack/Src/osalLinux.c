@@ -11,7 +11,7 @@
 
 #include <stdbool.h>
 #include "osalLinux.h"
-
+#include <stdio.h>
 
 /**
  *
@@ -307,10 +307,29 @@ Mutex_H Osal_Mutex(void)
 	{
 		return NULL;
 	}
-	if( !(pthread_mutex_init(pstTpmPtr, NULL)) )
-    	return pstTpmPtr;
-    else
-    	return NULL;
+
+	int iRetVal = pthread_mutex_init(pstTpmPtr, NULL);
+	if(EAGAIN == iRetVal || ENOMEM == iRetVal || EPERM == iRetVal)
+	{
+		/// destroy the mutex
+		printf("mutex creation failed !!\n");
+		OSAL_Free(pstTpmPtr);
+		pthread_mutex_destroy(pstTpmPtr);
+	}
+	else if (iRetVal == 0)
+	{
+		/// Success
+		//printf("mutex creation success !!\n");
+	}
+	else
+	{
+		// other cases free up the memory
+		printf("mutex creation failed !!\n");
+		OSAL_Free(pstTpmPtr);
+		pthread_mutex_destroy(pstTpmPtr);
+	}
+
+	return pstTpmPtr;
 }
 
 /**

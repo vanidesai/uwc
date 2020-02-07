@@ -41,7 +41,7 @@ extern int fd;
 
 int32_t i32MsgQueIdSC = 0;
 extern bool g_bThreadExit;
-extern int g_iResponseTimeout;
+extern long g_lResponseTimeout;
 
 #define READ_SIZE 1024
 #define MAXEVENTS 100
@@ -307,6 +307,12 @@ void* SessionControlThread(void* threadArg)
 			continue;
 		}
 		fflush(stdin);
+
+		/// check for thread exit
+		if(g_bThreadExit)
+		{
+			break;
+		}
 	}
 	return NULL;
 }
@@ -359,7 +365,7 @@ void* EpollRecvThread()
 
 	int iClientCount = 0; //for array
 
-	while (1)
+	while (true != g_bThreadExit)
 	{
 		event_count = 0;
 
@@ -448,7 +454,7 @@ void* EpollRecvThread()
 				if ((m_clientAccepted[clientID].m_len + MODBUS_HEADER_LENGTH)
 						== m_clientAccepted[clientID].m_bytesRead) {
 
-					addToHandleRespQ(m_clientAccepted[clientID]);
+					addToHandleRespQ(&m_clientAccepted[clientID]);
 
 					//clear socket struct for next iteration
 					resetClientStruct(&m_clientAccepted[clientID]);
@@ -461,6 +467,12 @@ void* EpollRecvThread()
 
 			}
 		}//for loop for sockets ends
+
+		/// check for thread exit
+		if(g_bThreadExit)
+		{
+			break;
+		}
 
 	} //while ends
 
@@ -505,6 +517,12 @@ void* SessionControlThread(void* threadArg)
 			freeReqNode(pstMBusReqPact);
 		}
 		fflush(stdin);
+
+		/// check for thread exit
+		if(g_bThreadExit)
+		{
+			break;
+		}
 	}
 	return NULL;
 }
@@ -632,6 +650,12 @@ void* resquestTimeOutThreadFunction(void* threadArg)
 		//tm2 = get_nanos();
 		// Sleep for 1 msec
 		usleep(1000);
+
+		/// check for thread exit
+		if(g_bThreadExit)
+		{
+			break;
+		}
 	}
 
 	return NULL;
@@ -658,6 +682,11 @@ void* postResponseToApp(void* threadArg)
 				//OSAL_Free(pstMBusRequesPacket);
 				freeReqNode(pstMBusRequesPacket);
 			}
+		}
+		/// check for thread exit
+		if(g_bThreadExit)
+		{
+			break;
 		}
 	}
 
@@ -760,12 +789,10 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 	Linux_Msg_t stScMsgQue = { 0 };
 	uint8_t u8ReturnType = 0;
 	stLiveSerSessionList_t *pstLivSerSesslist = NULL;
-	stLiveSerSessionList_t *pstTempLivSerSesslist = NULL;
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	int32_t i32MsgQueIdSSTC = 0;
 	int32_t i32RetVal = 0;
 	//int32_t i32sockfd = 0;
-	uint32_t u32TimeCount = 0;
 	IP_Connect_t stIPConnect;
 
 	stIPConnect.m_bIsAddedToEPoll = false;
@@ -781,7 +808,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 	{
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
 		i32RetVal = 0;
-		i32RetVal = OSAL_Get_NonBlocking_Message(&stScMsgQue, i32MsgQueIdSSTC);
+		i32RetVal = OSAL_Get_Message(&stScMsgQue, i32MsgQueIdSSTC);
 
 		if(i32RetVal > 0)
 		{
@@ -791,7 +818,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 			{
 				if(NULL != pstLivSerSesslist)
 				{
-					pstMBusRequesPacket->m_u32MsTimeout = g_iResponseTimeout/1000; /// convert to millisecond
+					pstMBusRequesPacket->m_u32MsTimeout = g_lResponseTimeout/1000; /// convert to millisecond
 					addReqToList(pstMBusRequesPacket);
 					pstMBusRequesPacket->m_ulReqSentTimeByStack = get_nanos();
 					u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &stIPConnect);
@@ -808,63 +835,32 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 						addToRespQ(pstMBusRequesPacket);
 					}
 
-					u32TimeCount = 0;
 				}
 			}
 		}
-		else
+
+		/// check for thread exit
+		if(g_bThreadExit)
 		{
-			usleep(100000);
-			u32TimeCount++;
-
-			if(u32TimeCount >= (ModbusMasterConfig.m_u16TcpSessionTimeout * 10))
-			{
-				//close(i32sockfd);
-				Osal_Wait_Mutex (LivSerSesslist_Mutex,0);
-				if(NULL != pstLivSerSesslist)
-				{
-					close(pstLivSerSesslist->m_i32sockfd);
-					pstLivSerSesslist->m_i32sockfd = 0;
-					OSAL_Delete_Message_Queue(pstLivSerSesslist->MsgQId);
-					if(pstSesCtlThdLstHead == pstLivSerSesslist)
-					{
-						pstSesCtlThdLstHead = NULL;
-						OSAL_Free(pstLivSerSesslist);
-						pstLivSerSesslist = NULL;
-					}
-					else
-					{
-						pstTempLivSerSesslist = pstSesCtlThdLstHead;
-						if(NULL != pstTempLivSerSesslist)
-						{
-							while(pstTempLivSerSesslist->m_pNextElm != pstLivSerSesslist
-									&& NULL != pstTempLivSerSesslist->m_pNextElm)
-								pstTempLivSerSesslist = pstTempLivSerSesslist->m_pNextElm;
-
-							if(NULL != pstTempLivSerSesslist->m_pNextElm)
-								pstTempLivSerSesslist->m_pNextElm = pstLivSerSesslist->m_pNextElm;
-						}
-
-						if(NULL != pstLivSerSesslist)
-							OSAL_Free(pstLivSerSesslist);
-					}
-				}
-				Osal_Release_Mutex (LivSerSesslist_Mutex);
-				break;
-			}
+			break;
 		}
+	}
+
+	if(stIPConnect.m_sockfd)
+	{
+		close(stIPConnect.m_sockfd);
 	}
 	return NULL;
 }
 
-void addToHandleRespQ(stTcpRecvData_t a_pstReq)
+void addToHandleRespQ(stTcpRecvData_t *a_pstReq)
 {
-	if(0 != a_pstReq.m_bytesRead)
+	if(NULL != a_pstReq)
 	{
 		mesg_data_t stLocalData;
 		size_t MsgSize = 0;
 		memcpy_s(stLocalData.m_readBuffer,sizeof(stLocalData.m_readBuffer),
-				a_pstReq.m_readBuffer,sizeof(a_pstReq.m_readBuffer));
+				a_pstReq->m_readBuffer,sizeof(a_pstReq->m_readBuffer));
 
 		stLocalData.mesg_type = 1;
 		MsgSize = sizeof(stLocalData) - sizeof(long);
@@ -946,6 +942,11 @@ void* handleClientReponseThreadFunction(void* threadArg)
 					printf("handleClientReponseThreadFunction: not found: %d %d\n", u8UnitID, u16TransactionID);
 				}
 			}
+		}
+		/// check for thread exit
+		if(g_bThreadExit)
+		{
+			break;
 		}
 	}
 
