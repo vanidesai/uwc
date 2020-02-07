@@ -31,7 +31,7 @@ extern sem_t g_semaphoreRespProcess;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.0.4"
+#define APP_VERSION "0.0.0.6"
 
 //add sourcetopic key in payload to publish on EIS
 bool addSrTopic(string &json, string& topic) {
@@ -410,7 +410,7 @@ void postMsgstoMQTT() {
 	/// get sub topic list
 	vector<string> vFullTopics = CEISMsgbusHandler::Instance().getSubTopicList();
 
-	for (auto topic : vFullTopics) {
+	for (auto &topic : vFullTopics) {
 
 		if(topic.empty()) {
 			CLogger::getInstance().log(ERROR, LOGDETAILS("found empty MQTT subscriber topic"));

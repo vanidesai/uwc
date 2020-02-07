@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.0.5"
+#define APP_VERSION "0.0.0.6"
 
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
@@ -332,8 +332,14 @@ int main(int argc, char* argv[])
 		long l_serialPortOpenDelay;
 		std::string s_serialPortOpenDelay;
 		std::string::size_type sz;   // alias of size_t
-		CommonUtils::readEnvVariable("SERIAL_PORT_RETRY_INTERVAL", s_serialPortOpenDelay);
-		l_serialPortOpenDelay = std::stol (s_serialPortOpenDelay, &sz);
+		if(CommonUtils::readEnvVariable("SERIAL_PORT_RETRY_INTERVAL", s_serialPortOpenDelay))
+		{
+			l_serialPortOpenDelay = std::stol (s_serialPortOpenDelay, &sz);
+		}
+		else
+		{
+			l_serialPortOpenDelay = 60; //Default delay 01 min
+		}
 
 		do{
 			fd = initSerialPort((uint8_t*)(sPortName.c_str()),
@@ -468,7 +474,7 @@ int main(int argc, char* argv[])
 
 		CLogger::getInstance().log(INFO, LOGDETAILS("Exiting the application gracefully."));
 		cout << "************************************************************************************************" <<endl;
-		cout << "********************** Exited Modbus container to apply new configurations from ETCD ***********" <<endl;
+		cout << "********************** Exiting modbus container  ***********" <<endl;
 		cout << "************************************************************************************************" <<endl;
 
 		return EXIT_SUCCESS;
