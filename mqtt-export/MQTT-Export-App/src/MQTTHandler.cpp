@@ -188,7 +188,52 @@ void CMQTTHandler::setMQTTConfigState(Mqtt_Config_state_t tempConfigState) {
 	ConfigState = tempConfigState;
 }
 
-bool CMQTTHandler::publish(std::string a_sMsg, const char *topic, int qos) {
+static unsigned long get_nanos(struct timespec ts) {
+    return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
+}
+
+bool CMQTTHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsMsgRcvd)
+{
+	cJSON *root = NULL;
+	try {
+
+		root = cJSON_Parse(a_sMsg.c_str());
+		if (NULL == root) {
+			CLogger::getInstance().log(ERROR, 
+					LOGDETAILS("ZMQ Message could not be parsed in json format"));
+			//std::cout << __func__ << ":" << __LINE__ << " Error : Message received from ZMQ could not be parsed in json format" <<  std::endl;
+			return false;
+		}
+
+		struct timespec tsMsgProcess;
+		timespec_get(&tsMsgProcess, TIME_UTC);
+		std::string strTsRcvd = std::to_string(get_nanos(a_tsMsgRcvd));
+		std::string strTsProcess = std::to_string(get_nanos(tsMsgProcess));
+		cJSON_AddStringToObject(root, "tsMsgReadyForPublish", strTsRcvd.c_str());
+		cJSON_AddStringToObject(root, "tsMsgRcvdForProcessing", strTsProcess.c_str());
+
+		a_sMsg.clear();
+		a_sMsg = cJSON_Print(root);
+
+		if(root != NULL)
+			cJSON_Delete(root);
+
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Added timestamp in payload for MQTT"));
+		return true;
+
+	} catch (exception &ex) {
+
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to add timestamp in payload for MQTT"));
+		std::cout << __func__ << ":" << __LINE__ << "Failed to add timestamp in payload for MQTT: " << ex.what() << std::endl;
+
+		if(root != NULL)
+			cJSON_Delete(root);
+
+		return false;
+	}
+}
+
+bool CMQTTHandler::publish(std::string a_sMsg, std::string a_sTopic, int qos, struct timespec a_tsMsgRcvd) {
 
 	static bool bIsFirst = true;
 	if (true == bIsFirst) {
@@ -196,9 +241,10 @@ bool CMQTTHandler::publish(std::string a_sMsg, const char *topic, int qos) {
 		bIsFirst = false;
 	}
 
-	std::string sTopic(topic);
 	try {
-		publish(a_sMsg, sTopic, qos);
+		// Add timestamp to message
+		addTimestampsToMsg(a_sMsg, a_tsMsgRcvd);
+		publish(a_sMsg, a_sTopic, qos);
 	} catch (const mqtt::exception &exc) {
 #ifdef PERFTESTING
 		m_ui32PublishExcep++;
