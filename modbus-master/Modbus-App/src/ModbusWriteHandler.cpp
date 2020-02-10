@@ -178,14 +178,17 @@ eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 
 				else
 				{
-					msg_envelope_t *msg = NULL;
-					std::string strTopic = "";
-					createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
+					if(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST != eFunRetType)
+					{
+						msg_envelope_t *msg = NULL;
+						std::string strTopic = "";
+						createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
 
-					zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(strTopic);
-					zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(strTopic);
+						zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(strTopic);
+						zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(strTopic);
 
-					PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, strTopic);
+						PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, strTopic);
+					}
 				}
 			}
 			catch(const std::exception &e)
@@ -376,7 +379,17 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 			string stTopic = strSourceTopic.substr(0, found);
 
 			std::map<std::string, network_info::CUniqueDataPoint> mpp = network_info::getUniquePointList();
-			struct network_info::stModbusAddrInfo addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
+			struct network_info::stModbusAddrInfo addrInfo;
+			try
+			{
+				addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
+			}
+			catch(const std::out_of_range& oor)
+			{
+				CLogger::getInstance().log(INFO, LOGDETAILS(" Request is not for this application." + std::string(oor.what())));
+
+				return MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST;
+			}
 
 			obj = mpp.at(stTopic).getDataPoint();
 #ifdef MODBUS_STACK_TCPIP_ENABLED
