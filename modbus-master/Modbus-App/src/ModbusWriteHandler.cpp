@@ -341,15 +341,16 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 				strSourceTopic = sourcetopic->valuestring;
 				//if write then "true" else "false"
 				isWrite = strSourceTopic.find("write") <= strSourceTopic.length() ? true : false;
-				if(true == isWrite && value)
+				if(true == isWrite)
 				{
-					strValue = value->valuestring;
-				}
-				else
-				{
-					CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter for write request"));
-					eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
-					return eFunRetType;
+					if(value)
+						strValue = value->valuestring;
+					else
+					{
+						CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter for write request"));
+						eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
+						return eFunRetType;
+					}
 				}
 
 				isValidJson = validateInputJson(strSourceTopic, strWellhead, strCommand);
