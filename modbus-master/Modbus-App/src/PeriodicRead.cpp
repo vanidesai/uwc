@@ -461,7 +461,12 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 			stStackResNode.m_stException.m_u8ExcStatus = pstException->m_u8ExcStatus;
 
 			stStackResNode.u16TransacID = u16TransacID;
-			memcpy(&stStackResNode.m_objStackTimestamps, &a_objStackTimestamps, sizeof(stTimeStamps));
+			//memcpy(&stStackResNode.m_objStackTimestamps, &a_objStackTimestamps, sizeof(stTimeStamps));
+
+			memcpy_s((&stStackResNode.m_objStackTimestamps),
+					sizeof(stTimeStamps),
+					&a_objStackTimestamps,
+					sizeof(a_objStackTimestamps));
 
 			if((0 == pstException->m_u8ExcStatus) &&
 					(0 == pstException->m_u8ExcCode))

@@ -347,7 +347,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(stRequest& req
 			}
 			catch(const std::out_of_range& oor)
 			{
-				CLogger::getInstance().log(INFO, LOGDETAILS(" Request is not for this application."));
+				CLogger::getInstance().log(INFO, LOGDETAILS(" Request is not for this application." + std::string(oor.what())));
 				if(NULL != root)
 					cJSON_Delete(root);
 
