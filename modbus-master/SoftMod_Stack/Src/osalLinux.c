@@ -316,6 +316,10 @@ Mutex_H Osal_Mutex(void)
 		OSAL_Free(pstTpmPtr);
 		//pthread_mutex_destroy(pstTpmPtr);
 	}
+	else if (0 == iRetVal)
+	{
+		/// SUCCESS
+	}
 	else
 	{
 		// other cases free up the memory
