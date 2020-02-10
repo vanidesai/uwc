@@ -92,6 +92,7 @@ checkrootUser()
     	exit 1
    else
    	echo "${GREEN}Script is running with root user.${NC}"
+	dpkg --configure -a
    fi
    return 0
 }
