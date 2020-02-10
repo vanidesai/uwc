@@ -339,6 +339,14 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 				strWellhead = wellhead->valuestring;
 				strVersion = version->valuestring;
 				strSourceTopic = sourcetopic->valuestring;
+
+				reqData.m_strAppSeq = strAppSeq;
+				reqData.m_strMetric = strCommand;
+				reqData.m_strVersion = strVersion;
+				reqData.m_strWellhead = strWellhead;
+				reqData.m_strTopic = strSourceTopic;
+				timespec_get(&reqData.m_obtReqRcvdTS, TIME_UTC);
+
 				//if write then "true" else "false"
 				isWrite = strSourceTopic.find("write") <= strSourceTopic.length() ? true : false;
 				if(true == isWrite)
@@ -354,13 +362,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 				}
 
 				isValidJson = validateInputJson(strSourceTopic, strWellhead, strCommand);
-
-				reqData.m_strAppSeq = strAppSeq;
-				reqData.m_strMetric = strCommand;
-				reqData.m_strVersion = strVersion;
-				reqData.m_strWellhead = strWellhead;
-				reqData.m_strTopic = strSourceTopic;
-				timespec_get(&reqData.m_obtReqRcvdTS, TIME_UTC);
 			}
 			if(!isValidJson)
 			{
