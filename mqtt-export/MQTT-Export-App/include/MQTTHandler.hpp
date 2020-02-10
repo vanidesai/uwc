@@ -132,12 +132,13 @@ class CMQTTHandler
 	bool pushMsgInQ(const stMsgData &a_msg);
 #endif
 	bool publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQOS, bool a_bFromQ = false);
-
+	bool addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsMsgRcvd);
+	
 public:
 
 	~CMQTTHandler();
 	static CMQTTHandler& instance(); //function to get single instance of this class
-	bool publish(std::string a_sMsg, const char *topic, int qos);
+	bool publish(std::string a_sMsg, std::string a_sTopic, int qos, struct timespec a_tsMsgRcvd);
 #ifdef QUEUE_FAILED_PUBLISH_MESSAGES
 	void postPendingMsgs();
 #endif
