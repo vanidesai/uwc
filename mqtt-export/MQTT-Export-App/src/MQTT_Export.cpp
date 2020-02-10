@@ -31,7 +31,7 @@ extern sem_t g_semaphoreRespProcess;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.0.6"
+#define APP_VERSION "0.0.0.7"
 
 //add sourcetopic key in payload to publish on EIS
 bool addSrTopic(string &json, string& topic) {
@@ -151,7 +151,7 @@ void listenOnEIS(string topic, stZmqContext context,
 	recv_ctx_t *sub_ctx = subContext.m_pContext;
 
 	CLogger::getInstance().log(INFO, LOGDETAILS("ZMQ listening for topic : " + topic));
-	while ((false == g_shouldStop.load()) && (msgbus_ctx != NULL)) {
+	while ((false == g_shouldStop.load()) && (msgbus_ctx != NULL) && (sub_ctx != NULL)) {
 
 		try {
 			int num_parts = 0;
@@ -172,6 +172,14 @@ void listenOnEIS(string topic, stZmqContext context,
 				continue;
 			}
 
+			if(msg == NULL) {
+				std::cout << " Received NULL msg in msgbus_recv_wait" << std::endl;
+				continue;
+			}
+			
+			struct timespec tsMsgRcvd;
+			timespec_get(&tsMsgRcvd, TIME_UTC);
+
 			num_parts = msgbus_msg_envelope_serialize(msg, &parts);
 			if (num_parts <= 0) {
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to serialize message"));
@@ -186,7 +194,7 @@ void listenOnEIS(string topic, stZmqContext context,
 					string strTemp = "topic key not present in message: ";
 					strTemp.append(parts[0].bytes);
 					CLogger::getInstance().log(ERROR, LOGDETAILS(strTemp));
-					std::cout << __func__ << ":" << __LINE__ << " Error : " << strTemp <<  std::endl;
+					//std::cout << __func__ << ":" << __LINE__ << " Error : " << strTemp <<  std::endl;
 
 				} else {
 						string mqttMsg(parts[0].bytes);
@@ -202,9 +210,11 @@ void listenOnEIS(string topic, stZmqContext context,
 							+ ", Msg: " + mqttMsg));
 
 						CMQTTHandler::instance().publish(mqttMsg,
-								revdTopic.c_str(), iQOS);
+								revdTopic.c_str(), iQOS, tsMsgRcvd);
 				}
-				msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+
+				if(parts != NULL)
+					msgbus_msg_envelope_serialize_destroy(parts, num_parts);
 			}
 
 			if(msg != NULL) {
