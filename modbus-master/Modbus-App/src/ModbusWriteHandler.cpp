@@ -360,7 +360,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 					{
 						CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter for write request"));
 						eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
-						return eFunRetType;
 					}
 				}
 
@@ -371,7 +370,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 				std::cout << __func__ << "::Invalid input json parameter or topic." << std::endl;
 				CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter or topic."));
 				eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
-				return eFunRetType;
 			}
 
 			string strSearchString = "/";
@@ -489,7 +487,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 					else
 					{
 						eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
-						return eFunRetType;
 					}
 				}
 				if(true == isWrite && funcCode != WRITE_MULTIPLE_COILS)
@@ -519,7 +516,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 						std::cout << __func__ << "::Invalid value in request json." << std::endl;
 						CLogger::getInstance().log(FATAL, LOGDETAILS("Invalid value in request json."));
 						eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
-						return eFunRetType;
 					}
 				}
 				/*else
