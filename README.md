@@ -23,11 +23,11 @@ The directory comprises of following:
   This directory contains configurations for ETCD required during provisioning. 
 * <a href="https://github.impcloud.net/uwc/UWC-Core/blob/master/docker-compose.yml">docker-compose.yml</a> :
   This file will deploy the modbus container with EIS in IPC with DEV mode.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_DEV.yml">docker-compose_IPC_DEV.yml</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_DEV.yml">docker-compose_IPC_DEV.yml</a> :
   This file is used to deploy UWC containers in IPC with DEV mode.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_DEV.yml">docker-compose_TCP_DEV.yml</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_TCP_DEV.yml">docker-compose_TCP_DEV.yml</a> :
   This file is used to deploy UWC containers in TCP with DEV mode.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_DEV.yml">docker-compose_TCP_PROD.yml</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_TCP_PROD.yml">docker-compose_TCP_PROD.yml</a> :
   This file is used to deploy UWC containers in TCP with PROD mode.
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Release">Release</a> :
   This directory contains UWC bundle for deployement.
