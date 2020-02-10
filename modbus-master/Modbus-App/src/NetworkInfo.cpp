@@ -476,6 +476,16 @@ eEndPointType network_info::CDataPoint::getPointType(const std::string& a_type)
 	return type;
 }
 
+// Returns true if s is a number else false
+bool network_info:: isNumber(string s)
+{
+    for (uint32_t i32Count = 0; i32Count < s.length(); i32Count++)
+        if (isdigit(s[i32Count]) == false)
+            return false;
+
+    return true;
+}
+
 void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start"));
@@ -487,49 +497,84 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 		a_oCDataPoint.m_stPollingConfig.m_bIsRealTime = false;
 		a_oCDataPoint.m_stPollingConfig.m_usQOS = "0";
 
-		if(!(a_oData["polling"]["qos"] && a_oData["polling"]["pollinterval"] && a_oData["polling"]["realtime"]))
+		if(a_oData["polling"]["realtime"])
 		{
-			std::cout << "WARNING :: qos or pollinterval or realtime parameter is not present "
-					"!! setting it to default (i.e. zero)";
-			CLogger::getInstance().log(WARN, LOGDETAILS("qos or pollinterval or realtime parameter is not present !! "
+			if(a_oData["polling"]["realtime"].as<std::string>() != "")
+			{
+				a_oCDataPoint.m_stPollingConfig.m_bIsRealTime =  a_oData["polling"]["realtime"].as<bool>();
+			}
+			else
+			{
+				std::cout << "WARNING :: realtime parameter is empty !! setting it to default (i.e. false)\n";
+				CLogger::getInstance().log(WARN, LOGDETAILS("realtime parameter is empty !! setting it to default (i.e. false)"));
+				a_oCDataPoint.m_stPollingConfig.m_bIsRealTime = false;
+			}
+		}
+		else
+		{
+			std::cout << "WARNING :: realtime parameter is not present !! setting it to default (i.e. false)\n";
+			CLogger::getInstance().log(WARN, LOGDETAILS("realtime parameter is not present !! setting it to default (i.e. false)"));
+			a_oCDataPoint.m_stPollingConfig.m_bIsRealTime = false;
+		}
+		if(a_oData["polling"]["pollinterval"])
+		{
+			if(isNumber(a_oData["polling"]["pollinterval"].as<std::string>()) == false
+					|| a_oData["polling"]["pollinterval"].as<std::string>() == "")
+			{
+				std::cout << "WARNING :: pollinterval parameters is invalid !! setting it to default (i.e. 0 ms)\n";
+				CLogger::getInstance().log(WARN, LOGDETAILS("pollinterval parameters invalid setting it to default (i.e. 0 ms)"));
+				a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = 0;
+			}
+			else
+			{
+				a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = a_oData["polling"]["pollinterval"].as<std::uint32_t>();
+			}
+		}
+		else
+		{
+			std::cout << "WARNING :: pollinterval parameter is not present "
+					"!! setting it to default (i.e. 0 ms)\n";
+			CLogger::getInstance().log(WARN, LOGDETAILS("pollinterval parameter is not present !! "
+					"setting it to default (i.e.  ms)"));
+			a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = 0;
+		}
+
+		if(a_oData["polling"]["qos"])
+		{
+			if(isNumber(a_oData["polling"]["qos"].as<std::string>()) == false
+					|| a_oData["polling"]["qos"].as<std::string>() == "")
+			{
+				std::cout << "WARNING :: qos parameters is either empty or invalid (i.e. expected value is between 0 to 2)!! setting it to default (i.e. zero)\n";
+				CLogger::getInstance().log(WARN, LOGDETAILS("qos parameters is either empty or invalid  (i.e. expected value is between 0 to 2)!! setting it to default (i.e. zero)"));
+				a_oCDataPoint.m_stPollingConfig.m_usQOS = "0";
+			}
+			else if(stoi(a_oData["polling"]["qos"].as<std::string>().c_str()) > 2)
+			{
+				std::cout << "WARNING :: qos parameters is not in range (i.e. expected value is between 0 to 2)!! setting it to default (i.e. zero)\n";
+				std::cout << "Current qos value in yml is :: "<< stoi(a_oData["polling"]["qos"].as<std::string>().c_str()) <<endl;
+				CLogger::getInstance().log(WARN, LOGDETAILS("Current qos value in yml is :: " + a_oData["polling"]["qos"].as<std::string>()));
+				CLogger::getInstance().log(WARN, LOGDETAILS("qos parameters is not in range  (i.e. expected value is between 0 to 2)!! setting it to default (i.e. zero)"));
+				a_oCDataPoint.m_stPollingConfig.m_usQOS = "0";
+			}
+			else
+			{
+				a_oCDataPoint.m_stPollingConfig.m_usQOS = a_oData["polling"]["qos"].as<std::string>();
+			}
+		}
+		else
+		{
+			std::cout << "WARNING :: qos parameter is not present "
+					"!! setting it to default (i.e. zero)\n";
+			CLogger::getInstance().log(WARN, LOGDETAILS("qos parameter is not present !! "
 					"setting it to default (i.e. zero)"));
-		}
-		else if(a_oData["polling"]["qos"].as<std::string>() == ""
-				|| a_oData["polling"]["pollinterval"].as<std::string>() == ""
-				|| a_oData["polling"]["realtime"].as<std::string>() == "")
-		{
-			std::cout << "WARNING :: qos or pollinterval or realtime parameter is either empty or invalid !! setting it to default (i.e. zero)\n";
-			CLogger::getInstance().log(WARN, LOGDETAILS("qos or pollinterval or realtime parameter is empty !! setting it to default (i.e. zero)"));
-		}
-
-		if(a_oData["polling"]["qos"].as<std::string>() != "")
-		{
-			a_oCDataPoint.m_stPollingConfig.m_usQOS = a_oData["polling"]["qos"].as<std::string>();
-		}
-
-		if(a_oData["polling"]["pollinterval"].as<std::string>() != "")
-		{
-			a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = a_oData["polling"]["pollinterval"].as<std::uint32_t>();
-		}
-		if(a_oData["polling"]["realtime"].as<std::string>() != "")
-		{
-			a_oCDataPoint.m_stPollingConfig.m_bIsRealTime =  a_oData["polling"]["realtime"].as<bool>();
-		}
-
-		if(stoi(a_oData["polling"]["qos"].as<std::string>().c_str()) > 2)
-		{
-			std::cout << "WARNING :: qos parameters is out of range (i.e. expected value is between 0 to 1)!! setting it to default (i.e. zero)\n";
-			std::cout << "Current qos value in yml is :: "<< stoi(a_oData["polling"]["qos"].as<std::string>().c_str()) <<endl;
-			CLogger::getInstance().log(WARN, LOGDETAILS("qos parameters is out of range (i.e. expected value is between 0 to 1)!! setting it to default (i.e. zero)"));
-			CLogger::getInstance().log(WARN, LOGDETAILS("Current qos value in yml is :: " + a_oData["polling"]["qos"].as<std::string>()));
 			a_oCDataPoint.m_stPollingConfig.m_usQOS = "0";
 		}
 
 	}
 	catch(exception &e)
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(e.what()));
-		std::cout << "Exception :: " <<e.what()<<endl;
+		CLogger::getInstance().log(WARN, LOGDETAILS("qos or pollinterval or realtime is either empty or not valid !!" + std::string(e.what())));
+		std::cout << "WARNING :: qos or pollinterval or realtime is either empty or not valid !!" <<e.what()<<endl;
 	}
 
 	// Check mandatory parameters
@@ -564,7 +609,8 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 			catch(YAML::Exception &e)
 			{
 				a_oCDataPoint.m_stAddress.m_bIsWordSwap = false;
-				CLogger::getInstance().log(WARN, LOGDETAILS("WordSwap value is incorrect. Set to default."));
+				CLogger::getInstance().log(WARN, LOGDETAILS("WordSwap value is incorrect. Set to default." + std::string(e.what())));
+				cout << "WordSwap value is incorrect. Set to default with exception :: "<< e.what();
 			}
 		}
 	}

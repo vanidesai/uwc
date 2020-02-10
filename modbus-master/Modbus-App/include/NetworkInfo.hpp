@@ -175,6 +175,8 @@ namespace network_info
 	const std::map<std::string, CWellSiteInfo>& getWellSiteList();
 	const std::map<std::string, CUniqueDataPoint>& getUniquePointList();
 	bool validateIpAddress(const string &ipAddress);
+	// Returns true if s is a number else false
+	bool isNumber(string s);
 }
 
 #endif /* INCLUDE_INC_NETWORKINFO_HPP_ */
