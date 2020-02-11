@@ -31,7 +31,7 @@ extern sem_t g_semaphoreRespProcess;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.0.7"
+#define APP_VERSION "0.0.0.8"
 
 //add sourcetopic key in payload to publish on EIS
 bool addSrTopic(string &json, string& topic) {
@@ -204,11 +204,11 @@ void listenOnEIS(string topic, stZmqContext context,
 							<< std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
 							<< ", Msg: " << mqttMsg << std::endl;
 */
-
+#ifdef INSTRUMENTATION_LOG
 						CLogger::getInstance().log(INFO, LOGDETAILS("ZMQ Message: Time: "
 							+ std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 							+ ", Msg: " + mqttMsg));
-
+#endif
 						CMQTTHandler::instance().publish(mqttMsg,
 								revdTopic.c_str(), iQOS, tsMsgRcvd);
 				}

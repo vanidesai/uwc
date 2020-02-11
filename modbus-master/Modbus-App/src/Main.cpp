@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.0.7"
+#define APP_VERSION "0.0.0.8"
 
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
