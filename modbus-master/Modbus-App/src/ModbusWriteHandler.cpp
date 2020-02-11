@@ -432,23 +432,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 				break;
 			}
 
-			std::cout <<"****************************************************************" <<endl;
-			std::cout << "on-demand request received with following parameters ::" << endl;
-			std::cout << "app_seq: " << strAppSeq << endl;
-			std::cout << "byte_swap: "<< obj.getAddress().m_bIsByteSwap<< endl;
-			std::cout << "word_swap: "<< obj.getAddress().m_bIsWordSwap<< endl;
-			std::cout <<"command: "<< strCommand << endl;
-			std::cout <<"version: "<<strVersion<< endl;
-			std::cout <<"wellhead: "<<strWellhead<< endl;
-			std::cout <<"topic: "<<strSourceTopic<< endl;
-			std::cout <<"timestamp: "<<timestamp->valuestring<< endl;
-			std::cout <<"usec: "<<usec->valuestring<< endl;
-			if(isWrite)
-			{
-				std::cout <<"value: "<<strValue<< endl;
-			}
-			std::cout <<"****************************************************************" <<endl;
-
 			if(WRITE_MULTIPLE_REG == funcCode)
 			{
 				stMbusApiPram.m_u16ByteCount = stMbusApiPram.m_u16Quantity*2;
@@ -587,8 +570,7 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 			ret = msgbus_recv_wait(msgbus_ctx.m_pContext, stsub_ctx.sub_ctx, &msg);
 			if(ret != MSG_SUCCESS)
 			{
-				cout << "<Error> Failed to receive message errno:: " << ret << endl;
-				cout << "<Error> Failed to receive message for Topic:: " << stTopic << endl;
+				cout << "Failed to receive message for Topic with error:: " << stTopic << " " << ret<<endl;
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to receive message errno ::" + std::to_string(ret)));
 				continue;
 			}

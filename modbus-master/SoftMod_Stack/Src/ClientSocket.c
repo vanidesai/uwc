@@ -126,8 +126,8 @@ long g_lResponseTimeout = 0;
 // variable to store interframe gap delay
 long g_lInterframeDelay = 0;
 
-// variable to store extra interframe gap delay
-int32_t someValue = 0;
+// variable to store Standard interframe gap delay
+long standardInterframeDelay = 0;
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 int fd;
@@ -882,12 +882,12 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		if(baud > 19200)
 		{
 			usleep(g_lInterframeDelay);
-			usleep(someValue);
+			usleep(standardInterframeDelay);
 		}
 		else
 		{		
 			usleep(g_lInterframeDelay);
-			usleep(someValue);
+			usleep(standardInterframeDelay);
 		}
 
 		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
@@ -1002,127 +1002,127 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 	switch (baudrate) {
 	case 110:
 		speed = B110;
-		someValue = 28000;
+		standardInterframeDelay = 38500000/baudrate;
 		break;
 	case 300:
 		speed = B300;
-		someValue = 28000;
+		standardInterframeDelay = 38500000/baudrate;
 		break;
 	case 600:
 		speed = B600;
-		someValue = 28000;
+		standardInterframeDelay = 38500000/baudrate;
 		break;
 	case 1200:
 		speed = B1200;
-		someValue = 28000;
+		standardInterframeDelay = 38500000/baudrate;
 		break;
 	case 2400:
 		speed = B2400;
-		someValue = 28000;
+		standardInterframeDelay = 38500000/baudrate;
 		break;
 	case 4800:
 		speed = B4800;
-		someValue = 28000;
+		standardInterframeDelay = 38500000/baudrate;
 		break;
 	case 9600:
 		speed = B9600;
-		someValue = 28000;
+		standardInterframeDelay = 38500000/baudrate;
 		break;
 	case 19200:
 		speed = B19200;
-		someValue = 28000;
+		standardInterframeDelay = 38500000/baudrate;
 		break;
 	case 38400:
 		speed = B38400;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #ifdef B57600
 	case 57600:
 		speed = B57600;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B115200
 	case 115200:
 		speed = B115200;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B230400
 	case 230400:
 		speed = B230400;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B460800
 	case 460800:
 		speed = B460800;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B500000
 	case 500000:
 		speed = B500000;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B576000
 	case 576000:
 		speed = B576000;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B921600
 	case 921600:
 		speed = B921600;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B1000000
 	case 1000000:
 		speed = B1000000;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B1152000
 	case 1152000:
 		speed = B1152000;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B1500000
 	case 1500000:
 		speed = B1500000;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B2500000
 	case 2500000:
 		speed = B2500000;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B3000000
 	case 3000000:
 		speed = B3000000;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B3500000
 	case 3500000:
 		speed = B3500000;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 #ifdef B4000000
 	case 4000000:
 		speed = B4000000;
-		someValue = 19000;
+		standardInterframeDelay = 1750;
 		break;
 #endif
 	default:
 		speed = B9600;
-		someValue = 28000;
+		standardInterframeDelay = 38500000/baudrate;
 		printf("ERROR Unknown baud rate %d for %s (B9600 used)\n",
 				baudrate, portName);
 	}

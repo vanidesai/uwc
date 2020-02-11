@@ -9,6 +9,7 @@
  ************************************************************************************/
 
 #include "MQTTHandler.hpp"
+#include "TopicMapper.hpp"
 #include <vector>
 #include "cjson/cJSON.h"
 #include <semaphore.h>
@@ -58,28 +59,16 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 // function to get single instance of this class
 CMQTTHandler& CMQTTHandler::instance() {
 
-	static bool bPlBusUrl = false;
-	const char *mqttBrokerURL = NULL;
+	static string strPlBusUrl = CTopicMapper::getInstance().getStrMqttExportURL();
 
-	string strPlBusUrl;
-
-	if (!bPlBusUrl) {
-		/// get the platform bus env variable
-		mqttBrokerURL = std::getenv("MQTT_URL_FOR_EXPORT");
-		/// check for null
-		if (NULL == mqttBrokerURL) {
-			CLogger::getInstance().log(ERROR, LOGDETAILS(":MQTT_URL_FOR_EXPORT Environment variable is not set"));
-			std::cout << __func__ << ":" << __LINE__ << " Error : MQTT_URL_FOR_EXPORT Environment variable is not set" <<  std::endl;
-			exit(EXIT_FAILURE);
-		} else {
-			strPlBusUrl.assign(mqttBrokerURL);
-			CLogger::getInstance().log(DEBUG, LOGDETAILS(":MQTT_URL_FOR_EXPORT Environment variable is set to : "
-					+ strPlBusUrl));
-			bPlBusUrl = true;
-		}
+	if(strPlBusUrl.empty())
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS(":MQTT_URL_FOR_EXPORT Environment variable is not set"));
+		std::cout << __func__ << ":" << __LINE__ << " Error : MQTT_URL_FOR_EXPORT Environment variable is not set" <<  std::endl;
+		exit(EXIT_FAILURE);
 	}
 
-	static CMQTTHandler handler(mqttBrokerURL);
+	static CMQTTHandler handler(strPlBusUrl.c_str());
 	return handler;
 }
 
@@ -205,12 +194,12 @@ bool CMQTTHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsM
 			return false;
 		}
 
-		struct timespec tsMsgProcess;
-		timespec_get(&tsMsgProcess, TIME_UTC);
+		struct timespec tsMsgPublish;
+		timespec_get(&tsMsgPublish, TIME_UTC);
 		std::string strTsRcvd = std::to_string(get_nanos(a_tsMsgRcvd));
-		std::string strTsProcess = std::to_string(get_nanos(tsMsgProcess));
-		cJSON_AddStringToObject(root, "tsMsgReadyForPublish", strTsRcvd.c_str());
-		cJSON_AddStringToObject(root, "tsMsgRcvdForProcessing", strTsProcess.c_str());
+		std::string strTsPublish = std::to_string(get_nanos(tsMsgPublish));
+		cJSON_AddStringToObject(root, "tsMsgReadyForPublish", strTsPublish.c_str());
+		cJSON_AddStringToObject(root, "tsMsgRcvdForProcessing", strTsRcvd.c_str());
 
 		a_sMsg.clear();
 		a_sMsg = cJSON_Print(root);
