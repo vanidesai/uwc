@@ -314,7 +314,7 @@ Mutex_H Osal_Mutex(void)
 		/// destroy the mutex
 		printf("mutex creation failed !!\n");
 		OSAL_Free(pstTpmPtr);
-		//pthread_mutex_destroy(pstTpmPtr);
+		return NULL;
 	}
 	else if (0 == iRetVal)
 	{
@@ -325,7 +325,7 @@ Mutex_H Osal_Mutex(void)
 		// other cases free up the memory
 		printf("mutex creation failed !!\n");
 		OSAL_Free(pstTpmPtr);
-		//pthread_mutex_destroy(pstTpmPtr);
+		return NULL;
 	}
 
 	return pstTpmPtr;

@@ -207,6 +207,8 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 					a_objReqData.getPubContext().m_pContext,
 					PublishJsonHandler::instance().getPolledDataTopic()))
 			{
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("Msg publish successfully"));
+#ifdef INSTRUMENTATION_LOG
 				msg_envelope_serialized_part_t* parts = NULL;
 				int num_parts = msgbus_msg_envelope_serialize(g_msg, &parts);
 				if(num_parts > 0)
@@ -228,6 +230,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 
 					msgbus_msg_envelope_serialize_destroy(parts, num_parts);
 				}
+#endif
 			}
 		}
 	}

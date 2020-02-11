@@ -253,7 +253,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 		temp.append(", PointAddr: ");
 		temp.append(to_string(pstMbusApiPram->m_u16StartAddr));
 
-		CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+		CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
 		switch ((eModbusFuncCode_enum)u8FunCode)
 		{
