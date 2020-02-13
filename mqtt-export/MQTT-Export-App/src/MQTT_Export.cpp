@@ -31,7 +31,7 @@ extern sem_t g_semaphoreRespProcess;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.0.8"
+#define APP_VERSION "0.0.0.9"
 
 //add sourcetopic key in payload to publish on EIS
 bool addSrTopic(string &json, string& topic) {

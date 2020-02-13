@@ -110,20 +110,29 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	msg_envelope_elem_body_t* ptTimestamp = msgbus_msg_envelope_new_string(strTimestamp.c_str());
 	msgbus_msg_envelope_put(msg, "timestamp", ptTimestamp);
 
-	std::cout <<"****************************************************************" <<endl;
-	std::cout << "on-demand response received with following parameters ::" << endl;
-	std::cout << "app_seq: " << onDemandReqData.m_strAppSeq<< endl;;
-	std::cout << "byte_swap: "<< onDemandReqData.m_isByteSwap<< endl;;
-	std::cout << "word_swap: "<< onDemandReqData.m_isWordSwap<< endl;;
-	std::cout <<"metric: "<< onDemandReqData.m_strMetric << endl;
-	std::cout <<"version: "<<onDemandReqData.m_strVersion<< endl;
-	std::cout <<"wellhead: "<<onDemandReqData.m_strWellhead<< endl;;
-	std::cout <<"topic: "<<onDemandReqData.m_strTopic<< endl;
-	std::cout <<"usec: "<<strUsec<< endl;
-	std::cout <<"timestamp: "<<strTimestamp<< endl;
-	std::cout <<"status: "<<"Bad"<< endl;
-	std::cout <<"error_code: "<<errorCode<<", "<<2<< endl;
-	std::cout <<"****************************************************************" <<endl;
+#ifdef INSTRUMENTATION_LOG
+	string temp = "on-demand response received with following parameters :: ";
+	temp.append("app_seq: ");
+	temp.append(onDemandReqData.m_strAppSeq.c_str());
+	temp.append(", byte_swap: ");
+	temp.append(std::to_string(onDemandReqData.m_isByteSwap).c_str());
+	temp.append(", word_swap: ");
+	temp.append(std::to_string(onDemandReqData.m_isWordSwap).c_str());
+	temp.append(", metric: ");
+	temp.append(onDemandReqData.m_strMetric.c_str());
+	temp.append(", wellhead: ");
+	temp.append(onDemandReqData.m_strWellhead.c_str());
+	temp.append(", version: ");
+	temp.append(onDemandReqData.m_strVersion.c_str());
+	temp.append(", topic: ");
+	temp.append(onDemandReqData.m_strTopic.c_str());
+	temp.append(", status: Bad");
+	temp.append(", error_code: ");
+	std::string error = errorCode+",2";
+	temp.append(error.c_str());
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+#endif
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 
@@ -525,11 +534,30 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
+#ifdef INSTRUMENTATION_LOG
+	string temp = "on-demand request received with following parameters :: ";
+	temp.append("app_seq: ");
+	temp.append(strAppSeq.c_str());
+	temp.append(", byte_swap: ");
+	temp.append(std::to_string(obj.getAddress().m_bIsByteSwap).c_str());
+	temp.append(", word_swap: ");
+	temp.append(std::to_string(obj.getAddress().m_bIsWordSwap).c_str());
+	temp.append(", metric: ");
+	temp.append(strCommand.c_str());
+	temp.append(", wellhead: ");
+	temp.append(strWellhead.c_str());
+	temp.append(", version: ");
+	temp.append(strVersion.c_str());
+	temp.append(", topic: ");
+	temp.append(strSourceTopic.c_str());
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+#endif
+
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 	return eFunRetType;
 }
 
-//TODO function name change
 void modWriteHandler::createWriteListener()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));

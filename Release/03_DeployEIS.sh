@@ -184,7 +184,7 @@ verifyContainer()
 
 verifyDirectory
 checkrootUser
-#checkInternetConnection
+checkInternetConnection
 docker_verify
 docker_compose_verify
 eisImageBuild
