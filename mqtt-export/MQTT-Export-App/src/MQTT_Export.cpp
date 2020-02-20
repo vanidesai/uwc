@@ -31,7 +31,7 @@ extern sem_t g_semaphoreRespProcess;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.0.9"
+#define APP_VERSION "0.0.0.10"
 
 //add sourcetopic key in payload to publish on EIS
 bool addSrTopic(string &json, string& topic) {
@@ -51,7 +51,13 @@ bool addSrTopic(string &json, string& topic) {
 		cJSON_AddStringToObject(root, "sourcetopic", topic.c_str());
 
 		json.clear();
-		json = cJSON_Print(root);
+		char *psNewJson = cJSON_Print(root);
+		if(NULL != psNewJson)
+		{
+			json.assign(psNewJson);
+			free(psNewJson);
+			psNewJson = NULL;
+		}
 
 		if(root != NULL)
 			cJSON_Delete(root);
@@ -165,7 +171,7 @@ void listenOnEIS(string topic, stZmqContext context,
 				if (ret == MSG_ERR_EINTR) {
 					CLogger::getInstance().log(ERROR, LOGDETAILS( "received MSG_ERR_EINT"));
 					std::cout << __func__ << ":" << __LINE__ << " Error : received MSG_ERR_EINT" <<  std::endl;
-					break;
+					//break;
 				}
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to receive message errno: " + std::to_string(ret)));
 				std::cout << __func__ << ":" << __LINE__ << " Error : Failed to receive message errno: " + std::to_string(ret) <<  std::endl;

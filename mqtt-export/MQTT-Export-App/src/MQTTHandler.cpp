@@ -202,7 +202,13 @@ bool CMQTTHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsM
 		cJSON_AddStringToObject(root, "tsMsgRcvdForProcessing", strTsRcvd.c_str());
 
 		a_sMsg.clear();
-		a_sMsg = cJSON_Print(root);
+		char *psNewJson = cJSON_Print(root);
+		if(NULL != psNewJson)
+		{
+			a_sMsg.assign(psNewJson);
+			free(psNewJson);
+			psNewJson = NULL;
+		}
 
 		if(root != NULL)
 			cJSON_Delete(root);
