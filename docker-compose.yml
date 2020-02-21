@@ -91,7 +91,7 @@ services:
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 5
       RESPONSE_TIMEOUT: 250
-      INTERFRAME_DEALY: 1
+      INTERFRAME_DELAY: 1
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
@@ -108,6 +108,11 @@ services:
       WriteRequest: "MQTT_Export_WriteRequest"
       MQTT_Export_ReadRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
       MQTT_Export_WriteRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "3"
+            max-size: "10m"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
       - "vol_uwc_socket:${SOCKET_DIR}"
@@ -140,11 +145,11 @@ services:
       TCP_ENABLED : 1
       ZMQ_RECV_HWM: "1000"
       RESPONSE_TIMEOUT: 250
-      INTERFRAME_DEALY: 28
+      INTERFRAME_DELAY: 1
       SERIAL_PORT_RETRY_INTERVAL: 1
       BAUD_RATE: 9600
       PARITY: 1
-      PORT_NAME: "tty/USB0"
+      PORT_NAME: "/dev/ttyUSB0"
       STOPBIT: 1
       MY_APP_ID: 5
       CertType: "zmq"
@@ -163,10 +168,15 @@ services:
       WriteRequest: "MQTT_Export_WriteRequest"
       MQTT_Export_ReadRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
       MQTT_Export_WriteRequest_cfg: "zmq_ipc,${SOCKET_DIR}/"
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "3"
+            max-size: "10m"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
       - "vol_uwc_socket:${SOCKET_DIR}"
-    #user: ${EIS_UID}
+    user: ${EIS_UID}
     devices:
       - /dev:/dev
     privileged: true
@@ -189,6 +199,11 @@ services:
     hostname: mqtt_container
     network_mode: host
     restart: unless-stopped
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "3"
+            max-size: "10m"
     environment:
       AppName: "MQTT"
       DEV_MODE: ${DEV_MODE}
@@ -234,6 +249,11 @@ services:
       WriteRequest: MQTT_Export_WriteRequest
       mqtt_SubReadTopic: "/+/+/+/read"
       mqtt_SubWriteTopic: "/+/+/+/write"
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "3"
+            max-size: "10m"
     user: ${EIS_UID}
     volumes:
       - "vol_uwc_socket:${SOCKET_DIR}"
