@@ -14,6 +14,7 @@
 #include <gtest/gtest.h>
 
 #include "../../include/EISMsgbusHandler.hpp"
+#include "eis/utils/config.h"
 
 class CEISMsgbusHandler_ut : public ::testing::Test{
 
@@ -22,6 +23,8 @@ protected:
 	virtual void TearDown();
 
 public:
+
+
 };
 
 #endif /* CEISMSGBUSHANDLER_UT_H_ */

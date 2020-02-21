@@ -27,8 +27,9 @@ void CMQTTHandler_ut::TearDown() {
 	// TearDown code
 }
 
+
 //test 01
-TEST_F(CMQTTHandler_ut, 0_manatory_param) {
+TEST_F(CMQTTHandler_ut, instance_ValMqtURL) {
 	try
 	{
 		CMQTTHandler::instance();
@@ -38,8 +39,10 @@ TEST_F(CMQTTHandler_ut, 0_manatory_param) {
 	}
 }
 
+
 //test 02
-TEST_F(CMQTTHandler_ut, 1_manatory_param) {
+/*TEST_F(CMQTTHandler_ut, 1_manatory_param)
+{
 	bool retVal = false;
 	try
 	{
@@ -49,10 +52,10 @@ TEST_F(CMQTTHandler_ut, 1_manatory_param) {
 	}catch(exception &ex) {
 		EXPECT_EQ(false, retVal);
 	}
-}
+}*/
 
 //test 02
-TEST_F(CMQTTHandler_ut, 2_manatory_param) {
+/*TEST_F(CMQTTHandler_ut, 2_manatory_param) {
 	bool retVal = false;
 	try
 	{
@@ -63,6 +66,8 @@ TEST_F(CMQTTHandler_ut, 2_manatory_param) {
 
 		system("mosquitto_pub -h localhost -t /iou/PL01/KeepAlive/write  -m \"{\"wellhead\": \"PL0\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"123466666\"}\"");
 		//publish MQTT message with subscribed topic
+		mqtt::const_message_ptr msg = {};
+		CMQTTHandler::instance().pushSubMsgInQ(msg);
 		retVal = CMQTTHandler::instance().getSubMsgFromQ(recvdMsg);
 
 		CMQTTHandler::instance().cleanup();
@@ -71,12 +76,12 @@ TEST_F(CMQTTHandler_ut, 2_manatory_param) {
 		EXPECT_EQ(true, retVal);
 
 	}catch(exception &ex) {
-		EXPECT_EQ(false, retVal);
+		EXPECT_EQ(true, retVal);
 	}
-}
+}*/
 
 //test 02
-TEST_F(CMQTTHandler_ut, 3_manatory_param) {
+/*TEST_F(CMQTTHandler_ut, 3_manatory_param) {
 	bool retVal = false;
 	try
 	{
@@ -87,7 +92,7 @@ TEST_F(CMQTTHandler_ut, 3_manatory_param) {
 		CEISMsgbusHandler::Instance();
 
 		//publish MQTT message with subscribed topic
-		retVal = CMQTTHandler::instance().publish(g_msg.c_str(), topic.c_str());
+		retVal = CMQTTHandler::instance().publish(g_msg.c_str(), topic.c_str(), 0);
 
 		CMQTTHandler::instance().cleanup();
 		CEISMsgbusHandler::Instance().cleanup();
@@ -101,11 +106,11 @@ TEST_F(CMQTTHandler_ut, 3_manatory_param) {
 
 	std::cout << __func__ << " retVal : " << retVal << std::endl;
 	EXPECT_EQ(true, retVal);
-}
+}*/
 
 
 //test 02
-TEST_F(CMQTTHandler_ut, 4_manatory_param) {
+/*TEST_F(CMQTTHandler_ut, 4_manatory_param) {
 	bool retVal = false;
 	try
 	{
@@ -119,6 +124,80 @@ TEST_F(CMQTTHandler_ut, 4_manatory_param) {
 		retVal = false;
 	}
 
-	std::cout << __func__ << " retVal : " << retVal << endl;
+	std::cout << __funcu__ << " retVal : " << retVal << endl;
 	EXPECT_EQ(true, retVal);
+}*/
+
+#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
+TEST_F(CMQTTHandler_ut, pushMsgInQ)
+{
+
+	CMQTTHandler::instance().postPendingMsgs();
 }
+#endif
+
+TEST_F(CMQTTHandler_ut, publish_ValMsg)
+{
+	string PubTpoic = "PubTopics";
+
+	struct timespec tsMsgRcvd;
+	timespec_get(&tsMsgRcvd, TIME_UTC);
+
+	bool retVal = CMQTTHandler::instance().publish(
+			"{\"topic\": \"PL0_iou_write\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"1234\"}",
+			PubTpoic.c_str(),
+			0,
+			tsMsgRcvd);
+
+	EXPECT_EQ(false, retVal);
+}
+
+TEST_F(CMQTTHandler_ut, publish_InValMsg)
+{
+	string PubTpoic = "PubTopics";
+
+	struct timespec tsMsgRcvd;
+	timespec_get(&tsMsgRcvd, TIME_UTC);
+
+	bool retVal = CMQTTHandler::instance().publish(
+			"InvalidMsg",
+			PubTpoic.c_str(),
+			0,
+			tsMsgRcvd);
+
+	EXPECT_EQ(false, retVal);
+}
+
+TEST_F(CMQTTHandler_ut, publish_MsgEmpty)
+{
+	string PubTpoic = "";
+
+	struct timespec tsMsgRcvd;
+	timespec_get(&tsMsgRcvd, TIME_UTC);
+
+	bool retVal = CMQTTHandler::instance().publish(
+			"",
+			PubTpoic.c_str(),
+			0,
+			tsMsgRcvd);
+
+	EXPECT_EQ(false, retVal);
+}
+
+TEST_F(CMQTTHandler_ut, publish_TopicEmp)
+{
+	string PubTpoic = "";
+
+	struct timespec tsMsgRcvd;
+	timespec_get(&tsMsgRcvd, TIME_UTC);
+
+	bool retVal = CMQTTHandler::instance().publish(
+			"{\"topic\": \"PL0_iou_write\"}",
+			PubTpoic.c_str(),
+			0,
+			tsMsgRcvd);
+
+	EXPECT_EQ(false, retVal);
+}
+
+

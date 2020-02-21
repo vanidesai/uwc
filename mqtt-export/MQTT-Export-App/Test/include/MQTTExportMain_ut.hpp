@@ -13,6 +13,26 @@
 
 #include <gtest/gtest.h>
 
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <iterator>
+#include <assert.h>
+#include <semaphore.h>
+#include <csignal>
+
+#include <gtest/internal/gtest-internal.h>
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
+#include "EISMsgbusHandler.hpp"
+#include "TopicMapper.hpp"
+#include "MQTTHandler.hpp"
+#include "ConfigManager.hpp"
+#include "Logger.hpp"
+
+
 class MQTTExmportMain_ut : public ::testing::Test{
 
 protected:
@@ -20,6 +40,14 @@ protected:
 	virtual void TearDown();
 
 public:
+	char* msg[2] = 	{
+						"Message1",
+						"/home/user/SVN/Intel_UWC/trunk/Technical/Sourcecode/mqtt-export/MQTT-Export-App/Test/src/JsonConfig.json"
+						};
+
+	string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+
+
 };
 
 #endif /* INCLUDE_MQTTEXPORTMAIN_UT_HPP_ */

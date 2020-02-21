@@ -16,6 +16,7 @@
 #include "string.h"
 
 void etcdOnChangeKeyCb(char* key, char * val);
+void etcdOnChangeDirCb(char* key, char * val);
 
 
 class ConfigManager_ut : public ::testing::Test {

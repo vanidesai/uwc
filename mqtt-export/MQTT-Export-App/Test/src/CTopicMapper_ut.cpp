@@ -25,97 +25,106 @@ void CTopicMapper_ut::TearDown()
 	// TearDown code
 }
 
-//test 01:: this test returns ZMQ topic which has been mapped with MQTT
-TEST_F(CTopicMapper_ut, 0_get_zmq_topic)
+TEST_F(CTopicMapper_ut, readEnvVariable_ReadSuccess)
 {
-	cout<<endl<<"TEST_0_manatory_param"<<endl;
 
-	string returnVal = CTopicMapper::getInstance().GetZMQTopic("/iou/PL01/KeepAlive/write");
+	std::string envVar = "";
+	bool bRetVal = CTopicMapper::getInstance().readEnvVariable("ReadRequest", envVar);
 
-	std::cout << "returnVal : " << returnVal << "\n";
+	EXPECT_EQ("MQTT_Export_ReadRequest", envVar);
 
-	EXPECT_EQ("PL01_iou_write", returnVal);
 }
 
-//test 02:: this test returns "" if ZMQ topic is not found in topic mapper
-TEST_F(CTopicMapper_ut, 1_get_zmq_topic_negative)
+TEST_F(CTopicMapper_ut, readEnvVariable_ReadUnSuccess)
 {
-	cout<<endl<<"TEST_1_manatory_param"<<endl;
-	string returnVal = CTopicMapper::getInstance().GetZMQTopic("test_topic");
 
-	std::cout << "returnVal : " << returnVal << "\n";
+	std::string envVar = "";
+	bool bRetVal = CTopicMapper::getInstance().readEnvVariable("NotDefined", envVar);
 
-	EXPECT_EQ("", returnVal);
+	EXPECT_EQ(false, bRetVal);
+
 }
 
-//test 03:: this test returns "" if respective MQTT topic is not found in topic mapper
-TEST_F(CTopicMapper_ut, 2_manatory_param)
+TEST_F(CTopicMapper_ut, readCommonEnvVariables_ReadSuccess)
 {
-	cout<<endl<<"TEST_2_manatory_param"<<endl;
-	string returnVal = CTopicMapper::getInstance().GetZMQTopic("No_ZMQ_for_Mqtt");
+	//Setting environment variable for testing purpose
+	setenv("ReadRequest", "ReadRequest_UT", 0);
+	setenv("WriteRequest", "WriteRequest_UT", 0);
+	setenv("APP_VERSION", "APP_VERSION", 0);
 
-	std::cout << "returnVal : " << returnVal << "\n";
+	bool bRetVal = CTopicMapper::getInstance().readCommonEnvVariables();
 
-	EXPECT_EQ("", returnVal);
+	EXPECT_EQ(true, bRetVal);
+
+	// Un-set environment variable which was set for testing
+	unsetenv("ReadRequest");
+	unsetenv("WriteRequest");
+	unsetenv("APP_VERSION");
 }
 
-//test 04:: this test returns ZMQ topic which has been mapped with MQTT
-TEST_F(CTopicMapper_ut, 3_manatory_param)
+// env variables are not set
+TEST_F(CTopicMapper_ut, readCommonEnvVariables_Invalid)
 {
-	cout<<endl<<"TEST_3_manatory_param"<<endl;
-	string returnVal = CTopicMapper::getInstance().GetMQTTopic("PL0_flowmeter1_Point2");
 
-	std::cout << "returnVal : " << returnVal << "\n";
+	bool bRetVal = CTopicMapper::getInstance().readCommonEnvVariables();
 
-	EXPECT_EQ("", returnVal);
+	EXPECT_EQ(false, bRetVal);
+
 }
 
-//test 05:: this test returns "" if ZMQ topic is not found in topic mapper
-TEST_F(CTopicMapper_ut, 4_manatory_param)
+// DevMode = FALSE
+TEST_F(CTopicMapper_ut, readCommonEnvVariables_DevModeFalse)
 {
-	cout<<endl<<"TEST_4_manatory_param"<<endl;
-	string returnVal = CTopicMapper::getInstance().GetMQTTopic("test_topic");
+	//Setting environment variable for testing purpose
+	setenv("ReadRequest", "ReadRequest_UT", 0);
+	setenv("WriteRequest", "WriteRequest_UT", 0);
+	setenv("APP_VERSION", "APP_VERSION", 0);
+	setenv("DEV_MODE", "false", 1);
 
-	std::cout << "returnVal : " << returnVal << "\n";
+	bool bRetVal = CTopicMapper::getInstance().readCommonEnvVariables();
 
-	EXPECT_EQ("", returnVal);
+	EXPECT_EQ(true, bRetVal);
+
+	// Un-set environment variable which was set for testing
+	unsetenv("ReadRequest");
+	unsetenv("WriteRequest");
+	unsetenv("APP_VERSION");
+	setenv("DEV_MODE", "true", 1);
 }
 
-//test 06:: this test returns "" if respective MQTT topic is not found in topic mapper
-TEST_F(CTopicMapper_ut, 5_manatory_param)
+// DevMode = other than true and false
+TEST_F(CTopicMapper_ut, readCommonEnvVariables_DevModeOther)
 {
-	cout<<endl<<"TEST_5_manatory_param"<<endl;
-	string returnVal = CTopicMapper::getInstance().GetMQTTopic("No_ZMQ_for_Mqtt");
+	setenv("DEV_MODE", "other", 1);
 
-	std::cout << "returnVal : " << returnVal << "\n";
+	bool bRetVal = CTopicMapper::getInstance().readCommonEnvVariables();
 
-	EXPECT_EQ("", returnVal);
+	EXPECT_EQ(false, bRetVal);
+
+	setenv("DEV_MODE", "true", 1);
 }
 
-//test 07:: this test returns "" if respective MQTT topic is not found in topic mapper
-TEST_F(CTopicMapper_ut, 6_manatory_param)
+TEST_F(CTopicMapper_ut, setStrReadRequest_SetstrCorrect)
 {
-	cout<<endl<<"TEST_6_manatory_param"<<endl;
-	std::vector<std::string> allMqttTopic;
-	allMqttTopic.push_back("/iou/PL01/KeepAlive/write");
 
-	std::vector<std::string> returnVal = CTopicMapper::getInstance().GetMqttTopics();
+	CTopicMapper::getInstance().setStrReadRequest("SetStrForUT");
 
-	for(auto val : returnVal) {
-		std::cout << "val : " << val << "\n";
-	}
+	string str_temp = CTopicMapper::getInstance().getStrReadRequest();
 
-	EXPECT_EQ(allMqttTopic, returnVal);
+	EXPECT_EQ("SetStrForUT", str_temp);
+
 }
 
-//test 07:: this test returns blank if Mapping key is missing from topics json
-TEST_F(CTopicMapper_ut, 7_mapping_key_missing)
-{
-	cout<<endl<<"TEST_7_mapping_key_missing"<<endl;
 
-	string returnVal = CTopicMapper::getInstance().GetZMQTopic("/iou/PL01/KeepAlive/write");
 
-	std::cout << "*************************************** returnVal : " << returnVal << "\n";
 
-	EXPECT_EQ("", returnVal);
-}
+
+
+
+
+
+
+
+
+
+
