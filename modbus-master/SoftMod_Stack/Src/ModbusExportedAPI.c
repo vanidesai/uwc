@@ -110,11 +110,11 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 		printf("RESPONSE_TIMEOUT is set to :: %ld us\n", g_lResponseTimeout);
 	}
 
-	const char *pcInterframeDelay= getenv("INTERFRAME_DEALY");
+	const char *pcInterframeDelay= getenv("INTERFRAME_DELAY");
 	if(NULL == pcInterframeDelay)
 	{
 		eStatus = STACK_ERROR_INVALID_INPUT_PARAMETER;
-		printf("INTERFRAME_DEALY environment variable is not set .\n");
+		printf("INTERFRAME_DELAY environment variable is not set .\n");
 		return eStatus;
 	}
 	else
@@ -124,7 +124,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 		{
 			g_lInterframeDelay = IFDelay * 1000;	// *1000 is to convert millisecond value to microsecond
 		}
-		printf("INTERFRAME_DEALY is set to :: %ld us\n", g_lInterframeDelay);
+		printf("INTERFRAME_DELAY is set to :: %ld us\n", g_lInterframeDelay);
 	}
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
@@ -161,7 +161,7 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 
 	i32MsgQueIdSC = OSAL_Init_Message_Queue();
 
-	printf("Initiating MODBUS send reuests from StackInit ...\n");
+	//printf("Initiating MODBUS send reuests from StackInit ...\n");
 
 	stThreadParam.dwStackSize = 0;
 	stThreadParam.lpStartAddress = SessionControlThread;
@@ -567,20 +567,20 @@ uint8_t InputParameterVerification(uint16_t u16StartCoilOrReg, uint16_t u16Numbe
 {
 	if (NULL == pFunCallBack)
 	{
-		printf("STACK_ERROR_INVALID_INPUT_PARAMETER 0");
+		//printf("STACK_ERROR_INVALID_INPUT_PARAMETER 0");
 		return STACK_ERROR_INVALID_INPUT_PARAMETER;
 	}
 
 	/* Maximum allowed slave 0- 247 */
 	if((0 == u8UnitID) || ((u8UnitID >= 248) && (u8UnitID < 255)))
 	{
-		printf("STACK_ERROR_INVALID_INPUT_PARAMETER 1");
+		//printf("STACK_ERROR_INVALID_INPUT_PARAMETER 1");
 		return STACK_ERROR_INVALID_INPUT_PARAMETER;
 	}
 
 	if(ValidateQuantity(u8FunctionCode,u16NumberOfcoilsOrReg,u8ByteCount))
 	{
-		printf("STACK_ERROR_INVALID_INPUT_PARAMETER 2");
+		//printf("STACK_ERROR_INVALID_INPUT_PARAMETER 2");
 		return STACK_ERROR_INVALID_INPUT_PARAMETER;
 	}
 

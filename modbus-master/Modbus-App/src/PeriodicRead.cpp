@@ -224,7 +224,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 						temp.append(",Msg: ");
 						temp.append(s);
 
-						CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+						CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
 					}
 
@@ -237,7 +237,6 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 	catch(const std::exception& e)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what()  << "Tx ID::" << a_stResp.u16TransacID << std::endl;
 	}
 
 	if(NULL != g_msg)
@@ -269,7 +268,6 @@ BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(const CRefDataForPolling
 	catch(const std::exception& e)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what() << std::endl;
 	}
 
 	// return true on success
@@ -289,7 +287,6 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 	catch(const std::exception& e)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what()  << "Tx ID::" << a_stResp.u16TransacID<< std::endl;
 	}
 
 	// return true on success
@@ -388,7 +385,6 @@ eMbusStackErrorCode CPeriodicReponseProcessor::CPeriodicReponseProcessor::respPr
 				other_status++;
 #endif
 				CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-				cout << __DATE__ << " " << __TIME__ << " " << __func__ << ": " << e.what() << std::endl;
 				//return FALSE;
 			}
 
@@ -678,7 +674,7 @@ void CRequestInitiator::threadReqInit()
 							if(reqCount == total_read_periodic.load())
 							{
 								reqCount = 0;
-								cout << "Polling is stopped ...." << endl;
+								CLogger::getInstance().log(ERROR, LOGDETAILS("Polling is stopped ...."));
 								stopPolling.store(true);
 								break;
 							}
@@ -686,7 +682,7 @@ void CRequestInitiator::threadReqInit()
 						}
 						else
 						{
-							printf("sendRequest failed\n");
+							CLogger::getInstance().log(ERROR, LOGDETAILS("sendRequest failed"));
 						}
 					}
 				}
@@ -696,7 +692,6 @@ void CRequestInitiator::threadReqInit()
 	}
 	catch (exception &e)
 	{
-		std::cout << "Exception in CMapHIDRdPeriod::threadRequestInit: " << e.what() << endl;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 }
@@ -714,7 +709,6 @@ void CRequestInitiator::initiateRequests(uint32_t a_uiRef)
 	}
 	catch (exception &e)
 	{
-		std::cout << "Exception in CMapHIDRdPeriod::initiateRequests: " << e.what() << endl;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 }
@@ -733,7 +727,6 @@ CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS("Unable to initiate instance: Exception:"));
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << "\nException CRequestInitiator ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
 
@@ -793,7 +786,6 @@ void CTimeMapper::checkTimer()
 	}
 	catch (exception &e)
 	{
-		std::cout << "Exception in TimeMapper timer function: " << e.what() << endl;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 }
@@ -866,7 +858,6 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 	}
 	catch(exception &e)
 	{
-		std::cout << "Exception in request init: " << e.what() << endl;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
@@ -921,30 +912,8 @@ CTimeMapper::~CTimeMapper()
 	}
 	catch (exception &e)
 	{
-		std::cout << "Exception in TimeMapper Deletion: " << e.what() << endl;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
-}
-
-void CTimeMapper::print()
-{
-	/*try
-	{
-		// Clear map
-		std::lock_guard<std::mutex> lock(m_mapMutex);
-		for (auto &element : m_mapTimeRecord)
-		{
-			CTimeRecord &a = element.second;
-			std::cout << element.first << "=(" ;
-			a.print();
-			std::cout  << ")" << endl ;
-		}
-		std::cout << endl;
-	}
-	catch (exception &e)
-	{
-		std::cout << "Exception in TimeMapper Deletion: " << e.what() << endl;
-	}*/
 }
 
 bool CTimeRecord::add(CRefDataForPolling &a_oPoint)
@@ -985,28 +954,8 @@ CTimeRecord::~CTimeRecord()
 	}
 	catch (exception &e)
 	{
-		std::cout << "Exception in TimeRecord Deletion: " << e.what() << endl;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
-}
-
-void CTimeRecord::print()
-{
-	/*try
-	{
-		// Clear vector of reference IDs
-		std::lock_guard<std::mutex> lock(m_vectorMutex);
-		std::cout << "Interval:" << m_u32Interval << " ";
-		for (auto &element : m_vsRefID)
-		{
-			std::cout << element << " ";
-		}
-		//std::cout << endl;
-	}
-	catch (exception &e)
-	{
-		std::cout << "Exception in TimeRecord Deletion: " << e.what() << endl;
-	}*/
 }
 
 /**
@@ -1041,9 +990,8 @@ bool LinuxTimer::start_timer(long nextTimerTick)
 		string temp10 = " Failed to set timer.";
 		temp10.append("Error code ::");
 		temp10.append(std::to_string(ret));
-		CLogger::getInstance().log(ERROR, LOGDETAILS(temp10));
-	   std::cout << "Error: Failed to create timer" << "Error code ::" << ret<< std::endl;
-	   return retVal;
+		CLogger::getInstance().log(ERROR, LOGDETAILS(temp10));		
+		return retVal;
 	}
 
 	ret = timer_settime(gTimerid, 0, &value, NULL);

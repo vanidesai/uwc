@@ -40,7 +40,6 @@ modWriteHandler::modWriteHandler() : m_bIsWriteInitialized(false)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS("Unable to initiate write instance"));
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << "\nException modWriteHandler ::" << __func__ << ": Unable to initiate instance: " << e.what();
 	}
 }
 
@@ -100,6 +99,9 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	/// version
 	msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string(onDemandReqData.m_strVersion.c_str());
 	msgbus_msg_envelope_put(msg, "version", ptVersion);
+	/// QOS
+	msg_envelope_elem_body_t* ptQos =  msgbus_msg_envelope_new_string(onDemandReqData.m_strQOS.c_str());
+	msgbus_msg_envelope_put(msg, "qos", ptQos);
 
 	std::string strTimestamp, strUsec;
 	zmq_handler::getTimeParams(strTimestamp, strUsec);
@@ -109,30 +111,6 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	/// timestamp
 	msg_envelope_elem_body_t* ptTimestamp = msgbus_msg_envelope_new_string(strTimestamp.c_str());
 	msgbus_msg_envelope_put(msg, "timestamp", ptTimestamp);
-
-#ifdef INSTRUMENTATION_LOG
-	string temp = "on-demand response received with following parameters :: ";
-	temp.append("app_seq: ");
-	temp.append(onDemandReqData.m_strAppSeq.c_str());
-	temp.append(", byte_swap: ");
-	temp.append(std::to_string(onDemandReqData.m_isByteSwap).c_str());
-	temp.append(", word_swap: ");
-	temp.append(std::to_string(onDemandReqData.m_isWordSwap).c_str());
-	temp.append(", metric: ");
-	temp.append(onDemandReqData.m_strMetric.c_str());
-	temp.append(", wellhead: ");
-	temp.append(onDemandReqData.m_strWellhead.c_str());
-	temp.append(", version: ");
-	temp.append(onDemandReqData.m_strVersion.c_str());
-	temp.append(", topic: ");
-	temp.append(onDemandReqData.m_strTopic.c_str());
-	temp.append(", status: Bad");
-	temp.append(", error_code: ");
-	std::string error = errorCode+",2";
-	temp.append(error.c_str());
-
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-#endif
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 
@@ -149,6 +127,10 @@ eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 	MbusAPI_t stMbusApiPram = {};
 	cJSON *root = NULL;
 
+#ifdef REALTIME_THREAD_PRIORITY
+	PublishJsonHandler::instance().set_thread_priority();
+#endif
+
 	while(false == g_stopThread.load())
 	{
 		do
@@ -161,10 +143,11 @@ eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 					return MBUS_STACK_ERROR_QUEUE_SEND;
 				}
 
-				CLogger::getInstance().log(DEBUG, LOGDETAILS(" On-Demand Processing initiated :: " + writeReq.m_strMsg));
-
 				/// Enter TX Id
 				stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
+#ifdef INSTRUMENTATION_LOG
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("On-demand request::" + writeReq.m_strMsg));
+#endif
 
 				root = cJSON_Parse(writeReq.m_strMsg.c_str());
 				stOnDemandRequest reqData;
@@ -197,6 +180,25 @@ eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 						zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(strTopic);
 
 						PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, strTopic);
+#ifdef INSTRUMENTATION_LOG
+						msg_envelope_serialized_part_t* parts = NULL;
+						int num_parts = msgbus_msg_envelope_serialize(msg, &parts);
+						if(num_parts > 0)
+						{
+							if(NULL != parts[0].bytes)
+							{
+								std::string tempStr(parts[0].bytes);
+
+								string temp = "on-demand response received with following parameters :: ";
+								temp.append(tempStr);
+
+								CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
+							}
+
+							msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+						}
+#endif
 					}
 				}
 			}
@@ -245,7 +247,7 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 		int iLen = src.length();
 		if(0 != (iLen%2))
 		{
-			std::cout << "\n input string is not proper \n";
+			CLogger::getInstance().log(ERROR, LOGDETAILS("input string is not proper"));
 			return -1;
 		}
 		// Check if hex string starts with 0x. If yes ignore first 2 letters
@@ -256,7 +258,7 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 		iLen = iLen - i;
 		if((iLen / 2) != iOpLen)
 		{
-			std::cout << "\n Input length: " << iLen << ", Output length: " << iOpLen << " Mismatch" << std::endl;
+			CLogger::getInstance().log(ERROR, LOGDETAILS("width mismatch " + to_string(iLen) + "!=" + to_string(iOpLen)));
 			return -1;
 		}
 		iLen = iLen + i;
@@ -277,7 +279,6 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 	}
 	catch(std::exception &e)
 	{
-		std::cout << __func__ << ":Exception: " << e.what() << " while parsing hex string " << src << std::endl;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 		return -1;
 	}
@@ -321,6 +322,11 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 											unsigned short txID,
 											stOnDemandRequest& reqData)
 {
+	if(NULL == root)
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input. cJSON root is null"));
+		return MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
+	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
@@ -376,7 +382,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 			}
 			if(!isValidJson)
 			{
-				std::cout << __func__ << "::Invalid input json parameter or topic." << std::endl;
 				CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter or topic."));
 				eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
 			}
@@ -409,6 +414,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 #endif
 			reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
 			reqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
+			reqData.m_strQOS = obj.getPollingConfig().m_usQOS;
 
 			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
 			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
@@ -505,7 +511,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 					int retVal = hex2bin(strValue, stMbusApiPram.m_u16ByteCount, stMbusApiPram.m_pu8Data);
 					if(-1 == retVal)
 					{
-						std::cout << __func__ << "::Invalid value in request json." << std::endl;
 						CLogger::getInstance().log(FATAL, LOGDETAILS("Invalid value in request json."));
 						eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
 					}
@@ -533,26 +538,6 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 		eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
-
-#ifdef INSTRUMENTATION_LOG
-	string temp = "on-demand request received with following parameters :: ";
-	temp.append("app_seq: ");
-	temp.append(strAppSeq.c_str());
-	temp.append(", byte_swap: ");
-	temp.append(std::to_string(obj.getAddress().m_bIsByteSwap).c_str());
-	temp.append(", word_swap: ");
-	temp.append(std::to_string(obj.getAddress().m_bIsWordSwap).c_str());
-	temp.append(", metric: ");
-	temp.append(strCommand.c_str());
-	temp.append(", wellhead: ");
-	temp.append(strWellhead.c_str());
-	temp.append(", version: ");
-	temp.append(strVersion.c_str());
-	temp.append(", topic: ");
-	temp.append(strSourceTopic.c_str());
-
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-#endif
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 	return eFunRetType;
@@ -587,6 +572,11 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 	msg_envelope_serialized_part_t* parts = NULL;
 	int num_parts = 0;
 	msgbus_ret_t ret;
+
+#ifdef REALTIME_THREAD_PRIORITY
+	PublishJsonHandler::instance().set_thread_priority();
+#endif
+
 	try
 	{
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(stTopic);
@@ -598,7 +588,6 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 			ret = msgbus_recv_wait(msgbus_ctx.m_pContext, stsub_ctx.sub_ctx, &msg);
 			if(ret != MSG_SUCCESS)
 			{
-				cout << "Failed to receive message for Topic with error:: " << stTopic << " " << ret<<endl;
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to receive message errno ::" + std::to_string(ret)));
 				continue;
 			}
@@ -626,19 +615,21 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 				pushToWriteTCPQueue(stWriteRequestNode);
 			}
 
-			msgbus_msg_envelope_serialize_destroy(parts, num_parts);
-			msgbus_msg_envelope_destroy(msg);
+			if(parts != NULL)
+			{
+				msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+			}
+			if(msg != NULL)
+			{
+				msgbus_msg_envelope_destroy(msg);
+			}
 			msg = NULL;
 			parts = NULL;
-
-			if(parts != NULL)
-				msgbus_msg_envelope_serialize_destroy(parts, num_parts);
 		}
 	}
 	catch(const std::exception& e)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << "\nException subscribeDeviceListener ::" << __func__ << e.what();
 	}
 }
 
@@ -679,7 +670,6 @@ void modWriteHandler::initWriteHandlerThreads()
 	catch(const std::exception& e)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << "\nException modWriteHandler ::" << __func__ << ": Unable to initiate write handler instance: " << e.what();
 	}
 }
 

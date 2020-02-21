@@ -33,6 +33,10 @@ private:
 	std::string m_strWriteRequest;
 	std::string m_strAppName;
 	std::string m_strMqttExportURL;
+#ifdef REALTIME_THREAD_PRIORITY
+	int m_intThreadPriority;
+	int m_intThreadPolicy;
+#endif
 	bool m_devMode;
 
 public:
@@ -40,7 +44,7 @@ public:
 
 	bool readCommonEnvVariables();
 	bool readEnvVariable(const char *pEnvVarName, std::string &storeVal);
-
+	void set_thread_priority();
 
 	const std::string& getStrReadRequest() const {
 		return m_strReadRequest;
@@ -73,6 +77,47 @@ public:
 	const std::string& getStrMqttExportURL() const {
 		return m_strMqttExportURL;
 	}
+
+#ifdef REALTIME_THREAD_PRIORITY
+
+	void setStrThreadPriority(const std::string &strThreadPriority) {
+		try {
+			std::string::size_type sz;   // alias of size_t
+			m_intThreadPriority = std::stoi(strThreadPriority, &sz);
+
+			/*Processes scheduled under one of the real-time policies (SCHED_FIFO,
+			       SCHED_RR) have a sched_priority value in the range 1 (low) to 99
+			       (high)*/
+			if(m_intThreadPriority < 1 || m_intThreadPriority > 99) {
+				m_intThreadPolicy = 50;//medium priority
+			}
+		}catch(exception &ex) {
+			m_intThreadPriority = -1;
+		}
+	}
+
+	const int& getIntThreadPriority() const {
+		return m_intThreadPriority;
+	}
+
+	void setStrThreadPolicy(const std::string &strThreadPolicy) {
+		try {
+			std::string::size_type sz;   // alias of size_t
+			m_intThreadPolicy = std::stoi(strThreadPolicy, &sz);
+
+			if(m_intThreadPolicy < 0 || m_intThreadPolicy > 2) {
+				m_intThreadPolicy = SCHED_RR;
+			}
+		}catch(exception &ex) {
+			m_intThreadPolicy = -1;
+		}
+	}
+
+	const int& getIntThreadPolicy() const {
+		return m_intThreadPolicy;
+	}
+#endif
+
 	static CTopicMapper& getInstance() {
 		static CTopicMapper _self;
 			return _self;

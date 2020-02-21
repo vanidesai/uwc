@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include "osalLinux.h"
 #include <stdio.h>
+#include <sched.h>
 
 /**
  *
@@ -50,7 +51,27 @@ void OSAL_Free(void *pvPointer)
 
 }
 
+void Get_Thread_Params(int *policy, int *priority)
+{
+    const char *pcThreadPriority = getenv("THREAD_PRIORITY");
+	if(pcThreadPriority != NULL) {
+		sscanf(pcThreadPriority, "%d", policy); // Using sscanf
+		if(*policy < 0 || *policy > 2) {
+			*policy = SCHED_RR;
+		}
+    }
 
+    const char *pcThreadPolicy = getenv("THREAD_POLICY");
+	/*Processes scheduled under one of the real-time policies (SCHED_FIFO,
+	       SCHED_RR) have a sched_priority value in the range 1 (low) to 99
+	       (high)*/
+    if(pcThreadPolicy != NULL) {
+		sscanf(pcThreadPolicy, "%d", priority); // Using sscanf
+		if(*priority < 1 || *priority > 99) {
+			*priority = 50;//medium priority
+		}
+    }
+}
 
 /**
  *
@@ -66,10 +87,28 @@ void OSAL_Free(void *pvPointer)
 Thread_H Osal_Thread_Create(thread_Create_t *pThreadParam)
 {
     pthread_attr_t attr;
+#ifdef REALTIME_THREAD_PRIORITY
+    struct sched_param param;
+#endif
     int retcode;
-
+#ifdef REALTIME_THREAD_PRIORITY
+    int policy = 0, priority = 0;
+    Get_Thread_Params(&policy, &priority);
+#endif
     /// Set up thread attributes
     pthread_attr_init(&attr);
+#ifdef REALTIME_THREAD_PRIORITY
+    pthread_attr_getschedparam (&attr, &param);
+
+    /* safe to get existing scheduling param */
+    pthread_attr_setschedpolicy(&attr, policy);
+
+    /* set the priority; others are unchanged */
+    param.sched_priority = priority;
+
+    /* setting the new scheduling param */
+    pthread_attr_setschedparam (&attr, &param);
+#endif
 
     pthread_attr_setstacksize(&attr, pThreadParam->dwStackSize);
 

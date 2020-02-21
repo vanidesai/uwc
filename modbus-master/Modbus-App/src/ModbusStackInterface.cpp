@@ -107,7 +107,7 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 				else
 				{
 					//error
-					std::cout << "Pointer is null " << endl;
+					CLogger::getInstance().log(ERROR, LOGDETAILS("NULL pointer received .."));
 				}
 			}
 
@@ -132,6 +132,9 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		/// version
 		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string(onDemandReqData.m_strVersion.c_str());
 		msgbus_msg_envelope_put(msg, "version", ptVersion);
+		/// QOS
+		msg_envelope_elem_body_t* ptQos =  msgbus_msg_envelope_new_string(onDemandReqData.m_strQOS.c_str());
+		msgbus_msg_envelope_put(msg, "qos", ptQos);
 
 		std::string strTimestamp, strUsec;
 		zmq_handler::getTimeParams(strTimestamp, strUsec);
@@ -189,29 +192,27 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(sRespTopic);
 		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(sRespTopic);
 
-#ifdef INSTRUMENTATION_LOG
-	string temp = "on-demand response received with following parameters :: ";
-	temp.append("app_seq: ");
-	temp.append(onDemandReqData.m_strAppSeq.c_str());
-	temp.append(", byte_swap: ");
-	temp.append(std::to_string(onDemandReqData.m_isByteSwap).c_str());
-	temp.append(", word_swap: ");
-	temp.append(std::to_string(onDemandReqData.m_isWordSwap).c_str());
-	temp.append(", metric: ");
-	temp.append(onDemandReqData.m_strMetric.c_str());
-	temp.append(", wellhead: ");
-	temp.append(onDemandReqData.m_strWellhead.c_str());
-	temp.append(", version: ");
-	temp.append(onDemandReqData.m_strVersion.c_str());
-	temp.append(", topic: ");
-	temp.append(onDemandReqData.m_strTopic.c_str());
-	temp.append(", status: Bad");
-	temp.append(", error_code: ");
-
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-#endif
-
 		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, sRespTopic);
+
+#ifdef INSTRUMENTATION_LOG
+		msg_envelope_serialized_part_t* parts = NULL;
+		int num_parts = msgbus_msg_envelope_serialize(msg, &parts);
+		if(num_parts > 0)
+		{
+			if(NULL != parts[0].bytes)
+			{
+				std::string tempStr(parts[0].bytes);
+
+				string temp = "on-demand response received with following parameters :: ";
+				temp.append(tempStr);
+
+				CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
+			}
+
+			msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+		}
+#endif
 	}
 	catch(const std::exception& e)
 	{

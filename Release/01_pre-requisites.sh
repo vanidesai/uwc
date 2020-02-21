@@ -59,14 +59,14 @@ check_for_errors()
 # ----------------------------
 setHostIP()
 {
-   echo "${INFO}Setting dev mode to true...${NC}"    
-   sed -i 's/DEV_MODE=false/DEV_MODE=true/g' $working_dir/docker_setup/.env
+   echo "${INFO}Setting dev mode...${NC}"    
+   sed -i 's/DEV_MODE=true/DEV_MODE=false/g' $working_dir/docker_setup/.env
    if [ "$?" -ne "0" ]; then
-	echo "${RED}Failed to set dev mode to true."
-	echo "${GREEN}Kinldy set DEV_MODE to true manualy in .env file and then re--run this script"
+	echo "${RED}Failed to set dev mode."
+	echo "${GREEN}Kinldy set DEV_MODE to false manualy in .env file and then re--run this script"
 	exit 1
    else
-	echo "${GREEN}Dev Mode is set to true.${NC}"
+	echo "${GREEN}Dev Mode is set.${NC}"
    fi
    echo "${INFO}Setting HOST_IP to 127.0.0.1 in .env file of EIS..${NC}"
    if grep -Fxq 'HOST_IP=127.0.0.1' $working_dir/docker_setup/.env
@@ -78,6 +78,30 @@ setHostIP()
    echo "${GREEN}HOST_IP=127.0.0.1 is set in .env file of EIS${NC}"
 
    return 0
+}
+
+# ----------------------------
+# Set TTY ports for EIS user
+# ----------------------------
+configureRTUPorts()
+{
+	echo "${INFO}Checking TTY port setting..${NC}"
+        rm -rf /etc/udev/rules.d/50-myusb.rules 
+	if [ ! -f "/etc/udev/rules.d/50-myusb.rules" ];then
+		cat >> /etc/udev/rules.d/50-myusb.rules <<EOF
+KERNEL=="ttyUSB[0-9]*",MODE="0666"
+KERNEL=="ttyS[0-31]*",MODE="0666"
+KERNEL=="tty[0-63]*",MODE="0666"
+EOF
+                udevadm control --reload-rules && udevadm trigger
+		#echo "KERNEL==\"ttyUSB[0-9]*\",MODE=\"0666\"" > /etc/udev/rules.d/50-myusb.rules
+		#echo "KERNEL==\"ttyACM[0-9]*\",MODE=\"0666\"" > /etc/udev/rules.d/50-myusb.rules
+		echo "${GREEN}TTY ports are configured successfully...${NC}"
+		echo "${GREEN}Unplug the device and replug it, if connected...${NC}"
+    	else
+		# Files do not exist, display error message
+		echo "${GREEN}TTY ports are already configured.${NC}" 
+    	fi
 }
 
 # ----------------------------
@@ -183,7 +207,7 @@ addUWCContainersInEIS()
     tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
     cd UWC
     cp -r modbus-master/ MQTT/ mqtt-export/ ../
-    cp docker-compose_TCP_DEV.yml ../docker_setup/docker-compose.yml
+    cp docker-compose.yml ../docker_setup/docker-compose.yml
     cp -r Others/ETCD_Config/UWC/YML_Config/* /opt/intel/eis/uwc_data
     cp Others/ETCD_Config/UWC/etcd_pre_load.json ../docker_setup/provision/config/
     copy_verification=$(echo $?)
@@ -561,6 +585,7 @@ installBasicPackages
 docker_verification_installation	"$@"
 docker_compose_verify_installation
 setHostIP
+configureRTUPorts
 createDockerVolumeDir
 addUWCContainersInEIS
 changeFilePermissions

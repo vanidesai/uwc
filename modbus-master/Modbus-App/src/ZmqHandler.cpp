@@ -113,8 +113,14 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 			void* msgbus_ctx = msgbus_initialize(config);
 			if(msgbus_ctx == NULL)
 			{
+				/// cleanup
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to get message bus context with config for topic ::" + topic));
-				config_destroy(config);
+
+				/// free config context
+				if(config != NULL)
+				{
+					config_destroy(config);
+				}
 				continue;
 			}
 
@@ -131,8 +137,21 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 
 				if(retVal != MSG_SUCCESS)
 				{
+					/// cleanup
 					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize publisher errno: " + std::to_string(retVal)));
 					zmq_handler::removeCTX(topic);
+
+					/// free config context
+					if(config != NULL)
+					{
+						config_destroy(config);
+					}
+					/// free msg bus context
+					if(msgbus_ctx != NULL)
+					{
+						msgbus_destroy(msgbus_ctx);
+					}
+					continue;
 				}
 				else
 				{
@@ -164,8 +183,21 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 					retVal = msgbus_subscriber_new(msgbus_ctx, subTopic.c_str(), NULL, &sub_ctx);
 					if(retVal != MSG_SUCCESS)
 					{
+						/// cleanup
 						std::cout <<__func__ << "Failed to create subscriber context. errno: "<< retVal << std::endl;
 						zmq_handler::removeCTX(subTopic);
+
+						/// free config context
+						if(config != NULL)
+						{
+							config_destroy(config);
+						}
+						/// free msg bus context
+						if(msgbus_ctx != NULL)
+						{
+							msgbus_destroy(msgbus_ctx);
+						}
+						continue;
 					}
 					else
 					{

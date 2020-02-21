@@ -13,6 +13,8 @@
 #include "ConfigManager.hpp"
 #include <algorithm>
 
+#include <pthread.h>
+#include <sched.h>
 
 CTopicMapper::CTopicMapper() {
 	// TODO Auto-generated constructor stub
@@ -28,6 +30,10 @@ CTopicMapper::CTopicMapper() {
  */
 bool CTopicMapper::readEnvVariable(const char *pEnvVarName, string &storeVal)
 {
+	if(NULL == pEnvVarName)
+	{
+		return false;
+	}
 	bool bRetVal = false;
 	char *cEvar = getenv(pEnvVarName);
 	if (NULL != cEvar)
@@ -58,6 +64,10 @@ bool CTopicMapper::readCommonEnvVariables()
 
 		std::list<std::string> topicList{"ReadRequest", "WriteRequest",
 			"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE"};
+
+#ifdef REALTIME_THREAD_PRIORITY
+		topicList.push_back({"THREAD_PRIORITY", "THREAD_POLICY"});
+#endif
 		std::map <std::string, std::string> envTopics;
 
 		for (auto &topic : topicList)
@@ -79,6 +89,10 @@ bool CTopicMapper::readCommonEnvVariables()
 		setStrAppName(envTopics.at("AppName"));
 		setStrMqttExportURL(envTopics.at("MQTT_URL_FOR_EXPORT"));
 
+#ifdef REALTIME_THREAD_PRIORITY
+		setStrThreadPriority(envTopics.at("THREAD_PRIORITY"));
+		setStrThreadPolicy(envTopics.at("THREAD_POLICY"));
+#endif
 		string devMode = envTopics.at("DEV_MODE");
 		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
 
@@ -108,6 +122,32 @@ bool CTopicMapper::readCommonEnvVariables()
 	}
 	return true;
 }
+
+#ifdef REALTIME_THREAD_PRIORITY
+void CTopicMapper::set_thread_priority() {
+	//set priority
+	sched_param param;
+	int iThreadPriority = getIntThreadPriority();
+	int iThreadPolicy = getIntThreadPolicy();
+
+	int defaultPolicy;
+	if(0 != pthread_getschedparam(pthread_self(), &defaultPolicy, &param)){
+		CLogger::getInstance().log(WARN, LOGDETAILS("Cannot fetch scheduling parameters of current thread"));
+		std::cout << __func__ << ":" << __LINE__ << "Cannot fetch scheduling parameters of current thread" << std::endl;
+	}
+	else
+	{
+		param.sched_priority = iThreadPriority;
+		int result = pthread_setschedparam(pthread_self(), iThreadPolicy, &param);
+		if(0 != result)
+		{
+			CLogger::getInstance().log(WARN, LOGDETAILS("Cannot set thread priority to : " + std::to_string(iThreadPriority)));
+			std::cout << __func__ << ":" << __LINE__ << " Cannot set thread priority, result : " << result << std::endl;
+		}
+	}
+	//end of set priority for current thread
+}
+#endif
 
 CTopicMapper::~CTopicMapper() {
 	// TODO Auto-generated destructor stub

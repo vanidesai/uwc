@@ -90,11 +90,12 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 				{
 					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize publisher errno: " + std::to_string(ret)));
 					std::cout << __func__ << ":" << __LINE__ << " Error : Failed to initialize publisher errno: " + std::to_string(ret) <<  std::endl;
-					if(msgbus_ctx != NULL)
-						msgbus_destroy(msgbus_ctx);
 
 					if(config != NULL)
 						config_destroy(config);
+
+					if(msgbus_ctx != NULL)
+						msgbus_destroy(msgbus_ctx);
 
 					continue;
 				}
@@ -107,11 +108,12 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 				{
 					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to insert context for topic  : " + topic));
 					std::cout << __func__ << ":" << __LINE__ << " Error : Failed to insert context for topic  : " + topic <<  std::endl;
-					if(msgbus_ctx != NULL)
-						msgbus_destroy(msgbus_ctx);
 
 					if(config != NULL)
 						config_destroy(config);
+
+					if(msgbus_ctx != NULL)
+						msgbus_destroy(msgbus_ctx);
 
 					continue; //continue with next topic
 				}
@@ -144,11 +146,12 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 					{
 						CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to create subscriber context. errno: " + std::to_string(retVal)));
 						std::cout << __func__ << ":" << __LINE__ << " Error : Failed to create subscriber context. errno: " + std::to_string(retVal) <<  std::endl;
-						if(msgbus_ctx != NULL)
-							msgbus_destroy(msgbus_ctx);
 
 						if(config != NULL)
 							config_destroy(config);
+
+						if(msgbus_ctx != NULL)
+							msgbus_destroy(msgbus_ctx);
 
 						continue;
 					}
@@ -167,11 +170,12 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 						{
 							CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to insert context for topic  : " + subTopic));
 							std::cout << __func__ << ":" << __LINE__ << " Error : Failed to insert context for topic  : " + subTopic <<  std::endl;
-							if(msgbus_ctx != NULL)
-								msgbus_destroy(msgbus_ctx);
 
 							if(config != NULL)
 								config_destroy(config);
+
+							if(msgbus_ctx != NULL)
+								msgbus_destroy(msgbus_ctx);
 
 							continue; //continue with next topic
 						}

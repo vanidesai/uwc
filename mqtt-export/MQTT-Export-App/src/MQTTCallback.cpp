@@ -15,17 +15,13 @@ void CMQTTCallback::connection_lost(const std::string& cause)
 	CMQTTHandler::instance().setMQTTSubConfigState(MQTT_SUSCRIBER_CONNECT_STATE);
 
 	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT Connection lost"));
-	std::cout << __func__ << ":" << __LINE__ << " ERROR: Subscriber lost MQTT Connection" << std::endl;
-
 
 	if (!cause.empty())
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT Connection lost cause:  " + cause));
-		std::cout << __func__ << ":" << __LINE__ << " MQTT Connection lost cause:  " + cause << std::endl;
 	}
 #ifdef PERFTESTING
 	CLogger::getInstance().log(ERROR, LOGDETAILS("CMQTTCallback:connection_lost:" + cause));
-	std::cout << __func__ << ":" << __LINE__ << " MQTT Connection lost cause:  " + cause << std::endl;
 	CMQTTHandler::m_ui32ConnectionLost++;
 	CMQTTHandler::printCounters();
 #endif
@@ -62,7 +58,6 @@ void CMQTTCallback::message_arrived(mqtt::const_message_ptr msg)
 void CMQTTActionListener::on_failure(const mqtt::token& tok)
 {
 	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT action (connect/message sending) failed"));
-	std::cout << __func__ << ":" << __LINE__ << " ERROR:  MQTT action (connect/message sending) failed" << std::endl;
 #ifdef PERFTESTING
 	CMQTTHandler::m_ui32PublishFailed++;
 	CLogger::getInstance().log(ERROR, LOGDETAILS("CMQTTActionListener::on_failure:" + std::to_string(tok.get_message_id())));
@@ -82,12 +77,10 @@ void CSyncCallback::connection_lost(const std::string& cause)
 	CMQTTHandler::instance().setMQTTConfigState(MQTT_PUBLISHER_CONNECT_STATE);
 
 	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher lost MQTT Connection"));
-	std::cout << __func__ << ":" << __LINE__ << " ERROR: MQTT publisher lost MQTT Connection" << std::endl;
 
 	if (!cause.empty())
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher lost MQTT Connection : cause:  " + cause));
-		std::cout << __func__ << ":" << __LINE__ << " MQTT publisher lost MQTT Connection : cause:  " + cause << std::endl;
 	}
 #ifdef PERFTESTING
 	CMQTTHandler::m_ui32ConnectionLost++;
@@ -105,7 +98,6 @@ void CSyncCallback::connected(const std::string& cause)
 #endif
 
 #ifdef QUEUE_FAILED_PUBLISH_MESSAGES
-	std::cout << __func__ << ":" << __LINE__ << " MQTT publisher connected with broker, publishing pending msgs" << std::endl;
 	CMQTTHandler::instance().postPendingMsgs();
 #endif
 }

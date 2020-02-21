@@ -79,7 +79,6 @@ class CTimeRecord
 		std::lock_guard<std::mutex> lock(m_vectorMutex);
 		return (uint32_t)m_vPolledPoints.size(); 
 	}
-	void print();
 };
 
 class CTimeMapper
@@ -114,7 +113,6 @@ class CTimeMapper
 		return m_mapTimeRecord.at(uiRef).getPolledPointList();
 	}
 	bool insert(uint32_t a_uTime, CRefDataForPolling &a_oPoint);
-	void print();
 };
 
 class CRequestInitiator

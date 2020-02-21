@@ -58,3 +58,28 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, v
 
 	return true;
 }
+
+#ifdef REALTIME_THREAD_PRIORITY
+void PublishJsonHandler::set_thread_priority() {
+	//set priority
+	sched_param param;
+	int iThreadPriority = getIntThreadPriority();
+	int iThreadPolicy = getIntThreadPolicy();
+
+	int defaultPolicy;
+	if(0 != pthread_getschedparam(pthread_self(), &defaultPolicy, &param)){
+		std::cout << __func__ << ":" << __LINE__ << "Cannot fetch scheduling parameters of current thread" << std::endl;
+	}
+	else
+	{
+		param.sched_priority = iThreadPriority;
+		int result = pthread_setschedparam(pthread_self(), iThreadPolicy, &param);
+		if(0 != result)
+		{
+			CLogger::getInstance().log(WARN, LOGDETAILS("Cannot set thread priority to : " + std::to_string(iThreadPriority)));
+			std::cout << __func__ << ":" << __LINE__ << " Cannot set thread priority, result : " << result << std::endl;
+		}
+	}
+	//end of set priority for current thread
+}
+#endif

@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.0.10"
+#define APP_VERSION "0.0.1.0"
 
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
@@ -126,32 +126,6 @@ void populatePollingRefData()
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
-/**
- * Signal handler
- */
-void signal_handler(int signo)
-{
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
-
-	CLogger::getInstance().log(INFO, LOGDETAILS("Signal Handler called.."));
-
-	std::unique_lock<std::mutex> lck(mtx);
-
-	/// stop all running threads
-	g_stopThread = true;
-	AppMbusMaster_StackDeInit();
-
-	/// stop the read periodic timer
-	bool retVal = LinuxTimer::stop_timer();
-
-	(retVal == true) ? std::cout<< "Periodic Timer is stopped successfully\n":std::cout<< "Error while stopping Periodic timer\n";
-
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
-
-	// Signal main to stop
-	cv.notify_one();
-}
-
 /// function to check Main thread exit
 bool exitMainThread(){return g_stopThread;};
 
@@ -185,6 +159,10 @@ bool isElementExistInJson(cJSON *root, std::string a_sKeyName)
  */
 bool CommonUtils::readEnvVariable(const char *pEnvVarName, string &storeVal)
 {
+	if(NULL == pEnvVarName)
+	{
+		return false;
+	}
 	bool bRetVal = false;
 	char *cEvar = getenv(pEnvVarName);
 	if (NULL != cEvar)
@@ -212,6 +190,10 @@ bool CommonUtils::readCommonEnvVariables()
 	bool bRetVal = false;
 	std::list<std::string> topicList{"PolledData", "ReadResponse", "WriteResponse",
 		"ReadRequest", "WriteRequest", "SITE_LIST_FILE_NAME", "DEV_MODE"};
+
+#ifdef REALTIME_THREAD_PRIORITY
+		topicList.push_back({"THREAD_PRIORITY", "THREAD_POLICY"});
+#endif
 	std::map <std::string, std::string> envTopics;
 
 	for (auto &topic : topicList)
@@ -234,6 +216,11 @@ bool CommonUtils::readCommonEnvVariables()
 	PublishJsonHandler::instance().setSReadRequestTopic(envTopics.at("ReadRequest"));
 	PublishJsonHandler::instance().setSWriteRequestTopic(envTopics.at("WriteRequest"));
 	PublishJsonHandler::instance().setSiteListFileName(envTopics.at("SITE_LIST_FILE_NAME"));
+
+#ifdef REALTIME_THREAD_PRIORITY
+	PublishJsonHandler::instance().setStrThreadPriority(envTopics.at("THREAD_PRIORITY"));
+	PublishJsonHandler::instance().setStrThreadPolicy(envTopics.at("THREAD_POLICY"));
+#endif
 
 
 	string devMode = envTopics.at("DEV_MODE");
@@ -370,7 +357,6 @@ int main(int argc, char* argv[])
 #endif
 
 		// Setup signal handlers
-		signal(SIGUSR1, signal_handler);
 		signal(SIGALRM, LinuxTimer::timer_callback);
 
 		uint8_t	u8ReturnType = AppMbusMaster_StackInit();

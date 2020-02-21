@@ -25,6 +25,7 @@ struct stOnDemandRequest
 	std::string m_strMetric;
 	std::string m_strVersion;
 	std::string m_strTopic;
+	std::string m_strQOS;
 	bool m_isByteSwap;
 	bool m_isWordSwap;
 	struct timespec m_obtReqRcvdTS;

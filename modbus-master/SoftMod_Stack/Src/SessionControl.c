@@ -57,28 +57,9 @@ extern void* ServerSessTcpAndCbThread(void* threadArg);
 extern Mutex_H LivSerSesslist_Mutex;
 #endif
 
-void printReqListNoLock(char *a_pFuncName)
-{
-/*	//Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
-	printf("%s: (pos, state): ", a_pFuncName);
-	for (int iCount = 0; iCount < MAX_REQUESTS; iCount++)
-	{
-		printf("(%u, %d), ", g_objReqManager.m_objReqArray[iCount].m_ulMyId, g_objReqManager.m_objReqArray[iCount].m_bIsAvailable);
-	}
-	printf("\n");*/
-	//Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
-}
-
-void printReqList(char *a_pFuncName)
-{
-	Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
-	printReqListNoLock(a_pFuncName);
-	Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
-}
-
 void initReqManager()
 {
-	printf("initReqManager start\n");
+	//printf("initReqManager start\n");
 	unsigned int iCount = 0;
 	for (; iCount < MAX_REQUESTS; iCount++)
 	{
@@ -98,7 +79,7 @@ void initReqManager()
 	}
 	//printReqListNoLock("initReqManager");
 	g_objReqManager.m_mutexReqArray = Osal_Mutex();
-	printf("initReqManager end\n");
+	//printf("initReqManager end\n");
 }
 
 stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq)
@@ -107,7 +88,7 @@ stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempRe
 	{
 		return NULL;
 	}
-	//printf("getNodeForNewRequest: start\n");
+	////printf("getNodeForNewRequest: start\n");
 	stMbusPacketVariables_t* ptr = NULL;
 	long iCount = 0;
 	Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
@@ -144,7 +125,7 @@ stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempRe
 	Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
 	if(NULL == ptr)
 	{
-		printf("getNodeForNewRequest: No empty node !\n");
+		//printf("getNodeForNewRequest: No empty node !\n");
 	}
 	//printf("getNodeForNewRequest: end\n");
 	return ptr;
@@ -446,7 +427,7 @@ void* EpollRecvThread()
 					int bytesPresentOnSocket = 0;
 					if(-1 == ioctl(m_clientAccepted[clientID].m_clientFD, FIONREAD,
 							&bytesPresentOnSocket))
-						printf("Error in ioctl\n");
+						//printf("Error in ioctl\n");
 
 					if (bytesPresentOnSocket > 0) {
 						bytes_to_read =
@@ -721,7 +702,7 @@ int initReqListData()
 
 	if(-1 == sem_init(&g_stRespProcess.m_semaphoreResp, 0, 0 /* Initial value of zero*/))
 	{
-	   printf("initReqListData::Could not create unnamed semaphore\n");
+	   //printf("initReqListData::Could not create unnamed semaphore\n");
 	   return -1;
 	}
 
@@ -957,7 +938,7 @@ void* handleClientReponseThreadFunction(void* threadArg)
 				}
 				else
 				{
-					printf("handleClientReponseThreadFunction: not found: %d %d\n", u8UnitID, u16TransactionID);
+					//printf("handleClientReponseThreadFunction: not found: %d %d\n", u8UnitID, u16TransactionID);
 				}
 			}
 		}
@@ -977,7 +958,7 @@ int initHandleResponseContext()
 
 	if(-1 == sem_init(&g_stHandleResp.m_semaphoreHandleResp, 0, 0 /* Initial value of zero*/))
 	{
-	   printf("initHandleResponseContext::Could not create unnamed semaphore\n");
+	   //printf("initHandleResponseContext::Could not create unnamed semaphore\n");
 	   return -1;
 	}
 

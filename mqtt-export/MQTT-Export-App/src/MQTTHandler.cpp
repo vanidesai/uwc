@@ -105,7 +105,6 @@ bool CMQTTHandler::getMsgFromQ(stMsgData &a_msg) {
 		}
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 
 		bRet = false;
 	}
@@ -123,7 +122,6 @@ bool CMQTTHandler::pushMsgInQ(const stMsgData &a_msg) {
 		CLogger::getInstance().log(DEBUG, "Total msgs pushed in publish Q : " + m_qMsgData.size());
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 		bRet = false;
 	}
 	return bRet;
@@ -132,6 +130,12 @@ bool CMQTTHandler::pushMsgInQ(const stMsgData &a_msg) {
 
 void CMQTTHandler::postPendingMsgsThread() {
 	CLogger::getInstance().log(DEBUG, "Starting thread to publish pending data");
+
+#ifdef REALTIME_THREAD_PRIORITY
+	//set priority
+	CTopicMapper::getInstance().set_thread_priority();
+#endif
+
 	bool bDoRun = false;
 	try {
 		stMsgData msg;
@@ -154,7 +158,7 @@ void CMQTTHandler::postPendingMsgsThread() {
 		} while (true == bDoRun);
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
+		
 #ifdef PERFTESTING
 		CMQTTHandler::m_ui32PublishSkipped++;
 #endif
@@ -190,7 +194,6 @@ bool CMQTTHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsM
 		if (NULL == root) {
 			CLogger::getInstance().log(ERROR, 
 					LOGDETAILS("ZMQ Message could not be parsed in json format"));
-			//std::cout << __func__ << ":" << __LINE__ << " Error : Message received from ZMQ could not be parsed in json format" <<  std::endl;
 			return false;
 		}
 
@@ -219,8 +222,7 @@ bool CMQTTHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsM
 	} catch (exception &ex) {
 
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to add timestamp in payload for MQTT"));
-		std::cout << __func__ << ":" << __LINE__ << "Failed to add timestamp in payload for MQTT: " << ex.what() << std::endl;
-
+		
 		if(root != NULL)
 			cJSON_Delete(root);
 
@@ -245,7 +247,6 @@ bool CMQTTHandler::publish(std::string a_sMsg, std::string a_sTopic, int qos, st
 		m_ui32PublishExcep++;
 #endif
 		CLogger::getInstance().log(FATAL, LOGDETAILS(exc.what()));
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << exc.what() << std::endl;
 	}
 	return false;
 }
@@ -260,10 +261,8 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 		if (true == a_sTopic.empty()) {
 			if (true == a_sMsg.empty()) {
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Blank topic and blank Message"));
-				std::cout << __func__ << ":" << __LINE__ << " Error : Blank topic and blank Message" <<  std::endl;
 			} else {
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Blank topic. Message not posted"));
-				std::cout << __func__ << ":" << __LINE__ << " Error : Blank topic. Message not posted" <<  std::endl;
 			}
 			return false;
 		}
@@ -273,8 +272,6 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 #endif
 
 		if(false == publisher.is_connected()) {
-			//std::cout << __func__ << ":" << __LINE__ << " Failed to publish msg on MQTT for topic: " << a_sTopic << " , msg: " << a_sMsg << std::endl;
-
 			CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher is not connected with MQTT broker" + std::to_string(a_iQOS)));
 			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to publish msg on MQTT : " + a_sMsg));
 #ifdef QUEUE_FAILED_PUBLISH_MESSAGES
@@ -293,7 +290,6 @@ bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQ
 		return true;
 
 	} catch (const mqtt::exception &exc) {
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << exc.what() << std::endl;
 		if (false == a_bFromQ) {
 #ifdef PERFTESTING
 			m_ui32PublishStrExcep++;
@@ -460,7 +456,6 @@ bool CMQTTHandler::getSubMsgFromQ(mqtt::const_message_ptr &msg) {
 		}
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 		bRet = false;
 	}
 	return bRet;
@@ -481,7 +476,6 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg) {
 
 	} catch (const std::exception &e) {
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 		bRet = false;
 	}
 	return bRet;

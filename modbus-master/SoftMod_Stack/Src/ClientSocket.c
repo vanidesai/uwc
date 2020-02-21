@@ -879,18 +879,16 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		tcflush(fd, TCIOFLUSH);
 
 		// Multiple Slave issue: Adding Frame delay between two packets 
-		if(baud > 19200)
-		{
-			usleep(g_lInterframeDelay);
-			usleep(standardInterframeDelay);
-		}
-		else
-		{		
-			usleep(g_lInterframeDelay);
-			usleep(standardInterframeDelay);
-		}
+		usleep(g_lInterframeDelay);
+		usleep(standardInterframeDelay);
 
 		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
+		if(bytes <= 0)
+		{
+			u8ReturnType = STACK_ERROR_SEND_FAILED;
+			pstMBusRequesPacket->m_u8CommandStatus = u8ReturnType;
+			return u8ReturnType;
+		}
 
 		// Init req sent timestamp
 		timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsReqSent), TIME_UTC);
@@ -958,6 +956,10 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		{
 			u8ReturnType = DecodeRxPacket(ServerReplyBuff,pstMBusRequesPacket);
 		}
+		else // totalRead = 0, means request timed out or recv failed
+		{
+			u8ReturnType = STACK_ERROR_RECV_FAILED;
+		}
 	}
 
 	pstMBusRequesPacket->m_u8CommandStatus = u8ReturnType;
@@ -986,8 +988,8 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 		fd = open((const char*)portName, flags);
 
 		if (fd == -1) {
-			printf("ERROR Can't open the device %s (%s)\n",
-					portName, strerror(errno));
+			//printf("ERROR Can't open the device %s (%s)\n",
+				//	portName, strerror(errno));
 			return -1;
 		}
 
@@ -1383,15 +1385,16 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 			{
 				u8ReturnType = STACK_ERROR_SOCKET_FAILED;
-				printf("Socket creation failed !! error ::%d\n", errno);
+				//printf("Socket creation failed !! error ::%d\n", errno);
 				break;
 			}
 
 			a_pstIPConnect->m_sockfd = sockfd;
 			{
 				int i = 1;
-				int rc = setsockopt(sockfd, SOL_TCP, TCP_NODELAY, (void*)&i, sizeof(i));
-				printf("\nsetsocketopt on socket %d for TCP_NODELAY, status %d, error %d", sockfd, rc, errno);
+				setsockopt(sockfd, SOL_TCP, TCP_NODELAY, (void*)&i, sizeof(i));
+				//int rc = setsockopt(sockfd, SOL_TCP, TCP_NODELAY, (void*)&i, sizeof(i));
+				//printf("\nsetsocketopt on socket %d for TCP_NODELAY, status %d, error %d", sockfd, rc, errno);
 			}
 		}
 		sockfd = a_pstIPConnect->m_sockfd;
@@ -1421,21 +1424,21 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 				if (errno == EINPROGRESS)
 				{
 					a_pstIPConnect->m_lastConnectStatus = SOCK_CONNECT_INPROGRESS;
-					printf("\nConnection with Modbus Server is in progress ...\n");
+					//printf("\nConnection with Modbus Server is in progress ...\n");
 				}
 				else
 				{
 					u8ReturnType = STACK_ERROR_CONNECT_FAILED;
 					/// closing socket on error.
 					Mark_Sock_Fail(a_pstIPConnect);
-					printf("Connection with Modbus slave failed, so closing socket descriptor %d\n", sockfd);
+					//printf("Connection with Modbus slave failed, so closing socket descriptor %d\n", sockfd);
 					break;
 				}
 			}
 			else if(res == 0)
 			{
 				a_pstIPConnect->m_lastConnectStatus = SOCK_CONNECT_SUCCESS;
-				printf("Modbus slave connection established on socket %d\n", sockfd);
+				//printf("Modbus slave connection established on socket %d\n", sockfd);
 				//socket has been created and connected successfully, add it to epoll fd
 
 				int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
@@ -1443,7 +1446,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 				if(res < 0)
 					/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
 				{
-					printf("1. Closing socket %d as error occurred while sending data\n", sockfd);
+					//printf("1. Closing socket %d as error occurred while sending data\n", sockfd);
 					u8ReturnType = STACK_ERROR_SEND_FAILED;
 					Mark_Sock_Fail(a_pstIPConnect);
 					break;
@@ -1457,7 +1460,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			a_pstIPConnect->m_retryCount++;
 			if(a_pstIPConnect->m_retryCount > MAX_RETRY_COUNT)
 			{
-				printf("Connect status INPROGRESS. Max retries done %d\n", a_pstIPConnect->m_sockfd);
+				//printf("Connect status INPROGRESS. Max retries done %d\n", a_pstIPConnect->m_sockfd);
 
 				Mark_Sock_Fail(a_pstIPConnect);
 				//bReturnVal = false;
@@ -1478,7 +1481,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 				getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon);
 				if (valopt)
 				{
-					printf("getsockopt failed : %d", valopt);
+					//printf("getsockopt failed : %d", valopt);
 					u8ReturnType = STACK_ERROR_CONNECT_FAILED;
 					Mark_Sock_Fail(a_pstIPConnect);
 					break;
@@ -1490,7 +1493,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			}
 			else if(r1 <= 0)
 			{
-				printf("select failed : %d", errno);
+				//printf("select failed : %d", errno);
 				u8ReturnType = STACK_ERROR_CONNECT_FAILED;
 				Mark_Sock_Fail(a_pstIPConnect);
 				break;
@@ -1524,7 +1527,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 		/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
 		if(res < 0)
 		{
-			printf("Error %d occurred while sending request on %d closing the socket\n", errno, sockfd);
+			//printf("Error %d occurred while sending request on %d closing the socket\n", errno, sockfd);
 			u8ReturnType = STACK_ERROR_SEND_FAILED;
 			Mark_Sock_Fail(a_pstIPConnect);
 			break;
