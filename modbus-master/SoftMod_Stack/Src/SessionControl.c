@@ -427,7 +427,11 @@ void* EpollRecvThread()
 					int bytesPresentOnSocket = 0;
 					if(-1 == ioctl(m_clientAccepted[clientID].m_clientFD, FIONREAD,
 							&bytesPresentOnSocket))
-						//printf("Error in ioctl\n");
+					{
+						printf("Error in ioctl\n");
+						//NO action
+						//continue;
+					}
 
 					if (bytesPresentOnSocket > 0) {
 						bytes_to_read =
