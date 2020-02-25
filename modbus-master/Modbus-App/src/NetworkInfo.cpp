@@ -38,6 +38,10 @@ namespace
 	std::vector<std::string> g_sErrorYMLs;
 	unsigned short g_usTotalCnt{0};
 
+	/**
+	 * Populate unique point data
+	 * @param a_oWellSite :[in] well site to populate info of
+	 */
 	void populateUniquePointData(const CWellSiteInfo &a_oWellSite)
 	{
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
@@ -67,6 +71,11 @@ namespace
 	#ifdef CONFIGFILES_IN_DOCKER_VOLUME
 	std::vector<std::string> g_sWellSiteFileList;
 
+	/**
+	 * Get well site list
+	 * @return 	true : on success,
+	 * 			false : on error
+	 */
 	bool _getWellSiteList()
 	{
 		CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start: Reading site_list.yaml"));
@@ -86,6 +95,12 @@ namespace
 	#endif
 }
 
+/**
+ * Add data point
+ * @param a_oDataPoint :[in] data point to add
+ * @return 	0 : on success,
+ * 			-1 : on error
+ */
 int network_info::CDeviceInfo::addDataPoint(CDataPoint a_oDataPoint)
 {
 	// Search whether given point name is already present
@@ -113,6 +128,13 @@ int network_info::CDeviceInfo::addDataPoint(CDataPoint a_oDataPoint)
 	return 0;
 }
 
+/**
+ * Add device
+ * @param a_oDevice :[in] device to add
+ * @return 	0 : on success,
+ * 			-1 : on error
+ * 			-2 : if device does not match
+ */
 int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 {
 	// 1. Check device type TCP or RTU and whether it matches with this network
@@ -148,6 +170,11 @@ int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 	return 0;
 }
 
+/**
+ * build well site info
+ * @param a_oData 		:[in] data
+ * @param a_oWellSite	:[in] well site
+ */
 void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo &a_oWellSite)
 {
 	//CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start";
@@ -213,7 +240,12 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(" End"));
 }
 
-// function to validate IP address
+/**
+ * function to validate IP address
+ * @param ipAddress :[in] IP to validate
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool network_info::validateIpAddress(const string &ipAddress)
 {
     struct sockaddr_in sa;
@@ -221,6 +253,11 @@ bool network_info::validateIpAddress(const string &ipAddress)
     return result != 0;
 }
 
+/**
+ * build well site device info
+ * @param a_oData			:[in] data
+ * @param a_oWellSiteDevInfo:[in] well site
+ */
 void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteDevInfo &a_oWellSiteDevInfo)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start"));
@@ -357,6 +394,11 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
+/**
+ * build well site device info
+ * @param a_oData			:[in] data
+ * @param a_oCDeviceInfo:[in] well site device info
+ */
 void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_oCDeviceInfo )
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
@@ -430,18 +472,31 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
+/**
+ * Get well site list
+ * @return well site map
+ */
 const std::map<std::string, CWellSiteInfo>& network_info::getWellSiteList()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(""));
 	return g_mapYMLWellSite;	
 }
 
+/**
+ * Get unique point list
+ * @return map of unique points
+ */
 const std::map<std::string, CUniqueDataPoint>& network_info::getUniquePointList()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(""));
 	return g_mapUniqueDataPoint;
 }
 
+/**
+ * Get point type
+ * @param a_type	:[in] point type
+ * @return point type
+ */
 eEndPointType network_info::CDataPoint::getPointType(const std::string& a_type)
 {
 	string temp = " Start: Received type: ";
@@ -476,7 +531,12 @@ eEndPointType network_info::CDataPoint::getPointType(const std::string& a_type)
 	return type;
 }
 
-// Returns true if s is a number else false
+/**
+ * check if input is number
+ * @param s	:[in] string might be containing number
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool network_info:: isNumber(string s)
 {
     for (uint32_t i32Count = 0; i32Count < s.length(); i32Count++)
@@ -486,6 +546,11 @@ bool network_info:: isNumber(string s)
     return true;
 }
 
+/**
+ * Build data points info
+ * @param a_oData		:[in] data point
+ * @param a_oCDataPoint	:[in] data points info
+ */
 void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start"));
@@ -628,6 +693,10 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
+/**
+ * Print well site info
+ * @param a_oWellSite	:[in] well site
+ */
 void printWellSite(CWellSiteInfo a_oWellSite)
 {
 	string temp6 = " Start: wellsite: ";
@@ -653,6 +722,10 @@ void printWellSite(CWellSiteInfo a_oWellSite)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
+/**
+ * Build network info
+ * @param a_bIsTCP	:[in] is network info for TCP
+ */
 void network_info::buildNetworkInfo(bool a_bIsTCP)
 {
 	string temp8 = " Start: is it TCP ? ";
@@ -781,6 +854,13 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
+/**
+ * Constructor
+ * @param a_sId 		:[in] site id
+ * @param a_rWellSite	:[in] well site
+ * @param a_rWellSiteDev:[in] well site device
+ * @param a_rPoint		:[in] data points
+ */
 CUniqueDataPoint::CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
 				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint) :
 				m_uiMyRollID{((unsigned int)g_usTotalCnt)+1}, m_sId{a_sId},
@@ -789,11 +869,20 @@ CUniqueDataPoint::CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWe
 	++g_usTotalCnt;
 }
 
+/**
+ * Check if response should await
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CUniqueDataPoint::isIsAwaitResp() const {
 	//return false;
 	return m_bIsAwaitResp;
 }
 
+/**
+ * Set if response should await
+ * @param isAwaitResp	:[out] is response await true
+ */
 void CUniqueDataPoint::setIsAwaitResp(bool isAwaitResp) const {
 	m_bIsAwaitResp = isAwaitResp;
 }

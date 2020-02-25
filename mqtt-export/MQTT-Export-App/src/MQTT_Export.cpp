@@ -33,7 +33,13 @@ std::atomic<bool> g_shouldStop(false);
 
 #define APP_VERSION "0.0.1.0"
 
-//add sourcetopic key in payload to publish on EIS
+/**
+ * add sourcetopic key in payload to publish on EIS
+ * @param json	:[in] json string in which to add topic name
+ * @param topic	:[in] topic name to add
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool addSrTopic(string &json, string& topic) {
 
 	cJSON *root = NULL;
@@ -75,6 +81,12 @@ bool addSrTopic(string &json, string& topic) {
 	}
 }
 
+/**
+ * parse message to retrieve QOS and topic names
+ * @param json	:[in] message from which to retrieve QOS and topic name
+ * @param qos	:[out] QOS
+ * @return parsed topic name from message
+ */
 std::string parse_msg(const char *json, int& qos) {
 
 	std::string topic_name = "";
@@ -130,8 +142,6 @@ std::string parse_msg(const char *json, int& qos) {
 			}
 		}
 
-/*		if (NULL != ctopic_name)
-			free(ctopic_name);*/
 		if (NULL != root)
 			cJSON_Delete(root);
 
@@ -142,7 +152,12 @@ std::string parse_msg(const char *json, int& qos) {
 	return topic_name;
 }
 
-//listens on EIS and sends data to MQTT
+/**
+ * Thread function to listen on EIS and send data to MQTT
+ * @param topic 	:[in] topic to listen onto
+ * @param context	:[in] msg bus context
+ * @param subContext:[in] sub context
+ */
 void listenOnEIS(string topic, stZmqContext context,
 		stZmqSubContext subContext) {
 
@@ -237,7 +252,14 @@ void listenOnEIS(string topic, stZmqContext context,
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("exited !!"));
 }
 
-//publish message to EIS
+/**
+ * publish message to EIS
+ * @param eisMsg 	:[in] message to publish on EIS
+ * @param context	:[in] msg bus context
+ * @param pubContext:[in] pub context
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool publishEISMsg(string eisMsg, stZmqContext &context,
 		stZmqPubContext &pubContext) {
 
@@ -304,7 +326,9 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
 	return retVal;
 }
 
-//reads data from queue filled up by MQTT and sends data to EIS
+/**
+ * Thread function to read data from queue filled up by MQTT and send data to EIS
+ */
 void postMsgsToEIS() {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting thread to send messages on EIS"));
 
@@ -411,7 +435,9 @@ void postMsgsToEIS() {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Exited"));
 }
 
-//start listening to EIS and publishing msgs to MQTT
+/**
+ * start listening to EIS and publishing msgs to MQTT
+ */
 void postMsgstoMQTT() {
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Entered"));
@@ -451,7 +477,11 @@ void postMsgstoMQTT() {
 	}
 }
 
-//create EIS msg bus context and topic context for publisher and subscriber both
+/**
+ * Create EIS msg bus context and topic context for publisher and subscriber both
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool initEISContext() {
 
 	bool retVal = true;
@@ -497,6 +527,13 @@ bool initEISContext() {
 	return retVal;
 }
 
+/**
+ * Main function of application
+ * @param argc :[in]
+ * @param argv :[in]
+ * @return 	0 : on success,
+ * 			-1 : on error
+ */
 int main(int argc, char *argv[]) {
 
 #ifdef UNIT_TEST

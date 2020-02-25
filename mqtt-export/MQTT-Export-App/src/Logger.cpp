@@ -10,6 +10,9 @@
 
 #include "Logger.hpp"
 
+/**
+ * Constructor
+ */
 CLogger::CLogger() {
 
 	logger = NULL;
@@ -26,6 +29,10 @@ CLogger::CLogger() {
 
 	logger = &root;
 }
+
+/**
+ * Destructor
+ */
 CLogger::~CLogger() {
 	// TODO Auto-generated destructor stub
 	logger->removeAllAppenders();
@@ -33,26 +40,51 @@ CLogger::~CLogger() {
 	logger->shutdownForced();
 }
 
+/**
+ * Write statement with info level
+ * @param msg :[in] statement to log
+ */
 void CLogger::LogInfo(std::string msg) {
 	logger->info(msg);
 }
 
+/**
+ * Write statement with debug level
+ * @param msg :[in] statement to log
+ */
 void CLogger::LogDebug(std::string msg) {
 	logger->debug(msg);
 }
 
+/**
+ * Write statement with warn level
+ * @param msg :[in] statement to log
+ */
 void CLogger::LogWarn(std::string msg) {
 	logger->warn(msg);
 }
 
+/**
+ * Write statement with error level
+ * @param msg :[in] statement to log
+ */
 void CLogger::LogError(std::string msg) {
 	logger->error(msg);
 }
 
+/**
+ * Write statement with fatal level
+ * @param msg :[in] statement to log
+ */
 void CLogger::LogFatal(std::string msg) {
 	logger->fatal(msg);
 }
 
+/**
+ * Write statements in log file with given log level
+ * @param lvl :[in] log level
+ * @param msg :[in] statement to log
+ */
 void CLogger::log(LogLevel lvl, std::string msg) {
 	try {
 		if(logger == NULL)	{

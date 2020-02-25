@@ -57,6 +57,15 @@ extern void* ServerSessTcpAndCbThread(void* threadArg);
 extern Mutex_H LivSerSesslist_Mutex;
 #endif
 
+/**
+ *
+ * Description
+ * Initiate request manager
+ *
+ * @param - none
+ * @returns none
+ *
+ */
 void initReqManager()
 {
 	//printf("initReqManager start\n");
@@ -82,6 +91,15 @@ void initReqManager()
 	//printf("initReqManager end\n");
 }
 
+/**
+ *
+ * Description
+ * emplace new request in request queue
+ *
+ * @param - a_pObjTempReq
+ * @returns pointer to stMbusPacketVariables_t
+ *
+ */
 stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq)
 {
 	if(NULL == a_pObjTempReq)
@@ -131,6 +149,15 @@ stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempRe
 	return ptr;
 }
 
+/**
+ *
+ * Description
+ * emplace new request in request queue
+ *
+ * @param - a_pObjTempReq
+ * @returns pointer to stMbusPacketVariables_t
+ *
+ */
 void freeReqNode(stMbusPacketVariables_t* a_pobjReq)
 {
 	Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
@@ -316,6 +343,14 @@ void* SessionControlThread(void* threadArg)
 	return NULL;
 }
 
+/**
+ *
+ * Description
+ * get client socker id from already established client's list
+ *
+ * @param socketID [in] socket id
+ * @return int 	[out] client index from list
+ */
 int getClientIdFromList(int socketID) {
 	int socketIndex = -1;
 
@@ -328,6 +363,14 @@ int getClientIdFromList(int socketID) {
 	return socketIndex;
 }
 
+/**
+ *
+ * Description
+ * reset client struct after data is read from the socket
+ *
+ * @param clientAccepted [in] pointer to stTcpRecvData_t holding socket's data received information
+ * @return void	[out] none
+ */
 void resetClientStruct(stTcpRecvData_t* clientAccepted) {
 
 	clientAccepted->m_bytesRead = 0;
@@ -338,6 +381,14 @@ void resetClientStruct(stTcpRecvData_t* clientAccepted) {
 
 }
 
+/**
+ *
+ * Description
+ * reset client struct after data is read from the socket
+ *
+ * @param - none
+ * @return struct [out] epoch time struct
+ */
 struct timespec getEpochTime() {
 
 	struct timespec ts;
@@ -346,7 +397,14 @@ struct timespec getEpochTime() {
     return ts;
 }
 
-//epoll thread
+/**
+ *
+ * Description
+ * thread to start polling on sockets o receive data
+ *
+ * @param - none
+ * @return void [out] none
+ */
 void* EpollRecvThread()
 {
 
@@ -536,12 +594,28 @@ struct stHandleRespData g_stHandleResp;
 struct stReqList g_stReqList;
 struct stResProcessData g_stRespProcess;
 
+/**
+ *
+ * Description
+ * get time stamp in nano-seconds
+ *
+ * @param - none
+ * @return unsigned long [out] time in nano-seconds
+ */
 unsigned long get_nanos(void) {
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
 }
 
+/**
+ *
+ * Description
+ * Remove request from list with no locks
+ *
+ * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
+ * @return void [out] none
+ */
 void removeReqFromListNoLock(stMbusPacketVariables_t *pstMBusRequesPacket)
 {
 	if(NULL == pstMBusRequesPacket)
@@ -578,6 +652,14 @@ void removeReqFromListNoLock(stMbusPacketVariables_t *pstMBusRequesPacket)
 	//Osal_Release_Mutex(g_stReqList.m_mutexReqList);
 }
 
+/**
+ *
+ * Description
+ * Remove request from list with locks
+ *
+ * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
+ * @return void [out] none
+ */
 void removeReqFromListWithLock(stMbusPacketVariables_t *pstMBusRequesPacket)
 {
 	if(NULL == pstMBusRequesPacket)
@@ -591,7 +673,14 @@ void removeReqFromListWithLock(stMbusPacketVariables_t *pstMBusRequesPacket)
 	Osal_Release_Mutex(g_stReqList.m_mutexReqList);
 }
 
-
+/**
+ *
+ * Description
+ * Add msg to response queue
+ *
+ * @param a_pstReq [in] pointer to struct of type stMbusPacketVariables_t
+ * @return void [out] none
+ */
 void addToRespQ(stMbusPacketVariables_t *a_pstReq)
 {
 	if(NULL != a_pstReq)
@@ -617,6 +706,14 @@ void addToRespQ(stMbusPacketVariables_t *a_pstReq)
 	}
 }
 
+/**
+ *
+ * Description
+ * Request time out thread function
+ *
+ * @param threadArg [in] void pointer
+ * @return void [out] none
+ */
 void* resquestTimeOutThreadFunction(void* threadArg)
 {
 	stMbusPacketVariables_t *pstTemp = NULL;
@@ -664,6 +761,14 @@ void* resquestTimeOutThreadFunction(void* threadArg)
 	return NULL;
 }
 
+/**
+ *
+ * Description
+ * Post response to application
+ *
+ * @param threadArg [in] void pointer
+ * @return void [out] none
+ */
 void* postResponseToApp(void* threadArg)
 {
 	Linux_Msg_t stScMsgQue = { 0 };
@@ -696,6 +801,15 @@ void* postResponseToApp(void* threadArg)
 	return NULL;
 }
 
+/**
+ *
+ * Description
+ * Initialize request list data
+ *
+ * @param none
+ * @return int [out] 0 (if success)
+ * 					-1 (if failure)
+ */
 int initReqListData()
 {
 	g_stReqList.m_mutexReqList = Osal_Mutex();
@@ -734,6 +848,14 @@ int initReqListData()
 	return 0;
 }
 
+/**
+ *
+ * Description
+ * Add request to list
+ *
+ * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
+ * @return void [out] none
+ */
 void addReqToList(stMbusPacketVariables_t *pstMBusRequesPacket)
 {
 	if(NULL == pstMBusRequesPacket)
@@ -758,6 +880,15 @@ void addReqToList(stMbusPacketVariables_t *pstMBusRequesPacket)
 	Osal_Release_Mutex(g_stReqList.m_mutexReqList);
 }
 
+/**
+ *
+ * Description
+ * Search request with specific unit id and transaction id in request list
+ *
+ * @param a_u8UnitID [in] uint8_t
+ * @param a_u16TransactionID  [in] uint16_t
+ * @return stMbusPacketVariables_t [out] pointer to struct of type stMbusPacketVariables_t
+ */
 stMbusPacketVariables_t* searchReqList(uint8_t a_u8UnitID, uint16_t a_u16TransactionID)
 {
 	stMbusPacketVariables_t *pstTemp = NULL;
@@ -856,6 +987,15 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 	return NULL;
 }
 
+/**
+ *
+ * Description
+ * Add response to handle in a queue
+ *
+ * @param a_u8UnitID [in] uint8_t unit id from modbus header
+ * @param a_u16TransactionID  [in] uint16_t transction id from modbus header
+ * @return void [out] none
+ */
 void addToHandleRespQ(stTcpRecvData_t *a_pstReq)
 {
 	if(NULL != a_pstReq)
@@ -883,6 +1023,15 @@ void addToHandleRespQ(stTcpRecvData_t *a_pstReq)
 	return;
 }
 
+/**
+ *
+ * Description
+ * Handle client reponse thread function
+ *
+ * @param threadArg [in] thread argument
+ * @return void pointer
+ *
+ */
 void* handleClientReponseThreadFunction(void* threadArg)
 {
 
@@ -956,6 +1105,16 @@ void* handleClientReponseThreadFunction(void* threadArg)
 	return NULL;
 }
 
+/**
+ *
+ * Description
+ * Initiate handle response context
+ *
+ * @param none
+ * @return int [out] -1 (if failure)
+ * 					  0 (if success)
+ *
+ */
 int initHandleResponseContext()
 {
 	g_stHandleResp.m_i32HandleRespMsgQueId = OSAL_Init_Message_Queue();

@@ -16,17 +16,20 @@
 #include <pthread.h>
 #include <sched.h>
 
+/**
+ * Constructor
+ */
 CTopicMapper::CTopicMapper() {
-	// TODO Auto-generated constructor stub
-	//ParseJson();
+
 	readCommonEnvVariables();
 }
 
-/** This function is used to read environment variable
- *
- * @sEnvVarName : environment variable to be read
- * @storeVal : variable to store env variable value
- * @return: true/false based on success or error
+/**
+ * This function is used to read environment variable
+ * @param pEnvVarName :[in] environment variable to be read
+ * @param storeVal :[out] variable to store env variable value
+ * @return 	true : on success,
+ * 			false : on error
  */
 bool CTopicMapper::readEnvVariable(const char *pEnvVarName, string &storeVal)
 {
@@ -52,9 +55,10 @@ bool CTopicMapper::readEnvVariable(const char *pEnvVarName, string &storeVal)
 	return bRetVal;
 }
 
-/** This function is used to read common environment variables
- *
- * @return: true/false based on success or error
+/**
+ * This function is used to read common environment variables
+ * @return 	true : on success,
+ * 			false : on error
  */
 bool CTopicMapper::readCommonEnvVariables()
 {
@@ -124,6 +128,9 @@ bool CTopicMapper::readCommonEnvVariables()
 }
 
 #ifdef REALTIME_THREAD_PRIORITY
+/**
+ * Sets the thread priority to specified in environment variables
+ */
 void CTopicMapper::set_thread_priority() {
 	//set priority
 	sched_param param;
@@ -149,6 +156,9 @@ void CTopicMapper::set_thread_priority() {
 }
 #endif
 
+/**
+ * Destructor
+ */
 CTopicMapper::~CTopicMapper() {
 	// TODO Auto-generated destructor stub
 }

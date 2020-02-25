@@ -41,6 +41,11 @@ namespace
 	std::map<unsigned short, stOnDemandRequest> g_mapAppSeq;
 }
 
+/**
+ * Get time parameters
+ * @param a_sTimeStamp	:[in] reference to store time stamp
+ * @param a_sUsec		:[in] reference to store time in usec
+ */
 void zmq_handler::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
 {
 	a_sTimeStamp.clear();
@@ -66,6 +71,12 @@ void zmq_handler::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
 	}
 }
 
+/**
+ * Prepare EIS contexts for msgbus and topic
+ * @param topicType	:[in] topic type to create context for
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool zmq_handler::prepareCommonContext(std::string topicType)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start:"));
@@ -221,6 +232,11 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 	return retValue;
 }
 
+/**
+ * Get sub context for topic
+ * @param a_sTopic	:[in] topic to get sub context for
+ * @return structure containing EIS contexts
+ */
 stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
@@ -230,6 +246,11 @@ stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
 	return g_mapSubContextMap.at(a_sTopic);
 }
 
+/**
+ * Insert sub context
+ * @param a_sTopic	:[in] insert context for topic
+ * @param ctxRef	:[in] reference to context
+ */
 void zmq_handler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRef)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
@@ -240,6 +261,10 @@ void zmq_handler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRef)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 
+/**
+ * Remove sub context
+ * @param a_sTopic	:[in] remove sub context for topic
+ */
 void zmq_handler::removeSubCTX(std::string a_sTopic)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
@@ -249,6 +274,11 @@ void zmq_handler::removeSubCTX(std::string a_sTopic)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
 }
 
+/**
+ * Get msgbus context for topic
+ * @param a_sTopic :[in] topic for msgbus context
+ * @return reference to structure containing contexts
+ */
 stZmqContext& zmq_handler::getCTX(std::string a_sTopic)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
@@ -258,6 +288,11 @@ stZmqContext& zmq_handler::getCTX(std::string a_sTopic)
 	return g_mapContextMap.at(a_sTopic);
 }
 
+/**
+ * Insert msgbus context
+ * @param a_sTopic	:[in] topic for which to insert msgbus context
+ * @param ctxRef	:[in] msgbus context
+ */
 void zmq_handler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
@@ -268,6 +303,10 @@ void zmq_handler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 
+/**
+ * Remove msgbus context
+ * @param a_sTopic	:[in] remove msgbus context for topic
+ */
 void zmq_handler::removeCTX(std::string a_sTopic)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
@@ -277,6 +316,11 @@ void zmq_handler::removeCTX(std::string a_sTopic)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
 }
 
+/**
+ * Get pub context
+ * @param a_sTopic	:[in] topic for which to get pub context
+ * @return reference to structure containing EIS contexts
+ */
 stZmqPubContext& zmq_handler::getPubCTX(std::string a_sTopic)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
@@ -288,6 +332,13 @@ stZmqPubContext& zmq_handler::getPubCTX(std::string a_sTopic)
 	return g_mapPubContextMap.at(a_sTopic);
 }
 
+/**
+ * Insert pub contexts
+ * @param a_sTopic	:[in] topic for which to insert pub context
+ * @param ctxRef	:[in] context
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool zmq_handler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRef)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: "));
@@ -309,6 +360,10 @@ bool zmq_handler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRef)
 	return bRet;
 }
 
+/**
+ * Remove pub context
+ * @param a_sTopic	:[in] topic for which to remove context
+ */
 void zmq_handler::removePubCTX(std::string a_sTopic)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
@@ -317,6 +372,13 @@ void zmq_handler::removePubCTX(std::string a_sTopic)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 
+/**
+ * Get on-demand request data
+ * @param seqno		:[in] sequence no
+ * @param reqData	:[out] reference to store request data
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool zmq_handler::getOnDemandReqData(unsigned short seqno, stOnDemandRequest& reqData)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
@@ -338,6 +400,13 @@ bool zmq_handler::getOnDemandReqData(unsigned short seqno, stOnDemandRequest& re
 	return bRet;
 }
 
+/**
+ * Insert on-demand request data
+ * @param seqno		:[in] sequence no
+ * @param reqData	:[in] request data
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool zmq_handler::insertOnDemandReqData(unsigned short seqno, stOnDemandRequest reqData)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: "));
@@ -359,6 +428,10 @@ bool zmq_handler::insertOnDemandReqData(unsigned short seqno, stOnDemandRequest 
 	return bRet;
 }
 
+/**
+ * Remove on-demand request data
+ * @param seqno	:[in] sequence no of request to remove
+ */
 void zmq_handler::removeOnDemandReqData(unsigned short seqno)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
@@ -367,6 +440,13 @@ void zmq_handler::removeOnDemandReqData(unsigned short seqno)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 
+/**
+ * Swap conversion
+ * @param vt			:[in] vector
+ * @param a_bIsByteSwap	:[in] is byte swap or not
+ * @param a_bIsWordSwap	:[in] is word swap or not
+ * @return swapped string
+ */
 std::string zmq_handler::swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap, bool a_bIsWordSwap)
 {
 	auto numbytes = vt.size();

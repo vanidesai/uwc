@@ -20,6 +20,11 @@ extern "C" {
 
 std::mutex g_RWCommonCallbackMutex;
 
+/**
+ * Get time in nano seconds
+ * @param ts
+ * @return time in nano seconds
+ */
 static unsigned long get_nanos(struct timespec ts) {
     return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
 }
@@ -37,7 +42,9 @@ static unsigned long get_nanos(struct timespec ts) {
  * @param pstException		[in] Exception status
  * @param u8numBytes		[in] byte count
  * @param pu8data			[in] input request
- *
+ * @param u16StartAdd		[in] start address
+ * @param u16Quantity		[in] quantity
+ * @param a_objStackTimestamps [in] stack time stamps
  * @return void nothing
  *
  */
@@ -77,7 +84,12 @@ void ModbusMaster_AppCallback(uint8_t  u8UnitID,
 	try
 	{
 		stOnDemandRequest onDemandReqData;
-		zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
+		bool bRetVal = zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
+		if(false == bRetVal)
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Request not found in map"));
+			return;
+		}
 
 		if( u8FunCode == READ_COIL_STATUS ||
 				u8FunCode == READ_HOLDING_REG ||

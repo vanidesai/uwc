@@ -51,6 +51,15 @@ void OSAL_Free(void *pvPointer)
 
 }
 
+#ifdef REALTIME_THREAD_PRIORITY
+/**
+ *
+ * DESCRIPTION
+ * Get current thread priority and policy from environment variables
+ *
+ * @param policy [in] Pointer to the memory for policy.
+ * @param priority [in] Pointer to the memory for priority.
+ */
 void Get_Thread_Params(int *policy, int *priority)
 {
     const char *pcThreadPriority = getenv("THREAD_PRIORITY");
@@ -72,6 +81,7 @@ void Get_Thread_Params(int *policy, int *priority)
 		}
     }
 }
+#endif
 
 /**
  *

@@ -41,6 +41,9 @@ bool g_stop = false;
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
 
+/**
+ * Populate polling data
+ */
 void populatePollingRefData()
 {
 	string temp;
@@ -126,7 +129,11 @@ void populatePollingRefData()
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
-/// function to check Main thread exit
+/**
+ * checks whether to stop thread execution
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool exitMainThread(){return g_stopThread;};
 
 /**

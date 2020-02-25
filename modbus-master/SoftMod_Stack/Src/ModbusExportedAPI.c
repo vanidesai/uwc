@@ -32,12 +32,13 @@ extern int m_epollFd;
 
 stDevConfig_t ModbusMasterConfig;
 
-/*
+/**
  * Description
- * Modbus master stack configuration function
+ * Exported function to set stack configuration parameter
  *
- * @param u8ConnectTimeout [in] TCP connection timeout
- * @param u8SessionTimeout [in] TCP session timeout
+ * @param u8ConnectTimeout [in] uint8_t TCP connection timeout
+ * @param u16SessionTimeout [in] uint8_t TCP session timeout
+ *
  * @return uint8_t [out] respective error codes
  */
 MODBUS_STACK_EXPORT uint8_t AppMbusMaster_SetStackConfigParam(uint8_t u8ConnectTimeout,
@@ -51,12 +52,13 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_SetStackConfigParam(uint8_t u8ConnectT
 	return eStatus;
 }
 
-/*
+/**
  * Description
- * Get Modbus master stack configuration parameter
+ * Exported function to get Modbus master stack configuration parameter
  *
- * @param u8ConnectTimeout [in] TCP connection timeout
- * @param u8SessionTimeout [in] TCP session timeout
+ * @param u8ConnectTimeout [in] uint8_t TCP connection timeout
+ * @param u16SessionTimeout [in] uint8_t TCP session timeout
+ *
  * @return uint8_t [out] respective error codes
  */
 MODBUS_STACK_EXPORT uint8_t AppMbusMaster_GetStackConfigParam(uint8_t *u8ConnectTimeout,
@@ -80,7 +82,8 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_GetStackConfigParam(uint8_t *u8Connect
 /**
  *
  * Description
- * Modbus master stack initialization function
+ * Exported function to initiate modbus master stack
+ * @param none
  *
  * @return uint8_t [out] respective error codes
  *
@@ -178,7 +181,10 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 /**
  *
  * Description
- * Modbus master stack Deinitialization function
+ * Exported function to de-initiate modbus master stack
+ * @param none
+ *
+ * @return void [out] none
  *
  */
 MODBUS_STACK_EXPORT void AppMbusMaster_StackDeInit(void)
@@ -244,10 +250,10 @@ MODBUS_STACK_EXPORT void AppMbusMaster_StackDeInit(void)
  * Function calculates the starting address of specific function code
  * that is required
  *
- * @param eFunCode [in] Function code
- * @param u32RegNum [in] Starting address
+ * @param eFunCode [in] uint8_t function code
+ * @param u32RegNum [in] uint32_t starting address
  *
- * @return uint8_t [out] offset address
+ * @return uint16_t [out] offset address
  *
  */
 uint16_t GetOffsetAddress1(uint8_t eFunCode, uint32_t u32RegNum)
@@ -290,9 +296,9 @@ uint16_t GetOffsetAddress1(uint8_t eFunCode, uint32_t u32RegNum)
  * A value contained in the query data field is not an allowable
  * value for server(slave).So send exception illegal data value
  *
- * @param eFunCode 		[in] received function code
- * @param u16Quantity 	[in] received quantity for function code
- * @param u8ByteCount	[in] byte count for quantity
+ * @param eFunCode 		[in] uint8_t received function code
+ * @param u16Quantity 	[in] uint16_t received quantity for function code
+ * @param u8ByteCount	[in] uint8_t byte count for quantity
  *
  * @return bool 		[out] True or false
  *
@@ -407,12 +413,12 @@ bool ValidateQuantity( uint8_t eFunCode,
  * This function is to create header for modbus
  * read write coil or register request
  *
- * @param u16StartAddr 			[in] start address
- * @param u8UnitId				[in] unit id
- * @param u16HeaderLength		[in] Header length
- * @param u16TransacID			[in] transaction id
- * @param u8FucntionCode		[in] Function code
- * @param pstMBusRequesPacket 	[in] Request packet
+ * @param u16StartAddr 			[in] uint16_t start address
+ * @param u8UnitId				[in] uint8_t unit id
+ * @param u16HeaderLength		[in] uint16_t header length
+ * @param u16TransacID			[in] uint16_t transaction id
+ * @param u8FunctionCode		[in] uint8_t Function code
+ * @param pstMBusRequesPacket 	[in] pointer to request packet struct of type stMbusPacketVariables_t
  *
  * @return uint8_t				[out] respective error codes
  *
@@ -421,7 +427,7 @@ uint8_t CreateHeaderForModbusRequest(uint16_t u16StartAddr,
 							uint8_t u8UnitId,
 							uint16_t u16HeaderLength,
 							uint16_t u16TransacID,
-							uint8_t u8FucntionCode,
+							uint8_t u8FunctionCode,
 							stMbusPacketVariables_t *pstMBusRequesPacket)
 {
 	stEndianess_t stEndianess = { 0 };
@@ -467,8 +473,8 @@ uint8_t CreateHeaderForModbusRequest(uint16_t u16StartAddr,
 	pstMBusRequesPacket->m_u8UnitID = u8UnitId;
 
 	// Function Code
-	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] = u8FucntionCode;
-	pstMBusRequesPacket->m_u8FunctionCode = u8FucntionCode;
+	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] = u8FunctionCode;
+	pstMBusRequesPacket->m_u8FunctionCode = u8FunctionCode;
 
 	// Starting address or offset address
 	stEndianess.u16word = u16StartAddr;
@@ -489,7 +495,7 @@ uint8_t CreateHeaderForModbusRequest(uint16_t u16StartAddr,
  * @param u8UnitId 				[in] unit id
  * @param u16HeaderLength 		[in] Header length
  * @param u16TransacID 			[in] transaction id
- * @param u8FucntionCode 		[in] Function code
+ * @param u8FunctionCode 		[in] Function code
  * @param pstMBusRequesPacket 	[in] Request packet
  *
  * @return uint8_t				[out] respective error codes
@@ -498,7 +504,7 @@ uint8_t CreateHeaderForModbusRequest(uint16_t u16StartAddr,
 uint8_t CreateHeaderForDevIdentificationModbusRequest(uint8_t u8UnitId,
 							uint16_t u16HeaderLength,
 							uint16_t u16TransacID,
-							uint8_t u8FucntionCode,
+							uint8_t u8FunctionCode,
 							stMbusPacketVariables_t *pstMBusRequesPacket)
 {
 
@@ -541,8 +547,8 @@ uint8_t CreateHeaderForDevIdentificationModbusRequest(uint8_t u8UnitId,
 	pstMBusRequesPacket->m_u8UnitID = u8UnitId;
 
 	/* Function Code */
-	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] = u8FucntionCode;
-	pstMBusRequesPacket->m_u8FunctionCode = u8FucntionCode;
+	pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] = u8FunctionCode;
+	pstMBusRequesPacket->m_u8FunctionCode = u8FunctionCode;
 
 	return u16PacketIndex;
 }
@@ -552,12 +558,12 @@ uint8_t CreateHeaderForDevIdentificationModbusRequest(uint8_t u8UnitId,
  * Description
  * This function is to validate input parameters
  *
- * @param u16StartCoilOrReg 	[in] start address
- * @param u16NumberOfcoilsOrReg [in] number of coils or registers
- * @param u8UnitID 				[in] unit id
- * @param pFunCallBack 			[in] callback function pointer
- * @param u8FunctionCode 		[in] Function code
- * @param u8ByteCount 			[in] byte count
+ * @param u16StartCoilOrReg 	[in] uint16_t start address
+ * @param u16NumberOfcoilsOrReg [in] uint16_t number of coils or registers
+ * @param u8UnitID 				[in] uint8_t unit id
+ * @param pFunCallBack 			[in] void callback function pointer
+ * @param u8FunctionCode 		[in] uint8_t function code
+ * @param u8ByteCount 			[in] uint16_t byte count
  *
  * @return uint8_t				[out] respective error codes
  *
@@ -590,13 +596,16 @@ uint8_t InputParameterVerification(uint16_t u16StartCoilOrReg, uint16_t u16Numbe
 /**
  *
  * Description
- * Read coil API
+ * Exported API to read coil
  *
- * @param u16StartCoil 	[in] start address
- * @param u16NumOfcoils [in] number of coils
- * @param u16TransacID 	[in] transaction ID
- * @param u8UnitId 		[in] unit id
- * @param pu8SerIpAddr 	[in] server IP address
+ * @param u16StartCoil 	[in] uint16_t start address
+ * @param u16NumOfcoils [in] uint16_t number of coils
+ * @param u16TransacID 	[in] uint16_t transaction ID
+ * @param u8UnitId 		[in] uint8_t unit id
+ * @param pu8SerIpAddr 	[in] uint8_t server IP address
+ * @param u16Port		[in] uint16_t port number
+ * @param lPriority		[in] long priority
+ * @param u32mseTimeout	[in] uint32_t timeout in micro seconds
  * @param pFunCallBack 	[in] callback function pointer
  *
  * @return uint8_t		[out] respective error codes
@@ -703,13 +712,16 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 /**
  *
  * Description
- * Read Discrete Inputs API
+ * Exported API to read discrete inputs
  *
- * @param u16StartDI 	[in] start address
- * @param u16NumOfDI 	[in] number of discrete inputs
- * @param u16TransacID 	[in] transaction ID
- * @param u8UnitId 		[in] unit id
- * @param pu8SerIpAddr 	[in] server IP address
+ * @param u16StartDI 	[in] uint16_t start address
+ * @param u16NumOfDI 	[in] uint16_t number of discrete inputs
+ * @param u16TransacID 	[in] uint16_t transaction ID
+ * @param u8UnitId 		[in] uint8_t unit id
+ * @param pu8SerIpAddr 	[in] uint8_t server IP address
+ * @param u16Port		[in] uint16_t port number
+ * @param lPriority		[in] long priority
+ * @param u32mseTimeout	[in] uint32_t timeout in micro seconds
  * @param pFunCallBack 	[in] callback function pointer
  *
  * @return uint8_t		[out] respective error codes
@@ -820,16 +832,19 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 /**
  *
  * Description
- * Read Holding Registers API
+ * Exported API to read Holding Registers
  *
- * @param u16StartReg 			[in] start address
- * @param u16NumberOfRegisters 	[in] number of holding registers
- * @param u16TransacID 			[in] transaction ID
- * @param u8UnitId 				[in] unit id
- * @param pu8SerIpAddr 			[in] server IP address
+ * @param u16StartReg 			[in] uint16_t start address
+ * @param u16NumberOfRegisters 	[in] uint16_t number of registers
+ * @param u16TransacID 			[in] uint16_t transaction ID
+ * @param u8UnitId 				[in] uint8_t unit id
+ * @param pu8SerIpAddr 			[in] uint8_t server IP address
+ * @param u16Port				[in] uint16_t port number
+ * @param lPriority				[in] long priority
+ * @param u32mseTimeout			[in] uint32_t timeout in micro seconds
  * @param pFunCallBack 			[in] callback function pointer
  *
- * @return uint8_t				[out] respective error codes
+ * @return uint8_t		[out] respective error codes
  *
  */
 MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
@@ -935,14 +950,17 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
  * Description
  * Read Input Registers API
  *
- * @param u16StartReg 			[in] start address
- * @param u16NumberOfRegisters 	[in] number of holding registers
- * @param u16TransacID 			[in] transaction ID
- * @param u8UnitId 				[in] unit id
- * @param pu8SerIpAddr 			[in] server IP address
+ * @param u16StartReg 			[in] uint16_t start address
+ * @param u16NumberOfRegisters 	[in] uint16_t number of registers
+ * @param u16TransacID 			[in] uint16_t transaction ID
+ * @param u8UnitId 				[in] uint8_t unit id
+ * @param pu8SerIpAddr 			[in] uint8_t server IP address
+ * @param u16Port				[in] uint16_t port number
+ * @param lPriority				[in] long priority
+ * @param u32mseTimeout			[in] uint32_t timeout in micro seconds
  * @param pFunCallBack 			[in] callback function pointer
  *
- * @return uint8_t				[out] respective error codes
+ * @return uint8_t		[out] respective error codes
  *
  */
 MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,

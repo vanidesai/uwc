@@ -63,6 +63,13 @@ using namespace std;
 /// variable to store timer instance
 timer_t gTimerid;
 
+/**
+ * Get time based parameters
+ * @param a_objReqData	:[in] request data
+ * @param a_sTimeStamp	:[out] time stamp
+ * @param a_sUsec		:[out] usec
+ * @param a_sTxID		:[out] transaction id
+ */
 void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_sTimeStamp, std::string &a_sUsec, std::string &a_sTxID)
 {
 	a_sTimeStamp.clear();
@@ -98,10 +105,23 @@ void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_s
 	}
 }
 
+/**
+ * get time in nano-seconds
+ * @param ts	:[in] time to convert to nano-seconds
+ * @return	time in nano-seconds
+ */
 static unsigned long get_nanos(struct timespec ts) {
     return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
 }
 
+/**
+ * Prepare response json
+ * @param a_pMsg		:[in] pointer to message envelope to fill up
+ * @param a_objReqData	:[in] request data
+ * @param a_stResp		:[in] response data
+ * @return 	true : on success,
+ * 			false : on error
+ */
 BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp)
 {
 	bool bRetValue = true;
@@ -189,6 +209,13 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 	return bRetValue;
 }
 
+/**
+ * Post response json
+ * @param a_stResp		:[in] response data
+ * @param a_objReqData	:[in] request data
+ * @return 	true : on success,
+ * 			false : on error
+ */
 BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling& a_objReqData)
 {
 	msg_envelope_t* g_msg = NULL;
@@ -248,6 +275,12 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 	return TRUE;
 }
 
+/**
+ * Post dummy bad response
+ * @param a_objReqData	:[in] request for which to send dummy response
+ * @return 	true : on success,
+ * 			false : on error
+ */
 BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(const CRefDataForPolling& a_objReqData)
 {
 	try
@@ -274,6 +307,12 @@ BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(const CRefDataForPolling
 	return TRUE;
 }
 
+/**
+ * Post response json
+ * @param a_stResp	:[in] response data
+ * @return 	true : on success,
+ * 			false : on error
+ */
 BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 {
 	try
@@ -293,6 +332,11 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 	return TRUE;
 }
 
+/**
+ * Initialize semaphore
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CPeriodicReponseProcessor::initSem()
 {
 	//
@@ -304,6 +348,10 @@ bool CPeriodicReponseProcessor::initSem()
 	return true;
 }
 
+/**
+ * Response process threads
+ * @return appropriate error code
+ */
 eMbusStackErrorCode CPeriodicReponseProcessor::CPeriodicReponseProcessor::respProcessThreads()
 {
 	eMbusStackErrorCode eRetType = MBUS_STACK_NO_ERROR;
@@ -394,6 +442,12 @@ eMbusStackErrorCode CPeriodicReponseProcessor::CPeriodicReponseProcessor::respPr
 	return eRetType;
 }
 
+/**
+ * Push response to queue
+ * @param stStackResNode :[in] response node
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CPeriodicReponseProcessor::pushToQueue(struct stStackResponse &stStackResNode)
 {
 	try
@@ -413,6 +467,12 @@ bool CPeriodicReponseProcessor::pushToQueue(struct stStackResponse &stStackResNo
 	return false;
 }
 
+/**
+ * Get data to process
+ * @param a_stStackResNode :[in] response node
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stStackResNode)
 {
 	try
@@ -432,6 +492,19 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 	return false;
 }
 
+/**
+ * Handle response
+ * @param u8UnitID				:[in] unit id
+ * @param u16TransacID			:[in] transaction id
+ * @param pu8IpAddr				:[in] IP addr
+ * @param u8FunCode				:[in] function code
+ * @param pstException			:[in] expection code
+ * @param u8numBytes			:[in] number of bytes
+ * @param pu8data				:[in] data
+ * @param u16StartAddress		:[in] start address
+ * @param u16Quantity			:[in] quantity
+ * @param a_objStackTimestamps	:[in] time stamps
+ */
 void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 					 uint16_t u16TransacID,
 					 uint8_t* pu8IpAddr,
@@ -495,6 +568,21 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 
 // function to receive RP-A call back
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+/**
+ * Callback function
+ * @param u8UnitID				:[in] unit id
+ * @param u16TransacID			:[in] transaction id
+ * @param pu8IpAddr				:[in] IP addr
+ * @param u16Port				:[in] port number
+ * @param u8FunCode				:[in] function code
+ * @param pstException			:[in] exception code
+ * @param u8numBytes			:[in] number of bytes
+ * @param pu8data				:[in] data
+ * @param u16StartAddress		:[in] start address
+ * @param u16Quantity			:[in] quantity
+ * @param a_objStackTimestamps	:[in] time stamp
+ * @return appropriate error code
+ */
 eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 										 uint16_t u16TransacID,
 										 uint8_t* pu8IpAddr,
@@ -507,6 +595,20 @@ eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 										 uint16_t  u16Quantity,
 										 stTimeStamps a_objStackTimestamps)
 #else
+/**
+ * Callback function
+ * @param u8UnitID				:[in] unit id
+ * @param u16TransacID			:[in] transaction id
+ * @param pu8IpAddr				:[in] IP addr
+ * @param u8FunCode				:[in] function code
+ * @param pstException			:[in] exception code
+ * @param u8numBytes			:[in] number of bytes
+ * @param pu8data				:[in] data
+ * @param u16StartAddress		:[in] start address
+ * @param u16Quantity			:[in] quantity
+ * @param a_objStackTimestamps	:[in] time stamp
+ * @return appropriate error code
+ */
 eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 										 uint16_t u16TransacID,
 										 uint8_t* pu8IpAddr,
@@ -533,6 +635,9 @@ eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
 	return MBUS_STACK_NO_ERROR;
 }
 
+/**
+ * Constructor
+ */
 CPeriodicReponseProcessor::CPeriodicReponseProcessor() : m_bIsInitialized(false)
 {
 	try
@@ -550,12 +655,19 @@ CPeriodicReponseProcessor::CPeriodicReponseProcessor() : m_bIsInitialized(false)
 	}
 }
 
+/**
+ * Return single instance of this class
+ * @return
+ */
 CPeriodicReponseProcessor& CPeriodicReponseProcessor::Instance()
 {
 	static CPeriodicReponseProcessor _self;
 	return _self;
 }
 
+/**
+ * Initialize response handler threads
+ */
 void CPeriodicReponseProcessor::initRespHandlerThreads()
 {
 	static bool bSpawned = false;
@@ -579,6 +691,11 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 	}
 }
 
+/**
+ * Initiate request initiator
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CRequestInitiator::init()
 {
 	std::thread{std::bind(&CRequestInitiator::threadReqInit, std::ref(*this))}.detach();
@@ -591,6 +708,12 @@ bool CRequestInitiator::init()
 	return true;
 }
 
+/**
+ * Push polling frequency to queue
+ * @param a_uiRef	:[in] frequency
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef)
 {
 	try
@@ -610,6 +733,12 @@ bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef)
 	return false;
 }
 
+/**
+ * Get polling frequency
+ * @param a_uiRef	:[in] reference to store polling frequency
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef)
 {
 	try
@@ -628,6 +757,9 @@ bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef)
 	return false;
 }
 
+/**
+ * Thread function to initiate requests
+ */
 void CRequestInitiator::threadReqInit()
 {
 	try
@@ -696,6 +828,10 @@ void CRequestInitiator::threadReqInit()
 	}
 }
 
+/**
+ * Initiate requests
+ * @param a_uiRef	:[in] polling frequency
+ */
 void CRequestInitiator::initiateRequests(uint32_t a_uiRef)
 {
 	try
@@ -713,10 +849,16 @@ void CRequestInitiator::initiateRequests(uint32_t a_uiRef)
 	}
 }
 
+/**
+ * Destructor
+ */
 CRequestInitiator::~CRequestInitiator()
 {
 }
 
+/**
+ * Constructor
+ */
 CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
 {
 	try
@@ -730,6 +872,11 @@ CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
 	}
 }
 
+/**
+ * Get transaction id for requested data
+ * @param tokenId	:[in] get request for request with token
+ * @return transaction id
+ */
 CRefDataForPolling CRequestInitiator::getTxIDReqData(unsigned short tokenId)
 {
 	/// Ensure that only on thread can execute at a time
@@ -739,7 +886,11 @@ CRefDataForPolling CRequestInitiator::getTxIDReqData(unsigned short tokenId)
 	return m_mapTxIDReqData.at(tokenId);
 }
 
-// function to insert new entry in map
+/**
+ * insert new entry in map
+ * @param token 		:[in] token
+ * @param objRefData	:[in] reference to polling data
+ */
 void CRequestInitiator::insertTxIDReqData(unsigned short token, CRefDataForPolling objRefData)
 {
 	/// Ensure that only on thread can execute at a time
@@ -749,7 +900,10 @@ void CRequestInitiator::insertTxIDReqData(unsigned short token, CRefDataForPolli
 	m_mapTxIDReqData.insert(pair <unsigned short, CRefDataForPolling> (token, objRefData));
 }
 
-// function to remove entry from the map once reply is sent
+/**
+ * Remove entry from the map once reply is sent
+ * @param tokenId :[in] remove entry with given token id
+ */
 void CRequestInitiator::removeTxIDReqData(unsigned short tokenId)
 {
 	/// Ensure that only on thread can execute at a time
@@ -757,10 +911,16 @@ void CRequestInitiator::removeTxIDReqData(unsigned short tokenId)
 	m_mapTxIDReqData.erase(tokenId);
 }
 
+/**
+ * Constructor
+ */
 CTimeMapper::CTimeMapper()
 {
 }
 
+/**
+ * Initiate timer function
+ */
 void CTimeMapper::initTimerFunction()
 {
 	//m_thread =
@@ -770,6 +930,9 @@ void CTimeMapper::initTimerFunction()
 	//std::cout << "\nCreated periodic read timer thread\n";
 }
 
+/**
+ * Check timer
+ */
 void CTimeMapper::checkTimer()
 {
     try
@@ -790,6 +953,12 @@ void CTimeMapper::checkTimer()
 	}
 }
 
+/**
+ * Send request
+ * @param a_stRdPrdObj	:[in] request to send
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 {
 	MbusAPI_t stMbusApiPram = {};
@@ -864,6 +1033,13 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 	return bRet;
 }
 
+/**
+ * Insert time
+ * @param a_uTime	:[in] time
+ * @param a_oPointD	:[in] point for which to add time
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CTimeMapper::insert(uint32_t a_uTime, CRefDataForPolling &a_oPointD)
 {
 	bool bRet = true;
@@ -902,6 +1078,9 @@ bool CTimeMapper::insert(uint32_t a_uTime, CRefDataForPolling &a_oPointD)
 	return bRet;
 }
 
+/**
+ * Destructor
+ */
 CTimeMapper::~CTimeMapper()
 {
 	try
@@ -916,6 +1095,12 @@ CTimeMapper::~CTimeMapper()
 	}
 }
 
+/**
+ * Add time record
+ * @param a_oPoint
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CTimeRecord::add(CRefDataForPolling &a_oPoint)
 {
 	bool bRet = true;
@@ -943,7 +1128,9 @@ bool CTimeRecord::add(CRefDataForPolling &a_oPoint)
 	return bRet;
 }
 
-
+/**
+ * Destructor
+ */
 CTimeRecord::~CTimeRecord()
 {
 	try

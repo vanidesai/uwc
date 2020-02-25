@@ -966,8 +966,18 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 	return u8ReturnType;
 }
 
-// New initSerialPort Function
-//#ifdef OLD_SERIALPORT
+/**
+ * Description
+ * Exported function to initiate serial port according to baud rate
+ *
+ * @param portName [in] uint8_t serial port number
+ * @param baudrate [in] uint32_t baud rate
+ * @param parity [in] uint8_t parity
+ * @param stop_bit [in] uint8_t stop bit
+ *
+ * @return int [out] respective error codes
+ *
+ */
 MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uint8_t  parity, uint8_t stop_bit)
 {
 	struct termios tios;
@@ -1325,7 +1335,15 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 #endif
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-
+/**
+ * Description
+ * Set socket failure state
+ *
+ * @param stIPConnect [in] pointer to struct of type IP_Connect_t
+ *
+ * @return void [out] none
+ *
+ */
 void Mark_Sock_Fail(IP_Connect_t *stIPConnect) {
 	if(NULL != stIPConnect)
 	{
@@ -1339,10 +1357,10 @@ void Mark_Sock_Fail(IP_Connect_t *stIPConnect) {
 
 /**
  * Description
- * Function to send packet on network
+ * Send modbus packet on network
  *
- * @param pstMBusRequesPacket [in] Request packet
- * @param pi32sockfd [in] socket fd
+ * @param pstMBusRequesPacket [in] pointer to request packet struct of type stMbusPacketVariables_t
+ * @param a_pstIPConnect [in] pointer to socket struct of type IP_Connect_t
  *
  * @return uint8_t [out] respective error codes
  *

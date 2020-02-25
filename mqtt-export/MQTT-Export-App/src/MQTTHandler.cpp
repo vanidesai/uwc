@@ -19,7 +19,10 @@ sem_t g_semaphoreRespProcess;
 std::mutex g_mqttSubMutexLock;
 std::mutex g_mqttPublishMutexLock;
 
-// constructor
+/**
+ * constructor
+ * @param strPlBusUrl :[in] MQTT broker URL
+ */
 CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		publisher(strPlBusUrl, CLIENTID), subscriber(strPlBusUrl, SUBSCRIBERID), ConfigState(MQTT_PUBLISHER_CONNECT_STATE), subConfigState(
 				MQTT_SUSCRIBER_CONNECT_STATE) {
@@ -56,7 +59,10 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 	}
 }
 
-// function to get single instance of this class
+/**
+ * function to get single instance of this class
+ * @return Handle to single instance of this class, exits in case of failure
+ */
 CMQTTHandler& CMQTTHandler::instance() {
 
 	static string strPlBusUrl = CTopicMapper::getInstance().getStrMqttExportURL();
@@ -72,6 +78,11 @@ CMQTTHandler& CMQTTHandler::instance() {
 	return handler;
 }
 
+/**
+ * MQTT publisher connects with MQTT broker
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::connect() {
 
 	bool bFlag = true;
@@ -90,6 +101,12 @@ bool CMQTTHandler::connect() {
 }
 
 #ifdef QUEUE_FAILED_PUBLISH_MESSAGES
+/**
+ * Retrieves a message from message queue
+ * @param a_msg :[in] reference to message to retrieve
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::getMsgFromQ(stMsgData &a_msg) {
 	CLogger::getInstance().log(DEBUG, "Pre-publish Q msgs count: " + m_qMsgData.size());
 
@@ -111,6 +128,12 @@ bool CMQTTHandler::getMsgFromQ(stMsgData &a_msg) {
 	return bRet;
 }
 
+/**
+ * Push a message in message queue
+ * @param a_msg :[in] reference to message to push in queue
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::pushMsgInQ(const stMsgData &a_msg) {
 
 	bool bRet = true;
@@ -128,6 +151,9 @@ bool CMQTTHandler::pushMsgInQ(const stMsgData &a_msg) {
 
 }
 
+/**
+ * Thread function to post message from message queue
+ */
 void CMQTTHandler::postPendingMsgsThread() {
 	CLogger::getInstance().log(DEBUG, "Starting thread to publish pending data");
 
@@ -166,6 +192,9 @@ void CMQTTHandler::postPendingMsgsThread() {
 	CLogger::getInstance().log(DEBUG, "--Stopping thread to publish pending data");
 }
 
+/**
+ * Post pending messages from message queue
+ */
 void CMQTTHandler::postPendingMsgs() {
 	// Create a new thread to post messages to MQTT
 	std::thread { std::bind(&CMQTTHandler::postPendingMsgsThread,
@@ -173,18 +202,38 @@ void CMQTTHandler::postPendingMsgs() {
 }
 #endif
 
+/**
+ * Get publisher current state
+ * @return publisher state
+ */
 Mqtt_Config_state_t CMQTTHandler::getMQTTConfigState() {
 	return ConfigState;
 }
 
+/**
+ * Set publisher state to given
+ * @param tempConfigState :[in] publisher state to set
+ */
 void CMQTTHandler::setMQTTConfigState(Mqtt_Config_state_t tempConfigState) {
 	ConfigState = tempConfigState;
 }
 
+/**
+ * Gets current time in nano seconds
+ * @param ts :[in] structure of current time
+ * @return current time in nano seconds
+ */
 static unsigned long get_nanos(struct timespec ts) {
     return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
 }
 
+/**
+ * Add current time stamp in message payload
+ * @param a_sMsg 		:[in] message in which to add time
+ * @param a_tsMsgRcvd	:[in] time stamp in nano seconds
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsMsgRcvd)
 {
 	cJSON *root = NULL;
@@ -230,6 +279,15 @@ bool CMQTTHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsM
 	}
 }
 
+/**
+ * Publish message to MQTT broker without message queue
+ * @param a_sMsg 		:[in] message to publish
+ * @param a_sTopic		:[in] topic on which to publish
+ * @param qos			:[in] QOS with which to publish
+ * @param a_tsMsgRcvd	:[in] time when message is received
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::publish(std::string a_sMsg, std::string a_sTopic, int qos, struct timespec a_tsMsgRcvd) {
 
 	static bool bIsFirst = true;
@@ -251,6 +309,15 @@ bool CMQTTHandler::publish(std::string a_sMsg, std::string a_sTopic, int qos, st
 	return false;
 }
 
+/**
+ * Publish message on MQTT broker
+ * @param a_sMsg 	:[in] message to publish
+ * @param a_sTopic	:[in] topic on which to publish message
+ * @param a_iQOS	:[in] QOS with which to publish message
+ * @param a_bFromQ	:[in] is message from queue
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQOS,
 		bool a_bFromQ) {
 
@@ -328,6 +395,10 @@ std::atomic<uint32_t> CMQTTHandler::m_ui32MessageArrived(0);
 std::atomic<uint32_t> CMQTTHandler::m_uiQReqTried(0);
 std::atomic<uint32_t> CMQTTHandler::m_uiSubscribeQReqTried(0);
 
+/**
+ * Print counters
+ * @return
+ */
 void CMQTTHandler::printCounters()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req rcvd: " + std::to_string(m_ui32PublishReq)));
@@ -354,14 +425,27 @@ void CMQTTHandler::printCounters()
 }
 #endif
 
+/**
+ * Get MQTT subscriber current state
+ * @return subscriber current state
+ */
 Mqtt_Sub_Config_state_t CMQTTHandler::getMQTTSubConfigState() {
 	return subConfigState;
 }
 
+/**
+ * Set MQTT subscriber state to given
+ * @param tempConfigState :[in] subscriber state to set
+ */
 void CMQTTHandler::setMQTTSubConfigState(Mqtt_Sub_Config_state_t tempConfigState) {
 	subConfigState = tempConfigState;
 }
 
+/**
+ * Initialize semaphores
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::initSem()
 {
 	int ok = sem_init(&g_semaphoreRespProcess, 0, 0 /* Initial value of zero*/);
@@ -375,6 +459,11 @@ bool CMQTTHandler::initSem()
 	return true;
 }
 
+/**
+ * Subscribe with MQTT broker for topics
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::subscribeToTopics() {
 
 	//get list of topics from topic mapper
@@ -416,6 +505,11 @@ bool CMQTTHandler::subscribeToTopics() {
 	return true;
 }
 
+/**
+ * Connect subscriber with MQTT broker
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::connectSubscriber() {
 
 	bool bFlag = true;
@@ -442,6 +536,12 @@ bool CMQTTHandler::connectSubscriber() {
 	return bFlag;
 }
 
+/**
+ * Retrieve message from message queue to publish on EIS
+ * @param msg :[in] reference to message to retrieve from queue
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::getSubMsgFromQ(mqtt::const_message_ptr &msg) {
 
 	bool bRet = true;
@@ -461,7 +561,12 @@ bool CMQTTHandler::getSubMsgFromQ(mqtt::const_message_ptr &msg) {
 	return bRet;
 }
 
-//this should push message in queue
+/**
+ * Push message in message queue to send on EIS
+ * @param msg :[in] reference of message to push in queue
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg) {
 
 	bool bRet = true;
@@ -481,6 +586,9 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg) {
 	return bRet;
 }
 
+/**
+ * Clean up, destroy semaphores, disables callback, disconnect from MQTT broker
+ */
 void CMQTTHandler::cleanup()
 {
 	sem_destroy(&g_semaphoreRespProcess);
@@ -505,6 +613,9 @@ void CMQTTHandler::cleanup()
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroyed CMQTTHandler instance"));
 }
 
+/**
+ * Destructor
+ */
 CMQTTHandler::~CMQTTHandler()
 {
 }

@@ -25,17 +25,33 @@ std::mutex publishJsonMutex;
 
 using namespace zmq_handler;
 
+/**
+ * Constructor
+ */
 PublishJsonHandler::PublishJsonHandler()
 {
 	m_devMode = true;
 }
 
+/**
+ * Return single instance of this class
+ * @return
+ */
 PublishJsonHandler& PublishJsonHandler::instance()
 {
 	static PublishJsonHandler handler;
 	return handler;
 }
 
+/**
+ * Publish json
+ * @param msg			:[in] message to publish
+ * @param msgbus_ctx	:[in] msgbus context to publish on
+ * @param pub_ctx		:[in] pub context
+ * @param a_sTopic		:[in] topic on which to publish
+ * @return 	true : on success,
+ * 			false : on error
+ */
 BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, void* pub_ctx, const std::string a_sTopic)
 {
 	if((NULL == msg) || (NULL == msgbus_ctx) || (NULL == pub_ctx))
@@ -60,6 +76,9 @@ BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, v
 }
 
 #ifdef REALTIME_THREAD_PRIORITY
+/**
+ * Set thread priority in case of realtime
+ */
 void PublishJsonHandler::set_thread_priority() {
 	//set priority
 	sched_param param;

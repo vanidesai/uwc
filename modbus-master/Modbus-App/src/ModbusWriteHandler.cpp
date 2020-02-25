@@ -29,6 +29,9 @@
 extern std::atomic<bool> g_stopThread;
 /// reference if to store request data
 
+/**
+ * Constructor
+ */
 modWriteHandler::modWriteHandler() : m_bIsWriteInitialized(false)
 {
 	try
@@ -43,6 +46,11 @@ modWriteHandler::modWriteHandler() : m_bIsWriteInitialized(false)
 	}
 }
 
+/**
+ * Initialize semaphore
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool modWriteHandler::initWriteSem()
 {
 	//
@@ -54,6 +62,14 @@ bool modWriteHandler::initWriteSem()
 	return true;
 }
 
+/**
+ * Create error response
+ * @param ptMsg 	:[out] pointer to message envelope structure to fill up
+ * @param errorCode	:[in] error code
+ * @param u8FunCode	:[in] function code
+ * @param strTopic	:[in] topic for which to create error response
+ * @param txID		:[in] transaction id
+ */
 void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 		eMbusStackErrorCode errorCode, uint8_t  u8FunCode, std::string &strTopic, unsigned short txID)
 {
@@ -72,8 +88,11 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	}
 
 	stOnDemandRequest onDemandReqData;
-	zmq_handler::getOnDemandReqData(txID, onDemandReqData);
-
+	bool bRetVal = zmq_handler::getOnDemandReqData(txID, onDemandReqData);
+	if(false == bRetVal)
+	{
+		throw std::runtime_error("Request not found in map");
+	}
 	msg_envelope_t *msg = NULL;
 	msg = msgbus_msg_envelope_new(CT_JSON);
 
@@ -117,6 +136,10 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	*ptMsg = msg;
 }
 
+/**
+ * Thread function for on-demand info handler
+ * @return appropriate error code
+ */
 eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
@@ -223,6 +246,11 @@ eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 	return eFunRetType;
 }
 
+/**
+ * Convert char to int
+ * @param input :[in] char to convert to int
+ * @return converted integer
+ */
 int char2int(char input)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
@@ -237,6 +265,13 @@ int char2int(char input)
 	throw std::invalid_argument("Invalid input string");
 }
 
+/**
+ * convert hex to binary
+ * @param src	:[in] hex string to convert to binary
+ * @param iOpLen:[in]iOpLen
+ * @param target:[out] uint8_t
+ * @return
+ */
 int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
@@ -286,6 +321,14 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 	return iOpCharPos;
 }
 
+/**
+ * Validate input json
+ * @param stSourcetopic	:[in] source topic
+ * @param stWellhead	:[in] well head
+ * @param stCommand		:[in] command
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool modWriteHandler::validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
@@ -316,6 +359,15 @@ bool modWriteHandler::validateInputJson(std::string stSourcetopic, std::string s
 	return retValue;
 }
 
+/**
+ * json parser for on demand requests
+ * @param root			:[in] json string
+ * @param stMbusApiPram	:[in] modbus API param
+ * @param funcCode		:[in] function code
+ * @param txID			:[in] transaction id
+ * @param reqData		:[in] on demand request
+ * @return appropriate error code
+ */
 eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode,
@@ -543,6 +595,9 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 	return eFunRetType;
 }
 
+/**
+ * Create write listener
+ */
 void modWriteHandler::createWriteListener()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
@@ -560,12 +615,20 @@ void modWriteHandler::createWriteListener()
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
 
+/**
+ * Return single instance of this class
+ * @return
+ */
 modWriteHandler& modWriteHandler::Instance()
 {
 	static modWriteHandler _self;
 	return _self;
 }
 
+/**
+ * Subscribe to device listener
+ * @param stTopic	:[in] topic to subscribe
+ */
 void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 {
 	msg_envelope_t *msg = NULL;
@@ -633,6 +696,12 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 	}
 }
 
+/**
+ * Push write request to TCP queue
+ * @param stWriteRequestNode
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool modWriteHandler::pushToWriteTCPQueue(struct stRequest &stWriteRequestNode)
 {
 	try
@@ -652,6 +721,9 @@ bool modWriteHandler::pushToWriteTCPQueue(struct stRequest &stWriteRequestNode)
 	return false;
 }
 
+/**
+ * Initialize write handler threads
+ */
 void modWriteHandler::initWriteHandlerThreads()
 {
 	static bool bWriteSpawned = false;
@@ -673,6 +745,12 @@ void modWriteHandler::initWriteHandlerThreads()
 	}
 }
 
+/**
+ * Get data to process from queue
+ * @param stWriteProcessNode :[out] request to process
+ * @return 	true : on success,
+ * 			false : on error
+ */
 bool modWriteHandler::getDataToProcess(struct stRequest &stWriteProcessNode)
 {
 	CLogger::getInstance().log(ERROR, LOGDETAILS("Start"));
