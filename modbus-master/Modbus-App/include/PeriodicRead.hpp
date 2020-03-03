@@ -39,6 +39,9 @@ struct stStackResponse
 	uint8_t u8Reason;
 	uint16_t u16TransacID;
 	stTimeStamps m_objStackTimestamps;
+	long m_lPriority;
+	uint8_t  m_u8FunCode;
+	eMbusResponseType m_operationType;
 };
 
 class CRefDataForPolling; 
@@ -54,8 +57,8 @@ private:
 	BOOLEAN pushToQueue(struct stStackResponse &stStackResNode);
 	BOOLEAN getDataToProcess(struct stStackResponse &a_stStackResNode);
 
-	BOOLEAN prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp);
-	BOOLEAN postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling& a_objReqData);
+	BOOLEAN prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp);
+	BOOLEAN postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData);
 	BOOLEAN postResponseJSON(stStackResponse& a_stResp);
 
 	BOOLEAN initSem();
@@ -67,16 +70,7 @@ private:
 
 public:
 	static CPeriodicReponseProcessor& Instance();
-	void handleResponse(uint8_t  u8UnitID,
-						 uint16_t u16TransacID,
-						 uint8_t* pu8IpAddr,
-						 uint8_t  u8FunCode,
-						 stException_t  *pstException,
-						 uint8_t  u8numBytes,
-						 uint8_t* pu8data,
-						 uint16_t  u16StartAddress,
-						 uint16_t  u16Quantity,
-						 stTimeStamps a_objStackTimestamps);
+	void handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, eMbusResponseType respType);
 	bool isInitialized() {return m_bIsInitialized;}
 	void initRespHandlerThreads();
 	BOOLEAN postDummyBADResponse(const CRefDataForPolling& a_objReqData);

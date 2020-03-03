@@ -13,6 +13,7 @@
 
 #include <string>
 #include <vector>
+#include <atomic>
 
 #include "utils/YamlUtil.hpp"
 
@@ -147,11 +148,14 @@ namespace network_info
 		const CWellSiteInfo &m_rWellSite;
 		const CWellSiteDevInfo &m_rWellSiteDev;
 		const CDataPoint &m_rPoint;
-		mutable bool m_bIsAwaitResp;
+		mutable std::atomic<bool> m_bIsAwaitResp;
 
 	public:
 		CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
 				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint);
+
+		CUniqueDataPoint(const CUniqueDataPoint&);
+
 
 		//std::string getID() {return m_sId;}
 		//const CWellSiteInfo& getWellSite() {return m_rWellSite;}

@@ -17,6 +17,7 @@
 #include <semaphore.h>
 #include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
+#include <functional>
 
 //#define QOS         1
 //#define TIMEOUT     10000L
@@ -190,32 +191,32 @@ class CRefDataForPolling
 };
 
 /**
- * namespace for Linux based timer API's
+ * namespace for Periodic timer API's
  */
-namespace LinuxTimer
+namespace PeriodicTimer
 {
 	/**
 	 * Function to start Linux timer
 	 * @param
-	 * lNextTimerTick : use to set next tick count
-	 * @return : true on success and false on failure
+	 * interval : interval in microseconds
+	 * @return : nothing
 	 */
-	bool start_timer(long lNextTimerTick);
+	void timer_start(long interval);
 
 	/**
 	 * Function to stop Linux timer
 	 * @param : Nothing
-	 * @return : true on success and false on failure
-	 */
-	bool stop_timer(void);
-
-	/**
-	 * Function to get timer callback based on signal
-	 * @param :
-	 * iSignal : signal to get timer callback
 	 * @return : Nothing
 	 */
-	void timer_callback(int iSignal);
+	void timer_stop(void);
+
+	/**
+	 *Function to get timer callback
+	 *@param : [in] interval
+	 *@return : Nothing
+	 */
+	void timerThread(long interval);
+
 }  // namespace LinuxTimer
 
 

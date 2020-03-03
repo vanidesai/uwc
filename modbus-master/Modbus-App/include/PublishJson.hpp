@@ -12,12 +12,14 @@
 #define INCLUDE_PUBLISHJSON_HPP_
 
 #include "Common.hpp"
+/*
 #include <eis/utils/thread_safe_queue.h>
 #include <eis/utils/config.h>
 #include <eis/utils/json_config.h>
 #include <eis/msgbus/msgbus.h>
 #include <eis/config_manager/env_config.h>
 #include <eis/config_manager/config_manager.h>
+*/
 
 /**
  * Structure to contain state for a publisher thread

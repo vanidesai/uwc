@@ -12,6 +12,7 @@
 CPP_SRCS += \
 ../src/ConfigManager.cpp \
 ../src/EISMsgbusHandler.cpp \
+../src/Logger.cpp \
 ../src/MQTTCallback.cpp \
 ../src/MQTTHandler.cpp \
 ../src/MQTT_Export.cpp \
@@ -20,6 +21,7 @@ CPP_SRCS += \
 OBJS += \
 ./src/ConfigManager.o \
 ./src/EISMsgbusHandler.o \
+./src/Logger.o \
 ./src/MQTTCallback.o \
 ./src/MQTTHandler.o \
 ./src/MQTT_Export.o \
@@ -28,6 +30,7 @@ OBJS += \
 CPP_DEPS += \
 ./src/ConfigManager.d \
 ./src/EISMsgbusHandler.d \
+./src/Logger.d \
 ./src/MQTTCallback.d \
 ./src/MQTTHandler.d \
 ./src/MQTT_Export.d \
@@ -38,7 +41,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -lrt -std=c++11 -fpermissive -DUNIT_TEST=1 -I../$(PROJECT_DIR)/include -I/home/user/paho.mqtt.c/src -I/usr/local/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security -fstack-protector-strong -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -lrt -std=c++11 -fpermissive -DUNIT_TEST=1 -I../$(PROJECT_DIR)/include -I/home/user/paho.mqtt.c/src -I/usr/local/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

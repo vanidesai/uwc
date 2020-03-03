@@ -8,44 +8,28 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#ifndef TEST_INCLUDE_PUBLISHJSON_UT_HPP_
-#define TEST_INCLUDE_PUBLISHJSON_UT_HPP_
+#ifndef TEST_INCLUDE_LOGGER_UT_HPP_
+#define TEST_INCLUDE_LOGGER_UT_HPP_
 
-
-#include <mutex>
-#include <string.h>
+#include "Logger.hpp"
+#include <string>
 #include <stdlib.h>
-#include "PublishJson.hpp"
-#include "ZmqHandler.hpp"
-#include "PeriodicReadFeature.hpp"
-#include "PeriodicRead.hpp"
-//#include "MsgbusManager.hpp"
-//#include "ModBus_EnvConfig_Caller.hpp"
-//#include "config_Caller.hpp"
-#include "NetworkInfo.hpp"
-#include "Common.hpp"
-#include "API.h"
+#include <map>
+#include <thread>
 #include "gtest/gtest.h"
 
-
-
-
-class PublishJson_ut : public::testing::Test
-{
+class Logger_ut : public ::testing::Test {
 protected:
 	virtual void SetUp();
 	virtual void TearDown();
-
 public:
-
-	msg_envelope_t *msg;
-
-	msg_envelope_t* g_msg = NULL;
-	stStackResponse res;
-	std::string sRespTopic = "Modbus-TCP-Master_ReadRequest";
-
+	std::string Infomsg = "Logger INFO";
+	std::string Debugmsg = "Logger DEBUG";
+	std::string Warnmsg = "Logger WARN";
+	std::string Fatalmsg = "Logger FATAL";
+	std::string Errormsg = "Logger ERROR";
 
 };
 
 
-#endif /* TEST_INCLUDE_PUBLISHJSON_UT_HPP_ */
+#endif /* TEST_INCLUDE_LOGGER_UT_HPP_ */

@@ -88,7 +88,7 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	}
 
 	stOnDemandRequest onDemandReqData;
-	bool bRetVal = zmq_handler::getOnDemandReqData(txID, onDemandReqData);
+	bool bRetVal = common_Handler::getOnDemandReqData(txID, onDemandReqData);
 	if(false == bRetVal)
 	{
 		throw std::runtime_error("Request not found in map");
@@ -121,9 +121,11 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	/// QOS
 	msg_envelope_elem_body_t* ptQos =  msgbus_msg_envelope_new_string(onDemandReqData.m_strQOS.c_str());
 	msgbus_msg_envelope_put(msg, "qos", ptQos);
-
+	/// Priority
+	msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_lPriority).c_str());
+	msgbus_msg_envelope_put(msg, "priority", ptPriority);
 	std::string strTimestamp, strUsec;
-	zmq_handler::getTimeParams(strTimestamp, strUsec);
+	common_Handler::getTimeParams(strTimestamp, strUsec);
 	/// usec
 	msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(strUsec.c_str());
 	msgbus_msg_envelope_put(msg, "usec", ptUsec);
@@ -177,7 +179,7 @@ eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 
 				eFunRetType = jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData);
 
-				zmq_handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
+				common_Handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
 
 				if(MBUS_STACK_NO_ERROR == eFunRetType)
 				{
@@ -442,7 +444,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 			std::size_t found = strSourceTopic.find_last_of(strSearchString);
 			string stTopic = strSourceTopic.substr(0, found);
 
-			std::map<std::string, network_info::CUniqueDataPoint> mpp = network_info::getUniquePointList();
+			const std::map<std::string, network_info::CUniqueDataPoint>& mpp = network_info::getUniquePointList();
 			struct network_info::stModbusAddrInfo addrInfo;
 			try
 			{
@@ -556,7 +558,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 							tempVt.push_back(byte1);
 							i = i+2;
 						}
-						strValue = zmq_handler::swapConversion(tempVt,
+						strValue = common_Handler::swapConversion(tempVt,
 								!obj.getAddress().m_bIsByteSwap,
 								obj.getAddress().m_bIsWordSwap);
 					}
@@ -656,14 +658,13 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 			}
 
 			num_parts = msgbus_msg_envelope_serialize(msg, &parts);
-			if(num_parts <= 0)
+			if((num_parts <= 0) || (NULL == parts))
 			{
 
 				CLogger::getInstance().log(ERROR, LOGDETAILS(
 						" Failed to serialize message"));
 			}
-
-			if(NULL != parts[0].bytes)
+			else if(NULL != parts[0].bytes)
 			{
 				struct stRequest stWriteRequestNode;
 				std::string strMsg(parts[0].bytes);

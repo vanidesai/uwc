@@ -8,8 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#ifndef TEST_INCLUDE_MODBUSWRITEHANDLER_UT_H_
-#define TEST_INCLUDE_MODBUSWRITEHANDLER_UT_H_
+#ifndef TEST_INCLUDE_MODBUSWRITEHANDLER_UT_HPP_
+#define TEST_INCLUDE_MODBUSWRITEHANDLER_UT_HPP_
 
 #include <stdbool.h>
 #include "gtest/gtest.h"
@@ -38,8 +38,16 @@ protected:
 	virtual void TearDown();
 
 public:
-	const string topic = "MQTT-EXPORT/PL0_flowmeter1_write,MQTT-EXPORT/PL0_flowmeter2_write";
-	string msg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+	const string topic = "Modbus-TCP/PL0_flowmeter1_write,MQTT-EXPORT/PL0_flowmeter2_write";
+	//const string topic = "Modbus-TCP-Master_ReadRequest";
+
+	//string msg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+
+	//	string msg =
+	//			"{ 	\"value\": \"0xFF00\", 	\"command\": \"AValve\", 	\"app_seq\": \"1234\", \"wellhead\": \"PL0\",  \"version\": \"0.0.0.1\", \"sourcetopic\":\"Response\", \"timestamp\": \"2020-02-12 06:14:15\", \"usec\": \"1581488055204186\" }";
+
+	string msg =
+			"{ 	\"value\": \"0xFF00\", 	\"command\": \"Flow\", 	\"app_seq\": \"1234\", \"wellhead\": \"PL0\",  \"version\": \"0.0.0.1\", \"sourcetopic\":\"/flowmeter/PL0/Flow/read\", \"timestamp\": \"2020-02-12 06:14:15\", \"usec\": \"1581488055204186\" }";
 
 	string str = "data";
 	uint8_t* target = NULL;
@@ -48,15 +56,26 @@ public:
 	RestMbusReqGeneric_t *stModbusRxPacket;
 	unsigned char byte1;
 	int i = 0;
-	stWriteRequest writeReq;
-	unsigned char  m_u8FunCode;
-		MbusAPI_t stMbusApiPram = {};
+	stRequest writeReq;
+	unsigned char  m_u8FunCode = 0;
+	unsigned char u8FunCode = READ_COIL_STATUS;
+	std::string strTopic = "";
+	MbusAPI_t stMbusApiPram = {};
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
+
+	string strCommand, strValue, strWellhead, strVersion, strSourceTopic;
 	eMbusStackErrorCode eFunRetType2;
+	//sem_t semaphoreWriteReq;
+
+	stOnDemandRequest reqData;
+	cJSON *root = NULL;
+
+	/*MsgbusManager msgbusMgr;
+	EnvConf_Caller CallerObj;*/
 
 
 };
 
 
 
-#endif /* TEST_INCLUDE_MODBUSWRITEHANDLER_UT_H_ */
+#endif /* TEST_INCLUDE_MODBUSWRITEHANDLER_UT_HPP_ */

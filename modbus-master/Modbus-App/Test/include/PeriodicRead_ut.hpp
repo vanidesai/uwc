@@ -31,6 +31,7 @@ public:
 	uint8_t						u8UnitID = 0;
 	uint16_t					u16TransacID = 0;
 	uint8_t						u8IpAddr = 0;
+	uint16_t u16Port = 0;
 	uint8_t*					pu8IpAddr = &u8IpAddr;
 	uint8_t						u8FunCode = 0;
 
@@ -46,6 +47,7 @@ public:
 	string						test_str = "";
 
 	bool 						Temp_Bool = false;
+	stTimeStamps a_objStackTimestamps;
 
 	struct Some_Other_Str
 	{
@@ -62,7 +64,7 @@ public:
 	string		str2;
 	string		str3;
 
-	network_info::CUniqueDataPoint 		CUniqueDataPoint_obj
+	network_info::CUniqueDataPoint CUniqueDataPoint_obj
 	{
 		"Test_String",
 		CWellSiteInfo_obj,
@@ -70,13 +72,20 @@ public:
 		CDataPoint_obj
 	};
 
-	zmq_handler::stZmqContext			stZmqContext_obj;
+	zmq_handler::stZmqContext stZmqContext_obj;
+	zmq_handler::stZmqPubContext stZmqPubContext_obj;
 
-	CRefDataForPolling					CRefDataForPolling_obj	{
-																CUniqueDataPoint_obj,
-																stZmqContext_obj,
-																16
-																};
+	CRefDataForPolling CRefDataForPolling_obj
+	{
+		CUniqueDataPoint_obj,
+		stZmqContext_obj,
+		stZmqPubContext_obj,
+		16
+	};
+
+	stMbusAppCallbackParams_t MbusAppCallbackParams;
+	stMbusAppCallbackParams_t *pstMbusAppCallbackParams = &MbusAppCallbackParams;
+
 };
 
 

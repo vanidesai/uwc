@@ -19,6 +19,7 @@
 #include "eis/msgbus/msgbus.h"
 #include "cjson/cJSON.h"
 #include "ZmqHandler.hpp"
+#include "PeriodicReadFeature.hpp"
 
 #define ON_DEMAND_WRITE_PRIORITY 1 	//Write-On Demand Priority set as highest(1)
 #define ON_DEMAND_READ_PRIORITY 2 	//Read-On Demand Priority set as 2

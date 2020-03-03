@@ -53,6 +53,30 @@ void OSAL_Free(void *pvPointer)
 
 #ifdef REALTIME_THREAD_PRIORITY
 /**
+ * Convert char data to int
+ * @param buf :[in] char data to convert to int
+ * @return int
+ */
+int ConvertCharToInt(const char *buf)
+{
+
+	if(buf == NULL)
+	{
+		return -1;
+	}
+	errno = 0; // reset error number
+	char *endptr;
+
+	int val = strtol(buf, &endptr, 10);
+
+	if ((errno == ERANGE) || (endptr == buf) || (*endptr && *endptr != '\n'))
+	{
+		val = -1;
+	}
+	return val;
+}
+
+/**
  *
  * DESCRIPTION
  * Get current thread priority and policy from environment variables
@@ -62,9 +86,14 @@ void OSAL_Free(void *pvPointer)
  */
 void Get_Thread_Params(int *policy, int *priority)
 {
+	if(policy == NULL || priority == NULL)
+	{
+		return;
+	}
     const char *pcThreadPriority = getenv("THREAD_PRIORITY");
 	if(pcThreadPriority != NULL) {
-		sscanf(pcThreadPriority, "%d", policy); // Using sscanf
+		*policy = ConvertCharToInt(pcThreadPriority);
+
 		if(*policy < 0 || *policy > 2) {
 			*policy = SCHED_RR;
 		}
@@ -75,7 +104,7 @@ void Get_Thread_Params(int *policy, int *priority)
 	       SCHED_RR) have a sched_priority value in the range 1 (low) to 99
 	       (high)*/
     if(pcThreadPolicy != NULL) {
-		sscanf(pcThreadPolicy, "%d", priority); // Using sscanf
+    	*policy = ConvertCharToInt(pcThreadPolicy);
 		if(*priority < 1 || *priority > 99) {
 			*priority = 50;//medium priority
 		}
