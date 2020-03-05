@@ -19,9 +19,6 @@
 #include "ZmqHandler.hpp"
 #include "PeriodicReadFeature.hpp"
 #include "PeriodicRead.hpp"
-//#include "MsgbusManager.hpp"
-//#include "ModBus_EnvConfig_Caller.hpp"
-//#include "config_Caller.hpp"
 #include "NetworkInfo.hpp"
 #include "Common.hpp"
 #include "API.h"
@@ -39,10 +36,8 @@ protected:
 public:
 
 	msg_envelope_t *msg;
-
 	msg_envelope_t* g_msg = NULL;
 	stStackResponse res;
-	std::string sRespTopic = "Modbus-TCP-Master_ReadRequest";
 
 
 };

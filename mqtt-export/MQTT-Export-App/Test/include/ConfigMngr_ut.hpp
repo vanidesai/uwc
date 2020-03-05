@@ -8,26 +8,25 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#ifndef TEST_INCLUDE_YAMLUTIL_UT_HPP_
-#define TEST_INCLUDE_YAMLUTIL_UT_HPP_
+#ifndef CONFIGMGR_UT_H_
+#define CONFIGMGR_UT_H_
 
-/* Include files */
-#include "utils/YamlUtil.hpp"
-#include<iostream>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+#include "ConfigManager.hpp"
+#include "string.h"
 
-class YamlUtil_ut : public::testing::Test
-{
+void etcdOnChangeKeyCb(char* key, char * val);
+void etcdOnChangeDirCb(char* key, char * val);
+
+
+class ConfigManager_ut : public ::testing::Test {
+
 protected:
 	virtual void SetUp();
 	virtual void TearDown();
 
 public:
-	uint8_t	Arr[3];
-	uint8_t	ExpectedArr[3] = {129, 130, 200};
-	string	Test_Str = "129.130.200";
 
 };
 
-
-#endif /* TEST_INCLUDE_YAMLUTIL_UT_HPP_ */
+#endif /* CONFIGMGR_UT_H_ */

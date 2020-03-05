@@ -17,7 +17,6 @@
 #include <semaphore.h>
 #include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
-#include <functional>
 
 //#define QOS         1
 //#define TIMEOUT     10000L
@@ -36,36 +35,31 @@ class CTimeRecord
 	CTimeRecord& operator=(const CTimeRecord&) = delete;	// Copy assign
 
 	// Interval
-	std::atomic<uint32_t> m_u32Interval; // in milliseconds
-	std::atomic<uint32_t> m_u32RemainingInterval; // in milliseconds
+	std::atomic<uint32_t> m_u32Interval;
+	std::atomic<uint32_t> m_u32RemainingInterval;
 	
 	std::vector<CRefDataForPolling> m_vPolledPoints;
-	std::vector<CRefDataForPolling> m_vPolledPointsRT;
 	std::mutex m_vectorMutex;
-	bool m_bIsRTAvailable;
-	bool m_bIsNonRTAvailable;
 
 	public:
-	CTimeRecord(uint32_t a_u32Interval, CRefDataForPolling &a_oPoint);
-	/*: m_u32Interval(a_u32Interval), m_u32RemainingInterval(a_u32Interval),
-	  m_bIsRTAvailable(false), m_bIsNonRTAvailable(false)
+	CTimeRecord(uint32_t a_u32Interval, CRefDataForPolling &a_oPoint)
+	: m_u32Interval(a_u32Interval), m_u32RemainingInterval(a_u32Interval)
 	{
 		m_vPolledPoints.push_back(a_oPoint);
-	}*/
+	}
 
 	CTimeRecord(CTimeRecord &a_oTimeRecord)
-	: m_vPolledPoints(a_oTimeRecord.m_vPolledPoints), m_vPolledPointsRT(a_oTimeRecord.m_vPolledPointsRT),
-	  m_bIsRTAvailable(a_oTimeRecord.m_bIsRTAvailable), m_bIsNonRTAvailable(a_oTimeRecord.m_bIsNonRTAvailable)
+	: m_vPolledPoints(a_oTimeRecord.m_vPolledPoints)
 	{
 		m_u32Interval.store(a_oTimeRecord.m_u32Interval);
 		m_u32RemainingInterval.store(a_oTimeRecord.m_u32Interval);
 	}
 	
 	~CTimeRecord();
-	uint32_t decrementTime(uint32_t a_uiMSec)
+	uint32_t decrementTime(uint32_t a_uiSec)
 	{
-		m_u32RemainingInterval -= a_uiMSec;
-		if (0 >= m_u32RemainingInterval)
+		m_u32RemainingInterval -= a_uiSec;
+		if (0 == m_u32RemainingInterval)
 		{
 			m_u32RemainingInterval.store(m_u32Interval);
 			return 0;
@@ -75,21 +69,16 @@ class CTimeRecord
 	}
 	std::vector<CRefDataForPolling>& getPolledPointList()
 	{
+		//
 		//std::lock_guard<std::mutex> lock(m_vectorMutex);
 		return m_vPolledPoints;
-	}
-	std::vector<CRefDataForPolling>& getPolledPointListRT()
-	{
-		return m_vPolledPointsRT;
 	}
 	bool add(CRefDataForPolling &a_oPoint);
 	uint32_t size() 
 	{
 		std::lock_guard<std::mutex> lock(m_vectorMutex);
-		return (uint32_t)(m_vPolledPoints.size() + m_vPolledPointsRT.size());
+		return (uint32_t)m_vPolledPoints.size(); 
 	}
-	bool isRTListAvailable() { return m_bIsRTAvailable; };
-	bool isNonRTListAvailable() { return m_bIsNonRTAvailable; };
 };
 
 class CTimeMapper
@@ -105,7 +94,6 @@ class CTimeMapper
 	CTimeMapper();
 	
 	//void ioPeriodicReadTimer(int v);
-	uint32_t gcd(uint32_t num1, uint32_t num2);
 
 	public:
 	// Function to get single instance of this class
@@ -116,7 +104,7 @@ class CTimeMapper
 	}
 	void ioPeriodicReadTimer(int v);
 	//static void timerThreadFunc(const boost::system::error_code& e, boost::asio::steady_timer* t);
-	void checkTimer(uint32_t a_uiInterval);
+	void checkTimer();
 	void initTimerFunction();
 
 	~CTimeMapper();
@@ -124,13 +112,7 @@ class CTimeMapper
 	{
 		return m_mapTimeRecord.at(uiRef).getPolledPointList();
 	}
-	std::vector<CRefDataForPolling>& getPolledPointListRT(uint32_t uiRef)
-	{
-		return m_mapTimeRecord.at(uiRef).getPolledPointListRT();
-	}
 	bool insert(uint32_t a_uTime, CRefDataForPolling &a_oPoint);
-
-	uint32_t getMinTimerFrequency();
 };
 
 class CRequestInitiator
@@ -142,28 +124,24 @@ private:
 	// Default constructor
 	CRequestInitiator();
 
-	void threadReqInit(bool isRTPoint);
-
-	void initiateRequest(std::vector<CRefDataForPolling>&);
+	void threadReqInit();
 
 	std::atomic<unsigned int> m_uiIsNextRequest;
 	//std::vector<std::string> m_vsPrevPendingRequests;
 	//std::mutex m_mutexPrevReqVector;
 	sem_t semaphoreReqProcess;
-	sem_t semaphoreRTReqProcess;
 
 	std::map<unsigned short, CRefDataForPolling> m_mapTxIDReqData;
 	/// mutex for operation on m_mapTxIDReqData map
 	std::mutex m_mutextTxIDMap;
 
 	bool init();
-	bool sendRequest(CRefDataForPolling a_stRdPrdObj, uint16_t &m_u16TxId);
+	bool sendRequest(CRefDataForPolling a_stRdPrdObj);
 
 	std::queue <uint32_t> m_qReqFreq;
-	std::queue <uint32_t> m_qReqFreqRT;
 	std::mutex m_mutexReqFreqQ;
-	bool getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT);
-	bool pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_objTimeRecord);
+	bool getFreqRefForPollCycle(uint32_t &a_uiRef);
+	bool pushPollFreqToQueue(uint32_t &a_uiRef);
 
 public:
 	~CRequestInitiator();
@@ -175,7 +153,7 @@ public:
 		return self;
 	}
 
-	void initiateRequests(uint32_t a_uiRef, CTimeRecord &a_objTimeRecord);
+	void initiateRequests(uint32_t a_uiRef);
 
 	CRefDataForPolling getTxIDReqData(unsigned short);
 
@@ -184,14 +162,6 @@ public:
 
 	// function to remove entry from the map once reply is sent
 	void removeTxIDReqData(unsigned short);
-
-	const sem_t& getSemaphoreReqProcess() const {
-		return semaphoreReqProcess;
-	}
-
-	const sem_t& getSemaphoreRTReqProcess() const {
-		return semaphoreRTReqProcess;
-	}
 };
 
 class CRefDataForPolling
@@ -220,32 +190,32 @@ class CRefDataForPolling
 };
 
 /**
- * namespace for Periodic timer API's
+ * namespace for Linux based timer API's
  */
-namespace PeriodicTimer
+namespace LinuxTimer
 {
 	/**
 	 * Function to start Linux timer
 	 * @param
-	 * interval : interval in milliseconds
-	 * @return : nothing
+	 * lNextTimerTick : use to set next tick count
+	 * @return : true on success and false on failure
 	 */
-	void timer_start(uint32_t interval);
+	bool start_timer(long lNextTimerTick);
 
 	/**
 	 * Function to stop Linux timer
 	 * @param : Nothing
-	 * @return : Nothing
+	 * @return : true on success and false on failure
 	 */
-	void timer_stop(void);
+	bool stop_timer(void);
 
 	/**
-	 *Function to get timer callback
-	 *@param : [in] interval in milliseconds
-	 *@return : Nothing
+	 * Function to get timer callback based on signal
+	 * @param :
+	 * iSignal : signal to get timer callback
+	 * @return : Nothing
 	 */
-	void timerThread(uint32_t interval);
-
+	void timer_callback(int iSignal);
 }  // namespace LinuxTimer
 
 

@@ -139,9 +139,19 @@ int8_t checkforblockingread(void);
 
 #endif
 
-void (*ModbusMaster_ApplicationCallback)(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
-
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+void (*ModbusMaster_ApplicationCallback)(uint8_t  ,
+		uint16_t ,
+		uint8_t* ,
+		uint16_t ,
+		uint8_t  ,
+		stException_t*,
+		uint8_t  ,
+		uint8_t* ,
+		uint16_t,
+		uint16_t,
+		stTimeStamps);
+
 void (*ReadFileRecord_CallbackFunction)(uint8_t, uint8_t*,uint16_t, uint16_t,uint8_t,
 		stException_t *,
 		stMbusRdFileRecdResp_t*);
@@ -154,6 +164,17 @@ void (*ReadDeviceIdentification_CallbackFunction)(uint8_t, uint8_t*, uint16_t, u
 		stException_t*,
 		stRdDevIdResp_t*);
 #else
+void (*ModbusMaster_ApplicationCallback)(uint8_t  ,
+		uint16_t ,
+		uint8_t* ,
+		uint8_t  ,
+		stException_t*,
+		uint8_t  ,
+		uint8_t* ,
+		uint16_t,
+		uint16_t,
+		stTimeStamps);
+
 void (*ReadFileRecord_CallbackFunction)(uint8_t, uint8_t*, uint16_t,uint8_t,
 		stException_t *,
 		stMbusRdFileRecdResp_t*);
@@ -222,41 +243,34 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 
 		if(NULL != ModbusMaster_ApplicationCallback)
 		{
-
-			stMbusAppCallbackParams_t stMbusAppCallbackParams;
-
-			stMbusAppCallbackParams.m_lPriority = pstMBusRequesPacket->m_lPriority;
-
-			stMbusAppCallbackParams.m_u16TransactionID = pstMBusRequesPacket->m_u16TransactionID;
-
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-			stMbusAppCallbackParams.m_u8UnitID = pstMBusRequesPacket->m_u8UnitID;
+			ModbusMaster_ApplicationCallback(
+					pstMBusRequesPacket->m_u8UnitID,
+					pstMBusRequesPacket->m_u16TransactionID,
+					pstMBusRequesPacket->m_u8IpAddr,
+					pstMBusRequesPacket->u16Port,
+					pstMBusRequesPacket->m_u8FunctionCode,
+					&stException,
+					pstMBusRequesPacket->m_stMbusRxData.m_u8Length,
+					pstMBusRequesPacket->m_stMbusRxData.m_au8DataFields,
+					pstMBusRequesPacket->m_u16StartAdd,
+					pstMBusRequesPacket->m_u16Quantity,
+					pstMBusRequesPacket->m_objTimeStamps);
 
-			memcpy_s((void*)&stMbusAppCallbackParams.m_u8IpAddr,
-					(rsize_t) sizeof(stMbusAppCallbackParams.m_u8IpAddr),
-					(void*)&pstMBusRequesPacket->m_stMbusRxData.m_au8DataFields,
-					(rsize_t) sizeof(stMbusAppCallbackParams.m_au8MbusRXDataDataFields));
-
-			stMbusAppCallbackParams.u16Port = pstMBusRequesPacket->u16Port;
 #else
-			stMbusAppCallbackParams.m_u8ReceivedDestination = pstMBusRequesPacket->m_u8ReceivedDestination;
+			ModbusMaster_ApplicationCallback(
+					pstMBusRequesPacket->m_u8UnitID,
+					pstMBusRequesPacket->m_u16TransactionID,
+					&pstMBusRequesPacket->m_u8ReceivedDestination,
+					pstMBusRequesPacket->m_u8FunctionCode,
+					&stException,
+					pstMBusRequesPacket->m_stMbusRxData.m_u8Length,
+					pstMBusRequesPacket->m_stMbusRxData.m_au8DataFields,
+					pstMBusRequesPacket->m_u16StartAdd,
+					pstMBusRequesPacket->m_u16Quantity,
+					pstMBusRequesPacket->m_objTimeStamps);
+
 #endif
-			stMbusAppCallbackParams.m_u8FunctionCode = pstMBusRequesPacket->m_u8FunctionCode;
-
-			stMbusAppCallbackParams.m_u8ExceptionExcCode = stException.m_u8ExcCode;
-			stMbusAppCallbackParams.m_u8ExceptionExcStatus = stException.m_u8ExcStatus;
-			stMbusAppCallbackParams.m_u8MbusRXDataLength = pstMBusRequesPacket->m_stMbusRxData.m_u8Length;
-
-			memcpy_s((void*)&stMbusAppCallbackParams.m_au8MbusRXDataDataFields,
-					(rsize_t) sizeof(stMbusAppCallbackParams.m_au8MbusRXDataDataFields),
-					(void*)&pstMBusRequesPacket->m_stMbusRxData.m_au8DataFields,
-					(rsize_t) sizeof(pstMBusRequesPacket->m_stMbusRxData.m_au8DataFields));
-
-			stMbusAppCallbackParams.m_u16StartAdd = pstMBusRequesPacket->m_u16StartAdd;
-			stMbusAppCallbackParams.m_u16Quantity = pstMBusRequesPacket->m_u16Quantity;
-			stMbusAppCallbackParams.m_objTimeStamps = pstMBusRequesPacket->m_objTimeStamps;
-
-			ModbusMaster_ApplicationCallback(&stMbusAppCallbackParams);
 		}
 		break;
 

@@ -8,8 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#ifndef TEST_INCLUDE_ZMQHANDLER_UT_HPP_
-#define TEST_INCLUDE_ZMQHANDLER_UT_HPP_
+#ifndef TEST_INCLUDE_ZMQHANDLER_UT_H_
+#define TEST_INCLUDE_ZMQHANDLER_UT_H_
 
 #include <string>
 #include <stdlib.h>
@@ -23,12 +23,8 @@
 #include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
 #include "ModbusWriteHandler.hpp"
-//#include "MsgbusManager.hpp"
-//#include "ModBus_EnvConfig_Caller.hpp"
-//#include "config_Caller.hpp"
-#include "NetworkInfo.hpp"
+#include "BoostLogger.hpp"
 #include "PublishJson.hpp"
-
 extern void populatePollingRefData();
 
 class ZmqHandler_ut : public ::testing::Test {
@@ -44,13 +40,10 @@ public:
 	 zmq_handler::stZmqPubContext busPubCTX;
 	 zmq_handler::stZmqSubContext busSubCTX;
 	 zmq_handler::stZmqPubContext objPubContext;
-	 std::string stValue = "0xFF00FF00";
-	 std::string TValue = "0xFFFF";
-	 unsigned char byte1;
 
+	 //objPubContext.m_pContext = pub_ctx;
 
 	 zmq_handler::stZmqSubContext objTempSubCtx;
-	 zmq_handler::stZmqSubContext *TempSubCtx = &objTempSubCtx;
 	// objTempSubCtx.sub_ctx= sub_ctx;
 	 publisher_ctx_t *pub_ctx = NULL;
 	 uint16_t u16TransacID = 1;
@@ -59,4 +52,4 @@ public:
 };
 
 
-#endif /* TEST_INCLUDE_ZMQHANDLER_UT_HPP_ */
+#endif /* TEST_INCLUDE_ZMQHANDLER_UT_H_ */

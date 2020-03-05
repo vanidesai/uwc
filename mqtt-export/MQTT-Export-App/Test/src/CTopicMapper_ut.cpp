@@ -95,18 +95,12 @@ TEST_F(CTopicMapper_ut, readCommonEnvVariables_DevModeFalse)
 // DevMode = other than true and false
 TEST_F(CTopicMapper_ut, readCommonEnvVariables_DevModeOther)
 {
-	setenv("ReadRequest", "ReadRequest_UT", 0);
-	setenv("WriteRequest", "WriteRequest_UT", 0);
-	setenv("APP_VERSION", "APP_VERSION", 0);
 	setenv("DEV_MODE", "other", 1);
 
 	bool bRetVal = CTopicMapper::getInstance().readCommonEnvVariables();
 
-	EXPECT_EQ(true, bRetVal);
+	EXPECT_EQ(false, bRetVal);
 
-	unsetenv("ReadRequest");
-	unsetenv("WriteRequest");
-	unsetenv("APP_VERSION");
 	setenv("DEV_MODE", "true", 1);
 }
 

@@ -10,9 +10,8 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/Common.cpp \
+../src/BoostLogger.cpp \
 ../src/ConfigManager.cpp \
-../src/Logger.cpp \
 ../src/Main.cpp \
 ../src/ModbusStackInterface.cpp \
 ../src/ModbusWriteHandler.cpp \
@@ -22,9 +21,8 @@ CPP_SRCS += \
 ../src/ZmqHandler.cpp 
 
 OBJS += \
-./src/Common.o \
+./src/BoostLogger.o \
 ./src/ConfigManager.o \
-./src/Logger.o \
 ./src/Main.o \
 ./src/ModbusStackInterface.o \
 ./src/ModbusWriteHandler.o \
@@ -34,9 +32,8 @@ OBJS += \
 ./src/ZmqHandler.o 
 
 CPP_DEPS += \
-./src/Common.d \
+./src/BoostLogger.d \
 ./src/ConfigManager.d \
-./src/Logger.d \
 ./src/Main.d \
 ./src/ModbusStackInterface.d \
 ./src/ModbusWriteHandler.d \
@@ -50,7 +47,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -lrt -std=c++11 -fpermissive -DUNIT_TEST -DMODBUS_STACK_TCPIP_ENABLED -DINSTRUMENTATION_LOG -I../$(PROJECT_DIR)/include -I/usr/local/include -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/../bin/yaml-cpp/include -I../$(PROJECT_DIR)/../bin/safestring/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security -fstack-protector-strong -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -lrt -std=c++11 -fpermissive -ftest-coverage  -fprofile-arcs -DBOOST_LOG_DYN_LINK=1 -DMODBUS_STACK_TCPIP_ENABLED -DUNIT_TEST=1 -I../$(PROJECT_DIR)/include -I/usr/local/include -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/../bin/boost/include -I../$(PROJECT_DIR)/../bin/yaml-cpp/include -I../$(PROJECT_DIR)/../bin/safestring/include -I../$(PROJECT_DIR)/../bin/ssl/include -O0 -g3 -ftest-coverage  -fprofile-arcs -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security -fstack-protector-strong  -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

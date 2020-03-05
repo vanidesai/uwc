@@ -12,9 +12,7 @@
 #include "ZmqHandler.hpp"
 #include "Logger.hpp"
 #include "PeriodicReadFeature.hpp"
-#include "PublishJson.hpp"
 #include "API.h"
-#include "PeriodicRead.hpp"
 
 extern "C" {
 	#include <safe_lib.h>
@@ -37,23 +35,207 @@ static unsigned long get_nanos(struct timespec ts) {
  * Function is used as application layer callback
  * for read/write coils,input register
  *
- * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
+ * @param u8UnitID			[in] Unit ID
+ * @param u16TransacID		[in] Transaction ID
+ * @param pu8IpAddr			[in] IP address
+ * @param u8FunCode			[in] Function code
+ * @param pstException		[in] Exception status
+ * @param u8numBytes		[in] byte count
+ * @param pu8data			[in] input request
+ * @param u16StartAdd		[in] start address
+ * @param u16Quantity		[in] quantity
+ * @param a_objStackTimestamps [in] stack time stamps
  * @return void nothing
  *
  */
-void ModbusMaster_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+void ModbusMaster_AppCallback(uint8_t  u8UnitID,
+		 	 	 	 	 	 uint16_t u16TransacID,
+							 uint8_t* pu8IpAddr,
+							 uint16_t u16Port,
+							 uint8_t  u8FunCode,
+							 stException_t  *pstException,
+							 uint8_t  u8numBytes,
+							 uint8_t* pu8data,
+							 uint16_t  u16StartAdd,
+							 uint16_t  u16Quantity,
+							 stTimeStamps a_objStackTimestamps)
+#else
+void ModbusMaster_AppCallback(uint8_t  u8UnitID,
+		 	 	 	 	 	 uint16_t u16TransacID,
+							 uint8_t* pu8IpAddr,
+							 uint8_t  u8FunCode,
+							 stException_t  *pstException,
+							 uint8_t  u8numBytes,
+							 uint8_t* pu8data,
+							 uint16_t  u16StartAdd,
+							 uint16_t  u16Quantity,
+							 stTimeStamps a_objStackTimestamps)
+#endif
 {
+	string temp; //temporary string for logging
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
-	if(pstMbusAppCallbackParams == NULL)
+	std::string sRespTopic = "";
+
+	std::lock_guard<std::mutex> lock(g_RWCommonCallbackMutex);
+	msg_envelope_t *msg = NULL;
+	msg = msgbus_msg_envelope_new(CT_JSON);
+
+	try
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null"));
-		return;
+		stOnDemandRequest onDemandReqData;
+		bool bRetVal = zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
+		if(false == bRetVal)
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Request not found in map"));
+			return;
+		}
+
+		if( u8FunCode == READ_COIL_STATUS ||
+				u8FunCode == READ_HOLDING_REG ||
+				u8FunCode == READ_INPUT_STATUS ||
+				u8FunCode == READ_INPUT_REG)
+		{
+			sRespTopic = PublishJsonHandler::instance().getSReadResponseTopic();
+			if(NULL != pu8data && u8numBytes > 0)
+			{
+				std::vector<uint8_t> datavt;
+				for (uint8_t index=0; index<u8numBytes; index++)
+				{
+					datavt.push_back(pu8data[index]);
+				}
+
+				/// word swap is always false.
+				std:: string strdata = zmq_handler::swapConversion(datavt,
+						onDemandReqData.m_isByteSwap,
+						onDemandReqData.m_isWordSwap);
+				/// value
+				msg_envelope_elem_body_t* ptData = msgbus_msg_envelope_new_string(strdata.c_str());
+
+				if(NULL != ptData)
+				{
+					msgbus_msg_envelope_put(msg, "value", ptData);
+				}
+				else
+				{
+					//error
+					CLogger::getInstance().log(ERROR, LOGDETAILS("NULL pointer received .."));
+				}
+			}
+
+		}
+		else
+		{
+			sRespTopic = PublishJsonHandler::instance().getSWriteResponseTopic();
+		}
+
+		/// topic
+		msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.append("Response").c_str());
+		msgbus_msg_envelope_put(msg, "topic", ptResTopic);
+		/// wellhead
+		msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());
+		msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
+		/// application sequence
+		msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(onDemandReqData.m_strAppSeq.c_str());
+		msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
+		/// metric
+		msg_envelope_elem_body_t* ptMetric = msgbus_msg_envelope_new_string(onDemandReqData.m_strMetric.c_str());
+		msgbus_msg_envelope_put(msg, "metric", ptMetric);
+		/// version
+		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string(onDemandReqData.m_strVersion.c_str());
+		msgbus_msg_envelope_put(msg, "version", ptVersion);
+		/// QOS
+		msg_envelope_elem_body_t* ptQos =  msgbus_msg_envelope_new_string(onDemandReqData.m_strQOS.c_str());
+		msgbus_msg_envelope_put(msg, "qos", ptQos);
+
+		std::string strTimestamp, strUsec;
+		zmq_handler::getTimeParams(strTimestamp, strUsec);
+		/// usec
+		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(strUsec.c_str());
+		msgbus_msg_envelope_put(msg, "usec", ptUsec);
+		/// timestamp
+		msg_envelope_elem_body_t* ptTimestamp = msgbus_msg_envelope_new_string(strTimestamp.c_str());
+		msgbus_msg_envelope_put(msg, "timestamp", ptTimestamp);
+
+		// add timestamps from stack
+		msg_envelope_elem_body_t* ptStackTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_objStackTimestamps.tsReqRcvd))).c_str() );
+		msg_envelope_elem_body_t* ptStackTSReqSent = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_objStackTimestamps.tsReqSent))).c_str() );
+		msg_envelope_elem_body_t* ptStackTSRespRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_objStackTimestamps.tsRespRcvd))).c_str() );
+		msg_envelope_elem_body_t* ptStackTSRespPosted = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_objStackTimestamps.tsRespSent))).c_str() );
+
+		msgbus_msg_envelope_put(msg, "reqRcvdInStack", ptStackTSReqRcvd);
+		msgbus_msg_envelope_put(msg, "reqSentByStack", ptStackTSReqSent);
+		msgbus_msg_envelope_put(msg, "respRcvdByStack", ptStackTSRespRcvd);
+		msgbus_msg_envelope_put(msg, "respPostedByStack", ptStackTSRespPosted);
+
+		// add timestamps for req recvd by app
+		msg_envelope_elem_body_t* ptAppTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(onDemandReqData.m_obtReqRcvdTS))).c_str() );
+		msgbus_msg_envelope_put(msg, "reqRcvdByApp", ptAppTSReqRcvd);
+
+		if(pu8IpAddr != NULL && pstException->m_u8ExcCode == 0 && pstException->m_u8ExcStatus ==0)
+		{
+			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
+			msgbus_msg_envelope_put(msg, "status", ptStatus);
+
+			temp = "Info::";
+			temp.append("::function_code:");
+			temp.append(to_string((unsigned)u8FunCode));
+			temp.append("exception_code:");
+			temp.append(to_string((unsigned)pstException->m_u8ExcCode));
+			temp.append(",");
+			temp.append("exception_status ");
+			temp.append(to_string((unsigned)pstException->m_u8ExcStatus));
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
+		}
+		else
+		{
+			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
+			msgbus_msg_envelope_put(msg, "status", ptStatus);
+
+			msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(pstException->m_u8ExcCode)) + ", " +  (to_string(pstException->m_u8ExcStatus))).c_str());
+			msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
+
+			temp = "Info::";
+			temp.append("NULL Pointer is Received from stack");
+			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+		}
+
+		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(sRespTopic);
+		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(sRespTopic);
+
+		PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, sRespTopic);
+
+#ifdef INSTRUMENTATION_LOG
+		msg_envelope_serialized_part_t* parts = NULL;
+		int num_parts = msgbus_msg_envelope_serialize(msg, &parts);
+		if(num_parts > 0)
+		{
+			if(NULL != parts[0].bytes)
+			{
+				std::string tempStr(parts[0].bytes);
+
+				string temp = "on-demand response received with following parameters :: ";
+				temp.append(tempStr);
+
+				CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
+			}
+
+			msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+		}
+#endif
+	}
+	catch(const std::exception& e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
 
-	eMbusResponseType respType = MBUS_RESPONSE_ONDEMAND;
-
-	// handle response
-	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams, respType);
+	if(msg != NULL)
+	{
+		msgbus_msg_envelope_destroy(msg);
+		msg = NULL;
+	}
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }

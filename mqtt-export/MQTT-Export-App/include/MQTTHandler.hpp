@@ -27,8 +27,6 @@ using namespace std;
 #define CLIENTID    							    "MQTT_EXPORT"
 #define LWT_PAYLOAD	                                "MQTT Export - Last will and testament."
 #define QOS         							    0
-#define ON_DEMAND_WRITE_PRIORITY					1 	//Write-On Demand Priority set as highest(1)
-#define ON_DEMAND_READ_PRIORITY						2 	//Read-On Demand Priority set as 2
 
 typedef enum MQTT_CONFIG_STATE
 {
@@ -56,22 +54,6 @@ struct stMsgData
 	stMsgData():m_iQOS(0) {}
 };
 #endif
-
-struct stSubMsgData
-{
-	long m_lPriority;
-	mqtt::const_message_ptr m_ptMsg;
-};
-
-/**
- * Operator overloading function to return response with max priority
- */
-struct ComparePriority {
-    bool operator()(stSubMsgData const& response1, stSubMsgData const& response2)
-    {
-        return response1.m_lPriority < response2.m_lPriority;
-    }
-};
 
 class CMQTTHandler
 {
@@ -105,7 +87,8 @@ class CMQTTHandler
 	std::queue <stMsgData> m_qMsgData;
 
 #endif
-	std::priority_queue <stSubMsgData, vector<stSubMsgData>, ComparePriority> m_qSubMsgData;
+	std::queue <mqtt::const_message_ptr> m_qSubMsgData;
+
 
  	bool initSem();
  	bool connectSubscriber();

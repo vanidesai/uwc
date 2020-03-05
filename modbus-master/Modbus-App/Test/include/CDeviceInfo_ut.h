@@ -8,41 +8,27 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#ifndef TEST_INCLUDE_MAIN_UT_HPP_
-#define TEST_INCLUDE_MAIN_UT_HPP_
+#ifndef TEST_INCLUDE_CDEVICEINFO_UT_H_
+#define TEST_INCLUDE_CDEVICEINFO_UT_H_
 
-
-
-#include <stdlib.h>
-#include <map>
-#include <thread>
-#include <netdb.h>
-#include <ifaddrs.h>
-#include <string.h>
-#include <cstring>
-#include <stdio.h>
-
-
-#include <iostream>
-//#include <cJSON.h>
+#include <stdbool.h>
 #include "gtest/gtest.h"
-#include "YamlUtil.hpp"
+#include "NetworkInfo.hpp"
+#include "ZmqHandler.hpp"
+#include "PeriodicReadFeature.hpp"
+#include "PublishJson.hpp"
+#include "ConfigManager.hpp"
 
-class Main_ut : public ::testing::Test{
+class CDeviceInfo_ut : public ::testing::Test {
 protected:
 	virtual void SetUp();
 	virtual void TearDown();
 public:
-	struct newstruct
-	{
+	YAML::Node baseNode;
 
-	};
-	int signo = 1;
-	bool bRetVal = false;
-
+	network_info::CDataPoint datapoint_obj;
+	network_info::CDeviceInfo Cdeviceinfo_obj;
 };
 
 
-
-
-#endif /* TEST_INCLUDE_MAIN_UT_HPP_ */
+#endif /* TEST_INCLUDE_CDEVICEINFO_UT_H_ */

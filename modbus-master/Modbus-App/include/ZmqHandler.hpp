@@ -14,13 +14,22 @@
 #include <string>
 #include <map>
 #include "cjson/cJSON.h"
+#include "PublishJson.hpp"
 
-#include <eis/utils/thread_safe_queue.h>
-#include <eis/utils/config.h>
-#include <eis/utils/json_config.h>
-#include <eis/msgbus/msgbus.h>
-#include <eis/config_manager/env_config.h>
-#include <eis/config_manager/config_manager.h>
+using std::string;
+
+struct stOnDemandRequest
+{
+	std::string m_strAppSeq;
+	std::string m_strWellhead;
+	std::string m_strMetric;
+	std::string m_strVersion;
+	std::string m_strTopic;
+	std::string m_strQOS;
+	bool m_isByteSwap;
+	bool m_isWordSwap;
+	struct timespec m_obtReqRcvdTS;
+};
 
 namespace zmq_handler 
 {
@@ -66,6 +75,21 @@ namespace zmq_handler
 
 	/// function to remove entry from the map
 	void removePubCTX(std::string);
+
+	/// function to get app sequence number given in request json
+	bool getOnDemandReqData(unsigned short seqno, stOnDemandRequest& reqData);
+
+	/// function to insert new entry in map
+	bool insertOnDemandReqData(unsigned short, stOnDemandRequest);
+
+	/// function to remove entry from the map
+	void removeOnDemandReqData(unsigned short);
+
+	/// function for byteswap and wordswap
+	std::string swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap = false, bool a_bIsWordSwap = false);
+
+	/// function to read current time and usec
+	void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
 }
 
 #endif /* INCLUDE_INC_ZMQHANDLDER_HPP_ */

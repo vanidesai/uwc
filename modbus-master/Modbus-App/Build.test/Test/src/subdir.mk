@@ -17,13 +17,10 @@ CPP_SRCS += \
 ../Test/src/CUniqueDataPoint_ut.cpp \
 ../Test/src/CWellSiteDevInfo_ut.cpp \
 ../Test/src/CWellSiteInfo_ut.cpp \
-../Test/src/Logger_ut.cpp \
-../Test/src/Main_ut.cpp \
 ../Test/src/ModbusStackInterface_ut.cpp \
 ../Test/src/ModbusWriteHandler_ut.cpp \
-../Test/src/PeriodicRead_ut.cpp \
 ../Test/src/PublishJson_ut.cpp \
-../Test/src/YamlUtil_ut.cpp \
+../Test/src/PeriodicRead_ut.cpp \
 ../Test/src/ZmqHandler_ut.cpp 
 
 OBJS += \
@@ -34,13 +31,10 @@ OBJS += \
 ./Test/src/CUniqueDataPoint_ut.o \
 ./Test/src/CWellSiteDevInfo_ut.o \
 ./Test/src/CWellSiteInfo_ut.o \
-./Test/src/Logger_ut.o \
-./Test/src/Main_ut.o \
 ./Test/src/ModbusStackInterface_ut.o \
 ./Test/src/ModbusWriteHandler_ut.o \
-./Test/src/PeriodicRead_ut.o \
 ./Test/src/PublishJson_ut.o \
-./Test/src/YamlUtil_ut.o \
+./Test/src/PeriodicRead_ut.o \
 ./Test/src/ZmqHandler_ut.o 
 
 CPP_DEPS += \
@@ -51,13 +45,10 @@ CPP_DEPS += \
 ./Test/src/CUniqueDataPoint_ut.d \
 ./Test/src/CWellSiteDevInfo_ut.d \
 ./Test/src/CWellSiteInfo_ut.d \
-./Test/src/Logger_ut.d \
-./Test/src/Main_ut.d \
 ./Test/src/ModbusStackInterface_ut.d \
 ./Test/src/ModbusWriteHandler_ut.d \
-./Test/src/PeriodicRead_ut.d \
 ./Test/src/PublishJson_ut.d \
-./Test/src/YamlUtil_ut.d \
+./Test/src/PeriodicRead_ut.d \
 ./Test/src/ZmqHandler_ut.d 
 
 
@@ -65,7 +56,7 @@ CPP_DEPS += \
 Test/src/%.o: ../Test/src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -lrt -std=c++11 -fpermissive -DUNIT_TEST -DMODBUS_STACK_TCPIP_ENABLED -DINSTRUMENTATION_LOG -I../$(PROJECT_DIR)/include -I/usr/local/include -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/../bin/yaml-cpp/include -I../$(PROJECT_DIR)/../bin/safestring/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security -fstack-protector-strong -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -lrt -std=c++11 -fpermissive -DBOOST_LOG_DYN_LINK=1 -DUNIT_TEST=1 -DMODBUS_STACK_TCPIP_ENABLED -I../$(PROJECT_DIR)/include -I../$(PROJECT_DIR)/Test/include -I/usr/local/include -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/../bin/boost/include -I../$(PROJECT_DIR)/../bin/yaml-cpp/include -I../$(PROJECT_DIR)/../bin/safestring/include -I../$(PROJECT_DIR)/../bin/ssl/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security -fstack-protector-strong -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

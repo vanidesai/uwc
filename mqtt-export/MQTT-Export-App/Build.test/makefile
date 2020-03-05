@@ -1,4 +1,4 @@
-################################################################################
+####################################################################################
 # The source code contained or described herein and all documents related to
 # the source code ("Material") are owned by Intel Corporation. Title to the
 # Material remains with Intel Corporation.
@@ -6,7 +6,7 @@
 # No license under any patent, copyright, trade secret or other intellectual
 # property right is granted to or conferred upon you by disclosure or delivery of
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
-################################################################################
+####################################################################################
 
 -include ../makefile.init
 
@@ -45,19 +45,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: MQTT_Export_test
+all: MQTT_Export
 
 # Tool invocations
-MQTT_Export_test: $(OBJS) $(USER_OBJS)
+MQTT_Export: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L/usr/local/lib -L../$(PROJECT_DIR)/../bin/boost/lib -L../$(PROJECT_DIR)/../bin/yaml-cpp/lib -L../$(PROJECT_DIR)/../bin/safestring/lib -L../$(PROJECT_DIR)/lib -ftest-coverage -fprofile-arcs -o "MQTT_Export_test" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L/usr/local/lib -L../$(PROJECT_DIR)/../bin/boost/lib -L../$(PROJECT_DIR)/../bin/yaml-cpp/lib -L../$(PROJECT_DIR)/../bin/safestring/lib -L../$(PROJECT_DIR)/lib -ftest-coverage -fprofile-arcs -o "MQTT_Export" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) MQTT_Export_test
+	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) MQTT_Export
 	-@echo ' '
 
 .PHONY: all clean dependents

@@ -200,19 +200,4 @@ TEST_F(CMQTTHandler_ut, publish_TopicEmp)
 	EXPECT_EQ(false, retVal);
 }
 
-TEST_F(CMQTTHandler_ut, CleanUp_Success)
-{
-	try
-	{
-		CMQTTHandler::instance().cleanup();
-		EXPECT_EQ(1, 1); //No crash
-	}
-	catch(exception &e)
-	{
-		cout<<endl<<"ERROR in CleanUp()"<<endl;
-		cout<<e.what();
-		EXPECT_EQ(1, 2); //Error
-	}
-}
-
 

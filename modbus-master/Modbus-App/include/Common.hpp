@@ -11,7 +11,6 @@
 #ifndef INCLUDE_INC_COMMON_HPP_
 #define INCLUDE_INC_COMMON_HPP_
 
-#include "ZmqHandler.hpp"
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -186,53 +185,36 @@ typedef enum MbusStackErrorCode
 	MBUS_APP_ERROR_AUTHENTICATION_FAILED,
 }eMbusStackErrorCode;
 
-typedef enum MbusResponseType
-{
-	MBUS_RESPONSE_POLLING,
-	MBUS_RESPONSE_ONDEMAND,
-}eMbusResponseType;
-
-struct stOnDemandRequest
-{
-	std::string m_strAppSeq;
-	std::string m_strWellhead;
-	std::string m_strMetric;
-	std::string m_strVersion;
-	std::string m_strTopic;
-	std::string m_strQOS;
-	bool m_isByteSwap;
-	bool m_isWordSwap;
-	struct timespec m_obtReqRcvdTS;
-	long m_lPriority;
-};
-
 /// function to call Modbus stack APIs
 uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 								MbusAPI_t *pstMbusApiPram,void* vpCallBackFun);
 
-void ModbusMaster_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
-
-using std::string;
-#include <string>
-#include <vector>
-
-namespace common_Handler
-{
-/// function for byteswap and wordswap
-std::string swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap = false, bool a_bIsWordSwap = false);
-
-/// function to read current time and usec
-void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
-
-/// function to get app sequence number given in request json
-bool getOnDemandReqData(unsigned short seqno, stOnDemandRequest& reqData);
-
-/// function to insert new entry in map
-bool insertOnDemandReqData(unsigned short, stOnDemandRequest);
-
-/// function to remove entry from the map
-void removeOnDemandReqData(unsigned short);
-}
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+/// This function is for application callback for common read write coils and registers function codes.
+void ModbusMaster_AppCallback(uint8_t  u8UnitID,
+		 	 	 	 	 	 uint16_t u16TransacID,
+							 uint8_t* pu8IpAddr,
+							 uint16_t u16Port,
+							 uint8_t  u8FunCode,
+							 stException_t  *pstException,
+							 uint8_t  u8numBytes,
+							 uint8_t* pu8data,
+							 uint16_t  u16StartAdd,
+							 uint16_t  u16Quantity,
+							 stTimeStamps a_objStackTimestamps);
+#else
+/// This function is for application callback for common read write coils and registers function codes.
+void ModbusMaster_AppCallback(uint8_t  u8UnitID,
+		 	 	 	 	 	 uint16_t u16TransacID,
+							 uint8_t* pu8IpAddr,
+							 uint8_t  u8FunCode,
+							 stException_t  *pstException,
+							 uint8_t  u8numBytes,
+							 uint8_t* pu8data,
+							 uint16_t  u16StartAdd,
+							 uint16_t  u16Quantity,
+							 stTimeStamps a_objStackTimestamps);
+#endif
 
 class modbusInterface
 {

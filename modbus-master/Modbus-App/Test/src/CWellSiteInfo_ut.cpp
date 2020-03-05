@@ -26,11 +26,6 @@ void CWellSiteInfo_ut::TearDown()
 
 /*CWellSiteInfo::getID() should return ID mentioned in PL0.yml.*/
 
-//THIS TEST IS FAILING SO IT IS COMMENTED***********
-
-/*
-
-
 TEST_F(CWellSiteInfo_ut, getID_return) {
 
 	try
@@ -41,8 +36,6 @@ TEST_F(CWellSiteInfo_ut, getID_return) {
 		YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
 		CWellSiteInfo_obj.build(baseNode, CWellSiteInfo_obj);
 
-		baseNode = CommonUtils::loadYamlFile("PL0.yml");
-
 		EXPECT_EQ("PL0", CWellSiteInfo_obj.getID());
 	}
 
@@ -52,7 +45,6 @@ TEST_F(CWellSiteInfo_ut, getID_return) {
 	}
 }
 
-*/
 
 /******************************CWellSiteInfo::addDevice*****************************************/
 
@@ -67,12 +59,10 @@ TEST_F(CWellSiteInfo_ut, addDevice_return0) {
 	try
 	{
 
-		/*std::string path("/Device_Config/PL0.yml");
+		std::string path("/Device_Config/PL0.yml");
 		const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
 		std::string sYamlStr(cEtcdValue);
-		YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
-
-		baseNode = CommonUtils::loadYamlFile("PL0.yml");
+		YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
 
 		for (auto test : baseNode)
 		{
@@ -143,13 +133,11 @@ TEST_F(CWellSiteInfo_ut, addDevice_returnMin2) {
 TEST_F(CWellSiteInfo_ut, addDevice_returnMin1) {
 
 	try
-	{/*
+	{
 		std::string path("/Device_Config/PL0.yml");
 		const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
 		std::string sYamlStr(cEtcdValue);
-		YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
-
-		baseNode = CommonUtils::loadYamlFile("PL0.yml");
+		YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
 
 
 		for (auto test : baseNode)
@@ -240,12 +228,12 @@ TEST_F(CWellSiteInfo_ut, addDevice_return) {
 
 /*Test: Behaviour of CWellSiteInfo::build when adddevice() function is unsuccessful.*/
 
-#if 1 // To be updated later
+#if 0 // To be updated later
 TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 
 	try
 	{
-		baseNode = CommonUtils::loadYamlFile("PL1.yml");
+		baseNode = CommonUtils::loadYamlFile("PL2.yml");
 		network_info::CWellSiteInfo::build(baseNode, CWellSiteInfo_obj);
 
 		/* Checking the return of addDevice() function */
@@ -259,7 +247,6 @@ TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 				{
 					network_info::CWellSiteDevInfo CWellSiteDevInfo_obj;
 					CWellSiteDevInfo_obj.build(node2, CWellSiteDevInfo_obj);
-					CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
 
 					/* Network type mentioned in .yml file doesn't match with "g_eNetworkType" */
 					EXPECT_EQ(-2, CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj));
@@ -273,8 +260,7 @@ TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 	{
 		//EXPECT_EQ(1, 2);	//Test fails
 
-		//EXPECT_EQ("Required keys not found in PROTOCOL_RTU", (string)e.what());
-		EXPECT_EQ("bad file", (string)e.what());
+		EXPECT_EQ("Required keys not found in PROTOCOL_RTU", (string)e.what());
 	}
 }
 #endif // To be updated later

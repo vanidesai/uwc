@@ -53,11 +53,10 @@ TEST_F(CUniqueDataPoint_ut, getID_return) {
 
 
 TEST_F(CUniqueDataPoint_ut, getWellSite_return) {
-	/*std::string path("/Device_Config/PL0.yml");
+	std::string path("/Device_Config/PL0.yml");
 	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
 	std::string sYamlStr(cEtcdValue);
-	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
-	baseNode = CommonUtils::loadYamlFile("PL0.yml");
+	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
 	try
 	{
 
@@ -95,11 +94,10 @@ TEST_F(CUniqueDataPoint_ut, getWellSite_return) {
 
 
 TEST_F(CUniqueDataPoint_ut, getWellSiteDev_return) {
-	/*std::string path("/Device_Config/PL0.yml");
+	std::string path("/Device_Config/PL0.yml");
 	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
 	std::string sYamlStr(cEtcdValue);
-	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
-	baseNode = CommonUtils::loadYamlFile("PL0.yml");
+	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
 	try
 	{
 
