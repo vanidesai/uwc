@@ -665,7 +665,18 @@ bool modWriteHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
 
 			stWriteRequestNode.m_strTopic = stTopic;
 			stWriteRequestNode.m_strMsg = strMsg;
-			if(stTopic.find("write"))
+
+			string strSearchString = "_";
+			std::size_t found = stTopic.find_last_of(strSearchString);
+			string tempTopic = stTopic.substr(found+1, stTopic.length());
+			string strToCompare = "WriteRequest";
+			bool bCompareVal =  std::equal(tempTopic.begin(), tempTopic.end(),
+					strToCompare.begin(),
+		            [](char a, char b) {
+		                return tolower(a) == tolower(b);
+		            });
+
+			if(bCompareVal)
 			{
 				stWriteRequestNode.m_lPriority = ON_DEMAND_WRITE_PRIORITY;
 			}
