@@ -19,6 +19,7 @@
 #include "eis/msgbus/msgbus.h"
 #include "cjson/cJSON.h"
 #include "ZmqHandler.hpp"
+#include "PeriodicReadFeature.hpp"
 
 #define ON_DEMAND_WRITE_PRIORITY 1 	//Write-On Demand Priority set as highest(1)
 #define ON_DEMAND_READ_PRIORITY 2 	//Read-On Demand Priority set as 2
@@ -28,11 +29,23 @@ struct stRequest
 {
 	std::string m_strTopic;
 	std::string m_strMsg;
+	long m_lPriority;
+};
+
+/**
+ * Operator overloading function to return response with max priority
+ */
+struct ComparePriority
+{
+    bool operator()(stRequest const& response1, stRequest const& response2)
+    {
+        return response1.m_lPriority < response2.m_lPriority;
+    }
 };
 
 class modWriteHandler
 {
-	std::queue <stRequest> stackTCPWriteReqQ;
+	std::priority_queue <stRequest, vector<stRequest>, ComparePriority> stackTCPWriteReqQ;
 	std::mutex __writeReqMutex;
 	sem_t semaphoreWriteReq;
 	bool m_bIsWriteInitialized;
@@ -52,6 +65,13 @@ class modWriteHandler
 
 public:
 	static modWriteHandler& Instance();
+
+	/**
+	 * Process ZMQ message
+	 * @param msg	:	[in] actual message
+	 * @param stTopic:	[in] received topic
+	 */
+	bool processMsg(msg_envelope_t *msg, std::string stTopic);
 
 	eMbusStackErrorCode onDemandInfoHandler();
 
@@ -76,6 +96,10 @@ public:
 			uint8_t  u8FunCode ,
 			std::string &strTopic,
 			unsigned short txID);
+
+	const sem_t& getSemaphoreWriteReq() const {
+		return semaphoreWriteReq;
+	}
 };
 
 

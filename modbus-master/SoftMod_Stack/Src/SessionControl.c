@@ -776,7 +776,12 @@ void* postResponseToApp(void* threadArg)
 	int32_t i32RetVal = 0;
 	while(false == g_bThreadExit)
 	{
-		sem_wait(&g_stRespProcess.m_semaphoreResp);
+		//sem_wait(&g_stRespProcess.m_semaphoreResp);
+		if((sem_wait(&g_stRespProcess.m_semaphoreResp)) == -1 && errno == EINTR)
+		{
+			// Continue if interrupted by handler
+			continue;
+		}
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
 		i32RetVal = 0;
 		i32RetVal = OSAL_Get_NonBlocking_Message(&stScMsgQue, g_stRespProcess.m_i32RespMsgQueId);
@@ -1053,7 +1058,12 @@ void* handleClientReponseThreadFunction(void* threadArg)
 	int32_t i32RetVal = 0;
 	while(false == g_bThreadExit)
 	{
-		sem_wait(&g_stHandleResp.m_semaphoreHandleResp);
+		//sem_wait(&g_stHandleResp.m_semaphoreHandleResp);
+		if((sem_wait(&g_stHandleResp.m_semaphoreHandleResp)) == -1 && errno == EINTR)
+		{
+			// Continue if interrupted by handler
+			continue;
+		}
 		memset(&stLocalData,00,sizeof(stLocalData));
 		i32RetVal = 0;
 

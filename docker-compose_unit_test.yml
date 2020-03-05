@@ -1,0 +1,183 @@
+################################################################################
+# The source code contained or described herein and all documents related to
+# the source code ("Material") are owned by Intel Corporation. Title to the
+# Material remains with Intel Corporation.
+#
+# No license under any patent, copyright, trade secret or other intellectual
+# property right is granted to or conferred upon you by disclosure or delivery of
+# the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+################################################################################
+
+version: '3.6'
+
+services:
+
+  #----Start: EIS Base Images -- This Base images must be included for building any EIS servcies ----
+  # Define ia_eisbase service
+  ia_eisbase:
+    build:
+      context: $PWD/../common
+      dockerfile: $PWD/../common/dockerfiles/Dockerfile.eisbase
+      args:
+          UBUNTU_IMAGE_VERSION: ${UBUNTU_IMAGE_VERSION}
+          EIS_VERSION: ${EIS_VERSION}
+    image: ${DOCKER_REGISTRY}ia_eisbase:${EIS_VERSION}
+
+  ## Define ia_common service
+  ia_common:
+    depends_on:
+      - ia_eisbase
+    build:
+      context: $PWD/../common
+      dockerfile: $PWD/../common/dockerfiles/Dockerfile.common
+      args:
+          EIS_VERSION: ${EIS_VERSION}
+          # set CMAKE_BUILD_TYPE value to "Debug" to generate debug symbols
+          CMAKE_BUILD_TYPE: "Release"
+    read_only: true
+    image: ${DOCKER_REGISTRY}ia_common:${EIS_VERSION}
+
+  #----End: EIS Base Images---- -- This Base images must be included for building any EIS servcies ----
+
+ # UWC containers
+ # 1. modbus-tcp-master-test
+ # 2. modbus-rtu-master
+ # 3. mqtt_container
+ # 4. mqtt-export
+
+  modbus-tcp-master-test:
+    depends_on:
+      - ia_eisbase
+    build:
+      context: $PWD/../modbus-master/
+      dockerfile: $PWD/../modbus-master/Dockerfile_UT
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+    image: ${DOCKER_REGISTRY}modbus-master-test:${EIS_VERSION}
+    container_name: modbus-tcp-master-test
+    hostname: modbus-tcp-master-test
+    network_mode: host
+    environment:
+      AppName: "Modbus_TCP_Master_TEST"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${no_proxy}
+      TCP_ENABLED : 1
+      Log4cppPropsFile: "/Modbus-App/Config/log4cpp.properties"
+      ZMQ_RECV_HWM: "1000"
+      MY_APP_ID: 5
+      RESPONSE_TIMEOUT: 250
+      INTERFRAME_DELAY: 1
+      CertType: "zmq"
+      PROFILING_MODE: ${PROFILING_MODE}
+      Clients: "MQTT_Export,MQTT_Export1"
+      SITE_LIST_FILE_NAME: "site_list.yml"
+      PubTopics: "Modbus_TCP_Master_PolledData,Modbus_TCP_Master_ReadResponse,Modbus_TCP_Master_WriteResponse"
+      PolledData: "Modbus_TCP_Master_PolledData"
+      ReadResponse: "Modbus_TCP_Master_ReadResponse"
+      WriteResponse: "Modbus_TCP_Master_WriteResponse"
+      Modbus_TCP_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:6000"
+      Modbus_TCP_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:6001"
+      Modbus_TCP_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:6002"
+      SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
+      ReadRequest: "MQTT_Export_ReadRequest"
+      WriteRequest: "MQTT_Export_WriteRequest"
+      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:7003"
+      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:7004"
+    volumes:
+      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "$PWD/unit_test_reports/modbus-tcp-master:/reports/modbus-tcp-master"
+
+  modbus-rtu-test-master:
+    depends_on:
+      - ia_eisbase
+    build:
+      context: $PWD/../modbus-master/
+      dockerfile: $PWD/../modbus-master/Dockerfile_UT_RTU
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+    image: ${DOCKER_REGISTRY}modbus-rtu-test-master:${EIS_VERSION}
+    container_name: modbus-rtu-test-master
+    hostname: modbus-rtu-test-master
+    network_mode: host
+    environment:
+      AppName: "Modbus_RTU_TEST_Master"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${no_proxy}
+      Log4cppPropsFile: "/Modbus-App/Config/log4cpp.properties"
+      TCP_ENABLED : 1
+      ZMQ_RECV_HWM: "1000"
+      RESPONSE_TIMEOUT: 250
+      INTERFRAME_DELAY: 1
+      SERIAL_PORT_RETRY_INTERVAL: 1
+      BAUD_RATE: 9600
+      PARITY: 1
+      PORT_NAME: "/dev/ttyUSB0"
+      STOPBIT: 1
+      MY_APP_ID: 5
+      CertType: "zmq"
+      PROFILING_MODE: ${PROFILING_MODE}
+      Clients: "MQTT_Export"
+      SITE_LIST_FILE_NAME: "site_list.yml"
+      PubTopics: "Modbus_RTU_Master_PolledData,Modbus_RTU_Master_ReadResponse,Modbus_RTU_Master_WriteResponse"
+      PolledData: "Modbus_RTU_Master_PolledData"
+      ReadResponse: "Modbus_RTU_Master_ReadResponse"
+      WriteResponse: "Modbus_RTU_Master_WriteResponse"
+      Modbus_RTU_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:6003"
+      Modbus_RTU_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:6004"
+      Modbus_RTU_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:6005"
+      SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
+      ReadRequest: "MQTT_Export_ReadRequest"
+      WriteRequest: "MQTT_Export_WriteRequest"
+      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:7005"
+      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:7006"
+    volumes:
+      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "$PWD/unit_test_reports/modbus-rtu-master:/reports/modbus-rtu-master"
+    devices:
+      - /dev:/dev
+    privileged: true
+
+  mqtt-export-test:
+    depends_on:
+      - ia_eisbase
+    build:
+      context: $PWD/../mqtt-export/
+      dockerfile: $PWD/../mqtt-export/Dockerfile_UT
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+    image: ${DOCKER_REGISTRY}mqtt-export-test:${EIS_VERSION}
+    container_name: mqtt-export-test
+    hostname: mqtt-export-test
+    network_mode: host
+    environment:
+      AppName: "MQTT_Export_TEST"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${no_proxy}
+      Log4cppPropsFile: "/MQTT-Export-App/Config/log4cpp.properties"
+      ZMQ_RECV_HWM: "1000" 
+      MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:1883"
+      CertType: "zmq"
+      PROFILING_MODE: ${PROFILING_MODE}
+      Clients: "Modbus_TCP_Master,Modbus_RTU_Master"
+      SubTopics: "Modbus_TCP_Master/Modbus_TCP_Master_PolledData,Modbus_TCP_Master/Modbus_TCP_Master_ReadResponse,Modbus_TCP_Master/Modbus_TCP_Master_WriteResponse,Modbus_RTU_Master/Modbus_RTU_Master_PolledData,Modbus_RTU_Master/Modbus_RTU_Master_ReadResponse,Modbus_RTU_Master/Modbus_RTU_Master_WriteResponse"
+      PubTopics: "MQTT_Export_ReadRequest,MQTT_Export_WriteRequest"
+      Modbus_TCP_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:6000"
+      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:7575"
+      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:7576"
+      Modbus_TCP_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:6001"
+      Modbus_TCP_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:6002"
+      Modbus_RTU_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:6003"
+      Modbus_RTU_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:6004"
+      Modbus_RTU_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:6005"
+      ReadRequest: MQTT_Export_ReadRequest
+      WriteRequest: MQTT_Export_WriteRequest
+      mqtt_SubReadTopic: "/+/+/+/read"
+      mqtt_SubWriteTopic: "/+/+/+/write"
+    volumes:
+      - "$PWD/unit_test_reports/mqtt-export:/reports/mqtt-export"

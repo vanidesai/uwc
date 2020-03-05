@@ -48,6 +48,7 @@ TEST_F(MQTTCallback_ut, message_arrived_SuccessfullAdditionInQ)
 	EXPECT_EQ(TestMsg, rcvdTopic);
 }
 
+#if 0
 TEST_F(MQTTCallback_ut, on_failure_Successful)
 {
 
@@ -58,3 +59,4 @@ TEST_F(MQTTCallback_ut, on_failure_Successful)
 	 */
 
 }
+#endif

@@ -32,6 +32,8 @@ extern int m_epollFd;
 
 stDevConfig_t ModbusMasterConfig;
 
+#define MAX_ENV_VAR_LEN 5000
+
 /**
  * Description
  * Exported function to set stack configuration parameter
@@ -106,9 +108,14 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	else
 	{
 		int resTimeout = atoi(pcResponseTime);
-		if(resTimeout != 0)
+		if(resTimeout > 0 && resTimeout < MAX_ENV_VAR_LEN)
 		{
 			g_lResponseTimeout = resTimeout *1000; // *1000 is to convert millisecond value to microsecond
+		}
+		else
+		{
+			// default value is set to 250 ms
+			g_lResponseTimeout = 250*1000;
 		}
 		printf("RESPONSE_TIMEOUT is set to :: %ld us\n", g_lResponseTimeout);
 	}
@@ -123,9 +130,14 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit(void)
 	else
 	{
 		int IFDelay = atoi(pcInterframeDelay);
-		if(IFDelay != 0)
+		if(IFDelay > 0 && IFDelay < MAX_ENV_VAR_LEN)
 		{
 			g_lInterframeDelay = IFDelay * 1000;	// *1000 is to convert millisecond value to microsecond
+		}
+		else
+		{
+			/// default value for interframe delay set to 0
+			g_lInterframeDelay = 0;
 		}
 		printf("INTERFRAME_DELAY is set to :: %ld us\n", g_lInterframeDelay);
 	}

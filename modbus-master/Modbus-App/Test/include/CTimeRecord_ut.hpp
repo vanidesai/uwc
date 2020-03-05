@@ -28,6 +28,7 @@ network_info::CWellSiteInfo			CWellSiteInfo_obj;
 network_info::CWellSiteDevInfo		CWellSiteDevInfo_obj;
 network_info::CDataPoint			CDataPoint_obj;
 zmq_handler::stZmqContext a_BusContext;
+zmq_handler::stZmqPubContext a_objPubContext;
 //CTimeRecord CTimeRecord_obj;
 uint8_t a_uiFuncCode;
 uint32_t U32_code;

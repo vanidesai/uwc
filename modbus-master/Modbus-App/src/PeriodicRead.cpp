@@ -20,6 +20,9 @@
 /// flag to check thread stop condition
 std::atomic<bool> g_stopThread;
 
+/// flag to check timer stop condition
+std::atomic<bool> g_stopTimer(false);
+
 extern "C" {
 	#include <safe_lib.h>
 }
@@ -64,6 +67,18 @@ using namespace std;
 timer_t gTimerid;
 
 /**
+ * Operator overloading function to return response with max priority
+ */
+struct ComparePriority {
+    bool operator()(stStackResponse const& response1, stStackResponse const& response2)
+    {
+        return response1.m_lPriority < response2.m_lPriority;
+    }
+};
+
+std::priority_queue <stStackResponse, vector<stStackResponse>, ComparePriority> g_priorityQ;
+
+/**
  * Get time based parameters
  * @param a_objReqData	:[in] request data
  * @param a_sTimeStamp	:[out] time stamp
@@ -72,28 +87,9 @@ timer_t gTimerid;
  */
 void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_sTimeStamp, std::string &a_sUsec, std::string &a_sTxID)
 {
-	a_sTimeStamp.clear();
-	a_sUsec.clear();
 	a_sTxID.clear();
-
+	common_Handler::getTimeParams(a_sTimeStamp, a_sUsec);
 	const auto p1 = std::chrono::system_clock::now();
-
-	std::time_t rawtime = std::chrono::system_clock::to_time_t(p1);
-	std::tm* timeinfo = std::gmtime(&rawtime);
-	if(NULL == timeinfo)
-	{
-		return;
-	}
-	char buffer [80];
-
-	std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
-	a_sTimeStamp.insert(0, buffer);
-
-	{
-		std::stringstream ss;
-		ss << std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count();
-		a_sUsec.insert(0, ss.str());
-	}
 
 	{
 		unsigned long long int u64{
@@ -122,40 +118,85 @@ static unsigned long get_nanos(struct timespec ts) {
  * @return 	true : on success,
  * 			false : on error
  */
-BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling& a_objReqData, stStackResponse a_stResp)
+BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp)
 {
+	if(MBUS_RESPONSE_POLLING == a_stResp.m_operationType && NULL == a_objReqData)
+	{
+		return FALSE;
+	}
+
 	bool bRetValue = true;
 	msg_envelope_t *msg = NULL;
 	try
 	{
+		stOnDemandRequest onDemandReqData;
 		std::string sTimestamp, sUsec, sTxID;
-		getTimeBasedParams(a_objReqData, sTimestamp, sUsec, sTxID);
+		msg_envelope_elem_body_t* ptTopic = NULL;
+		msg_envelope_elem_body_t* ptWellhead = NULL;
+		msg_envelope_elem_body_t* ptMetric = NULL;
+		msg_envelope_elem_body_t* ptQos = NULL;
+		msg = msgbus_msg_envelope_new(CT_JSON);
 		
+		if(MBUS_RESPONSE_POLLING == a_stResp.m_operationType)
+		{
+			getTimeBasedParams(*a_objReqData, sTimestamp, sUsec, sTxID);
+
+			msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string(sTxID.c_str());
+			string sTopic = a_objReqData->getDataPoint().getID() + SEPARATOR_CHAR + PERIODIC_GENERIC_TOPIC;
+			ptTopic = msgbus_msg_envelope_new_string(sTopic.c_str());
+			ptWellhead = msgbus_msg_envelope_new_string(a_objReqData->getDataPoint().getWellSite().getID().c_str());
+			ptMetric = msgbus_msg_envelope_new_string(a_objReqData->getDataPoint().getDataPoint().getID().c_str());
+			ptQos =  msgbus_msg_envelope_new_string(a_objReqData->getDataPoint().getDataPoint().getPollingConfig().m_usQOS.c_str());
+
+			msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
+		}
+		else if(MBUS_RESPONSE_ONDEMAND == a_stResp.m_operationType)
+		{
+			bool bRetVal = common_Handler::getOnDemandReqData(a_stResp.u16TransacID, onDemandReqData);
+			if(false == bRetVal)
+			{
+				CLogger::getInstance().log(FATAL, LOGDETAILS("Could not get data in map for on-demand request"));
+			}
+			common_Handler::getTimeParams(sTimestamp, sUsec);
+
+			/// application sequence
+			msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(onDemandReqData.m_strAppSeq.c_str());
+			/// topic
+			ptTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.append("Response").c_str());
+			/// wellhead
+			ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());
+			/// metric
+			ptMetric = msgbus_msg_envelope_new_string(onDemandReqData.m_strMetric.c_str());
+			/// QOS
+			ptQos =  msgbus_msg_envelope_new_string(onDemandReqData.m_strQOS.c_str());
+			// add timestamps for req recvd by app
+			msg_envelope_elem_body_t* ptAppTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(onDemandReqData.m_obtReqRcvdTS))).c_str() );
+
+			msgbus_msg_envelope_put(msg, "reqRcvdByApp", ptAppTSReqRcvd);
+			msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
+		}
+		else
+		{}
+
 		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
-		msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string(sTxID.c_str());
 		msg_envelope_elem_body_t* ptTimeStamp = msgbus_msg_envelope_new_string(sTimestamp.c_str());
 		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(sUsec.c_str());
-		string sTopic = a_objReqData.getDataPoint().getID() + SEPARATOR_CHAR + PERIODIC_GENERIC_TOPIC;
-		msg_envelope_elem_body_t* ptTopic = msgbus_msg_envelope_new_string(sTopic.c_str());
-		msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getWellSite().getID().c_str());
-		msg_envelope_elem_body_t* ptMetric = msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getDataPoint().getID().c_str());
-		msg_envelope_elem_body_t* ptQos =  msgbus_msg_envelope_new_string(a_objReqData.getDataPoint().getDataPoint().getPollingConfig().m_usQOS.c_str());
 
 		// add timestamps from stack
 		msg_envelope_elem_body_t* ptStackTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsReqRcvd))).c_str() );
 		msg_envelope_elem_body_t* ptStackTSReqSent = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsReqSent))).c_str() );
 		msg_envelope_elem_body_t* ptStackTSRespRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsRespRcvd))).c_str() );
 		msg_envelope_elem_body_t* ptStackTSRespPosted = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsRespSent))).c_str() );
+		msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(a_stResp.m_lPriority).c_str());
 
-		msg = msgbus_msg_envelope_new(CT_JSON);
 		msgbus_msg_envelope_put(msg, "version", ptVersion);
-		msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
 		msgbus_msg_envelope_put(msg, "timestamp", ptTimeStamp);
 		msgbus_msg_envelope_put(msg, "usec", ptUsec);
 		msgbus_msg_envelope_put(msg, "topic", ptTopic);
 		msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
 		msgbus_msg_envelope_put(msg, "metric", ptMetric);
 		msgbus_msg_envelope_put(msg, "qos", ptQos);
+		msgbus_msg_envelope_put(msg, "priority", ptPriority);
 
 		// add timestamps
 		msgbus_msg_envelope_put(msg, "reqRcvdInStack", ptStackTSReqRcvd);
@@ -166,25 +207,50 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		//// fill value
 		*a_pMsg = msg;
 
-		if(TRUE == a_stResp.bIsValPresent)
+		if( a_stResp.m_u8FunCode == READ_COIL_STATUS ||
+				a_stResp.m_u8FunCode == READ_HOLDING_REG ||
+				a_stResp.m_u8FunCode == READ_INPUT_STATUS ||
+				a_stResp.m_u8FunCode == READ_INPUT_REG)
 		{
-			std::vector<uint8_t> vt = a_stResp.m_Value;
-			if(0 != vt.size())
+			if(TRUE == a_stResp.bIsValPresent)
 			{
-				std::string sVal = zmq_handler::swapConversion(vt,
-						a_objReqData.getDataPoint().getDataPoint().getAddress().m_bIsByteSwap,
-						a_objReqData.getDataPoint().getDataPoint().getAddress().m_bIsWordSwap);
+				std::vector<uint8_t> vt = a_stResp.m_Value;
+				if(0 != vt.size())
+				{
+					std::string sVal = "";
+					if(MBUS_RESPONSE_POLLING == a_stResp.m_operationType)
+					{
+						sVal = common_Handler::swapConversion(vt,
+								a_objReqData->getDataPoint().getDataPoint().getAddress().m_bIsByteSwap,
+								a_objReqData->getDataPoint().getDataPoint().getAddress().m_bIsWordSwap);
+					}
+					else if(MBUS_RESPONSE_ONDEMAND == a_stResp.m_operationType)
+					{
+						sVal = common_Handler::swapConversion(vt,
+								onDemandReqData.m_isByteSwap,
+								onDemandReqData.m_isWordSwap);
+					}
 
-				msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(sVal.c_str());
-				msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
-				msgbus_msg_envelope_put(msg, "value", ptValue);
-				msgbus_msg_envelope_put(msg, "status", ptStatus);
+					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(sVal.c_str());
+					msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
+					msgbus_msg_envelope_put(msg, "value", ptValue);
+					msgbus_msg_envelope_put(msg, "status", ptStatus);
+				}
+				else
+				{
+					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string("");
+					msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
+					msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcCode))).c_str());
+					msgbus_msg_envelope_put(msg, "value", ptValue);
+					msgbus_msg_envelope_put(msg, "status", ptStatus);
+					msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
+				}
 			}
 			else
 			{
 				msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string("");
 				msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
-				msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcCode))).c_str());
+				msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcStatus))).c_str());
 				msgbus_msg_envelope_put(msg, "value", ptValue);
 				msgbus_msg_envelope_put(msg, "status", ptStatus);
 				msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
@@ -192,12 +258,18 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		}
 		else
 		{
-			msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string("");
-			msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
-			msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcStatus))).c_str());
-			msgbus_msg_envelope_put(msg, "value", ptValue);
+			msg_envelope_elem_body_t* ptStatus = NULL;
+			if(a_stResp.m_stException.m_u8ExcCode == 0 && a_stResp.m_stException.m_u8ExcStatus ==0)
+			{
+				ptStatus = msgbus_msg_envelope_new_string("Good");
+			}
+			else
+			{
+				ptStatus = msgbus_msg_envelope_new_string("Bad");
+				msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcStatus))).c_str());
+				msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
+			}
 			msgbus_msg_envelope_put(msg, "status", ptStatus);
-			msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
 		}
 	}
     catch(const std::exception& e)
@@ -216,13 +288,16 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
  * @return 	true : on success,
  * 			false : on error
  */
-BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling& a_objReqData)
+BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData)
 {
+	if(MBUS_RESPONSE_POLLING == a_stResp.m_operationType && NULL == a_objReqData)
+	{
+		return FALSE;
+	}
 	msg_envelope_t* g_msg = NULL;
 
 	try
 	{
-		std::string sTopic("");
 		if(FALSE == prepareResponseJson(&g_msg, a_objReqData, a_stResp))
 		{
 			CLogger::getInstance().log(INFO, LOGDETAILS( " Error in preparing response"));
@@ -230,35 +305,60 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 		}
 		else
 		{
-			if(true == PublishJsonHandler::instance().publishJson(g_msg, a_objReqData.getBusContext().m_pContext,
-					a_objReqData.getPubContext().m_pContext,
-					PublishJsonHandler::instance().getPolledDataTopic()))
+			if(MBUS_RESPONSE_POLLING == a_stResp.m_operationType)
 			{
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Msg publish successfully"));
-#ifdef INSTRUMENTATION_LOG
-				msg_envelope_serialized_part_t* parts = NULL;
-				int num_parts = msgbus_msg_envelope_serialize(g_msg, &parts);
-				if(num_parts > 0)
+				if(true == PublishJsonHandler::instance().publishJson(g_msg, a_objReqData->getBusContext().m_pContext,
+						a_objReqData->getPubContext().m_pContext,
+						PublishJsonHandler::instance().getPolledDataTopic()))
 				{
-					if(NULL != parts[0].bytes)
-					{
-						std::string s(parts[0].bytes);
-
-						string temp = "Response ZMQ Publish Time: ";
-						temp.append(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()));
-						temp.append(",TxID: ");
-						temp.append(std::to_string(a_stResp.u16TransacID));
-						temp.append(",Msg: ");
-						temp.append(s);
-
-						CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-
-					}
-
-					msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+					CLogger::getInstance().log(DEBUG, LOGDETAILS("Msg publish successfully"));
 				}
-#endif
 			}
+			else if(MBUS_RESPONSE_ONDEMAND == a_stResp.m_operationType)
+			{
+				std::string sRespTopic = "";
+				if( a_stResp.m_u8FunCode == READ_COIL_STATUS ||
+						a_stResp.m_u8FunCode == READ_HOLDING_REG ||
+						a_stResp.m_u8FunCode == READ_INPUT_STATUS ||
+						a_stResp.m_u8FunCode == READ_INPUT_REG)
+				{
+					sRespTopic = PublishJsonHandler::instance().getSReadResponseTopic();
+				}
+				else
+				{
+					sRespTopic = PublishJsonHandler::instance().getSWriteResponseTopic();
+				}
+
+				zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(sRespTopic);
+				zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(sRespTopic);
+
+				PublishJsonHandler::instance().publishJson(g_msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, sRespTopic);
+			}
+			else
+			{}
+#ifdef INSTRUMENTATION_LOG
+					msg_envelope_serialized_part_t* parts = NULL;
+					int num_parts = msgbus_msg_envelope_serialize(g_msg, &parts);
+					if(num_parts > 0)
+					{
+						if(NULL != parts[0].bytes)
+						{
+							std::string s(parts[0].bytes);
+
+							string temp = "Response ZMQ Publish Time: ";
+							temp.append(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()));
+							temp.append(",TxID: ");
+							temp.append(std::to_string(a_stResp.u16TransacID));
+							temp.append(",Msg: ");
+							temp.append(s);
+
+							CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
+						}
+
+						msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+					}
+#endif
 		}
 	}
 	catch(const std::exception& e)
@@ -278,10 +378,12 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 /**
  * Post dummy bad response
  * @param a_objReqData	:[in] request for which to send dummy response
+ * @param m_stException	:[in] exception
  * @return 	true : on success,
  * 			false : on error
  */
-BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(const CRefDataForPolling& a_objReqData)
+BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(const CRefDataForPolling& a_objReqData,
+		const stException_t m_stException)
 {
 	try
 	{
@@ -290,13 +392,15 @@ BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(const CRefDataForPolling
 		stResp.bIsValPresent = false;
 		stResp.m_Value.clear();
 		stResp.u16TransacID = 0;
-		stResp.u8Reason = 100;
-		stResp.m_stException.m_u8ExcCode = 100;
-		stResp.m_stException.m_u8ExcStatus = 100;
-
+		stResp.u8Reason = m_stException.m_u8ExcCode;
+		stResp.m_stException.m_u8ExcCode = m_stException.m_u8ExcCode;
+		stResp.m_stException.m_u8ExcStatus = m_stException.m_u8ExcStatus;
+		stResp.m_operationType = MBUS_RESPONSE_POLLING;
+		//Set polling frequency as priority
+		stResp.m_lPriority = a_objReqData.getDataPoint().getDataPoint().getPollingConfig().m_uiPollFreq;
 
 		// Post it
-		postResponseJSON(stResp, a_objReqData);
+		postResponseJSON(stResp, &a_objReqData);
 	}
 	catch(const std::exception& e)
 	{
@@ -317,11 +421,20 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 {
 	try
 	{
-		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(a_stResp.u16TransacID);
-		// Response is received. Reset response awaited status
-		objReqData.getDataPoint().setIsAwaitResp(false);
+		if(MBUS_RESPONSE_POLLING == a_stResp.m_operationType)
+		{
+			const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(a_stResp.u16TransacID);
+			// Response is received. Reset response awaited status
+			objReqData.getDataPoint().setIsAwaitResp(false);
 
-		postResponseJSON(a_stResp, objReqData);
+			postResponseJSON(a_stResp, &objReqData);
+		}
+		else if(MBUS_RESPONSE_ONDEMAND == a_stResp.m_operationType)
+		{
+			postResponseJSON(a_stResp, NULL);
+		}
+		else
+		{}
 	}
 	catch(const std::exception& e)
 	{
@@ -363,7 +476,12 @@ eMbusStackErrorCode CPeriodicReponseProcessor::CPeriodicReponseProcessor::respPr
 		do
 		{
 			// Wait for response
-			sem_wait(&semaphoreRespProcess);
+			//sem_wait(&semaphoreRespProcess);
+			if((sem_wait(&semaphoreRespProcess)) == -1 && errno == EINTR)
+			{
+				// Continue if interrupted by handler
+				continue;
+			}
 			stStackResponse res;
 			try
 			{
@@ -453,7 +571,7 @@ bool CPeriodicReponseProcessor::pushToQueue(struct stStackResponse &stStackResNo
 	try
 	{
 		std::lock_guard<std::mutex> lock(__resQMutex);
-		stackResQ.push(stStackResNode);
+		g_priorityQ.push(stStackResNode);
 		// Signal response process thread
 		sem_post(&semaphoreRespProcess);
 
@@ -478,8 +596,13 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 	try
 	{
 		std::lock_guard<std::mutex> lock(__resQMutex);
-		a_stStackResNode = stackResQ.front();
-		stackResQ.pop();
+		if(g_priorityQ.empty())
+		{
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("Response queue is empty"));
+			return false;
+		}
+		a_stStackResNode = g_priorityQ.top();
+		g_priorityQ.pop();
 
 		return true;
 	}
@@ -494,70 +617,54 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 
 /**
  * Handle response
- * @param u8UnitID				:[in] unit id
- * @param u16TransacID			:[in] transaction id
- * @param pu8IpAddr				:[in] IP addr
- * @param u8FunCode				:[in] function code
- * @param pstException			:[in] expection code
- * @param u8numBytes			:[in] number of bytes
- * @param pu8data				:[in] data
- * @param u16StartAddress		:[in] start address
- * @param u16Quantity			:[in] quantity
- * @param a_objStackTimestamps	:[in] time stamps
+ * @param pstMbusAppCallbackParams :[in] response received from stack
+ * @param respType :[in] To identify polling or on-demand response
  */
-void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
-					 uint16_t u16TransacID,
-					 uint8_t* pu8IpAddr,
-					 uint8_t  u8FunCode,
-					 stException_t  *pstException,
-					 uint8_t  u8numBytes,
-					 uint8_t* pu8data,
-					 uint16_t  u16StartAddress,
-					 uint16_t  u16Quantity,
-					 stTimeStamps a_objStackTimestamps)
+void CPeriodicReponseProcessor::handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, eMbusResponseType respType)
 {
+	if(pstMbusAppCallbackParams == NULL)
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Response received from stack is null hence discarding"));
+		return;
+	}
+
 	struct stStackResponse stStackResNode;
 	stStackResNode.bIsValPresent = false;
 	stStackResNode.u8Reason = 0;
+	stStackResNode.m_operationType = respType;
+	stStackResNode.m_u8FunCode = pstMbusAppCallbackParams->m_u8FunctionCode;
 
 	try
 	{
-		if(pu8data == NULL)
+		stStackResNode.m_stException.m_u8ExcCode = pstMbusAppCallbackParams->m_u8ExceptionExcCode;
+		stStackResNode.m_stException.m_u8ExcStatus = pstMbusAppCallbackParams->m_u8ExceptionExcStatus;
+
+		stStackResNode.u16TransacID = pstMbusAppCallbackParams->m_u16TransactionID;
+
+		memcpy_s((&stStackResNode.m_objStackTimestamps),
+				sizeof(stTimeStamps),
+				&pstMbusAppCallbackParams->m_objTimeStamps,
+				sizeof(pstMbusAppCallbackParams->m_objTimeStamps));
+
+		stStackResNode.m_lPriority = pstMbusAppCallbackParams->m_lPriority;
+
+		if((0 == pstMbusAppCallbackParams->m_u8ExceptionExcStatus) &&
+				(0 == pstMbusAppCallbackParams->m_u8ExceptionExcCode))
 		{
-			return;
+			stStackResNode.u8Reason = 1;
+			stStackResNode.bIsValPresent = true;
+			for (uint8_t index=0; index < pstMbusAppCallbackParams->m_u8MbusRXDataLength ; index++)
+			{
+				stStackResNode.m_Value.push_back(pstMbusAppCallbackParams->m_au8MbusRXDataDataFields[index]);
+			}
+		}
+		else
+		{
+			stStackResNode.u8Reason = 0;
+			stStackResNode.bIsValPresent = false;
 		}
 
-		if( pstException != NULL )
-		{
-			stStackResNode.m_stException.m_u8ExcCode = pstException->m_u8ExcCode;
-			stStackResNode.m_stException.m_u8ExcStatus = pstException->m_u8ExcStatus;
-
-			stStackResNode.u16TransacID = u16TransacID;
-			//memcpy(&stStackResNode.m_objStackTimestamps, &a_objStackTimestamps, sizeof(stTimeStamps));
-
-			memcpy_s((&stStackResNode.m_objStackTimestamps),
-					sizeof(stTimeStamps),
-					&a_objStackTimestamps,
-					sizeof(a_objStackTimestamps));
-
-			if((0 == pstException->m_u8ExcStatus) &&
-					(0 == pstException->m_u8ExcCode))
-			{
-				stStackResNode.u8Reason = 1;
-				stStackResNode.bIsValPresent = true;
-				for (uint8_t index=0; index < u8numBytes; index++)
-				{
-					stStackResNode.m_Value.push_back(pu8data[index]);
-				}
-			}
-			else
-			{
-				stStackResNode.u8Reason = 0;
-				stStackResNode.bIsValPresent = false;
-			}
-
-			pushToQueue(stStackResNode);
-		}
+		pushToQueue(stStackResNode);
 	}
 	catch(const std::exception& e)
 	{
@@ -566,72 +673,30 @@ void CPeriodicReponseProcessor::handleResponse(uint8_t  u8UnitID,
 
 }
 
-// function to receive RP-A call back
-#ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
- * Callback function
- * @param u8UnitID				:[in] unit id
- * @param u16TransacID			:[in] transaction id
- * @param pu8IpAddr				:[in] IP addr
- * @param u16Port				:[in] port number
- * @param u8FunCode				:[in] function code
- * @param pstException			:[in] exception code
- * @param u8numBytes			:[in] number of bytes
- * @param pu8data				:[in] data
- * @param u16StartAddress		:[in] start address
- * @param u16Quantity			:[in] quantity
- * @param a_objStackTimestamps	:[in] time stamp
+ * function to receive RP-A call back
+ * @param pstMbusAppCallbackParams :[in] parameters received from stack
  * @return appropriate error code
  */
-eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
-										 uint16_t u16TransacID,
-										 uint8_t* pu8IpAddr,
-										 uint16_t u16Port,
-										 uint8_t  u8FunCode,
-										 stException_t  *pstException,
-										 uint8_t  u8numBytes,
-										 uint8_t* pu8data,
-										 uint16_t  u16StartAddress,
-										 uint16_t  u16Quantity,
-										 stTimeStamps a_objStackTimestamps)
-#else
-/**
- * Callback function
- * @param u8UnitID				:[in] unit id
- * @param u16TransacID			:[in] transaction id
- * @param pu8IpAddr				:[in] IP addr
- * @param u8FunCode				:[in] function code
- * @param pstException			:[in] exception code
- * @param u8numBytes			:[in] number of bytes
- * @param pu8data				:[in] data
- * @param u16StartAddress		:[in] start address
- * @param u16Quantity			:[in] quantity
- * @param a_objStackTimestamps	:[in] time stamp
- * @return appropriate error code
- */
-eMbusStackErrorCode readPeriodicCallBack(uint8_t  u8UnitID,
-										 uint16_t u16TransacID,
-										 uint8_t* pu8IpAddr,
-										 uint8_t  u8FunCode,
-										 stException_t  *pstException,
-										 uint8_t  u8numBytes,
-										 uint8_t* pu8data,
-										 uint16_t  u16StartAddress,
-										 uint16_t  u16Quantity,
-										 stTimeStamps a_objStackTimestamps)
-#endif
+eMbusStackErrorCode readPeriodicCallBack(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
 {
+	if(pstMbusAppCallbackParams == NULL)
+	{
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null"));
+		return MBUS_STACK_ERROR_RECV_FAILED;
+	}
+
 	/// validate pointer
-	if(NULL == pu8data)
+	if(NULL == pstMbusAppCallbackParams->m_au8MbusRXDataDataFields)
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS(" No data received from stack"));
 		return MBUS_STACK_ERROR_RECV_FAILED;
 	}
 
-	// handle response
-	CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, pstException,
-			u8numBytes, pu8data, u16StartAddress, u16Quantity, a_objStackTimestamps);
+	eMbusResponseType respType = MBUS_RESPONSE_POLLING;
 
+	//handle response
+	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams, respType);
 	return MBUS_STACK_NO_ERROR;
 }
 
@@ -698,30 +763,54 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
  */
 bool CRequestInitiator::init()
 {
-	std::thread{std::bind(&CRequestInitiator::threadReqInit, std::ref(*this))}.detach();
-	
-	int ok = sem_init(&semaphoreReqProcess, 0, 0 /* Initial value of zero*/);
-	if (ok == -1) {
-	   std::cout << "*******Could not create unnamed semaphore\n";
-	   return false;
+	int retVal = sem_init(&semaphoreReqProcess, 0, 0 /* Initial value of zero*/);
+	if (retVal == -1)
+	{
+		std::cout << "*******Could not create unnamed semaphore for non-RT\n";
+		return false;
 	}
+	std::thread{std::bind(&CRequestInitiator::threadReqInit, std::ref(*this), false)}.detach();
+
+	retVal = sem_init(&semaphoreRTReqProcess, 0, 0 /* Initial value of zero*/);
+	if (retVal == -1)
+	{
+		std::cout << "*******Could not create unnamed semaphore for RT\n";
+		return false;
+	}
+	std::thread{std::bind(&CRequestInitiator::threadReqInit, std::ref(*this), true)}.detach();
+
 	return true;
 }
 
 /**
  * Push polling frequency to queue
  * @param a_uiRef	:[in] frequency
+ * @param a_objTimeRecord :[in] reference of TimeRecord class
  * @return 	true : on success,
  * 			false : on error
  */
-bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef)
+bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_objTimeRecord)
 {
 	try
 	{
 		std::lock_guard<std::mutex> lock(m_mutexReqFreqQ);
-		m_qReqFreq.push(a_uiRef);
-		// Signal response process thread
-		sem_post(&semaphoreReqProcess);
+
+		// Check for availability of RT list
+		if(true == a_objTimeRecord.isRTListAvailable())
+		{
+			m_qReqFreqRT.push(a_uiRef);
+			// Signal response process thread
+			sem_post(&semaphoreRTReqProcess);
+		}
+
+		// Check for availability of non-RT list
+		if(true == a_objTimeRecord.isNonRTListAvailable())
+		{
+			m_qReqFreq.push(a_uiRef);
+			// Signal response process thread
+			sem_post(&semaphoreReqProcess);
+		}
+
 
 		return true;
 	}
@@ -736,16 +825,25 @@ bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef)
 /**
  * Get polling frequency
  * @param a_uiRef	:[in] reference to store polling frequency
+ * @param a_bIsRT	:[in] bool variable to differentiate between RT/Non-RT
  * @return 	true : on success,
  * 			false : on error
  */
-bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef)
+bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT)
 {
 	try
 	{
 		std::lock_guard<std::mutex> lock(m_mutexReqFreqQ);
-		a_uiRef = m_qReqFreq.front();
-		m_qReqFreq.pop();
+		if(true == a_bIsRT)
+		{
+			a_uiRef = m_qReqFreqRT.front();
+			m_qReqFreqRT.pop();
+		}
+		else
+		{
+			a_uiRef = m_qReqFreq.front();
+			m_qReqFreq.pop();
+		}
 
 		return true;
 	}
@@ -758,9 +856,71 @@ bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef)
 }
 
 /**
- * Thread function to initiate requests
+ * Initiate request to get processed
+ * @param a_vReqData	:[in] reference to store polling frequency
  */
-void CRequestInitiator::threadReqInit()
+void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqData)
+{
+	for(auto a_oReqData: a_vReqData)
+	{
+		CRefDataForPolling objReqData = a_oReqData;
+		// Check if a response is already awaited
+		if(true == objReqData.getDataPoint().isIsAwaitResp())
+		{
+			// waiting for response. Send BAD response
+			stException_t m_stException = {};
+			m_stException.m_u8ExcCode = 100;
+			m_stException.m_u8ExcStatus = 100;
+			CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException);
+			continue;
+		}
+
+		//if(true == bIsFound)
+		{
+			objReqData.getDataPoint().setIsAwaitResp(true);
+
+			// generate the TX ID
+			uint16_t m_u16TxId = PublishJsonHandler::instance().getTxId();
+
+			// The entry is found in map
+			// Send a request
+			if (true == sendRequest(objReqData, m_u16TxId))
+			{
+				//objReqData.getDataPoint().setIsAwaitResp(true);
+				// Request is sent successfully
+				// No action
+#ifdef PERFTESTING // will be removed afterwards
+				++reqCount;
+				if(reqCount == total_read_periodic.load())
+				{
+					reqCount = 0;
+					CLogger::getInstance().log(ERROR, LOGDETAILS("Polling is stopped ...."));
+					stopPolling.store(true);
+					break;
+				}
+#endif
+			}
+			else
+			{
+				objReqData.getDataPoint().setIsAwaitResp(false);
+				stException_t m_stException = {};
+				m_stException.m_u8ExcCode = 101;
+				m_stException.m_u8ExcStatus = 101;
+				CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException);
+
+				/// remove node from TxID map
+				CRequestInitiator::instance().removeTxIDReqData(m_u16TxId);
+				CLogger::getInstance().log(ERROR, LOGDETAILS("sendRequest failed"));
+			}
+		}
+	}
+}
+
+/**
+ * Thread function to initiate requests
+ * @param isRTPoint	:[in] bool variable to differentiate between RT/Non-RT
+ */
+void CRequestInitiator::threadReqInit(bool isRTPoint)
 {
 	try
 	{
@@ -769,56 +929,48 @@ void CRequestInitiator::threadReqInit()
 			do
 			{
 				// Wait for response
-				sem_wait(&semaphoreReqProcess);
+				if(true == isRTPoint)
+				{
+					//sem_wait(&semaphoreRTReqProcess);
+					if((sem_wait(&semaphoreRTReqProcess)) == -1 && errno == EINTR)
+					{
+						// Continue if interrupted by handler
+						continue;
+					}
+
+				}
+				else
+				{
+					//sem_wait(&semaphoreReqProcess);
+					if((sem_wait(&semaphoreReqProcess)) == -1 && errno == EINTR)
+					{
+						// Continue if interrupted by handler
+						continue;
+					}
+				}
 				if(true == g_stopThread.load())
 				{
 					break;
 				}
 				uint32_t uiRef;
-				if(false == getFreqRefForPollCycle(uiRef))
+				if(true == isRTPoint)
 				{
-					break;
+					if(false == getFreqRefForPollCycle(uiRef, true))
+					{
+						break;
+					}
+					std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointListRT(uiRef);
+					initiateRequest(a_vReqData);
 				}
-				//cout << "CRequestInitiator::threadReqInit():Semaphore signalled: Freq " << uiRef << std::endl;
-				std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef);
-				for(auto a_oReqData: a_vReqData)
+				else
 				{
-					CRefDataForPolling objReqData = a_oReqData;
-					// Check if a response is already awaited
-					if(true == objReqData.getDataPoint().isIsAwaitResp())
+					if(false == getFreqRefForPollCycle(uiRef, false))
 					{
-						// waiting for response. Send BAD response
-						CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData);
-						continue;
+						break;
 					}
-
-					//if(true == bIsFound)
-					{
-						// The entry is found in map
-						// Send a request
-						if (true == sendRequest(objReqData))
-						{
-							objReqData.getDataPoint().setIsAwaitResp(true);
-							// Request is sent successfully
-							// No action
-		#ifdef PERFTESTING // will be removed afterwards
-							++reqCount;
-							if(reqCount == total_read_periodic.load())
-							{
-								reqCount = 0;
-								CLogger::getInstance().log(ERROR, LOGDETAILS("Polling is stopped ...."));
-								stopPolling.store(true);
-								break;
-							}
-		#endif
-						}
-						else
-						{
-							CLogger::getInstance().log(ERROR, LOGDETAILS("sendRequest failed"));
-						}
-					}
+					std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef);
+					initiateRequest(a_vReqData);
 				}
-
 			} while(0);
 		}
 	}
@@ -831,8 +983,9 @@ void CRequestInitiator::threadReqInit()
 /**
  * Initiate requests
  * @param a_uiRef	:[in] polling frequency
+ * @param a_objTimeRecord	:[in] reference of TimeRecord
  */
-void CRequestInitiator::initiateRequests(uint32_t a_uiRef)
+void CRequestInitiator::initiateRequests(uint32_t a_uiRef, CTimeRecord &a_objTimeRecord)
 {
 	try
 	{
@@ -840,7 +993,7 @@ void CRequestInitiator::initiateRequests(uint32_t a_uiRef)
 		if(!stopPolling.load())
 #endif
 		{
-			pushPollFreqToQueue(a_uiRef);
+			pushPollFreqToQueue(a_uiRef, a_objTimeRecord);
 		}
 	}
 	catch (exception &e)
@@ -933,7 +1086,7 @@ void CTimeMapper::initTimerFunction()
 /**
  * Check timer
  */
-void CTimeMapper::checkTimer()
+void CTimeMapper::checkTimer(uint32_t a_uiInterval)
 {
     try
 	{
@@ -941,9 +1094,9 @@ void CTimeMapper::checkTimer()
 		for (auto &element : m_mapTimeRecord)
 		{
 			CTimeRecord &a = element.second;
-			if(0 == a.decrementTime(1))
+			if(0 == a.decrementTime(a_uiInterval))
 			{
-				CRequestInitiator::instance().initiateRequests(element.first);
+				CRequestInitiator::instance().initiateRequests(element.first, a);
 			}
 		}
 	}
@@ -956,10 +1109,11 @@ void CTimeMapper::checkTimer()
 /**
  * Send request
  * @param a_stRdPrdObj	:[in] request to send
+ * @param m_u16TxId	:	[in] TxID
  * @return 	true : on success,
  * 			false : on error
  */
-bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
+bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj, uint16_t &m_u16TxId)
 {
 	MbusAPI_t stMbusApiPram = {};
 	uint8_t u8ReturnType = MBUS_STACK_NO_ERROR;
@@ -970,7 +1124,15 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 		stMbusApiPram.m_u16StartAddr = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iAddress;
 		stMbusApiPram.m_u16Quantity = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
 		stMbusApiPram.m_u16ByteCount = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
-		stMbusApiPram.m_lPriority = a_stRdPrdObj.getDataPoint().getDataPoint().getPollingConfig().m_uiPollFreq;
+
+		if(true == a_stRdPrdObj.getDataPoint().getDataPoint().getPollingConfig().m_bIsRealTime)
+		{
+			stMbusApiPram.m_lPriority = 3;
+		}
+		else
+		{
+			stMbusApiPram.m_lPriority = 4;
+		}
 
 		// Coil and discrete input are single bytes. All others are 2 byte registers
 		if( 
@@ -983,7 +1145,8 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 		}
 
 		/*Enter TX Id*/
-		stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
+		//stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
+		stMbusApiPram.m_u16TxId = m_u16TxId;
 
 #ifdef UNIT_TEST
 		stMbusApiPram.m_u16TxId = 5;
@@ -1031,6 +1194,18 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj)
 	}
 
 	return bRet;
+}
+
+/**
+ * TimeRecord Constructor
+ * @param a_u32Interval	:[in] data point polling frequency
+ * @param a_oPoint	:[in] reference of RefDataForPolling class
+ */
+CTimeRecord::CTimeRecord(uint32_t a_u32Interval, CRefDataForPolling &a_oPoint)
+	: m_u32Interval(a_u32Interval), m_u32RemainingInterval(a_u32Interval),
+	  m_bIsRTAvailable(false), m_bIsNonRTAvailable(false)
+{
+	this->add(a_oPoint);
 }
 
 /**
@@ -1096,6 +1271,64 @@ CTimeMapper::~CTimeMapper()
 }
 
 /**
+ * Find GCD of given numbers
+ * @param num1
+ * @param num2
+ * @return 	number : GCD of two numbers
+ */
+uint32_t CTimeMapper::gcd(uint32_t num1, uint32_t num2)
+{
+	while(0 != num1)
+	{
+		uint32_t temp = num1;
+		num1 = num2 % num1;
+		num2 = temp;
+	}
+	return num2;
+}
+
+/**
+ * Gets minimum time frequency that can be used based on current records
+ * @param
+ * @return 	number : minimum polling frequency in milliseconds
+ */
+uint32_t CTimeMapper::getMinTimerFrequency()
+{
+	// This function tries to find GCD (greatest common divisor) of all frequencies
+	// This gcd is used as a timer frequency
+	// E.g. for frequencies 250, 500, 1000 - gcd is 250
+	// for frequencies 250, 400, 500 - gcd is 50
+	uint32_t ulMinFreq = 1;
+	try
+	{
+		std::lock_guard<std::mutex> lock(m_mapMutex);
+		if(false == m_mapTimeRecord.empty())
+		{
+			std::map<uint32_t, CTimeRecord>::iterator it = m_mapTimeRecord.begin();
+			// get the first frequency
+			ulMinFreq = it->first;
+			it++;
+			while (it != m_mapTimeRecord.end())
+			{
+				ulMinFreq = gcd(it->first, ulMinFreq);
+
+				if(1 == ulMinFreq)
+				{
+					break;
+				}
+				it++;
+			}
+		}
+	}
+	catch (exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+	}
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Minimum frequency: " + to_string(ulMinFreq)));
+	return ulMinFreq;
+}
+
+/**
  * Add time record
  * @param a_oPoint
  * @return 	true : on success,
@@ -1112,7 +1345,16 @@ bool CTimeRecord::add(CRefDataForPolling &a_oPoint)
 		std::lock_guard<std::mutex> lock(m_vectorMutex);
 		{
 			// Add the reference
-			m_vPolledPoints.push_back(a_oPoint);
+			if(a_oPoint.getDataPoint().getRTFlag())
+			{
+				m_vPolledPointsRT.push_back(a_oPoint);
+				m_bIsRTAvailable = true;
+			}
+			else
+			{
+				m_vPolledPoints.push_back(a_oPoint);
+				m_bIsNonRTAvailable = true;
+			}
 		}
 	}
 	catch (exception &e)
@@ -1138,6 +1380,7 @@ CTimeRecord::~CTimeRecord()
 		// Clear vector of reference IDs
 		std::lock_guard<std::mutex> lock(m_vectorMutex);
 		m_vPolledPoints.clear();
+		m_vPolledPointsRT.clear();
 	}
 	catch (exception &e)
 	{
@@ -1146,101 +1389,56 @@ CTimeRecord::~CTimeRecord()
 }
 
 /**
- * Function to start Linux timer
- * @param
- * lNextTimerTick : use to set next tick count
- * @return : true on success and false on failure
+ *Function to get timer callback
+ *@param : [in] interval in milliseconds
+ *@return : Nothing
  */
-bool LinuxTimer::start_timer(long nextTimerTick)
+void PeriodicTimer::timerThread(uint32_t interval)
 {
-	/// local variables
-	struct itimerspec value;
-	bool retVal = false;
-
-	value.it_value.tv_sec = 0;
-
-	// waits for nextTimerTick milliseconds before sending timer signal
-	value.it_value.tv_nsec = nextTimerTick*1000000;
-
-	// sends timer signal every 1 milliseconds
-	value.it_interval.tv_sec = 0;
-	value.it_interval.tv_nsec = 1*1000000;
-
-	// create CLOCK_BOOTTIME timer
-	int ret = timer_create(CLOCK_BOOTTIME, NULL, &gTimerid);
-	if(!ret)
+	/// call timer function
+	// interval is in milliseconds
+	if(0 == interval)
 	{
-		retVal = true;
-	}
-	else
-	{
-		string temp10 = " Failed to set timer.";
-		temp10.append("Error code ::");
-		temp10.append(std::to_string(ret));
-		CLogger::getInstance().log(ERROR, LOGDETAILS(temp10));		
-		return retVal;
+		interval = 1;
 	}
 
-	ret = timer_settime(gTimerid, 0, &value, NULL);
-	if(!ret)
-	{
-		retVal = true;
-	}
-	else
-	{
-	   string temp11 = " Failed to set timer.";
-	   temp11.append("Error code ::");
-	   temp11.append(std::to_string(ret));
-	   CLogger::getInstance().log(ERROR, LOGDETAILS(temp11));
-	   std::cout << "Error: Failed to set timer" << "Error code ::" << ret<< std::endl;
-	   return retVal;
-	}
+	uint32_t uiMsecInterval = interval;
 
-	return retVal;
+	// for following calculation, convert interval to microseconds
+	interval = interval*1000;
+	while(!g_stopTimer)
+	{
+		auto start = chrono::steady_clock::now();
+
+		/// call timer function
+		CTimeMapper::instance().checkTimer(uiMsecInterval);
+
+		auto end = chrono::steady_clock::now();
+
+		/// wait for configured frequency
+		std::this_thread::sleep_for(std::chrono::duration_cast<std::chrono::microseconds>
+		(std::chrono::microseconds(interval) - (end - start)));
+	}
+}
+
+/**
+ * Function to start Linux timer
+ * @param [in] : interval in milliseconds
+ * @return : nothing
+ */
+void PeriodicTimer::timer_start(uint32_t interval)
+{
+	/// create thread for timer routine
+	std::thread(std::bind(timerThread, interval)).detach();
 }
 
 /**
  * Function to stop Linux timer
  * @param : Nothing
- * @return : true on success and false on failure
- */
-bool LinuxTimer::stop_timer()
-{
-	/// local variables
-	bool retVal = false;
-	struct itimerspec value;
-
-	value.it_value.tv_sec = 0;
-	value.it_value.tv_nsec = 0;
-	value.it_interval.tv_sec = 0;
-	value.it_interval.tv_nsec = 0;
-
-	int ret = timer_settime (gTimerid, 0, &value, NULL);
-	if(!ret)
-	{
-		retVal = true;
-	}
-	else
-	{
-		string tempv = " Failed to set timer.";
-		tempv.append(std::to_string(ret));
-		CLogger::getInstance().log(ERROR, LOGDETAILS(tempv));
-		std::cout << "Error: Failed to set timer" << "Error code ::" << ret<< std::endl;
-		return retVal;
-	}
-
-	return retVal;
-}
-
-/**
- * Function to get timer callback based on signal
- * @param :
- * iSignal : signal to get timer callback
  * @return : Nothing
  */
-void LinuxTimer::timer_callback(int iSignal)
+void PeriodicTimer::timer_stop(void)
 {
-	//cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() << endl;
-
-	CTimeMapper::instance().checkTimer();
+	g_stopTimer = true;
 }
+

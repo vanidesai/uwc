@@ -31,7 +31,7 @@ extern sem_t g_semaphoreRespProcess;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.1.0"
+#define APP_VERSION "0.0.2.0"
 
 /**
  * add sourcetopic key in payload to publish on EIS
@@ -153,14 +153,96 @@ std::string parse_msg(const char *json, int& qos) {
 }
 
 /**
+ * Process ZMQ message
+ * @param msg	:	[in] actual message
+ */
+bool processMsg(msg_envelope_t *msg)
+{
+	int num_parts = 0;
+	msg_envelope_serialized_part_t *parts = NULL;
+	bool bRetVal = false;
+
+	if(msg == NULL)
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS( "Received NULL msg in msgbus_recv_wait"));
+		return bRetVal;
+	}
+
+	struct timespec tsMsgRcvd;
+	timespec_get(&tsMsgRcvd, TIME_UTC);
+
+	num_parts = msgbus_msg_envelope_serialize(msg, &parts);
+	if (num_parts <= 0)
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to serialize message"));
+	}
+	else if(NULL != parts)
+	{
+		int iQOS = 0;
+		std::string revdTopic(parse_msg(parts[0].bytes, iQOS));
+
+		if (revdTopic == "")
+		{
+			string strTemp = "topic key not present in message: ";
+			strTemp.append(parts[0].bytes);
+			CLogger::getInstance().log(ERROR, LOGDETAILS(strTemp));
+
+		}
+		else
+		{
+			string mqttMsg(parts[0].bytes);
+			//publish data to MQTT
+#ifdef INSTRUMENTATION_LOG
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("ZMQ Message: Time: "
+					+ std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+			+ ", Msg: " + mqttMsg));
+#endif
+			CMQTTHandler::instance().publish(mqttMsg,
+					revdTopic.c_str(), iQOS, tsMsgRcvd);
+
+			bRetVal = true;
+		}
+
+		if (num_parts <= 0)
+		{
+			CLogger::getInstance().log(DEBUG, LOGDETAILS( "Num parts is <= 0, will try to destroy msgbus_msg_envelope_destroy"));
+
+			if(msg != NULL)
+			{
+				msgbus_msg_envelope_destroy(msg);
+				msg = NULL;
+				CLogger::getInstance().log(DEBUG, LOGDETAILS( "Destroyed msg"));
+			}
+		}
+
+		if(parts != NULL)
+		{
+			msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+		}
+	}
+	else
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS("NULL pointer received"));
+		bRetVal = false;
+	}
+
+	if(msg != NULL)
+	{
+		msgbus_msg_envelope_destroy(msg);
+		msg = NULL;
+	}
+	parts = NULL;
+
+	return bRetVal;
+}
+/**
  * Thread function to listen on EIS and send data to MQTT
  * @param topic 	:[in] topic to listen onto
  * @param context	:[in] msg bus context
  * @param subContext:[in] sub context
  */
-void listenOnEIS(string topic, stZmqContext context,
-		stZmqSubContext subContext) {
-
+void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext)
+{
 #ifdef REALTIME_THREAD_PRIORITY
 	CTopicMapper::getInstance().set_thread_priority();
 #endif
@@ -171,77 +253,30 @@ void listenOnEIS(string topic, stZmqContext context,
 	CLogger::getInstance().log(INFO, LOGDETAILS("ZMQ listening for topic : " + topic));
 	while ((false == g_shouldStop.load()) && (msgbus_ctx != NULL) && (sub_ctx != NULL)) {
 
-		try {
-			int num_parts = 0;
+		try
+		{
 			msg_envelope_t *msg = NULL;
-			msg_envelope_serialized_part_t *parts = NULL;
 			msgbus_ret_t ret;
 
 			ret = msgbus_recv_wait(msgbus_ctx, sub_ctx, &msg);
-			if (ret != MSG_SUCCESS) {
+			if (ret != MSG_SUCCESS)
+			{
 				// Interrupt is an acceptable error
-				if (ret == MSG_ERR_EINTR) {
+				if (ret == MSG_ERR_EINTR)
+				{
 					CLogger::getInstance().log(ERROR, LOGDETAILS( "received MSG_ERR_EINT"));
 					//break;
 				}
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to receive message errno: " + std::to_string(ret)));
 				continue;
 			}
-
-			if(msg == NULL) {
-				CLogger::getInstance().log(ERROR, LOGDETAILS( "Received NULL msg in msgbus_recv_wait"));
-				continue;
-			}
 			
-			struct timespec tsMsgRcvd;
-			timespec_get(&tsMsgRcvd, TIME_UTC);
+			/// process ZMQ message and publish to MQTT
+			processMsg(msg);
 
-			num_parts = msgbus_msg_envelope_serialize(msg, &parts);
-			if (num_parts <= 0) {
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to serialize message"));
-				//continue;
-			}
-			else if(NULL != parts) {
-				int iQOS = 0;
-				std::string revdTopic(parse_msg(parts[0].bytes, iQOS));
-
-				if (revdTopic == "") {
-					string strTemp = "topic key not present in message: ";
-					strTemp.append(parts[0].bytes);
-					CLogger::getInstance().log(ERROR, LOGDETAILS(strTemp));
-
-				} else {
-						string mqttMsg(parts[0].bytes);
-						//publish data to MQTT
-#ifdef INSTRUMENTATION_LOG
-						CLogger::getInstance().log(DEBUG, LOGDETAILS("ZMQ Message: Time: "
-							+ std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
-							+ ", Msg: " + mqttMsg));
-#endif
-						CMQTTHandler::instance().publish(mqttMsg,
-								revdTopic.c_str(), iQOS, tsMsgRcvd);
-				}
-
-				if (num_parts <= 0) {
-					CLogger::getInstance().log(DEBUG, LOGDETAILS( "Num parts is <= 0, will try to destroy msgbus_msg_envelope_destroy"));
-
-					if(msg != NULL) {
-						msgbus_msg_envelope_destroy(msg);
-						msg = NULL;
-						CLogger::getInstance().log(DEBUG, LOGDETAILS( "Destroyed msg"));
-					}
-				}
-
-				if(parts != NULL)
-					msgbus_msg_envelope_serialize_destroy(parts, num_parts);
-			}
-
-			if(msg != NULL) {
-				msgbus_msg_envelope_destroy(msg);
-				msg = NULL;
-			}
-			parts = NULL;
-		} catch (exception &ex) {
+		}
+		catch (exception &ex)
+		{
 			string temp = ex.what();
 			temp.append(" for topic : ");
 			temp.append(topic);
@@ -341,7 +376,12 @@ void postMsgsToEIS() {
 		mqtt::const_message_ptr recvdMsg;
 		while (false == g_shouldStop.load()) {
 
-			sem_wait(&g_semaphoreRespProcess);
+			//sem_wait(&g_semaphoreRespProcess);
+			if((sem_wait(&g_semaphoreRespProcess)) == -1 && errno == EINTR)
+			{
+				// Continue if interrupted by handler
+				continue;
+			}
 
 			if (false == CMQTTHandler::instance().getSubMsgFromQ(recvdMsg)) {
 				CLogger::getInstance().log(INFO, LOGDETAILS("No message to send to EIS in queue"));
@@ -536,11 +576,6 @@ bool initEISContext() {
  */
 int main(int argc, char *argv[]) {
 
-#ifdef UNIT_TEST
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
-#endif
-
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting MQTT Export ..."));
 	std::cout << __func__ << ":" << __LINE__ << " ------------- Starting MQTT Export Container -------------" << std::endl;
 
@@ -565,6 +600,11 @@ int main(int argc, char *argv[]) {
 
 		//Prepare ZMQ contexts for publishing & subscribing data
 		initEISContext();
+
+#ifdef UNIT_TEST
+	::testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
+#endif
 
 		//Start listening on EIS & publishing to MQTT
 		postMsgstoMQTT();

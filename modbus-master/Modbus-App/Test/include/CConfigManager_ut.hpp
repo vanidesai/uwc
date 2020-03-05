@@ -8,29 +8,19 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#ifndef TEST_INCLUDE_PUBLISHJSON_UT_HPP_
-#define TEST_INCLUDE_PUBLISHJSON_UT_HPP_
+#ifndef TEST_INCLUDE_CCONFIGMANAGER_UT_HPP_
+#define TEST_INCLUDE_CCONFIGMANAGER_UT_HPP_
 
-
-#include <mutex>
+#include <gtest/gtest.h>
 #include <string.h>
-#include <stdlib.h>
-#include "PublishJson.hpp"
-#include "ZmqHandler.hpp"
-#include "PeriodicReadFeature.hpp"
-#include "PeriodicRead.hpp"
-//#include "MsgbusManager.hpp"
-//#include "ModBus_EnvConfig_Caller.hpp"
-//#include "config_Caller.hpp"
-#include "NetworkInfo.hpp"
-#include "Common.hpp"
-#include "API.h"
-#include "gtest/gtest.h"
+#include "ConfigManager.hpp"
+
+void etcdOnChangeKeyCb(char* key, char * val);
+void etcdOnChangeDirCb(char* key, char * val);
+//void CfgManager::registerCallbackOnChangeKey(char *key)
 
 
-
-
-class PublishJson_ut : public::testing::Test
+class CConfigManager_ut : public::testing::Test
 {
 protected:
 	virtual void SetUp();
@@ -38,14 +28,9 @@ protected:
 
 public:
 
-	msg_envelope_t *msg;
-
-	msg_envelope_t* g_msg = NULL;
-	stStackResponse res;
-	std::string sRespTopic = "Modbus-TCP-Master_ReadRequest";
-
+	std::string			Test_Str = "";
+	std::string			Expected_output = "";
 
 };
 
-
-#endif /* TEST_INCLUDE_PUBLISHJSON_UT_HPP_ */
+#endif /* TEST_INCLUDE_CCONFIGMANAGER_UT_HPP_ */

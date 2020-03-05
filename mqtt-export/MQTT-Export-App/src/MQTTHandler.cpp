@@ -270,7 +270,7 @@ bool CMQTTHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsM
 
 	} catch (exception &ex) {
 
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to add timestamp in payload for MQTT"));
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to add timestamp in payload for MQTT" + std::string(ex.what())));
 		
 		if(root != NULL)
 			cJSON_Delete(root);
@@ -548,9 +548,13 @@ bool CMQTTHandler::getSubMsgFromQ(mqtt::const_message_ptr &msg) {
 	try {
 		std::lock_guard<std::mutex> lock(m_mutexSubMsgQ);
 		/// Ensure that only on thread can execute at a time
+		stSubMsgData subMsg;
 		if (false == m_qSubMsgData.empty()) {
-			msg = m_qSubMsgData.front();
+
+			subMsg = m_qSubMsgData.top();
 			m_qSubMsgData.pop();
+
+			msg = subMsg.m_ptMsg;
 		} else {
 			bRet = false;
 		}
@@ -573,7 +577,21 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg) {
 	try {
 		/// Ensure that only on thread can execute at a time
 		std::lock_guard<std::mutex> lock(m_mutexSubMsgQ);
-		m_qSubMsgData.push(msg);
+		//check topic on which we have received msg and then set priority accordingly
+		stSubMsgData msgData;
+
+		string topic = msg->get_topic();
+		if(topic.find("write") || topic.find("WRITE"))
+		{
+			msgData.m_lPriority = ON_DEMAND_WRITE_PRIORITY;
+		}
+		else if(topic.find("read") || topic.find("READ"))
+		{
+			msgData.m_lPriority = ON_DEMAND_READ_PRIORITY;
+		}
+
+		msgData.m_ptMsg = msg;
+		m_qSubMsgData.push(msgData);
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Pushed MQTT message in queue"));
 
 		// Signal response process thread

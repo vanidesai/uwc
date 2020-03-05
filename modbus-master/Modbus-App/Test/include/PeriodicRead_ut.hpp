@@ -28,41 +28,43 @@ protected:
 	virtual void TearDown();
 
 public:
-	uint8_t						u8UnitID = 0;
-	uint16_t					u16TransacID = 0;
-	uint8_t						u8IpAddr = 0;
-	uint8_t*					pu8IpAddr = &u8IpAddr;
-	uint8_t						u8FunCode = 0;
+	uint8_t	u8UnitID = 0;
+	uint16_t u16TransacID = 0;
+	uint8_t	u8IpAddr = 0;
+	uint16_t u16Port = 0;
+	uint8_t* pu8IpAddr = &u8IpAddr;
+	uint8_t	u8FunCode = 0;
 
-	stException_t				stException_t_obj;
-	stException_t*				pstException = &stException_t_obj;
+	stException_t stException_t_obj;
+	stException_t* pstException = &stException_t_obj;
 
-	uint8_t						u8numBytes = 0;
-	uint8_t						pu8data[8] = {1,2,3,4,5,6,7,8};
+	uint8_t	u8numBytes = 0;
+	uint8_t	pu8data[8] = {1,2,3,4,5,6,7,8};
 
-	uint16_t					u16StartAddress = 0;
-	uint16_t					u16Quantity = 0;
+	uint16_t u16StartAddress = 0;
+	uint16_t u16Quantity = 0;
 
-	string						test_str = "";
+	string test_str = "";
 
-	bool 						Temp_Bool = false;
+	bool Temp_Bool = false;
+	stTimeStamps a_objStackTimestamps;
 
 	struct Some_Other_Str
 	{
 		int	a;
 		int	b;
 	};
-	struct Some_Other_Str		Some_Other_Str_obj;
+	struct Some_Other_Str Some_Other_Str_obj;
 
-	network_info::CWellSiteInfo			CWellSiteInfo_obj;
-	network_info::CWellSiteDevInfo		CWellSiteDevInfo_obj;
-	network_info::CDataPoint			CDataPoint_obj;
+	network_info::CWellSiteInfo	CWellSiteInfo_obj;
+	network_info::CWellSiteDevInfo CWellSiteDevInfo_obj;
+	network_info::CDataPoint CDataPoint_obj;
 
-	string		str1;
-	string		str2;
-	string		str3;
+	string str1;
+	string str2;
+	string str3;
 
-	network_info::CUniqueDataPoint 		CUniqueDataPoint_obj
+	network_info::CUniqueDataPoint CUniqueDataPoint_obj
 	{
 		"Test_String",
 		CWellSiteInfo_obj,
@@ -70,13 +72,20 @@ public:
 		CDataPoint_obj
 	};
 
-	zmq_handler::stZmqContext			stZmqContext_obj;
+	zmq_handler::stZmqContext stZmqContext_obj;
+	zmq_handler::stZmqPubContext stZmqPubContext_obj;
 
-	CRefDataForPolling					CRefDataForPolling_obj	{
-																CUniqueDataPoint_obj,
-																stZmqContext_obj,
-																16
-																};
+	CRefDataForPolling CRefDataForPolling_obj
+	{
+		CUniqueDataPoint_obj,
+		stZmqContext_obj,
+		stZmqPubContext_obj,
+		16
+	};
+
+	stMbusAppCallbackParams_t MbusAppCallbackParams;
+	stMbusAppCallbackParams_t *pstMbusAppCallbackParams = &MbusAppCallbackParams;
+
 };
 
 

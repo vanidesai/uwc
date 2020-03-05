@@ -8,44 +8,27 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#ifndef TEST_INCLUDE_PUBLISHJSON_UT_HPP_
-#define TEST_INCLUDE_PUBLISHJSON_UT_HPP_
+#ifndef TEST_INCLUDE_CDEVICEINFO_UT_HPP_
+#define TEST_INCLUDE_CDEVICEINFO_UT_HPP_
 
-
-#include <mutex>
-#include <string.h>
-#include <stdlib.h>
-#include "PublishJson.hpp"
+#include <stdbool.h>
+#include "gtest/gtest.h"
+#include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
 #include "PeriodicReadFeature.hpp"
-#include "PeriodicRead.hpp"
-//#include "MsgbusManager.hpp"
-//#include "ModBus_EnvConfig_Caller.hpp"
-//#include "config_Caller.hpp"
-#include "NetworkInfo.hpp"
-#include "Common.hpp"
-#include "API.h"
-#include "gtest/gtest.h"
+#include "PublishJson.hpp"
+#include "ConfigManager.hpp"
 
-
-
-
-class PublishJson_ut : public::testing::Test
-{
+class CDeviceInfo_ut : public ::testing::Test {
 protected:
 	virtual void SetUp();
 	virtual void TearDown();
-
 public:
+	YAML::Node baseNode;
 
-	msg_envelope_t *msg;
-
-	msg_envelope_t* g_msg = NULL;
-	stStackResponse res;
-	std::string sRespTopic = "Modbus-TCP-Master_ReadRequest";
-
-
+	network_info::CDataPoint datapoint_obj;
+	network_info::CDeviceInfo Cdeviceinfo_obj;
 };
 
 
-#endif /* TEST_INCLUDE_PUBLISHJSON_UT_HPP_ */
+#endif /* TEST_INCLUDE_CDEVICEINFO_UT_HPP_ */

@@ -36,7 +36,7 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 	bool retValue = false;
 	recv_ctx_t* sub_ctx = NULL;
 
-	if(!(topicType != "pub" || topicType != "sub"))
+	if(!(topicType == "pub" || topicType == "sub"))
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid TopicType parameter ::" + topicType));
 		std::cout << __func__ << ":" << __LINE__ << " Error : Invalid TopicType parameter" + topicType << std::endl;
