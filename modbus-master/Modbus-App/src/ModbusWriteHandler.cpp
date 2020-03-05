@@ -506,6 +506,12 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 				break;
 			}
 
+			if(isWrite && (funcCode == READ_INPUT_REG || funcCode == READ_INPUT_STATUS))
+			{
+				funcCode = MBUS_MAX_FUN_CODE;
+				return MBUS_APP_ERROR_IMPROPER_METHOD;
+			}
+
 			if(WRITE_MULTIPLE_REG == funcCode)
 			{
 				stMbusApiPram.m_u16ByteCount = stMbusApiPram.m_u16Quantity*2;
