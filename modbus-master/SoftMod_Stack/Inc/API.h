@@ -37,6 +37,8 @@ typedef unsigned long   	ulong32_t;  /* unsinged long declarations */
 #define MODBUS_EXCEPTION 1
 #define MODBUS_STACK_ERROR 2
 
+#define MODBUS_DATA_LENGTH (260)
+
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 /*parity selection*/
 #define NO_PARITY   (0)
@@ -386,6 +388,46 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 		long lPriority,
 		uint32_t u32mseTimeout,
 		void* pFunCallBack);
+
+//struct for Modbus_AppllicationCallbackHandler
+typedef struct _stMbusAppCallbackParams
+{
+	/** Holds the received transaction ID*/
+	uint16_t m_u16TransactionID;
+	/** Holds the unit id  */
+	uint8_t m_u8FunctionCode;
+	/** Holds Data received from server */
+	//MbusRXData_t m_stMbusRxData;
+	uint8_t m_u8MbusRXDataLength;
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+	/** Holds the unit id  */
+	uint8_t  m_u8UnitID;
+	/** Holds Ip address of salve/server device */
+	uint8_t m_u8IpAddr[4];
+	uint16_t u16Port;
+#else
+	/** Received destination address */
+	uint8_t	m_u8ReceivedDestination;
+#endif
+	uint8_t m_au8MbusRXDataDataFields[ MODBUS_DATA_LENGTH ];
+
+	/** Holds the start address  */
+	uint16_t  m_u16StartAdd;
+	/** Holds the Quantity  */
+	uint16_t  m_u16Quantity;
+	/** Holds the Msg Priority  */
+	long m_lPriority;
+	stTimeStamps m_objTimeStamps;
+	/** exception if any from Modbus **/
+	//stException_t  *m_stException;
+
+	uint8_t		m_u8ExceptionExcStatus;
+	uint8_t		m_u8ExceptionExcCode;
+
+
+}stMbusAppCallbackParams_t;
+//end of Modbus_ApplicationCallbackHandler struct
+
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uint8_t  parity, uint8_t stop_bit);

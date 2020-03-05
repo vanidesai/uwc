@@ -25,6 +25,7 @@ void CDataPoint_ut::TearDown()
 /** Test:CDataPoint_ut::address_manatory_param****/
 /*Test 01::  checks whether mandatory parameter (iAddress) is available in yml file or not */
 
+/*
 TEST_F(CDataPoint_ut, address_manatory_param)
 {
 
@@ -46,7 +47,8 @@ TEST_F(CDataPoint_ut, address_manatory_param)
 				CDataPoint_obj.build(it1, CDataPoint_obj);
                 id=CDataPoint_obj.getID();
 				m_Address = CDataPoint_obj.getAddress();
-				EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
+			    EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
+
 //				EXPECT_EQ(1, m_Address.m_iWidth);
 //				EXPECT_EQ(network_info::eEndPointType::eCoil, m_Address.m_eType);
 
@@ -63,6 +65,7 @@ TEST_F(CDataPoint_ut, address_manatory_param)
 	}
 
 }
+*/
 
 /***Test:CDataPoint_ut::width_manatory_param****/
 /*Test 02::  checks whether mandatory parameter (iwidth) is available in yml file or not */
@@ -111,7 +114,7 @@ TEST_F(CDataPoint_ut, width_manatory_param)
 
 /***Test:CDataPoint_ut::eType_manatory_param****/
 /*Test 03::  checks whether mandatory parameter (eType) is available in yml file or not */
-
+/*
 TEST_F(CDataPoint_ut, eType_manatory_param)
 {
  //   int counter=0;
@@ -151,7 +154,7 @@ TEST_F(CDataPoint_ut, eType_manatory_param)
 		}
 	}
 
-}
+}*/
 
 /***Test:CDataPoint_ut::all_manatory_param****/
 /*Test 04::  checks whether all mandatory parameters are available in yml file or not, if not

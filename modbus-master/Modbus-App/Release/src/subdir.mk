@@ -10,6 +10,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/Common.cpp \
 ../src/ConfigManager.cpp \
 ../src/Logger.cpp \
 ../src/Main.cpp \
@@ -21,6 +22,7 @@ CPP_SRCS += \
 ../src/ZmqHandler.cpp 
 
 OBJS += \
+./src/Common.o \
 ./src/ConfigManager.o \
 ./src/Logger.o \
 ./src/Main.o \
@@ -32,6 +34,7 @@ OBJS += \
 ./src/ZmqHandler.o 
 
 CPP_DEPS += \
+./src/Common.d \
 ./src/ConfigManager.d \
 ./src/Logger.d \
 ./src/Main.d \

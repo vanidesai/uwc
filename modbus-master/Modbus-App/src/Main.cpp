@@ -37,6 +37,7 @@ std::condition_variable cv;
 bool g_stop = false;
 
 #define APP_VERSION "0.0.1.0"
+#define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
@@ -293,6 +294,15 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 
+
+
+#ifdef UNIT_TEST
+		//::testing::GTEST_FLAG(filter) ="*CConfigManager_ut*";
+		::testing::InitGoogleTest(&argc, argv);
+		return RUN_ALL_TESTS();
+#endif
+
+
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 
 		string sPortName, sBaudrate, sParity, sStopBit;
@@ -364,7 +374,6 @@ int main(int argc, char* argv[])
 #endif
 
 		// Setup signal handlers
-		signal(SIGALRM, LinuxTimer::timer_callback);
 
 		uint8_t	u8ReturnType = AppMbusMaster_StackInit();
 		if(0 != u8ReturnType)
@@ -443,22 +452,9 @@ int main(int argc, char* argv[])
 		CLogger::getInstance().log(INFO, LOGDETAILS("Configuration done. Starting operations."));
 		CTimeMapper::instance().initTimerFunction();
 
-		if(true == LinuxTimer::start_timer(1))
-		{
-			std::cout << "\nSuccessfully started read periodic timer\n";
-		}
-		else
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to start periodic read timer."));
-			std::cout << "Error: Failed to start periodic read timer" << std::endl;
-		}
-
-#ifdef UNIT_TEST
-
-		::testing::InitGoogleTest(&argc, argv);
-		return RUN_ALL_TESTS();
-
-#endif
+		std::cout << "Starting periodic timer\n";
+		PeriodicTimer::timer_start(TIMER_TICK_FREQ);
+		std::cout << "Timer is started..\n";
 
 		std::unique_lock<std::mutex> lck(mtx);
 		cv.wait(lck,exitMainThread);
@@ -476,6 +472,7 @@ int main(int argc, char* argv[])
 	{
 		temp = "fatal::Error in getting arguments: ";
 		temp.append(e.what());
+		std::cout << "Exception in main::"<<temp << endl;
 		CLogger::getInstance().log(FATAL, LOGDETAILS(temp));
 
 		return EXIT_FAILURE;

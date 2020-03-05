@@ -870,13 +870,22 @@ CUniqueDataPoint::CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWe
 }
 
 /**
+ * Constructor
+ * @param a_objPt 		:[in] reference CUniqueDataPoint object for copy constructor
+ */
+CUniqueDataPoint::CUniqueDataPoint(const CUniqueDataPoint &a_objPt) :
+				m_uiMyRollID{a_objPt.m_uiMyRollID}, m_sId{a_objPt.m_sId},
+				m_rWellSite{a_objPt.m_rWellSite}, m_rWellSiteDev{a_objPt.m_rWellSiteDev}, m_rPoint{a_objPt.m_rPoint}, m_bIsAwaitResp{false}
+{
+}
+
+/**
  * Check if response should await
  * @return 	true : on success,
  * 			false : on error
  */
 bool CUniqueDataPoint::isIsAwaitResp() const {
-	//return false;
-	return m_bIsAwaitResp;
+	return m_bIsAwaitResp.load();
 }
 
 /**
@@ -884,5 +893,5 @@ bool CUniqueDataPoint::isIsAwaitResp() const {
  * @param isAwaitResp	:[out] is response await true
  */
 void CUniqueDataPoint::setIsAwaitResp(bool isAwaitResp) const {
-	m_bIsAwaitResp = isAwaitResp;
+	m_bIsAwaitResp.store(isAwaitResp);
 }
