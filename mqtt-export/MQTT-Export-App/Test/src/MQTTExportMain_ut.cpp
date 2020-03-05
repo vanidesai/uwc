@@ -20,6 +20,8 @@ extern void postMsgstoMQTT();
 extern void signalHandler(int signal);
 extern bool addSrTopic(string &json, string& topic);
 extern void postMsgsToEIS();
+extern bool processMsg(msg_envelope_t *msg);
+
 extern vector<std::thread> g_vThreads;
 
 extern void Temp_Function(string& topic);
@@ -64,23 +66,25 @@ sem_t g_semaphoreRespProcess_ut;
 	cout<<endl<<"####################################################"<<endl;
 }*/
 
-///* on hold
 #if 0
-TEST_F(MQTTExmportMain_ut, initEISContext)
+TEST_F(MQTTExmportMain_ut, initEISContext_InsertContextMap)
 {
 	bool RetVal = false;
 
 	CTopicMapper::getInstance();
-
 	RetVal = initEISContext();
+
+	stZmqContext context;
+	context.m_pContext = NULL;
+
+	CEISMsgbusHandler::Instance().getCTX("MQTT_Export_ReadRequest", context);
+
+	EXPECT_NE(NULL, context.m_pContext);
 
 	CEISMsgbusHandler::Instance().cleanup();
 
-	EXPECT_EQ(true, RetVal);
-
 }
 #endif
-//*/
 
 /* Valid JSON */
 TEST_F(MQTTExmportMain_ut, parse_msg_ValidJson) {
@@ -286,97 +290,106 @@ TEST_F(MQTTExmportMain_ut, addSrTopic_ValidTopic)
 
 }
 
-#ifdef PROBLEMATIC
-// No message is published..
-TEST_F(MQTTExmportMain_ut, listenOnEIS_SuccussListens)
+#if 0 //CONTAINER
+TEST_F(MQTTExmportMain_ut, listenOnEIS)
 {
-	string subTopic = "Modbus_TCP_Master_PolledData";
-
 	stZmqContext context;
 	stZmqSubContext subContext;
-
-	bool ret;
-
-	CEISMsgbusHandler::Instance().cleanup();
-	if ( true == CEISMsgbusHandler::Instance().prepareCommonContext("pub") )
-	{
-		if ( true == CEISMsgbusHandler::Instance().prepareCommonContext("sub") )
-		{
-
-			if( true == CEISMsgbusHandler::Instance().getCTX(subTopic, context) )
-			{
-				if( true == CEISMsgbusHandler::Instance().getSubCTX(subTopic, subContext) )
-				{
-					try
-					{
-						g_vThreads.push_back(
-								std::thread(listenOnEIS, subTopic, context, subContext));
-					}
-					catch(exception &e)
-					{
-						cout<<endl<<"FATAL ERROR#################################################"<<endl;
-						EXPECT_EQ(1,0); //Test case fails;exception shouldn't have raised
-					}
-				}
-			}
-		}
-	}
+	CEISMsgbusHandler::Instance().prepareCommonContext("sub");
+	g_shouldStop = true;
+	CEISMsgbusHandler::Instance().getCTX("Modbus_RTU_Master_WriteResponse", context);
+	CEISMsgbusHandler::Instance().getSubCTX("Modbus_RTU_Master_WriteResponse", subContext);
+	listenOnEIS("Modbus_RTU_Master_WriteResponse", context, subContext);
 }
 #endif
 
-#if 0
+
+TEST_F(MQTTExmportMain_ut, processMsg_NULLArg)
+{
+	bool RetVal = processMsg(NULL);
+
+	EXPECT_EQ(false, RetVal);
+}
+
+TEST_F(MQTTExmportMain_ut, processMsg_ValArg)
+{
+	msg_envelope_t *msg = NULL;
+
+	msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
+	msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string("TestStr");
+	msg_envelope_elem_body_t* ptTopic = msgbus_msg_envelope_new_string("TestStr_Topic");
+
+	msg = msgbus_msg_envelope_new(CT_JSON);
+	msgbus_msg_envelope_put(msg, "version", ptVersion);
+	msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
+	msgbus_msg_envelope_put(msg, "topic", ptTopic);
+
+
+	bool RetVal = processMsg(msg);
+
+	EXPECT_EQ(true, RetVal);
+}
+
+#if 0 //CONTAINER
 TEST_F(MQTTExmportMain_ut, publishEISMsg_Suc)
 {
 	stZmqContext context;
-	stZmqPubContext pubContext;
+	//	stZmqPubContext pubContext;
+	string topicType;
 
-	string Topic = "MQTT_Export_ReadRequest";
+	string Topic_pub = "MQTT_Export_ReadRequest";
+	string Topic_sub = "TestTopic_sub";
 
 	bool RetVal = false;
 
-	CTopicMapper::getInstance();
-	CMQTTHandler::instance();
 
-	CEISMsgbusHandler::Instance().cleanup();
+	/*****************Insert context and pub for "pub"***************************/
+	topicType = "pub";
 
-	if ( true == CEISMsgbusHandler::Instance().prepareCommonContext("pub") )
+	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+			CfgManager::Instance().getConfigClient(),
+			Topic_pub.c_str(), topicType.c_str());
+
+	void* msgbus_ctx = msgbus_initialize(config);
+
+	context.m_pContext = msgbus_ctx;
+	CEISMsgbusHandler::Instance().insertCTX(Topic_pub, context);
+
+
+	publisher_ctx_t *pub_ctx = NULL;
+	msgbus_publisher_new(msgbus_ctx, Topic_pub.c_str(), &pub_ctx);
+
+	stZmqPubContext objPubContext;
+	objPubContext.m_pContext = pub_ctx;
+
+	CEISMsgbusHandler::Instance().insertPubCTX(Topic_pub, objPubContext);
+	/**************************************************************************/
+
+
+
+
+	/*****************publishEISMsg***************************/
+	if( true == CEISMsgbusHandler::Instance().getCTX(Topic_pub, context) )
 	{
-		if ( true == CEISMsgbusHandler::Instance().prepareCommonContext("sub") )
+		if( true == CEISMsgbusHandler::Instance().getPubCTX(Topic_pub, objPubContext) )
 		{
-			if( true == CEISMsgbusHandler::Instance().getCTX(Topic, context) )
-			{
-				if( true == CEISMsgbusHandler::Instance().getPubCTX(Topic, pubContext) )
-				{
-					//Test target
-					RetVal = publishEISMsg(strMsg, context, pubContext);
-				}
-				else
-				{
-					cout<<endl<<"#############################################"<<endl;
-					cout<<"Error in getPubCTX() of pubContext; Skipped test MQTTExmportMain_ut.publishEISMsg_Suc";
-					cout<<endl<<"#############################################"<<endl;
-				}
-			}
-			else
-			{
-				cout<<endl<<"#############################################"<<endl;
-				cout<<"Error in getCTX() of context; Skipped test MQTTExmportMain_ut.publishEISMsg_Suc";
-				cout<<endl<<"#############################################"<<endl;
-			}
+			//Test target
+			RetVal = publishEISMsg(strMsg, context, objPubContext);
 		}
 		else
 		{
 			cout<<endl<<"#############################################"<<endl;
-			cout<<"Error in prepareCommonContext(\"sub\"); Skipped test MQTTExmportMain_ut.publishEISMsg_Suc";
+			cout<<"Error in getPubCTX() of pubContext; Skipped test MQTTExmportMain_ut.publishEISMsg_Suc";
 			cout<<endl<<"#############################################"<<endl;
 		}
 	}
 	else
 	{
 		cout<<endl<<"#############################################"<<endl;
-		cout<<"Error in prepareCommonContext(\"pub\"); Skipped test MQTTExmportMain_ut.publishEISMsg_Suc";
+		cout<<"Error in getCTX() of context; Skipped test MQTTExmportMain_ut.publishEISMsg_Suc";
 		cout<<endl<<"#############################################"<<endl;
 	}
+
 
 	EXPECT_EQ(true, RetVal);
 }
@@ -395,7 +408,7 @@ void publishEISMsg_TestWrapper(stZmqContext msgbus_ctx, stZmqPubContext pub_ctx)
 }
 /********************************************************************/
 
-#if 0
+#if 0 //CONTAINER
 TEST_F(MQTTExmportMain_ut, postMsgstoMQTT)
 {
 
@@ -461,21 +474,21 @@ TEST_F(MQTTExmportMain_ut, postMsgstoMQTT)
 			{
 				if( true == CEISMsgbusHandler::Instance().getPubCTX(topic, pub_ctx) )
 				{
-//					msg_envelope_t *msg = msgbus_msg_envelope_new(CT_JSON);
-//					msg_envelope_elem_body_t *value = msgbus_msg_envelope_new_string("UT_TestString");
-//
-//					msgbus_msg_envelope_put(msg, "Device_UT", value);
-//
-//					std::thread th_pub(&publishEISMsg_TestWrapper, msgbus_ctx, pub_ctx);
+					//					msg_envelope_t *msg = msgbus_msg_envelope_new(CT_JSON);
+					//					msg_envelope_elem_body_t *value = msgbus_msg_envelope_new_string("UT_TestString");
+					//
+					//					msgbus_msg_envelope_put(msg, "Device_UT", value);
+					//
+					//					std::thread th_pub(&publishEISMsg_TestWrapper, msgbus_ctx, pub_ctx);
 					postMsgstoMQTT();
 
-//					ut_g_threadFlag = true;
-//
-//					th_pub.join();
-//					for (auto &th : g_vThreads)
-//					{
-//						th.join();
-//					}
+					//					ut_g_threadFlag = true;
+					//
+					//					th_pub.join();
+					//					for (auto &th : g_vThreads)
+					//					{
+					//						th.join();
+					//					}
 				}
 				else
 				{
@@ -497,27 +510,4 @@ TEST_F(MQTTExmportMain_ut, postMsgstoMQTT)
 }
 #endif
 
-#if 0
-TEST_F(MQTTExmportMain_ut, postMsgstoMQTT)
-{
-
-	string topic = "MQTT_Export_ReadRequest";
-	string topicType = "sub";
-	string msg = "UT_msg2Publish";
-
-	stZmqContext msgbus_ctx;
-	stZmqPubContext pub_ctx;
-
-
-	CTopicMapper::getInstance();
-	CMQTTHandler::instance();
-
-
-	CEISMsgbusHandler::Instance().cleanup();
-
-	bool RetTemp = initEISContext();
-	cout<<endl<<"[UT Debug]>>>>>>>>>>>>>>>>>>>>>> initEISContext return: "<<RetTemp<<endl;
-
-}
-#endif
 

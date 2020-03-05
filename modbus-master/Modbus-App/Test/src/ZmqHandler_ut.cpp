@@ -35,7 +35,7 @@ TEST_F(ZmqHandler_ut, getParams)
 	std::string strTimestamp, strUsec;
 	try
 	{
-		zmq_handler::getTimeParams(strTimestamp, strUsec);
+		common_Handler::getTimeParams(strTimestamp, strUsec);
 
 	}
 	catch(std::exception &e)
@@ -468,7 +468,7 @@ TEST_F(ZmqHandler_ut, removeAppCTX)
 	try
 	{
 
-		zmq_handler::removeOnDemandReqData(1);
+		common_Handler::removeOnDemandReqData(1);
 	}
 	catch(std::exception &e)
 	{
@@ -512,7 +512,7 @@ TEST_F(ZmqHandler_ut, getOnDemandReq_test)
 {
 	try{
 		stOnDemandRequest onDemandReqData;
-		zmq_handler::getOnDemandReqData(2, onDemandReqData);
+		common_Handler::getOnDemandReqData(2, onDemandReqData);
 
 	}
 	catch(std::exception &e)
@@ -527,7 +527,7 @@ TEST_F(ZmqHandler_ut, insert_OnDemand)
 {
 	try{
 		stOnDemandRequest reqData;
-		zmq_handler::insertOnDemandReqData(2, reqData);
+		common_Handler::insertOnDemandReqData(2, reqData);
 
 	}
 	catch(std::exception &e)
@@ -556,7 +556,30 @@ TEST_F(ZmqHandler_ut, swap_Byte)
 	}
 	try
 	{
-		stValue  = zmq_handler::swapConversion(tempVt,true, false);
+		stValue  = common_Handler::swapConversion(tempVt,true, false);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("", (string)e.what());
+	}
+}
+
+
+
+TEST_F(ZmqHandler_ut, swap_Byte_4Bytes)
+{
+	std::vector<uint8_t> tempVt;
+	int i = 4;	/// to ignore "0x" from datastring
+	int iLen = stValue.length();
+	while(i < iLen)
+	{
+		byte1 = char2int(stValue[i])*16 + char2int(stValue[i+1]);
+		tempVt.push_back(byte1);
+		i = i+2;
+	}
+	try
+	{
+		stValue  = common_Handler::swapConversion(tempVt,true, false);
 	}
 	catch(std::exception &e)
 	{
@@ -580,7 +603,7 @@ TEST_F(ZmqHandler_ut, swap_Word)
 	}
 	try
 	{
-		TValue  = zmq_handler::swapConversion(tempVt, false, true);
+		TValue  = common_Handler::swapConversion(tempVt, false, true);
 	}
 	catch(std::exception &e)
 	{
@@ -606,7 +629,7 @@ TEST_F(ZmqHandler_ut, swap_Word_byte_true)
 	}
 	try
 	{
-		TValue  = zmq_handler::swapConversion(tempVt, true, true);
+		TValue  = common_Handler::swapConversion(tempVt, true, true);
 	}
 	catch(std::exception &e)
 	{
@@ -631,7 +654,7 @@ TEST_F(ZmqHandler_ut, swap_Word_byte_false)
 	}
 	try
 	{
-		TValue  = zmq_handler::swapConversion(tempVt, false, false);
+		TValue  = common_Handler::swapConversion(tempVt, false, false);
 	}
 	catch(std::exception &e)
 	{

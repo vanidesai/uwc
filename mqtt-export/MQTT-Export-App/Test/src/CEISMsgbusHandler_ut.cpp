@@ -31,19 +31,24 @@ void CEISMsgbusHandler_ut::TearDown() {
 	// TearDown code
 }
 
+#if 0 //CONTAINER
 TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_Success_pub)
 {
 
 	bool bRetVal = false;
 
+	CEISMsgbusHandler::Instance().cleanup();
 
 	bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext("pub");
 	EXPECT_EQ(true, bRetVal);
+
 	CEISMsgbusHandler::Instance().cleanup();
 
 
 }
+#endif
 
+#if 0 //CONTAINER
 TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_Success_sub)
 {
 	bool bRetVal = false;
@@ -53,6 +58,7 @@ TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_Success_sub)
 	EXPECT_EQ(true, bRetVal);
 
 }
+#endif
 
 // Topic is other that "pub" and "sub"
 TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_InvTopic) {
@@ -150,7 +156,6 @@ TEST_F(CEISMsgbusHandler_ut, getSubCTX_InvTopic) {
 	EXPECT_EQ(false, retVal);
 }
 
-#if 0
 TEST_F(CEISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
 
 	bool retVal = false;
@@ -193,7 +198,7 @@ TEST_F(CEISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
 	//re-inserting removed context in context map
 	//CEISMsgbusHandler::Instance().prepareCommonContext("sub");
 }
-#endif
+
 #if 0
 /* ############################################################## */
 /* ############################################################## */
@@ -283,13 +288,15 @@ TEST_F(CEISMsgbusHandler_ut, 13_manatory_param) {
 	}
 }
 
-#if 0
 TEST_F(CEISMsgbusHandler_ut, 14_manatory_param) {
 
 	bool retVal;
 	stZmqContext context;
-	string topic = "Modbus_TCP_Master/Modbus_TCP_Master_PolledData";
-	string topicType = "sub";
+	string topic = "Test_Topic";
+	setenv("Test_Topic_cfg", "zmq_tcp,127.0.0.1:5097", 1);
+	string topicType = "pub";
+
+	CEISMsgbusHandler::Instance().cleanup();
 
 	/*****************Insert context**********************************/
 	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
@@ -310,8 +317,9 @@ TEST_F(CEISMsgbusHandler_ut, 14_manatory_param) {
 	retVal = CEISMsgbusHandler::Instance().getCTX(topic, context);
 	EXPECT_EQ(false, retVal); // getCTX should return false after context removal
 
+	CEISMsgbusHandler::Instance().cleanup();
+
 }
-#endif
 
 
 TEST_F(CEISMsgbusHandler_ut, RemoveCtxt) {

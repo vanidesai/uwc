@@ -9,6 +9,7 @@
 ************************************************************************************/
 
 #include "../include/PeriodicRead_ut.hpp"
+#include "ConfigManager.hpp"
 
 #include <typeinfo>
 
@@ -58,7 +59,7 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLArguments) {
 	{
 		/*CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, NULL,
 			u8numBytes, pu8data, u16StartAddress, u16Quantity,a_objStackTimestamps);*/
-		CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams);
+		CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams, MBUS_RESPONSE_ONDEMAND);
 
 		EXPECT_EQ("", test_str);
 	}
@@ -80,30 +81,42 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLArgument_Data) {
 	pstException->m_u8ExcCode = 0;
 	pstException->m_u8ExcStatus = 0;
 
-	MbusAppCallbackParams.m_au8MbusRXDataDataFields[255];
-	MbusAppCallbackParams.m_lPriority = 1;
-	MbusAppCallbackParams.m_objTimeStamps.tsReqRcvd.tv_nsec = 10;
-	MbusAppCallbackParams.m_objTimeStamps.tsReqRcvd.tv_sec = 20;
-	MbusAppCallbackParams.m_objTimeStamps.tsReqSent.tv_nsec = 15;
-	MbusAppCallbackParams.m_objTimeStamps.tsRespRcvd.tv_nsec = 18;
-	MbusAppCallbackParams.m_objTimeStamps.tsRespSent.tv_sec = 5;
-	MbusAppCallbackParams.m_u16Quantity = 1;
-	MbusAppCallbackParams.m_u16StartAdd = 22344;
-	MbusAppCallbackParams.m_u16TransactionID = 22;
-	MbusAppCallbackParams.m_u8ExceptionExcCode = 0;
-	MbusAppCallbackParams.m_u8ExceptionExcStatus = 0;
-	MbusAppCallbackParams.m_u8FunctionCode = 1;
-	MbusAppCallbackParams.m_u8IpAddr[4];
-	MbusAppCallbackParams.m_u8MbusRXDataLength = 15;
-	MbusAppCallbackParams.m_u8UnitID = 0;
-	MbusAppCallbackParams.u16Port = 13;
+	stMbusAppCallbackParams_t stMbusAppCallbackParams;
+
+	stMbusAppCallbackParams.m_au8MbusRXDataDataFields[0] = 0x80;
+	stMbusAppCallbackParams.m_au8MbusRXDataDataFields[1] = 0x70;
+	stMbusAppCallbackParams.m_au8MbusRXDataDataFields[2] = 0x50;
+	stMbusAppCallbackParams.m_lPriority = 1;
+	stMbusAppCallbackParams.m_objTimeStamps.tsReqRcvd.tv_nsec = 10;
+	stMbusAppCallbackParams.m_objTimeStamps.tsReqRcvd.tv_sec = 20;
+	stMbusAppCallbackParams.m_objTimeStamps.tsReqSent.tv_nsec = 15;
+	stMbusAppCallbackParams.m_objTimeStamps.tsRespRcvd.tv_nsec = 18;
+	stMbusAppCallbackParams.m_objTimeStamps.tsRespSent.tv_sec = 5;
+	stMbusAppCallbackParams.m_u16Quantity = 1;
+	stMbusAppCallbackParams.m_u16StartAdd = 1;
+	stMbusAppCallbackParams.m_u16TransactionID = 9472;
+	stMbusAppCallbackParams.m_u8ExceptionExcCode = 0;
+	stMbusAppCallbackParams.m_u8ExceptionExcStatus = 0;
+	stMbusAppCallbackParams.m_u8FunctionCode = 1;
+	stMbusAppCallbackParams.m_u8IpAddr[0] = 192;
+	stMbusAppCallbackParams.m_u8IpAddr[1] = 168;
+	stMbusAppCallbackParams.m_u8IpAddr[2] = 8;
+	stMbusAppCallbackParams.m_u8IpAddr[3] = 1;
+
+	stMbusAppCallbackParams.m_u8MbusRXDataLength = 3;
+	stMbusAppCallbackParams.m_u8UnitID = 5;
+	stMbusAppCallbackParams.u16Port = 502;
 
 	try
 	{
-		/*CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, pstException,
-				u8numBytes, NULL, u16StartAddress, u16Quantity, a_objStackTimestamps);*/
-		CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams);
-
+		//CUniqueDataPoint a_objDataPoint;
+		struct stZmqContext a_objBusContext;
+		struct stZmqPubContext a_objPubContext;
+		uint8_t a_uiFuncCode = 1;
+		CRefDataForPolling a_stRdPrdObj{CUniqueDataPoint_obj, a_objBusContext, a_objPubContext, a_uiFuncCode};
+		//sem_t semaphoreWriteReq = CPeriodicReponseProcessor::Instance().getSemaphoreWriteReq();
+		CRequestInitiator::instance().insertTxIDReqData(9472, a_stRdPrdObj);
+		CPeriodicReponseProcessor::Instance().handleResponse(&stMbusAppCallbackParams, MBUS_RESPONSE_ONDEMAND);
 		EXPECT_EQ("", test_str);
 	}
 	catch(exception &e)
@@ -250,9 +263,9 @@ TEST_F(PeriodicRead_ut, initRespHandlerThreads_CalledNTime) {
 		CPeriodicReponseProcessor::Instance().initRespHandlerThreads();
 		EXPECT_EQ("", test_str);
 		/* second time: if(false == bSpawned) should be false */
-		CPeriodicReponseProcessor::Instance().initRespHandlerThreads();
+		//CPeriodicReponseProcessor::Instance().initRespHandlerThreads();
 
-		EXPECT_EQ("", test_str);
+		//EXPECT_EQ("", test_str);
 	}
 	catch(exception &e)
 	{
@@ -377,6 +390,20 @@ TEST_F(PeriodicRead_ut, insertTxIDReqData_return) {
 
 }
 
+
+TEST_F(PeriodicRead_ut, timer_Start)
+{
+	long interval = 1000000;
+	PeriodicTimer::timer_start(interval);
+
+}
+
+TEST_F(PeriodicRead_ut, timer_Stop)
+{
+
+	PeriodicTimer::timer_stop();
+
+}
 /******************************CRequestInitiator::removeTxIDReqData****************************************
 TC0013
 Test: Behaviour of removeTxIDReqData()
@@ -426,16 +453,75 @@ TEST_F(PeriodicRead_ut, checkTimer_return) {
 
 	try
 	{
-		CTimeMapper::instance().checkTimer();
+		struct stZmqContext a_objBusContext = zmq_handler::getCTX("Modbus-TCP-Master_WriteResponse");
+
+		struct stZmqPubContext a_objPubContext = zmq_handler::getPubCTX("Modbus-TCP-Master_WriteResponse");
+		uint8_t a_uiFuncCode = 1;
+		CRefDataForPolling a_stRdPrdObj{CUniqueDataPoint_obj, a_objBusContext, a_objPubContext, a_uiFuncCode};
+		stException_t m_stException = {};
+		m_stException.m_u8ExcCode = 100;
+		m_stException.m_u8ExcStatus = 100;
+		sem_t semaphoreWriteReq = CRequestInitiator::instance().getSemaphoreReqProcess();
+		sem_post(&CRequestInitiator::instance().getSemaphoreReqProcess());
+		//CRequestInitiator::instance().initiateRequests(2);
+		CRefDataForPolling *CRefDataForPolling_pt = &a_stRdPrdObj;
+		CTimeMapper::instance().insert(1, a_stRdPrdObj);
+		CTimeMapper::instance().checkTimer(1000);
+		//CTimeMapper::instance().insert(1, a_stRdPrdObj);
+		//CTimeMapper::instance().insert(1, a_stRdPrdObj);
+		CTimeMapper::instance().checkTimer(1000);
+		CPeriodicReponseProcessor::Instance().postDummyBADResponse(a_stRdPrdObj, m_stException);
 		EXPECT_EQ(1,1);
 
 	}
 	catch(exception &e)
 	{
-		EXPECT_EQ("", e.what()); //Test fails.s
+		EXPECT_EQ("map::at", (string)e.what()); //Test fails.s
 	}
 
 }
+
+
+TEST_F(PeriodicRead_ut, get_Timer_freq)
+{
+	try
+	{
+		uint32_t ulMinFreq = CTimeMapper::instance().getMinTimerFrequency();
+
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("", (string)e.what());
+	}
+}
+
+
+/*
+
+TEST_F(PeriodicRead_ut, Post_dummy_BAD)
+{
+	try
+	{
+	uint32_t uiRef;
+	std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(1);
+	for(auto a_oReqData: a_vReqData)
+	{
+		CRefDataForPolling objReqData = a_oReqData;
+		// Check if a response is already awaited
+		if(true == objReqData.getDataPoint().isIsAwaitResp())
+		{
+			// waiting for response. Send BAD response
+			CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData);
+			continue;
+		}
+	}
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("map::at", (string)e.what());
+	}
+}
+*/
 
 
 /*

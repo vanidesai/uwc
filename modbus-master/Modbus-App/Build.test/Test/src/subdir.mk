@@ -17,6 +17,8 @@ CPP_SRCS += \
 ../Test/src/CUniqueDataPoint_ut.cpp \
 ../Test/src/CWellSiteDevInfo_ut.cpp \
 ../Test/src/CWellSiteInfo_ut.cpp \
+../Test/src/Logger_ut.cpp \
+../Test/src/Main_ut.cpp \
 ../Test/src/ModbusStackInterface_ut.cpp \
 ../Test/src/ModbusWriteHandler_ut.cpp \
 ../Test/src/PeriodicRead_ut.cpp \
@@ -32,6 +34,8 @@ OBJS += \
 ./Test/src/CUniqueDataPoint_ut.o \
 ./Test/src/CWellSiteDevInfo_ut.o \
 ./Test/src/CWellSiteInfo_ut.o \
+./Test/src/Logger_ut.o \
+./Test/src/Main_ut.o \
 ./Test/src/ModbusStackInterface_ut.o \
 ./Test/src/ModbusWriteHandler_ut.o \
 ./Test/src/PeriodicRead_ut.o \
@@ -47,6 +51,8 @@ CPP_DEPS += \
 ./Test/src/CUniqueDataPoint_ut.d \
 ./Test/src/CWellSiteDevInfo_ut.d \
 ./Test/src/CWellSiteInfo_ut.d \
+./Test/src/Logger_ut.d \
+./Test/src/Main_ut.d \
 ./Test/src/ModbusStackInterface_ut.d \
 ./Test/src/ModbusWriteHandler_ut.d \
 ./Test/src/PeriodicRead_ut.d \

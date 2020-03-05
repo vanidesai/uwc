@@ -44,7 +44,7 @@ public:
 	 zmq_handler::stZmqPubContext busPubCTX;
 	 zmq_handler::stZmqSubContext busSubCTX;
 	 zmq_handler::stZmqPubContext objPubContext;
-	 std::string stValue = "0xFF00";
+	 std::string stValue = "0xFF00FF00";
 	 std::string TValue = "0xFFFF";
 	 unsigned char byte1;
 

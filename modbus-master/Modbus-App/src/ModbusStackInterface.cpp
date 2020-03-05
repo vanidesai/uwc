@@ -50,13 +50,6 @@ void ModbusMaster_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParam
 		return;
 	}
 
-	/// validate pointer
-	if(NULL == pstMbusAppCallbackParams->m_au8MbusRXDataDataFields)
-	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(" No data received from stack"));
-		return;
-	}
-
 	eMbusResponseType respType = MBUS_RESPONSE_ONDEMAND;
 
 	// handle response

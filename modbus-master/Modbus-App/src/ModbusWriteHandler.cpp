@@ -160,7 +160,12 @@ eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 	{
 		do
 		{
-			sem_wait(&semaphoreWriteReq);
+			//sem_wait(&semaphoreWriteReq);
+			if((sem_wait(&semaphoreWriteReq))== -1 && errno == EINTR)
+			{
+				// Continue if interrupted by handler
+				continue;
+			}
 			try
 			{
 				if(false == getDataToProcess(writeReq))
@@ -628,14 +633,90 @@ modWriteHandler& modWriteHandler::Instance()
 }
 
 /**
+ * Process ZMQ message
+ * @param msg	:	[in] actual message
+ * @param stTopic:	[in] received topic
+ */
+bool modWriteHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
+{
+	msg_envelope_serialized_part_t* parts = NULL;
+	int num_parts = 0;
+	bool bRet = false;
+
+	if(NULL == msg)
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS(
+				"NULL pointer received while processing msg."));
+		return false;
+	}
+	num_parts = msgbus_msg_envelope_serialize(msg, &parts);
+	if(num_parts <= 0)
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS(
+				" Failed to serialize message"));
+	}
+
+	if(NULL != parts)
+	{
+		if(NULL != parts[0].bytes)
+		{
+			struct stRequest stWriteRequestNode;
+			std::string strMsg(parts[0].bytes);
+
+			stWriteRequestNode.m_strTopic = stTopic;
+			stWriteRequestNode.m_strMsg = strMsg;
+			if(stTopic.find("write"))
+			{
+				stWriteRequestNode.m_lPriority = ON_DEMAND_WRITE_PRIORITY;
+			}
+			else
+			{
+				stWriteRequestNode.m_lPriority = ON_DEMAND_READ_PRIORITY;
+			}
+			string initiate = " write initiated for msg:: ";
+			initiate.append(strMsg);
+
+			CLogger::getInstance().log(INFO, LOGDETAILS(initiate));
+			/// pushing write request to q to process.
+			pushToWriteTCPQueue(stWriteRequestNode);
+
+			bRet = true;
+		}
+		else
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS(
+					"NULL pointer received while processing msg."));
+			bRet = false;
+		}
+	}
+	else
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS(
+				"NULL pointer received while processing msg."));
+		bRet = false;
+	}
+
+	if(parts != NULL)
+	{
+		msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+	}
+	if(msg != NULL)
+	{
+		msgbus_msg_envelope_destroy(msg);
+	}
+	msg = NULL;
+	parts = NULL;
+
+	return bRet;
+} 
+
+/**
  * Subscribe to device listener
  * @param stTopic	:[in] topic to subscribe
  */
 void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 {
 	msg_envelope_t *msg = NULL;
-	msg_envelope_serialized_part_t* parts = NULL;
-	int num_parts = 0;
 	msgbus_ret_t ret;
 
 #ifdef REALTIME_THREAD_PRIORITY
@@ -657,38 +738,8 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 				continue;
 			}
 
-			num_parts = msgbus_msg_envelope_serialize(msg, &parts);
-			if((num_parts <= 0) || (NULL == parts))
-			{
-
-				CLogger::getInstance().log(ERROR, LOGDETAILS(
-						" Failed to serialize message"));
-			}
-			else if(NULL != parts[0].bytes)
-			{
-				struct stRequest stWriteRequestNode;
-				std::string strMsg(parts[0].bytes);
-
-				stWriteRequestNode.m_strTopic = stTopic;
-				stWriteRequestNode.m_strMsg = strMsg;
-				string initiate = " write initiated for msg:: ";
-				initiate.append(strMsg);
-
-				CLogger::getInstance().log(INFO, LOGDETAILS(initiate));
-				/// pushing write request to q to process.
-				pushToWriteTCPQueue(stWriteRequestNode);
-			}
-
-			if(parts != NULL)
-			{
-				msgbus_msg_envelope_serialize_destroy(parts, num_parts);
-			}
-			if(msg != NULL)
-			{
-				msgbus_msg_envelope_destroy(msg);
-			}
-			msg = NULL;
-			parts = NULL;
+			/// process messages
+			processMsg(msg, stTopic);
 		}
 	}
 	catch(const std::exception& e)
@@ -759,7 +810,12 @@ bool modWriteHandler::getDataToProcess(struct stRequest &stWriteProcessNode)
 	try
 	{
 		std::lock_guard<std::mutex> lock(__writeReqMutex);
-		stWriteProcessNode = stackTCPWriteReqQ.front();
+		if(stackTCPWriteReqQ.empty())
+		{
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("Response queue is empty"));
+			return false;
+		}
+		stWriteProcessNode = stackTCPWriteReqQ.top();
 		stackTCPWriteReqQ.pop();
 
 		retvalue = true;

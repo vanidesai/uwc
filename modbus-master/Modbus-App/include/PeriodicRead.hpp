@@ -73,7 +73,7 @@ public:
 	void handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, eMbusResponseType respType);
 	bool isInitialized() {return m_bIsInitialized;}
 	void initRespHandlerThreads();
-	BOOLEAN postDummyBADResponse(const CRefDataForPolling& a_objReqData);
+	BOOLEAN postDummyBADResponse(const CRefDataForPolling& a_objReqData, const stException_t m_stException);
 };
 
 eMbusStackErrorCode SubscibeOrUnSubPeriodicRead(RestRdPeriodicTagPart_t &lRdPeridList);

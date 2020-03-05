@@ -312,6 +312,12 @@ echo "{
   }
 }" > ~/.docker/config.json
 
+echo "
+\"httpProxy\": \"http://${USER_PROXY}\",
+\"httpsProxy\": \"http://${USER_PROXY}\",
+\"noProxy\": \"127.0.0.1,localhost\"
+" >> /etc/environment
+
     # 2. HTTP/HTTPS proxy
     if [ -d "/etc/systemd/system/docker.service.d" ];then
         rm -rf /etc/systemd/system/docker.service.d

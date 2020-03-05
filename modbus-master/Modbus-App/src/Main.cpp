@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.1.0"
+#define APP_VERSION "0.0.2.0"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -294,15 +294,6 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 
-
-
-#ifdef UNIT_TEST
-		//::testing::GTEST_FLAG(filter) ="*CConfigManager_ut*";
-		::testing::InitGoogleTest(&argc, argv);
-		return RUN_ALL_TESTS();
-#endif
-
-
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 
 		string sPortName, sBaudrate, sParity, sStopBit;
@@ -449,11 +440,21 @@ int main(int argc, char* argv[])
 			CPeriodicReponseProcessor::Instance().initRespHandlerThreads();
 		}
 
+
+#ifdef UNIT_TEST
+		//::testing::GTEST_FLAG(filter) ="*CConfigManager_ut*";
+		::testing::InitGoogleTest(&argc, argv);
+		return RUN_ALL_TESTS();
+#endif
+
 		CLogger::getInstance().log(INFO, LOGDETAILS("Configuration done. Starting operations."));
 		CTimeMapper::instance().initTimerFunction();
 
+		// Get best possible polling frequency
+		uint32_t ulMinFreq = CTimeMapper::instance().getMinTimerFrequency();
+		std::cout << "Best possible minimum frequency in milliseconds: " << ulMinFreq << std::endl;
 		std::cout << "Starting periodic timer\n";
-		PeriodicTimer::timer_start(TIMER_TICK_FREQ);
+		PeriodicTimer::timer_start(ulMinFreq);
 		std::cout << "Timer is started..\n";
 
 		std::unique_lock<std::mutex> lck(mtx);

@@ -1,12 +1,12 @@
 /************************************************************************************
-* The source code contained or described herein and all documents related to
-* the source code ("Material") are owned by Intel Corporation. Title to the
-* Material remains with Intel Corporation.
-*
-* No license under any patent, copyright, trade secret or other intellectual
-* property right is granted to or conferred upon you by disclosure or delivery of
-* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
-************************************************************************************/
+ * The source code contained or described herein and all documents related to
+ * the source code ("Material") are owned by Intel Corporation. Title to the
+ * Material remains with Intel Corporation.
+ *
+ * No license under any patent, copyright, trade secret or other intellectual
+ * property right is granted to or conferred upon you by disclosure or delivery of
+ * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+ ************************************************************************************/
 
 
 #include "../include/ModbusWriteHandler_ut.hpp"
@@ -110,8 +110,8 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 
 		eFunRetType = modWriteHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData);
 
-		//EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
-		EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
+		EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
+		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 
 	}
 	catch( exception &e)
@@ -120,9 +120,6 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 	}
 
 }
-
-
-
 
 
 TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
@@ -145,8 +142,6 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 	stMbusApiPram.m_u8DevId = 5;
 	stMbusApiPram.m_u8IpAddr[4];
 
-
-
 	reqData.m_isByteSwap = true;
 	reqData.m_isWordSwap = false;
 	reqData.m_obtReqRcvdTS.tv_nsec = 21132323;
@@ -157,8 +152,6 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 	reqData.m_strTopic = "kzdjfhdszh";
 	reqData.m_strVersion = "2.1";
 	reqData.m_strWellhead = "test";
-
-
 
 	root = cJSON_Parse(writeReq.m_strMsg.c_str());
 
@@ -174,11 +167,10 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 	try
 	{
 
-
 		eFunRetType = modWriteHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData);
 
-		//EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
-		EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
+		EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
+		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 
 	}
 	catch( exception &e)
@@ -189,20 +181,14 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 }
 
 
-
-
 /****** Test case to be updated by Aamir *******/
 /***Test:ModbusWriteHandler_ut::jsonParserForWrite_InvalidTopicMsg***/
 
 /* Invalid topic/msg */
 TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_InvalidTopicMsg)
 {
-
-
 	writeReq.m_strTopic = "Topic_Inv";
 	writeReq.m_strMsg = "Msg_Inv";
-
-
 
 	root = cJSON_Parse(writeReq.m_strMsg.c_str());
 
@@ -214,7 +200,6 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_InvalidTopicMsg)
 	cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
 	cJSON *timestamp=cJSON_GetObjectItem(root,"timestamp");
 	cJSON *usec=cJSON_GetObjectItem(root,"usec");
-
 
 	try
 	{
@@ -231,8 +216,6 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_InvalidTopicMsg)
 
 	}
 }
-
-
 
 
 /*** Test:ModbusWriteHandler_ut::modWriteHandler_getInstance() Check the instance type returned by function ***/
@@ -324,12 +307,6 @@ TEST_F(ModbusWriteHandler_ut, createWriteListner_test)
 
 
 
-
-
-
-
-
-
 /***Test ::ModbusWriteHandler_ut::subscribeDeviceListener()
     Check the behaviour of subscribeDeviceListener() function***/
 
@@ -355,8 +332,6 @@ TEST_F(ModbusWriteHandler_ut, subscribeDeviceListener)
 
 TEST_F(ModbusWriteHandler_ut, hex_to_bin)
 {
-
-
 
 	stMbusApiPram.m_lPriority = 1;
 	//stMbusApiPram.m_pu8Data = NULL;
@@ -418,7 +393,6 @@ TEST_F(ModbusWriteHandler_ut, Validate_Json)
 
 	strSourceTopic = sourcetopic->valuestring;
 
-
 	//eFunRetType = modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).jsonParserForOnDemandRequest(writeReq, stMbusApiPram, m_u8FunCode);
 	try
 	{
@@ -432,6 +406,39 @@ TEST_F(ModbusWriteHandler_ut, Validate_Json)
 
 	}
 
+}
+
+TEST_F(ModbusWriteHandler_ut, process_msg)
+{
+	msg_envelope_t *g_msg = NULL;
+	msg_envelope_elem_body_t* msgCommand = msgbus_msg_envelope_new_string("DValve");
+	msg_envelope_elem_body_t* msgAppSeq = msgbus_msg_envelope_new_string("1234");
+	msg_envelope_elem_body_t* msgValue = msgbus_msg_envelope_new_string("0x1234");
+	g_msg = msgbus_msg_envelope_new(CT_JSON);
+	msgbus_msg_envelope_put(g_msg, "command", msgCommand);
+	msgbus_msg_envelope_put(g_msg, "app_seq", msgAppSeq);
+	msgbus_msg_envelope_put(g_msg, "value", msgValue);
+
+
+	msg_envelope_elem_body_t* ptwellhead = msgbus_msg_envelope_new_string("PL0");
+	msg_envelope_elem_body_t* ptcommand = msgbus_msg_envelope_new_string("Flow");
+	msg_envelope_elem_body_t* ptvalue = msgbus_msg_envelope_new_string("0x00");
+	msg_envelope_elem_body_t* pttimestamp = msgbus_msg_envelope_new_string("2019-09-20 12:34:56");
+	msg_envelope_elem_body_t* ptusec = msgbus_msg_envelope_new_string("1571887474111145");
+	msg_envelope_elem_body_t* ptversion = msgbus_msg_envelope_new_string("2.0");
+	msg_envelope_elem_body_t* ptapp_seq = msgbus_msg_envelope_new_string("1234");
+	msg_envelope_elem_body_t* ptsourcetopic = msgbus_msg_envelope_new_string("/flowmeter/PL0/Flow/read");
+
+	msgbus_msg_envelope_put(g_msg, "wellhead", ptwellhead);
+	msgbus_msg_envelope_put(g_msg, "command", ptcommand);
+	msgbus_msg_envelope_put(g_msg, "value", ptvalue);
+	msgbus_msg_envelope_put(g_msg, "timestamp", pttimestamp);
+	msgbus_msg_envelope_put(g_msg, "usec", ptusec);
+	msgbus_msg_envelope_put(g_msg, "version", ptversion);
+	msgbus_msg_envelope_put(g_msg, "app_seq", ptapp_seq);
+	msgbus_msg_envelope_put(g_msg, "sourcetopic", ptsourcetopic);
+	bool result = modWriteHandler::Instance().processMsg(g_msg, "test");
+	EXPECT_EQ(result, true);
 }
 
 
@@ -456,6 +463,7 @@ TEST_F(ModbusWriteHandler_ut, thread_init_DValve_sub)
 		//TODO
 		//modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).createWriteListener();
 
+    //  bool result = modWriteHandler::Instance().processMsg(g_msg)
 		sem_t semaphoreWriteReq = modWriteHandler::Instance().getSemaphoreWriteReq();
 		sem_post(&modWriteHandler::Instance().getSemaphoreWriteReq());
 
@@ -596,6 +604,7 @@ TEST_F(ModbusWriteHandler_ut, thread_init_DValve_pub)
 
 }
 
+
 /**********************************createErrorrespose()*****************************************/
 
 TEST_F(ModbusWriteHandler_ut, create_error_response_read)
@@ -614,8 +623,6 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_read)
 	stMbusApiPram.m_u8DevId = 5;
 	stMbusApiPram.m_u8IpAddr[4];
 
-
-
 	reqData.m_isByteSwap = true;
 	reqData.m_isWordSwap = false;
 	reqData.m_obtReqRcvdTS.tv_nsec = 21132323;
@@ -627,10 +634,9 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_read)
 	reqData.m_strVersion = "2.1";
 	reqData.m_strWellhead = "test";
 
-
 	try
 	{
-		zmq_handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
+		common_Handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
 		modWriteHandler::Instance().createErrorResponse(&msg, eFunRetType, u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
 	}
 	catch(std::exception &e)

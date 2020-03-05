@@ -28,17 +28,15 @@ void CDeviceInfo_ut::TearDown()
 /*Test 01:: This test checks whether the device_info attribute is present or not
   and if it is unavailable it throws the exceptions accordingly */
 
-/*
+
  // THIS TEST IS FAILING SO THAT IT IS COMMENTED*****************
 
 TEST_F(CDeviceInfo_ut, device_info_unavailable)
 {
 	std::string path("/Device_Config/iou_device1.yml");
-	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
-	std::string sYamlStr(cEtcdValue);
-	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
-	baseNode = CommonUtils::loadYamlFile("iou_device1.yml");
-	for( auto test : baseNode)
+
+	baseNode = CommonUtils::loadYamlFile("iou_device.yml");
+	for(auto test : baseNode)
 	{
 
 		if(test.first.as<std::string>() == "device_info")
@@ -48,8 +46,6 @@ TEST_F(CDeviceInfo_ut, device_info_unavailable)
 				//network_info::CDeviceInfo Cdeviceinfo_obj;
 				baseNode.remove("device_info");
 				Cdeviceinfo_obj.build(baseNode, Cdeviceinfo_obj);
-
-
 			}
 
 			catch(YAML::Exception &e)
@@ -57,15 +53,15 @@ TEST_F(CDeviceInfo_ut, device_info_unavailable)
 
 				//EXPECT_EQ(e.what(), "name key not found");
 				EXPECT_EQ("name key not found", (string)e.what());
-				***** Exception is trown but not showing the proper message so the EXPECT or ASSERT is not used
-				to check the functionality for the unit test********
+				/***** Exception is trown but not showing the proper message so the EXPECT or ASSERT is not used
+				to check the functionality for the unit test********/
 
 			}
 		}
 	}
 
 }
-*/
+
 
 /***Test:CDeviceInfo_ut::device_info_name_unavailable***/
 /*Test 02:: This test checks whether the name key is present in the device_info or not
@@ -74,11 +70,6 @@ TEST_F(CDeviceInfo_ut, device_info_unavailable)
 TEST_F(CDeviceInfo_ut, device_info_name_unavailable)
 {
 
-	/*std::string path("/Device_Config/iou_device.yml");
-	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
-	std::string sYamlStr(cEtcdValue);
-	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
-*/
 	baseNode = CommonUtils::loadYamlFile("iou_device.yml");
 	for( auto test : baseNode)
 	{
@@ -90,6 +81,7 @@ TEST_F(CDeviceInfo_ut, device_info_name_unavailable)
 
 			try
 			{
+				baseNode.remove("pointlist");
 				Cdeviceinfo_obj.build(baseNode, Cdeviceinfo_obj);
 				m_sName = test.second["name"].as<std::string>();
 
@@ -111,17 +103,12 @@ TEST_F(CDeviceInfo_ut, device_info_name_unavailable)
 /*Test 03:: This test whether datapoints key is available or not in the yml file and
   if it is unavailable then it throws exceptIons accordingly  */
 
-/*
+
  // THIS TEST IS FAILING SO THAT IT IS COMMENTED
 
 TEST_F(CDeviceInfo_ut, deviceInfo_absent_datapoints)
 {
-	std::string path("/Device_Config/iou_device.yml");
-	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
-	std::string sYamlStr(cEtcdValue);
-	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
-
-	baseNode = CommonUtils::loadYamlFile("iou_device2.yml");
+	baseNode = CommonUtils::loadYamlFile("iou_device.yml");
 	for( auto test : baseNode)
 	{
 		if(test.first.as<std::string>() == "pointlist")
@@ -170,22 +157,17 @@ TEST_F(CDeviceInfo_ut, deviceInfo_absent_datapoints)
 		}
 	}
 }
-*/
+
 
 /***CDeviceInfo_ut::device_info_name_available***/
 /**Test 04: This unit test checks the name of the device is correct in the yml file .**************/
-/*
+
 
  // THIS TEST IS FAILING SO THAT IT IS COMMENTED
 
 TEST_F(CDeviceInfo_ut, device_info_name_available)
 {
-	std::string path("/Device_Config/iou_device1.yml");
-	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
-	std::string sYamlStr(cEtcdValue);
-	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
-
-	baseNode = CommonUtils::loadYamlFile("iou_device1.yml");
+	baseNode = CommonUtils::loadYamlFile("iou_device.yml");
 	for( auto test : baseNode)
 	{
 		if(test.first.as<std::string>() == "device_info")
@@ -195,6 +177,7 @@ TEST_F(CDeviceInfo_ut, device_info_name_available)
 
 			try
 			{
+				baseNode.remove("file");
 				Cdeviceinfo_obj.build(baseNode, Cdeviceinfo_obj);
 				m_sName = test.second["name"].as<std::string>();
 
@@ -203,14 +186,14 @@ TEST_F(CDeviceInfo_ut, device_info_name_available)
 			{
 
 				EXPECT_EQ("name key not found", (string)e.what());
-				***** Exception is trown but not showing the proper message so the EXPECT or ASSERT is not used
-				 to check the functionality for the unit test********
+				/***** Exception is trown but not showing the proper message so the EXPECT or ASSERT is not used
+				 to check the functionality for the unit test********/
 
 			}
 		}
 	}
 }
-*/
+
 
 
 /***CDeviceInfo_ut::addDataPoint_returnVal***/

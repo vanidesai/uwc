@@ -240,12 +240,12 @@ TEST_F(CWellSiteInfo_ut, addDevice_return) {
 
 /*Test: Behaviour of CWellSiteInfo::build when adddevice() function is unsuccessful.*/
 
-#if 0 // To be updated later
+#if 1 // To be updated later
 TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 
 	try
 	{
-		baseNode = CommonUtils::loadYamlFile("PL2.yml");
+		baseNode = CommonUtils::loadYamlFile("PL1.yml");
 		network_info::CWellSiteInfo::build(baseNode, CWellSiteInfo_obj);
 
 		/* Checking the return of addDevice() function */
@@ -259,6 +259,7 @@ TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 				{
 					network_info::CWellSiteDevInfo CWellSiteDevInfo_obj;
 					CWellSiteDevInfo_obj.build(node2, CWellSiteDevInfo_obj);
+					CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
 
 					/* Network type mentioned in .yml file doesn't match with "g_eNetworkType" */
 					EXPECT_EQ(-2, CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj));
@@ -272,7 +273,8 @@ TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 	{
 		//EXPECT_EQ(1, 2);	//Test fails
 
-		EXPECT_EQ("Required keys not found in PROTOCOL_RTU", (string)e.what());
+		//EXPECT_EQ("Required keys not found in PROTOCOL_RTU", (string)e.what());
+		EXPECT_EQ("bad file", (string)e.what());
 	}
 }
 #endif // To be updated later

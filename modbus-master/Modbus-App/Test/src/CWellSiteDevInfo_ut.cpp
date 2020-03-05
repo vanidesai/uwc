@@ -123,17 +123,18 @@ TEST_F(CWellSiteDevInfo_ut, getID_ForInvalidYml) {
 //CWellSiteDevInfo::build should throw an exception.
 //*/
 
-#if 0 // To be updated later
+#if 1 // To be updated later
 TEST_F(CWellSiteDevInfo_ut, build_NoId) {
 
 	try
 	{
-		baseNode = CommonUtils::loadYamlFile("PL3.yml");
+		baseNode = CommonUtils::loadYamlFile("PL0.yml");
 		for( auto test : baseNode)
 		{
 			const YAML::Node& list = test.second;
 			for( auto nodes : list )
 			{
+				baseNode.remove("devicelist");
 				CWellSiteDevInfo_obj.build(nodes, CWellSiteDevInfo_obj);
 			}
 		}

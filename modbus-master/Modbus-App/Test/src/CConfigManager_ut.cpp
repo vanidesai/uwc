@@ -33,11 +33,23 @@ void CConfigManager_ut::TearDown()
 
 
 
+TEST_F(CConfigManager_ut , test)
+{
+	bool bRet = PublishJsonHandler::instance().isDevMode();
+	if(bRet == true)
+	{
+		PublishJsonHandler::instance().setDevMode(false);
+		bRet = CfgManager::Instance().IsClientCreated();
+	}
+}
+
 TEST_F(CConfigManager_ut, getInstance) {
 
 	CfgManager::Instance();
 	EXPECT_EQ(typeid(CfgManager), typeid(CfgManager::Instance()));
 	//EXPECT_EQ("PL0", CWellSiteInfo_obj.getID());
+
+
 }
 
 

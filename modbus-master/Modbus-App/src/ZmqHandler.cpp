@@ -52,7 +52,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 	recv_ctx_t* sub_ctx = NULL;
 	publisher_ctx_t* pub_ctx = NULL;
 
-	if(!(topicType != "pub" || topicType != "sub"))
+	if(!(topicType == "pub" || topicType == "sub"))
 	{
 		CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid TopicType parameter ::" + topicType));
 		return retValue;

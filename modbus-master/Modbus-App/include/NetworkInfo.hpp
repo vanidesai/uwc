@@ -149,6 +149,7 @@ namespace network_info
 		const CWellSiteDevInfo &m_rWellSiteDev;
 		const CDataPoint &m_rPoint;
 		mutable std::atomic<bool> m_bIsAwaitResp;
+		mutable std::atomic<bool> m_bIsRT;
 
 	public:
 		CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
@@ -156,6 +157,7 @@ namespace network_info
 
 		CUniqueDataPoint(const CUniqueDataPoint&);
 
+		CUniqueDataPoint& operator=(const CUniqueDataPoint&) = delete;	// Copy assign
 
 		//std::string getID() {return m_sId;}
 		//const CWellSiteInfo& getWellSite() {return m_rWellSite;}
@@ -173,6 +175,8 @@ namespace network_info
 		bool isIsAwaitResp() const;
 
 		void setIsAwaitResp(bool isAwaitResp) const;
+
+		bool getRTFlag() const { return m_bIsRT; }
 };
 
 	void buildNetworkInfo(bool a_bIsTCP);
