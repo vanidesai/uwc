@@ -64,6 +64,13 @@ Execute below command on terminal to verify container status.
 sudo docker ps
 ```
 
+## Steps to run unit test cases
+```
+1. Installed all the pre-requisites mentioned in ##Install pre-requisites section
+2. Run 06_UnitTestRun.sh script using "sudo ./06_UnitTestRun.sh" command to run unit test cases.
+3. Check the reports in <EIS>/docker_setup/unit_test_reports directory.
+```
+
 ## Debugging steps
 ```
 1. Checking container logs 
