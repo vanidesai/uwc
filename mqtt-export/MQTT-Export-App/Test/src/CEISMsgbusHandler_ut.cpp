@@ -181,18 +181,16 @@ TEST_F(CEISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
 		{
 			cout<<endl<<"###################################################"<<endl;
 			cout<<"Error in getCTX()"<<endl;
-			cout<<"Exiting ut..";
+			cout<<"Skipping this test case";
 			cout<<endl<<"###################################################"<<endl;
-			exit(0);
 		}
 	}
 	else
 	{
 		cout<<endl<<"###################################################"<<endl;
 		cout<<"Error in getSubCTX()"<<endl;
-		cout<<"Exiting ut..";
+		cout<<"Skipping this test case";
 		cout<<endl<<"###################################################"<<endl;
-		exit(0);
 	}
 
 	//re-inserting removed context in context map

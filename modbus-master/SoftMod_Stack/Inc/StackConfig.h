@@ -20,7 +20,7 @@
 #include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
 
 //#define MODBUS_STACK_TCPIP_ENABLED
-#define MAX_REQUESTS 1000
+#define MAX_REQUESTS 5000
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	#define TCP_MODBUS_ADU_LENGTH 260
