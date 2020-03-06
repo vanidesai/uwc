@@ -437,7 +437,7 @@ TEST_F(ModbusWriteHandler_ut, process_msg)
 	msgbus_msg_envelope_put(g_msg, "version", ptversion);
 	msgbus_msg_envelope_put(g_msg, "app_seq", ptapp_seq);
 	msgbus_msg_envelope_put(g_msg, "sourcetopic", ptsourcetopic);
-	bool result = modWriteHandler::Instance().processMsg(g_msg, "test");
+	bool result = modWriteHandler::Instance().processMsg(g_msg, "test", true);
 	EXPECT_EQ(result, true);
 }
 

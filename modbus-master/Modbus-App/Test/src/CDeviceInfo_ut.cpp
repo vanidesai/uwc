@@ -163,7 +163,6 @@ TEST_F(CDeviceInfo_ut, deviceInfo_absent_datapoints)
 /**Test 04: This unit test checks the name of the device is correct in the yml file .**************/
 
 
- // THIS TEST IS FAILING SO THAT IT IS COMMENTED
 
 TEST_F(CDeviceInfo_ut, device_info_name_available)
 {
@@ -205,11 +204,11 @@ TEST_F(CDeviceInfo_ut, device_info_name_available)
 
 // THIS TEST IS FAILING SO THAT IT IS COMMENTED
 
-/*
+
 TEST_F(CDeviceInfo_ut, addDataPoint_returnVal)
 {
 
-	baseNode = CommonUtils::loadYamlFile("iou_datapoints_3.yml");
+	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
 
 try{
 	for( auto basenode_it : baseNode)
@@ -236,7 +235,7 @@ catch(std::exception &e)
 	EXPECT_EQ("bad file", (string)e.what());
 }
 }
-*/
+
 
 
 

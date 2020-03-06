@@ -121,6 +121,9 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	/// QOS
 	msg_envelope_elem_body_t* ptQos =  msgbus_msg_envelope_new_string(onDemandReqData.m_strQOS.c_str());
 	msgbus_msg_envelope_put(msg, "qos", ptQos);
+	/// RealTIme
+	msg_envelope_elem_body_t* ptRealTime =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_isRT).c_str());
+	msgbus_msg_envelope_put(msg, "realtime", ptRealTime);
 	/// Priority
 	msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_lPriority).c_str());
 	msgbus_msg_envelope_put(msg, "priority", ptPriority);
@@ -474,6 +477,7 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 			reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
 			reqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
 			reqData.m_strQOS = obj.getPollingConfig().m_usQOS;
+			reqData.m_isRT = obj.getPollingConfig().m_bIsRealTime;
 
 			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
 			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
@@ -642,8 +646,9 @@ modWriteHandler& modWriteHandler::Instance()
  * Process ZMQ message
  * @param msg	:	[in] actual message
  * @param stTopic:	[in] received topic
+ * @param bIsWrite:	[in] flag to distinguish between read and write request
  */
-bool modWriteHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
+bool modWriteHandler::processMsg(msg_envelope_t *msg, std::string stTopic, long lPriority)
 {
 	msg_envelope_serialized_part_t* parts = NULL;
 	int num_parts = 0;
@@ -671,26 +676,9 @@ bool modWriteHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
 
 			stWriteRequestNode.m_strTopic = stTopic;
 			stWriteRequestNode.m_strMsg = strMsg;
+			stWriteRequestNode.m_lPriority = lPriority;
 
-			string strSearchString = "_";
-			std::size_t found = stTopic.find_last_of(strSearchString);
-			string tempTopic = stTopic.substr(found+1, stTopic.length());
-			string strToCompare = "WriteRequest";
-			bool bCompareVal =  std::equal(tempTopic.begin(), tempTopic.end(),
-					strToCompare.begin(),
-		            [](char a, char b) {
-		                return tolower(a) == tolower(b);
-		            });
-
-			if(bCompareVal)
-			{
-				stWriteRequestNode.m_lPriority = ON_DEMAND_WRITE_PRIORITY;
-			}
-			else
-			{
-				stWriteRequestNode.m_lPriority = ON_DEMAND_READ_PRIORITY;
-			}
-			string initiate = " write initiated for msg:: ";
+			string initiate = " on-demand request initiated for msg:: ";
 			initiate.append(strMsg);
 
 			CLogger::getInstance().log(INFO, LOGDETAILS(initiate));
@@ -742,6 +730,19 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 
 	try
 	{
+		string strSearchString = "_";
+		long lPriority;
+		std::size_t found = stTopic.find_last_of(strSearchString);
+		string tempTopic = stTopic.substr(found+1, stTopic.length());
+		string strToCompare = "WriteRequest";
+		bool bCompareVal =  std::equal(tempTopic.begin(), tempTopic.end(),
+				strToCompare.begin(),
+	            [](char a, char b) {
+	                return tolower(a) == tolower(b);
+	            });
+
+		lPriority = bCompareVal ? ON_DEMAND_WRITE_PRIORITY : ON_DEMAND_READ_PRIORITY;
+
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(stTopic);
 		zmq_handler::stZmqSubContext stsub_ctx = zmq_handler::getSubCTX(stTopic);
 
@@ -756,7 +757,7 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 			}
 
 			/// process messages
-			processMsg(msg, stTopic);
+			processMsg(msg, stTopic, lPriority);
 		}
 	}
 	catch(const std::exception& e)

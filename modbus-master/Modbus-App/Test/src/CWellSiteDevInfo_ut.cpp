@@ -156,10 +156,11 @@ TEST_F(CWellSiteDevInfo_ut, build_NoId) {
 CWellSiteDevInfo::build should throw an exception.
 */
 
-#if 0 // To be updated later
-TEST_F(CWellSiteDevInfo_ut, build_WrongProtocol) {
+#if 1 // To be updated later
+TEST_F(CWellSiteDevInfo_ut, build_WrongProtocol)
+{
 
-	baseNode = CommonUtils::loadYamlFile("PL4.yml");
+	baseNode = CommonUtils::loadYamlFile("PL0.yml");
 	for( auto test : baseNode)
 	{
 		if(test.second.IsSequence() && test.first.as<std::string>() == "devicelist")
@@ -175,8 +176,8 @@ TEST_F(CWellSiteDevInfo_ut, build_WrongProtocol) {
 				catch(std::exception &e)
 				{
 					tempStr = e.what();
-					/* This test fails. Need to change the source code */
 					//EXPECT_EQ("Protocol key not found", tempStr);
+
 				}
 			}
 		}

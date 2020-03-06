@@ -71,7 +71,7 @@ public:
 	 * @param msg	:	[in] actual message
 	 * @param stTopic:	[in] received topic
 	 */
-	bool processMsg(msg_envelope_t *msg, std::string stTopic);
+	bool processMsg(msg_envelope_t *msg, std::string stTopic, long lPriority);
 
 	eMbusStackErrorCode onDemandInfoHandler();
 

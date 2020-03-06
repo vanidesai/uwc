@@ -135,6 +135,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		msg_envelope_elem_body_t* ptWellhead = NULL;
 		msg_envelope_elem_body_t* ptMetric = NULL;
 		msg_envelope_elem_body_t* ptQos = NULL;
+		msg_envelope_elem_body_t* ptRealTime = NULL;
 		msg = msgbus_msg_envelope_new(CT_JSON);
 		
 		if(MBUS_RESPONSE_POLLING == a_stResp.m_operationType)
@@ -147,6 +148,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 			ptWellhead = msgbus_msg_envelope_new_string(a_objReqData->getDataPoint().getWellSite().getID().c_str());
 			ptMetric = msgbus_msg_envelope_new_string(a_objReqData->getDataPoint().getDataPoint().getID().c_str());
 			ptQos =  msgbus_msg_envelope_new_string(a_objReqData->getDataPoint().getDataPoint().getPollingConfig().m_usQOS.c_str());
+			ptRealTime =  msgbus_msg_envelope_new_string(std::to_string(a_objReqData->getDataPoint().getDataPoint().getPollingConfig().m_bIsRealTime).c_str());
 
 			msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
 		}
@@ -169,6 +171,8 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 			ptMetric = msgbus_msg_envelope_new_string(onDemandReqData.m_strMetric.c_str());
 			/// QOS
 			ptQos =  msgbus_msg_envelope_new_string(onDemandReqData.m_strQOS.c_str());
+			/// RealTime
+			ptRealTime =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_isRT).c_str());
 			// add timestamps for req recvd by app
 			msg_envelope_elem_body_t* ptAppTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(onDemandReqData.m_obtReqRcvdTS))).c_str() );
 
@@ -197,6 +201,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		msgbus_msg_envelope_put(msg, "metric", ptMetric);
 		msgbus_msg_envelope_put(msg, "qos", ptQos);
 		msgbus_msg_envelope_put(msg, "priority", ptPriority);
+		msgbus_msg_envelope_put(msg, "realtime", ptRealTime);
 
 		// add timestamps
 		msgbus_msg_envelope_put(msg, "reqRcvdInStack", ptStackTSReqRcvd);
@@ -683,13 +688,6 @@ eMbusStackErrorCode readPeriodicCallBack(stMbusAppCallbackParams_t *pstMbusAppCa
 	if(pstMbusAppCallbackParams == NULL)
 	{
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null"));
-		return MBUS_STACK_ERROR_RECV_FAILED;
-	}
-
-	/// validate pointer
-	if(NULL == pstMbusAppCallbackParams->m_au8MbusRXDataDataFields)
-	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(" No data received from stack"));
 		return MBUS_STACK_ERROR_RECV_FAILED;
 	}
 
@@ -1184,7 +1182,7 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling a_stRdPrdObj, uint16_t &m
 			//a_stRdPrdObj.bIsRespAwaited = false;
 			{
 				string l_stErrorString = "Request initiation error:: "+ to_string(u8ReturnType)+" " + "DeviceID ::" + to_string(stMbusApiPram.m_u16TxId);
-				bRet = true;
+				bRet = false;
 			}
 		}
 	}

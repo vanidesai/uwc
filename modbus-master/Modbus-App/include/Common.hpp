@@ -202,6 +202,7 @@ struct stOnDemandRequest
 	std::string m_strQOS;
 	bool m_isByteSwap;
 	bool m_isWordSwap;
+	bool m_isRT;
 	struct timespec m_obtReqRcvdTS;
 	long m_lPriority;
 };
