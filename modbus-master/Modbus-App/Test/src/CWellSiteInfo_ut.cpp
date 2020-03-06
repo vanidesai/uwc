@@ -262,7 +262,7 @@ TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 					CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
 
 					/* Network type mentioned in .yml file doesn't match with "g_eNetworkType" */
-					EXPECT_EQ(-2, CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj));
+					EXPECT_EQ(-1, CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj));
 				}
 			}
 		}
