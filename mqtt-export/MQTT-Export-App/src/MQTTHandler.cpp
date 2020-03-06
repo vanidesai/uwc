@@ -580,6 +580,8 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg) {
 		//check topic on which we have received msg and then set priority accordingly
 		stSubMsgData msgData;
 
+		msgData.m_lPriority = 10; //default priority
+
 		string topic = msg->get_topic();
 		if(topic.find("write") || topic.find("WRITE"))
 		{

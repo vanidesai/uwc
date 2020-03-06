@@ -178,40 +178,31 @@ bool processMsg(msg_envelope_t *msg)
 	}
 	else if(NULL != parts)
 	{
-		int iQOS = 0;
-		std::string revdTopic(parse_msg(parts[0].bytes, iQOS));
-
-		if (revdTopic == "")
+		if(NULL != parts[0].bytes)
 		{
-			string strTemp = "topic key not present in message: ";
-			strTemp.append(parts[0].bytes);
-			CLogger::getInstance().log(ERROR, LOGDETAILS(strTemp));
+			int iQOS = 0;
+			std::string revdTopic(parse_msg(parts[0].bytes, iQOS));
 
-		}
-		else
-		{
-			string mqttMsg(parts[0].bytes);
-			//publish data to MQTT
-#ifdef INSTRUMENTATION_LOG
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("ZMQ Message: Time: "
-					+ std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
-			+ ", Msg: " + mqttMsg));
-#endif
-			CMQTTHandler::instance().publish(mqttMsg,
-					revdTopic.c_str(), iQOS, tsMsgRcvd);
-
-			bRetVal = true;
-		}
-
-		if (num_parts <= 0)
-		{
-			CLogger::getInstance().log(DEBUG, LOGDETAILS( "Num parts is <= 0, will try to destroy msgbus_msg_envelope_destroy"));
-
-			if(msg != NULL)
+			if (revdTopic == "")
 			{
-				msgbus_msg_envelope_destroy(msg);
-				msg = NULL;
-				CLogger::getInstance().log(DEBUG, LOGDETAILS( "Destroyed msg"));
+				string strTemp = "topic key not present in message: ";
+				strTemp.append(parts[0].bytes);
+				CLogger::getInstance().log(ERROR, LOGDETAILS(strTemp));
+
+			}
+			else
+			{
+				string mqttMsg(parts[0].bytes);
+				//publish data to MQTT
+	#ifdef INSTRUMENTATION_LOG
+				CLogger::getInstance().log(DEBUG, LOGDETAILS("ZMQ Message: Time: "
+						+ std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+				+ ", Msg: " + mqttMsg));
+	#endif
+				CMQTTHandler::instance().publish(mqttMsg,
+						revdTopic.c_str(), iQOS, tsMsgRcvd);
+
+				bRetVal = true;
 			}
 		}
 
