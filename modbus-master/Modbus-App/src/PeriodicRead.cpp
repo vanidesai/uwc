@@ -191,7 +191,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		msg_envelope_elem_body_t* ptStackTSReqSent = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsReqSent))).c_str() );
 		msg_envelope_elem_body_t* ptStackTSRespRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsRespRcvd))).c_str() );
 		msg_envelope_elem_body_t* ptStackTSRespPosted = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsRespSent))).c_str() );
-		msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(a_stResp.m_lPriority).c_str());
+		//msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(a_stResp.m_lPriority).c_str());
 
 		msgbus_msg_envelope_put(msg, "version", ptVersion);
 		msgbus_msg_envelope_put(msg, "timestamp", ptTimeStamp);
@@ -200,7 +200,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
 		msgbus_msg_envelope_put(msg, "metric", ptMetric);
 		msgbus_msg_envelope_put(msg, "qos", ptQos);
-		msgbus_msg_envelope_put(msg, "priority", ptPriority);
+		//msgbus_msg_envelope_put(msg, "priority", ptPriority);
 		msgbus_msg_envelope_put(msg, "realtime", ptRealTime);
 
 		// add timestamps
@@ -859,9 +859,9 @@ bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT)
  */
 void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqData)
 {
-	for(auto a_oReqData: a_vReqData)
+	for(auto &a_oReqData: a_vReqData)
 	{
-		CRefDataForPolling objReqData = a_oReqData;
+		CRefDataForPolling& objReqData = a_oReqData;
 		// Check if a response is already awaited
 		if(true == objReqData.getDataPoint().isIsAwaitResp())
 		{
@@ -870,6 +870,7 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
 			m_stException.m_u8ExcCode = 100;
 			m_stException.m_u8ExcStatus = 100;
 			CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException);
+			objReqData.getDataPoint().setIsAwaitResp(false);
 			continue;
 		}
 

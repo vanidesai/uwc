@@ -125,8 +125,8 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
 	msg_envelope_elem_body_t* ptRealTime =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_isRT).c_str());
 	msgbus_msg_envelope_put(msg, "realtime", ptRealTime);
 	/// Priority
-	msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_lPriority).c_str());
-	msgbus_msg_envelope_put(msg, "priority", ptPriority);
+	//msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_lPriority).c_str());
+	//msgbus_msg_envelope_put(msg, "priority", ptPriority);
 	std::string strTimestamp, strUsec;
 	common_Handler::getTimeParams(strTimestamp, strUsec);
 	/// usec

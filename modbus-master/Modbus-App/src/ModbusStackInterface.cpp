@@ -23,15 +23,6 @@ extern "C" {
 std::mutex g_RWCommonCallbackMutex;
 
 /**
- * Get time in nano seconds
- * @param ts
- * @return time in nano seconds
- */
-static unsigned long get_nanos(struct timespec ts) {
-    return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
-}
-
-/**
  *
  * DESCRIPTION
  * Function is used as application layer callback
