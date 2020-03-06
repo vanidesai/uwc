@@ -126,20 +126,35 @@ checkrootUser()
 # ----------------------------
 checkInternetConnection()
 {
-    echo "${INFO}Checking for Internet Connection...${NC}"    
-    wget http://www.google.com > /dev/null 2>&1
-    if [ "$?" != 0 ]; then
-        echo "${RED}No Internet Connection. Please check your internet connection...!${NC}" 
-        echo "${RED}Internet connection is required.${NC}"
-        exit 1
-    else
-        echo "${GREEN}Internet is available.${NC}"
-        #Removing temporary file
-        if [ -e "index.html" ];then
-            rm -rf index.html
-        fi
-    fi
-    return 0
+	if [ "$#" -eq 2 ]
+	then 
+		echo "${GREEN}Script is running with interactive and --proxy mode ${NC}"
+		if [ "$1" != "--proxy" ]
+		then
+			Usage "Invalid argument $1 provided"
+		fi
+		# set proxy through command line
+		USER_PROXY=$2
+		sed '/httpProxy/d;/httpsProxy/d;/noProxy/d' -i /etc/environment
+		echo "httpProxy=\"http://${USER_PROXY}\"
+httpsProxy=\"http://${USER_PROXY}\"
+noProxy=\"127.0.0.1,localhost\"" >> /etc/environment
+		echo "${GREEN}Given arguments are :: ${NC}" $1 $2
+	fi
+	    echo "${INFO}Checking for Internet Connection...${NC}"    
+	    wget http://www.google.com > /dev/null 2>&1
+	    if [ "$?" != 0 ]; then
+		echo "${RED}No Internet Connection. Please check your internet connection and proxy configuration...!${NC}"
+		echo "${RED}Internet connection is required.${NC}"
+		exit 1
+	    else
+		echo "${GREEN}Internet is available.${NC}"
+		#Removing temporary file
+		if [ -e "index.html" ];then
+		    rm -rf index.html
+		fi
+	    fi
+	    return 0
 }
 
 installBasicPackages()
@@ -219,7 +234,8 @@ addUWCContainersInEIS()
     fi
     echo "${GREEN}>>>>>${NC}"
 	echo "${GREEN}************************* This script is sucessfully executed ***************************************************"
-    echo "${GREEN}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
+    echo "${INFO}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
+    echo "${INFO}To execute unit test cases, run 06_UnitTestRun.sh script ${NC}"
     cd ${working_dir}/ && rm -rf UWC/
     return 0
 }
@@ -312,11 +328,6 @@ echo "{
   }
 }" > ~/.docker/config.json
 
-echo "
-\"httpProxy\": \"http://${USER_PROXY}\",
-\"httpsProxy\": \"http://${USER_PROXY}\",
-\"noProxy\": \"127.0.0.1,localhost\"
-" >> /etc/environment
 
     # 2. HTTP/HTTPS proxy
     if [ -d "/etc/systemd/system/docker.service.d" ];then
@@ -586,7 +597,7 @@ docker_verification_installation()
 # Internal function calls to set up Insights
 verifyDirectory
 checkrootUser
-checkInternetConnection
+checkInternetConnection "$@"
 installBasicPackages
 docker_verification_installation	"$@"
 docker_compose_verify_installation

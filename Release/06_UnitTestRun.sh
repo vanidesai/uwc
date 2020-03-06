@@ -204,9 +204,9 @@ generateUnitTestReport()
     docker-compose -f docker-compose_unit_test.yml up --build -d
     if [ "$?" -eq "0" ];then
 	echo "*****************************************************************"
-        echo "${GREEN}Installed Edge Insights Software 2.1 successfully.${NC}"
+        echo "${GREEN}Successfully deployed unit test containers.${NC}"
     else
-        echo "${RED}Edge Insights Software 2.1 install failed. Please check logs.${NC}"
+        echo "${RED}Installation is failed.${NC}"
 	echo "*****************************************************************"
         exit 1
     fi
@@ -233,10 +233,7 @@ verifyContainer()
 {
     cd "${eis_working_dir}"
     echo "*****************************************************************"
-    echo "${GREEN}Following containers are deployed.${NC}"
-    echo "*****************************************************************"
-    docker ps
-    echo "*****************************************************************"
+    echo "${GREEN}Code coverage report is generated sucessfully.${NC}"
     echo "${GREEN}Check the unit test coverage report in ${eis_working_dir}/unit_test_reports directory.${NC}"
     echo "*****************************************************************"
     ## cleanup
@@ -261,7 +258,22 @@ function cleanup()
 	cd $Current_Dir
 	rm -rf temp1
 	chown -R $SUDO_USER:$SUDO_USER ${eis_working_dir}/unit_test_reports
+	docker rm -f ia_etcd > /dev/null 2>&1
 }
+
+function runETCDContainer()
+{
+	cd $Current_Dir
+	chmod +x *.sh
+	./02_provisionEIS.sh > /dev/null 2>&1
+	if [ "$?" -ne "0" ]; then
+		echo ${RED}"Provisioning is failed. ${NC}"
+		exit 1
+	else
+		echo ${GREEN}"Provisioning is Successfully done. ${NC}"
+	fi
+}
+
 
 verifyDirectory
 checkrootUser
@@ -270,8 +282,14 @@ docker_verify
 docker_compose_verify
 createTestDir
 setDevMode "true"
+runETCDContainer
 generateUnitTestReport
 setDevMode "false"
+
+echo "Generating code coverage report..."
+echo "It may take few minutes ..."
+### To sleep for 2 min: ##
+sleep 30s
 verifyContainer
 cleanup
 #stopContainers
