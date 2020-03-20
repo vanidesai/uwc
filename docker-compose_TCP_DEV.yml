@@ -85,7 +85,7 @@ services:
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 1
-      RESPONSE_TIMEOUT: 250
+      RESPONSE_TIMEOUT: 80
       INTERFRAME_DELAY: 1
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
@@ -145,7 +145,7 @@ services:
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
-      RESPONSE_TIMEOUT: 250
+      RESPONSE_TIMEOUT: 80
       INTERFRAME_DELAY: 1
       SERIAL_PORT_RETRY_INTERVAL: 1
       BAUD_RATE: 9600
