@@ -31,35 +31,6 @@ void CEISMsgbusHandler_ut::TearDown() {
 	// TearDown code
 }
 
-#if 0 //CONTAINER
-TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_Success_pub)
-{
-
-	bool bRetVal = false;
-
-	CEISMsgbusHandler::Instance().cleanup();
-
-	bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext("pub");
-	EXPECT_EQ(true, bRetVal);
-
-	CEISMsgbusHandler::Instance().cleanup();
-
-
-}
-#endif
-
-#if 0 //CONTAINER
-TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_Success_sub)
-{
-	bool bRetVal = false;
-
-	bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext("sub");
-
-	EXPECT_EQ(true, bRetVal);
-
-}
-#endif
-
 // Topic is other that "pub" and "sub"
 TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_InvTopic) {
 
@@ -69,17 +40,14 @@ TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_InvTopic) {
 	EXPECT_EQ(false, bRetVal);
 }
 
-
-
 TEST_F(CEISMsgbusHandler_ut, getCTX_ValidTopic) {
 
 	stZmqContext msgbusContext;
-	string topic = "Modbus_TCP_Master_ReadResponse"; //topic exists
+	string topic = "TCP1_RdResp"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getCTX(topic, msgbusContext);
 
 	EXPECT_EQ(true, retVal);
 }
-
 
 TEST_F(CEISMsgbusHandler_ut, getCTX_InvTopic) {
 
@@ -96,12 +64,11 @@ TEST_F(CEISMsgbusHandler_ut, getCTX_InvTopic) {
 TEST_F(CEISMsgbusHandler_ut, getPubCTX_ValTopic) {
 
 	stZmqPubContext pubContext;
-	string topic = "MQTT_Export_ReadRequest"; //topic exists
+	string topic = "MQTT_Export_RdReq"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getPubCTX(topic, pubContext);
 
 	EXPECT_EQ(true, retVal);
 }
-
 
 TEST_F(CEISMsgbusHandler_ut, getPubCTX_InvTopic) {
 
@@ -117,7 +84,7 @@ TEST_F(CEISMsgbusHandler_ut, getPubCTX_InvTopic) {
 TEST_F(CEISMsgbusHandler_ut, getSubCTX_ValTopic) {
 
 	stZmqSubContext subContext;
-	string topic = "Modbus_TCP_Master_WriteResponse"; //topic exists
+	string topic = "TCP1_RdResp"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getSubCTX(topic, subContext);
 
 	EXPECT_EQ(true, retVal);
@@ -139,7 +106,7 @@ TEST_F(CEISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
 	bool retVal = false;
 
 	stZmqSubContext subContext;
-	string topic = "Modbus_TCP_Master_PolledData"; //topic exists
+	string topic = "RTU1_WrResp_RT"; //topic exists
 
 	retVal = CEISMsgbusHandler::Instance().getSubCTX(topic, subContext);
 
@@ -172,46 +139,10 @@ TEST_F(CEISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
 	}
 }
 
-#if 0 //CONTAINER
-TEST_F(CEISMsgbusHandler_ut, insertSubCTX__) {
-
-	recv_ctx_t* sub_ctx = NULL;
-
-	bool retVal = false;
-
-	string topic_type = "sub";
-
-	stZmqSubContext subContext;
-	string topic = "PL0_flowmeter1"; //topic exists
-
-
-	/* Insert subscriber context */
-	config_t* config = CfgManager::Instance().getEnvConfig().get_messagebus_config(topic, topic_type);
-	void* ctx = msgbus_initialize(config);
-	msgbus_subscriber_new(ctx, topic.c_str(), NULL, &sub_ctx);
-
-	subContext.m_pContext = sub_ctx;
-	retVal = CEISMsgbusHandler::Instance().insertSubCTX(topic, subContext);
-
-	/* Get subscriber context */
-	retVal = CEISMsgbusHandler::Instance().getSubCTX(topic, subContext);
-
-	cout<<endl<<"#####################################################"<<endl;
-	cout<<"retVal: "<<retVal;
-	cout<<endl<<"#####################################################"<<endl;
-
-	if(retVal) {
-		bool isInserted = CEISMsgbusHandler::Instance().insertSubCTX(topic, subContext);
-		EXPECT_EQ(true, isInserted);
-	}
-}
-#endif
-
-
 TEST_F(CEISMsgbusHandler_ut, 11_manatory_param) {
 
 	stZmqPubContext pubContext;
-	string topic = "MQTT_Export_ReadRequest"; //topic exists
+	string topic = "MQTT_Export_RdReq"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getPubCTX(topic, pubContext);
 	if(retVal) {
 
@@ -227,26 +158,10 @@ TEST_F(CEISMsgbusHandler_ut, 11_manatory_param) {
 	}
 }
 
-#if 0 //CONTAINER
-TEST_F(CEISMsgbusHandler_ut, 12_manatory_param) {
-
-	try {
-
-		CEISMsgbusHandler::Instance().cleanup();
-		EXPECT_EQ(true, true);
-
-	}catch(exception &ex) {
-
-		std::cout << __func__ << " cleanup test for EIS msg bus\n";
-		EXPECT_EQ(true, false);
-	}
-}
-#endif
-
 TEST_F(CEISMsgbusHandler_ut, 13_manatory_param) {
 
 	stZmqContext context;
-	string topic = "PL0_flowmeter1"; //topic exists
+	string topic = "MQTT_Export_RdReq"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getCTX(topic, context);
 
 	if(retVal) {
@@ -258,38 +173,6 @@ TEST_F(CEISMsgbusHandler_ut, 13_manatory_param) {
 	}
 }
 
-#if 0 //CONTAINER
-TEST_F(CEISMsgbusHandler_ut, 14_manatory_param) {
-
-	bool retVal;
-	stZmqContext context;
-	string topic = "Test_Topic";
-	setenv("Test_Topic_cfg", "zmq_tcp,127.0.0.1:5097", 1);
-	string topicType = "pub";
-
-	CEISMsgbusHandler::Instance().cleanup();
-
-	/*****************Insert context**********************************/
-	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
-				CfgManager::Instance().getConfigClient(),
-				topic.c_str(), topicType.c_str());
-
-
-	void* msgbus_ctx = msgbus_initialize(config);
-
-	context.m_pContext = msgbus_ctx;
-	CEISMsgbusHandler::Instance().insertCTX(topic, context);
-	/****************************************************************/
-
-	//Removing context
-	CEISMsgbusHandler::Instance().removeCTX(topic);
-
-
-	retVal = CEISMsgbusHandler::Instance().getCTX(topic, context);
-	EXPECT_EQ(false, retVal); // getCTX should return false after context removal
-
-}
-#endif
 
 TEST_F(CEISMsgbusHandler_ut, RemoveCtxt) {
 
