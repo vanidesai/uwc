@@ -17,7 +17,7 @@
 
 
 
-void ModbusMaster_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
+//void ModbusMaster_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
 void ModbusStackInterface_ut::SetUp()
 {
 	// Setup code
@@ -27,6 +27,7 @@ void ModbusStackInterface_ut::TearDown()
 {
 	// TearDown code
 }
+
 
 
 
@@ -77,7 +78,7 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 		//zmq_handler::prepareCommonContext("pub");
 		//zmq_handler::getOnDemandReqData(0, onDemandReqData);
 
-		ModbusMaster_AppCallback(pstMbusAppCallbackParams);
+		OnDemandRead_AppCallback(pstMbusAppCallbackParams);
 
 	}
 	catch(std::exception &e)
@@ -97,12 +98,12 @@ try
 
 	zmq_handler::insertOnDemandReqData(0, reqData);
 	zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
-	ModbusMaster_AppCallback(pstMbusAppCallbackParams);
+	OnDemandRead_AppCallback(pstMbusAppCallbackParams);
 
 }
 catch(std::exception &e)
 {
-	EXPECT_EQ("", e.what());
+	EXPECT_EQ(" ", e.what());
 }
 }
 
@@ -110,9 +111,10 @@ catch(std::exception &e)
 
 
 
+
 /************************************MOdbusMAster_AppCallback()*******************************/
-
-
+#if 1
+// This test is commented because ModbusMaster_AppCallback() function is not available in the source code
 TEST_F(ModbusStackInterface_ut, AppCallback_null_ip)
 {
 #ifdef MODBUS_STACK_TCPIP_ENABLED
@@ -125,12 +127,12 @@ TEST_F(ModbusStackInterface_ut, AppCallback_null_ip)
 		stOnDemandRequest reqData;
 		stOnDemandRequest onDemandReqData ;
 
-		ModbusMaster_AppCallback(pstMbusAppCallbackParams);
+		OnDemandRead_AppCallback(MbusAppCallbackParams);
 
 	}
 	catch(std::exception &e)
 	{
-		EXPECT_EQ("", e.what());
+		EXPECT_EQ(" ", e.what());
 	}
 }
 
@@ -146,17 +148,95 @@ try
 	zmq_handler::insertOnDemandReqData(0, reqData);
 
 	//zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
-	ModbusMaster_AppCallback(pstMbusAppCallbackParams);
+	OnDemandRead_AppCallback(MbusAppCallbackParams);
 
 
 }
 catch(std::exception &e)
 {
-	EXPECT_EQ("", e.what());
+	EXPECT_EQ(" ", e.what());
 }
 }
 
 #endif
+#endif
+
+
+
+TEST_F(ModbusStackInterface_ut, OnDemandRead_RT)
+{
+	try
+	{
+		OnDemandReadRT_AppCallback(pstMbusAppCallbackParams);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ", (string)e.what());
+	}
+}
+
+
+
+TEST_F(ModbusStackInterface_ut, OnDemandRead_RT_NULL)
+{
+	try
+	{
+		OnDemandReadRT_AppCallback(MbusAppCallbackParams);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ",(string)e.what());
+	}
+}
+
+TEST_F(ModbusStackInterface_ut, OnDemandWrite)
+{
+	try
+	{
+		OnDemandWrite_AppCallback(pstMbusAppCallbackParams);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ", (string)e.what());
+	}
+}
+
+
+TEST_F(ModbusStackInterface_ut, OnDemandWrite_NULL)
+{
+	try
+	{
+		OnDemandWrite_AppCallback(MbusAppCallbackParams);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ", (string)e.what());
+	}
+}
+
+TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT)
+{
+	try
+	{
+		OnDemandWriteRT_AppCallback(pstMbusAppCallbackParams);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ", (string)e.what());
+	}
+}
+
+TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT_NULL)
+{
+	try
+	{
+		OnDemandWriteRT_AppCallback(MbusAppCallbackParams);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ", (string)e.what());
+	}
+}
 
 
 #if 1
@@ -365,6 +445,9 @@ TEST_F(ModbusStackInterface_ut, WriteMulReg)
 }
 
 
+/*
+This test case is commented because the MbusApp_Process_Requeset() function is no more longer
+availabe.. it is commented in the source code also......check this test once  again
 
 TEST_F(ModbusStackInterface_ut, Process_Req)
 {
@@ -378,6 +461,7 @@ TEST_F(ModbusStackInterface_ut, Process_Req)
 
 	}
 }
+*/
 
 
 /*******************************************************************************************/

@@ -85,6 +85,7 @@ public:
 
 	stMbusAppCallbackParams_t MbusAppCallbackParams;
 	stMbusAppCallbackParams_t *pstMbusAppCallbackParams = &MbusAppCallbackParams;
+	stMbusAppCallbackParams_t *stMbusAppCallbackParams = NULL;
 
 };
 

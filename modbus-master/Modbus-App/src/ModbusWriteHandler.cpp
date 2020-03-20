@@ -36,7 +36,6 @@ onDemandHandler::onDemandHandler() : m_bIsWriteInitialized(false)
 {
 	try
 	{
-		initOnDemandSem();
 		m_bIsWriteInitialized = true;
 	}
 	catch(const std::exception& e)
@@ -44,25 +43,6 @@ onDemandHandler::onDemandHandler() : m_bIsWriteInitialized(false)
 		CLogger::getInstance().log(FATAL, LOGDETAILS("Unable to initiate write instance"));
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
-}
-
-/**
- * Initialize semaphore
- * @return 	true : on success,
- * 			false : on error
- */
-bool onDemandHandler::initOnDemandSem()
-{
-	//
-	int okWrite = sem_init(&semaphoreWriteReq, 0, 0);
-	int okWriteRT = sem_init(&semaphoreRTWriteReq, 0, 0);
-	int okRead = sem_init(&semaphoreReadReq, 0, 0);
-	int okReadRT = sem_init(&semaphoreRTReadReq, 0, 0);
-	if (okWrite == -1 || okWriteRT == -1 || okRead == -1 || okReadRT == -1) {
-	   std::cout << "*******Could not create unnamed on-demand semaphore\n";
-	   return false;
-	}
-	return true;
 }
 
 /**

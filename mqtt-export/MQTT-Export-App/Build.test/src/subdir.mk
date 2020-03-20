@@ -10,31 +10,34 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/Common.cpp \
 ../src/ConfigManager.cpp \
 ../src/EISMsgbusHandler.cpp \
 ../src/Logger.cpp \
 ../src/MQTTCallback.cpp \
-../src/MQTTHandler.cpp \
-../src/MQTT_Export.cpp \
-../src/TopicMapper.cpp 
+../src/MQTTPublishHandler.cpp \
+../src/MQTTSubscribeHandler.cpp \
+../src/Main.cpp 
 
 OBJS += \
+./src/Common.o \
 ./src/ConfigManager.o \
 ./src/EISMsgbusHandler.o \
 ./src/Logger.o \
 ./src/MQTTCallback.o \
-./src/MQTTHandler.o \
-./src/MQTT_Export.o \
-./src/TopicMapper.o 
+./src/MQTTPublishHandler.o \
+./src/MQTTSubscribeHandler.o \
+./src/Main.o 
 
 CPP_DEPS += \
+./src/Common.d \
 ./src/ConfigManager.d \
 ./src/EISMsgbusHandler.d \
 ./src/Logger.d \
 ./src/MQTTCallback.d \
-./src/MQTTHandler.d \
-./src/MQTT_Export.d \
-./src/TopicMapper.d 
+./src/MQTTPublishHandler.d \
+./src/MQTTSubscribeHandler.d \
+./src/Main.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

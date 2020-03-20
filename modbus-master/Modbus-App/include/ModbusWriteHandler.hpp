@@ -33,26 +33,11 @@ struct stRequest
 
 class onDemandHandler
 {
-	std::queue<stRequest> stackTCPWriteReqQ;
-	std::queue<stRequest> stackTCPRTWriteReqQ;
-	std::queue<stRequest> stackTCPReadReqQ;
-	std::queue<stRequest> stackTCPRTReadReqQ;
-	std::mutex __writeReqMutex;
-	std::mutex __writeReqMutexRT;
-	std::mutex __readReqMutex;
-	std::mutex __readReqMutexRT;
-	sem_t semaphoreWriteReq;
-	sem_t semaphoreRTWriteReq;
-	sem_t semaphoreReadReq;
-	sem_t semaphoreRTReadReq;
 	bool m_bIsWriteInitialized;
 
 	onDemandHandler();
 	onDemandHandler(onDemandHandler const&);             /// copy constructor is private
 	onDemandHandler& operator=(onDemandHandler const&);  /// assignment operator is private
-
-	/// method to initiate the write semaphore
-	BOOLEAN initOnDemandSem();
 
 public:
 	static onDemandHandler& Instance();

@@ -15,7 +15,7 @@ CPP_SRCS += \
 ../Test/src/CTopicMapper_ut.cpp \
 ../Test/src/Logger_ut.cpp \
 ../Test/src/MQTTCallback_ut.cpp \
-../Test/src/MQTTExportMain_ut.cpp
+../Test/src/MQTTExportMain_ut.cpp 
 
 OBJS += \
 ./Test/src/CEISMsgbusHandler_ut.o \

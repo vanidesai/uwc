@@ -283,51 +283,5 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 		}
 	}
 
-	//temp = "End: Return: ";
-	//temp.append(to_string(u8ReturnType));
-	//CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-
 	return u8ReturnType;
 }
-
-/**
- *
- * DESCRIPTION
- * function to process or call stack APIs.
- *
- * @param pstMbusReqGen [in] pointer to the request packet
- *
- * @return uint8_t		[out] return 0 on success
- *
- */
-/*uint8_t modbusInterface::MbusApp_Process_Request(RestMbusReqGeneric_t *pstMbusReqGen)
-{
-	MbusAPI_t stMbusApiPram = {};
-	uint8_t u8ReturnType = MBUS_JSON_APP_ERROR_NULL_POINTER;
-
-	if(pstMbusReqGen != NULL)
-	{
-		stMbusApiPram.m_pu8Data = pstMbusReqGen->m_stReqData.m_pu8Data;
-		stMbusApiPram.m_u16ByteCount =  pstMbusReqGen->m_stReqData.m_u8DataLen;
-		stMbusApiPram.m_u16Quantity = pstMbusReqGen->m_u16Quantity;
-		stMbusApiPram.m_u16StartAddr = pstMbusReqGen->m_u16StartAddr;
-		stMbusApiPram.m_u8DevId = pstMbusReqGen->m_u8DevId;
-		stMbusApiPram.m_u16TxId = pstMbusReqGen->m_u16ReffId;
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-		stMbusApiPram.m_u8IpAddr[0] = pstMbusReqGen->m_u8IpAddr[0];
-		stMbusApiPram.m_u8IpAddr[1] = pstMbusReqGen->m_u8IpAddr[1];
-		stMbusApiPram.m_u8IpAddr[2] = pstMbusReqGen->m_u8IpAddr[2];
-		stMbusApiPram.m_u8IpAddr[3] = pstMbusReqGen->m_u8IpAddr[3];
-		stMbusApiPram.m_u16Port = pstMbusReqGen->m_u16Port;
-#endif
-
-		if(MBUS_MIN_FUN_CODE != pstMbusReqGen->m_u8FunCode)
-		{
-			u8ReturnType = Modbus_Stack_API_Call(
-					pstMbusReqGen->m_u8FunCode,
-					&stMbusApiPram,
-					(void*)ModbusMaster_AppCallback);
-		}
-	}
-	return u8ReturnType;
-}*/

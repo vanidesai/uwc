@@ -20,52 +20,7 @@ void CDataPoint_ut::TearDown()
 {
 	// TearDown code
 }
-/*****************************CDataPoint::build()****************************************/
 
-/** Test:CDataPoint_ut::address_manatory_param****/
-/*Test 01::  checks whether mandatory parameter (iAddress) is available in yml file or not */
-
-/*
-TEST_F(CDataPoint_ut, address_manatory_param)
-{
-
- 	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
-	for( auto it : baseNode)
-	{
-		if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
-		{
-			const YAML::Node& points =  it.second;
-
-			int i = 0;
-			int Add_expected[] = {1, 2};
-			for (auto it1 : points)
-			{
-              //if(counter==0){
-				try
-				{
-
-				CDataPoint_obj.build(it1, CDataPoint_obj);
-                id=CDataPoint_obj.getID();
-				m_Address = CDataPoint_obj.getAddress();
-			    EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
-
-//				EXPECT_EQ(1, m_Address.m_iWidth);
-//				EXPECT_EQ(network_info::eEndPointType::eCoil, m_Address.m_eType);
-
-				}
-				catch(YAML::Exception &e)
-				{
-					//BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
-					EXPECT_EQ("key not found", e.what());
-
-				}
-
-			}
-		}
-	}
-
-}
-*/
 
 /***Test:CDataPoint_ut::width_manatory_param****/
 /*Test 02::  checks whether mandatory parameter (iwidth) is available in yml file or not */
@@ -114,38 +69,40 @@ TEST_F(CDataPoint_ut, width_manatory_param)
 
 /***Test:CDataPoint_ut::eType_manatory_param****/
 /*Test 03::  checks whether mandatory parameter (eType) is available in yml file or not */
-/*
-TEST_F(CDataPoint_ut, eType_manatory_param)
+
+TEST_F(CDataPoint_ut, eType_coil)
 {
- //   int counter=0;
+	//   int counter=0;
 
 
- 	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
+	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
 	for( auto it : baseNode)
 	{
 		if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
 		{
 			const YAML::Node& points =  it.second;
 
-			int i = 0;
-			int Add_expected[] = {1, 2};
+			/*int i = 0;
+			int Add_expected[] = {1, 2};*/
 			for (auto it1 : points)
 			{
-              //if(counter==0){
+				//if(counter==0){
 				try
 				{
 
-				CDataPoint_obj.build(it1, CDataPoint_obj);
-                id=CDataPoint_obj.getID();
-				m_Address = CDataPoint_obj.getAddress();
-//		    	EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
-//				EXPECT_EQ(1, m_Address.m_iWidth);
-				EXPECT_EQ(network_info::eEndPointType::eCoil, m_Address.m_eType);
-
+					CDataPoint_obj.build(it1, CDataPoint_obj);
+					id=CDataPoint_obj.getID();
+					m_Address = CDataPoint_obj.getAddress();
+					if(m_Address.m_eType == network_info::eEndPointType::eCoil)
+					{
+						//		    	EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
+						//				EXPECT_EQ(1, m_Address.m_iWidth);
+						EXPECT_EQ(network_info::eEndPointType::eCoil, m_Address.m_eType);
+					}
 				}
 				catch(YAML::Exception &e)
 				{
-					//BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
+
 					EXPECT_EQ("key not found", e.what());
 
 				}
@@ -154,7 +111,153 @@ TEST_F(CDataPoint_ut, eType_manatory_param)
 		}
 	}
 
-}*/
+}
+
+
+TEST_F(CDataPoint_ut, eType_Holiding_register)
+{
+	//   int counter=0;
+
+
+	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
+	for( auto it : baseNode)
+	{
+		if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
+		{
+			const YAML::Node& points =  it.second;
+
+			/*int i = 0;
+			int Add_expected[] = {1, 2};*/
+			for (auto it1 : points)
+			{
+				//if(counter==0){
+				try
+				{
+
+					CDataPoint_obj.build(it1, CDataPoint_obj);
+					id=CDataPoint_obj.getID();
+					m_Address = CDataPoint_obj.getAddress();
+					if(m_Address.m_eType == network_info::eEndPointType::eHolding_Register)
+					{
+						//		    	EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
+						//				EXPECT_EQ(1, m_Address.m_iWidth);
+						EXPECT_EQ(network_info::eEndPointType::eHolding_Register, m_Address.m_eType);
+					}
+
+				}
+				catch(YAML::Exception &e)
+				{
+
+					EXPECT_EQ("key not found", e.what());
+
+				}
+			}
+
+
+
+		}
+	}
+
+}
+
+
+
+
+
+
+TEST_F(CDataPoint_ut, eType_Discrete_Input)
+{
+	//   int counter=0;
+
+
+	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
+	for( auto it : baseNode)
+	{
+		if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
+		{
+			const YAML::Node& points =  it.second;
+
+			/*int i = 0;
+			int Add_expected[] = {1, 2};*/
+			for (auto it1 : points)
+			{
+				//if(counter==0){
+				try
+				{
+
+					CDataPoint_obj.build(it1, CDataPoint_obj);
+					id=CDataPoint_obj.getID();
+					m_Address = CDataPoint_obj.getAddress();
+					if(m_Address.m_eType == network_info::eEndPointType::eDiscrete_Input)
+					{
+						//		    	EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
+						//				EXPECT_EQ(1, m_Address.m_iWidth);
+						EXPECT_EQ(network_info::eEndPointType::eDiscrete_Input, m_Address.m_eType);
+					}
+
+				}
+				catch(YAML::Exception &e)
+				{
+
+					EXPECT_EQ("key not found", e.what());
+
+				}
+			}
+
+
+
+		}
+	}
+
+}
+
+
+TEST_F(CDataPoint_ut, eType_input_register)
+{
+	//   int counter=0;
+
+
+	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
+	for( auto it : baseNode)
+	{
+		if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
+		{
+			const YAML::Node& points =  it.second;
+
+			/*int i = 0;
+			int Add_expected[] = {1, 2};*/
+			for (auto it1 : points)
+			{
+				//if(counter==0){
+				try
+				{
+
+					CDataPoint_obj.build(it1, CDataPoint_obj);
+					id=CDataPoint_obj.getID();
+					m_Address = CDataPoint_obj.getAddress();
+					if(m_Address.m_eType == network_info::eEndPointType::eInput_Register)
+					{
+						//		    	EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
+						//				EXPECT_EQ(1, m_Address.m_iWidth);
+						EXPECT_EQ(network_info::eEndPointType::eInput_Register, m_Address.m_eType);
+					}
+
+				}
+				catch(YAML::Exception &e)
+				{
+
+					EXPECT_EQ("key not found", e.what());
+
+				}
+			}
+
+
+
+		}
+	}
+
+}
+
 
 /***Test:CDataPoint_ut::all_manatory_param****/
 /*Test 04::  checks whether all mandatory parameters are available in yml file or not, if not

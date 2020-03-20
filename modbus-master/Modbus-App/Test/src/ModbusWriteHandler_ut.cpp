@@ -104,11 +104,12 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 	cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
 	cJSON *timestamp=cJSON_GetObjectItem(root,"timestamp");
 	cJSON *usec=cJSON_GetObjectItem(root,"usec");
+	void* ptrAppCallback = NULL;
 
 	try
 	{
 
-		eFunRetType = modWriteHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData);
+		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData, &ptrAppCallback);
 
 		EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
 		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
@@ -127,6 +128,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 	writeReq.m_strTopic = topic;
 	//	writeReq.m_strMsg = msg;
 	writeReq.m_strMsg = msg;
+	void* ptrAppCallback = NULL;
 
 	//cJSON *root = cJSON_Parse(writeReq.m_strMsg.c_str());
 
@@ -167,7 +169,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 	try
 	{
 
-		eFunRetType = modWriteHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData);
+		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData, &ptrAppCallback);
 
 		EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
 		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
@@ -200,12 +202,13 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_InvalidTopicMsg)
 	cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
 	cJSON *timestamp=cJSON_GetObjectItem(root,"timestamp");
 	cJSON *usec=cJSON_GetObjectItem(root,"usec");
+	void* ptrAppCallback = NULL;
 
 	try
 	{
 
 		//eFunRetType = modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).jsonParserForOnDemandRequest(writeReq, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId);
-		eFunRetType = modWriteHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData);
+		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData, &ptrAppCallback);
 		EXPECT_EQ(MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER, eFunRetType);
 		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 	}
@@ -224,7 +227,7 @@ TEST_F(ModbusWriteHandler_ut, modWriteHandler_getInstance)
 {
 
 
-	EXPECT_EQ(typeid(modWriteHandler), typeid(modWriteHandler::Instance()));
+	EXPECT_EQ(typeid(onDemandHandler), typeid(onDemandHandler::Instance()));
 }
 
 
@@ -233,6 +236,7 @@ TEST_F(ModbusWriteHandler_ut, modWriteHandler_getInstance)
 TEST_F(ModbusWriteHandler_ut, jsonParserForWrite)
 {
 
+	void* ptrAppCallback = NULL;
 	//RestMbusReqGeneric_t *pstModbusRxPacket = 0xFF00;
 	//RestMbusReqGeneric_t *pstModbusRxPacket = NULL;
 	RestMbusReqGeneric_t Rest_Modbus_obj;
@@ -261,7 +265,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite)
 		try
 	{
 			//EXPECT_EQ(typeid(MbusStackErrorCode), typeid(modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).jsonParserForOnDemandRequest( writeReq, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId)));
-			EXPECT_EQ(typeid(MbusStackErrorCode), typeid(modWriteHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData)));
+			EXPECT_EQ(typeid(MbusStackErrorCode), typeid(onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData, &ptrAppCallback)));
 
 	}
 	catch(std::exception &e)
@@ -294,7 +298,7 @@ TEST_F(ModbusWriteHandler_ut, createWriteListner_test)
 	try
 	{
 
-		modWriteHandler::Instance().createWriteListener();
+		onDemandHandler::Instance().createOnDemandListener();
 
 	}
 	catch(std::exception &e)
@@ -317,7 +321,7 @@ TEST_F(ModbusWriteHandler_ut, subscribeDeviceListener)
 	try
 	{
 
-		modWriteHandler::Instance().subscribeDeviceListener(topic);
+		onDemandHandler::Instance().subscribeDeviceListener(topic);
 
 	}
 	catch(std::exception &e)
@@ -396,7 +400,7 @@ TEST_F(ModbusWriteHandler_ut, Validate_Json)
 	//eFunRetType = modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).jsonParserForOnDemandRequest(writeReq, stMbusApiPram, m_u8FunCode);
 	try
 	{
-		bool Value = modWriteHandler::Instance().validateInputJson(strSourceTopic, strWellhead, strCommand);
+		bool Value = onDemandHandler::Instance().validateInputJson(strSourceTopic, strWellhead, strCommand);
 	}
 	catch(std::exception &e)
 	{
@@ -410,6 +414,7 @@ TEST_F(ModbusWriteHandler_ut, Validate_Json)
 
 TEST_F(ModbusWriteHandler_ut, process_msg)
 {
+	eMbusRequestType reqType = MBUS_REQUEST_NONE;
 	msg_envelope_t *g_msg = NULL;
 	msg_envelope_elem_body_t* msgCommand = msgbus_msg_envelope_new_string("DValve");
 	msg_envelope_elem_body_t* msgAppSeq = msgbus_msg_envelope_new_string("1234");
@@ -437,7 +442,7 @@ TEST_F(ModbusWriteHandler_ut, process_msg)
 	msgbus_msg_envelope_put(g_msg, "version", ptversion);
 	msgbus_msg_envelope_put(g_msg, "app_seq", ptapp_seq);
 	msgbus_msg_envelope_put(g_msg, "sourcetopic", ptsourcetopic);
-	bool result = modWriteHandler::Instance().processMsg(g_msg, "test", true);
+	bool result = onDemandHandler::Instance().processMsg(g_msg, "test");
 	EXPECT_EQ(result, true);
 }
 
@@ -459,13 +464,14 @@ TEST_F(ModbusWriteHandler_ut, thread_init_DValve_sub)
 	//sem_post(&semaphoreWriteReq);
 	try
 	{
-		modWriteHandler::Instance().initWriteHandlerThreads();
+		//Check the below commented line once again
+		//onDemandHandler::Instance().initWriteHandlerThreads();
 		//TODO
 		//modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).createWriteListener();
 
     //  bool result = modWriteHandler::Instance().processMsg(g_msg)
-		sem_t semaphoreWriteReq = modWriteHandler::Instance().getSemaphoreWriteReq();
-		sem_post(&modWriteHandler::Instance().getSemaphoreWriteReq());
+		//sem_t semaphoreWriteReq = onDemandHandler::Instance().getSemaphoreWriteReq();
+		//sem_post(&onDemandHandler::Instance().getSemaphoreWriteReq());
 
 		// Creating message to be published
 
@@ -543,8 +549,9 @@ TEST_F(ModbusWriteHandler_ut, thread_init_DValve_pub)
 	strngMsg = "Publish";
 	try
 	{
+		//***************** Check the below commented line once again
 
-		modWriteHandler::Instance().initWriteHandlerThreads();
+		//onDemandHandler::Instance().initWriteHandlerThreads();
 		//TODO
 		//modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).createWriteListener();
 
@@ -637,7 +644,7 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_read)
 	try
 	{
 		common_Handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
-		modWriteHandler::Instance().createErrorResponse(&msg, eFunRetType, u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
+		onDemandHandler::Instance().createErrorResponse(&msg, eFunRetType, u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
 	}
 	catch(std::exception &e)
 	{
@@ -653,7 +660,7 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_write)
 
 	try
 	{
-		modWriteHandler::Instance().createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
+		onDemandHandler::Instance().createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
 	}
 	catch(std::exception &e)
 	{

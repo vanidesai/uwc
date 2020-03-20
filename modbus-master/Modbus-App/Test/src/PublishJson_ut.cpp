@@ -175,8 +175,11 @@ TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 }*/
 //#endif
 
+
 /*** Test:PublishJson_ut::publishJson_valid_arguments and pub topic***/
 /* Valid arguments */
+
+
 
 TEST_F(PublishJson_ut, publishJson_valid_arguments)
 {
@@ -184,7 +187,8 @@ TEST_F(PublishJson_ut, publishJson_valid_arguments)
 	stZmqContext objTempCtx;
 	stZmqPubContext objTempPubCtx;
 	msg_envelope_t *msg = NULL;
-	std::string topic = "Modbus-TCP-Master_ReadResponse";
+	//std::string topic = "Modbus-TCP-Master_ReadResponse";
+	std::string topic = "Mbus_TCP_RResp";
 	std::string topicType = "pub";
 
 
@@ -196,8 +200,11 @@ TEST_F(PublishJson_ut, publishJson_valid_arguments)
 		msgbus_msg_envelope_put(msg, "version", ptVersion);
 
 
-		objTempCtx = zmq_handler::getCTX("Modbus-TCP-Master_WriteResponse");
-		objTempPubCtx = zmq_handler::getPubCTX("Modbus-TCP-Master_WriteResponse");
+		//objTempCtx = zmq_handler::getCTX("Modbus-TCP-Master_WriteResponse");
+		//objTempPubCtx = zmq_handler::getPubCTX("Modbus-TCP-Master_WriteResponse");
+
+		objTempCtx = zmq_handler::getCTX("Mbus_TCP_RResp");
+		objTempPubCtx = zmq_handler::getPubCTX("Mbus_TCP_RResp");
 
 		EXPECT_EQ(true, PublishJsonHandler::instance().publishJson(msg, objTempCtx.m_pContext, objTempPubCtx.m_pContext, topic));
 

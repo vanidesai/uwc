@@ -40,10 +40,12 @@ TEST_F(CConfigManager_ut , test)
 	{
 		PublishJsonHandler::instance().setDevMode(false);
 		bRet = CfgManager::Instance().IsClientCreated();
+		EXPECT_EQ(1, bRet);
 	}
 }
 
-TEST_F(CConfigManager_ut, getInstance) {
+TEST_F(CConfigManager_ut, getInstance)
+{
 
 	CfgManager::Instance();
 	EXPECT_EQ(typeid(CfgManager), typeid(CfgManager::Instance()));
@@ -59,35 +61,6 @@ TEST_F(CConfigManager_ut, IsClientCreated)
 	EXPECT_TRUE(CfgManager::Instance().IsClientCreated());
 
 }
-
-
-
-/*
-*********CConfigManager_ut::getEnvConfig_NULL() should return Instance of class type CfgManager******
-TEST_F(CConfigManager_ut, getEnvConfig_NULL)
-{
-
-	/// parse all the subtopics
-	//std::vector<std::string> stTopics = CfgManager::Instance(CallerObj).getEnvConfig().get_topics_from_env("");
-	char** stTopics =  CallerObj.EnvConf_Caller_GetTopicFromEnv("");
-	//EXPECT_TRUE(stTopics.empty());
-	EXPECT_EQ(stTopics, NULL);
-}
-*/
-
-/*
-******CConfigManager_ut::getEnvConfig_Val() should return Instance of class type CfgManager**********
-TEST_F(CConfigManager_ut, getEnvConfig_Val)
-{
-
-	/// parse all the subtopics
-	//std::vector<std::string> stTopics = CfgManager::Instance(CallerObj).getEnvConfig().get_topics_from_env("sub");
-     char** stTopics =  CallerObj.EnvConf_Caller_GetTopicFromEnv("sub");
-	//EXPECT_FALSE(stTopics.empty());
-     EXPECT_NE("", NULL);
-
-}
-*/
 
 
 #endif
