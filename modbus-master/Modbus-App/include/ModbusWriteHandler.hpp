@@ -29,65 +29,57 @@ struct stRequest
 {
 	std::string m_strTopic;
 	std::string m_strMsg;
-	long m_lPriority;
 };
 
-/**
- * Operator overloading function to return response with max priority
- */
-struct ComparePriority
+class onDemandHandler
 {
-    bool operator()(stRequest const& response1, stRequest const& response2)
-    {
-        return response1.m_lPriority < response2.m_lPriority;
-    }
-};
-
-class modWriteHandler
-{
-	std::priority_queue <stRequest, vector<stRequest>, ComparePriority> stackTCPWriteReqQ;
+	std::queue<stRequest> stackTCPWriteReqQ;
+	std::queue<stRequest> stackTCPRTWriteReqQ;
+	std::queue<stRequest> stackTCPReadReqQ;
+	std::queue<stRequest> stackTCPRTReadReqQ;
 	std::mutex __writeReqMutex;
+	std::mutex __writeReqMutexRT;
+	std::mutex __readReqMutex;
+	std::mutex __readReqMutexRT;
 	sem_t semaphoreWriteReq;
+	sem_t semaphoreRTWriteReq;
+	sem_t semaphoreReadReq;
+	sem_t semaphoreRTReadReq;
 	bool m_bIsWriteInitialized;
 
-	modWriteHandler();
-	modWriteHandler(modWriteHandler const&);             /// copy constructor is private
-	modWriteHandler& operator=(modWriteHandler const&);  /// assignment operator is private
+	onDemandHandler();
+	onDemandHandler(onDemandHandler const&);             /// copy constructor is private
+	onDemandHandler& operator=(onDemandHandler const&);  /// assignment operator is private
 
 	/// method to initiate the write semaphore
-	BOOLEAN initWriteSem();
-
-	/// method to push write request to queue
-	BOOLEAN pushToWriteTCPQueue(struct stRequest &stWriteRequestNode);
-
-	/// method to get data from q to process write.
-	BOOLEAN getDataToProcess(struct stRequest &stWriteProcessNode);
+	BOOLEAN initOnDemandSem();
 
 public:
-	static modWriteHandler& Instance();
+	static onDemandHandler& Instance();
 
 	/**
 	 * Process ZMQ message
 	 * @param msg	:	[in] actual message
 	 * @param stTopic:	[in] received topic
 	 */
-	bool processMsg(msg_envelope_t *msg, std::string stTopic, long lPriority);
+	bool processMsg(msg_envelope_t *msg, std::string stTopic);
 
-	eMbusStackErrorCode onDemandInfoHandler();
+	eMbusStackErrorCode onDemandInfoHandler(stRequest& stRequest);
 
 	eMbusStackErrorCode jsonParserForOnDemandRequest(cJSON *root,
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode,
 											unsigned short txID,
-											stOnDemandRequest& reqData);
+											stOnDemandRequest& reqData,
+											void** ptrAppCallback);
 
-	void createWriteListener();
+	void setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFlag, bool isWriteFlag);
+
+	void createOnDemandListener();
 
 	void subscribeDeviceListener(const std::string stTopic);
 
 	bool isWriteInitialized() {return m_bIsWriteInitialized;}
-
-	void initWriteHandlerThreads();
 
 	bool validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand);
 
@@ -96,10 +88,6 @@ public:
 			uint8_t  u8FunCode ,
 			std::string &strTopic,
 			unsigned short txID);
-
-	const sem_t& getSemaphoreWriteReq() const {
-		return semaphoreWriteReq;
-	}
 };
 
 

@@ -32,11 +32,11 @@ extern std::atomic<bool> g_stopThread;
 /**
  * Constructor
  */
-modWriteHandler::modWriteHandler() : m_bIsWriteInitialized(false)
+onDemandHandler::onDemandHandler() : m_bIsWriteInitialized(false)
 {
 	try
 	{
-		initWriteSem();
+		initOnDemandSem();
 		m_bIsWriteInitialized = true;
 	}
 	catch(const std::exception& e)
@@ -51,12 +51,15 @@ modWriteHandler::modWriteHandler() : m_bIsWriteInitialized(false)
  * @return 	true : on success,
  * 			false : on error
  */
-bool modWriteHandler::initWriteSem()
+bool onDemandHandler::initOnDemandSem()
 {
 	//
-	int ok = sem_init(&semaphoreWriteReq, 0, 0);
-	if (ok == -1) {
-	   std::cout << "*******Could not create unnamed write semaphore\n";
+	int okWrite = sem_init(&semaphoreWriteReq, 0, 0);
+	int okWriteRT = sem_init(&semaphoreRTWriteReq, 0, 0);
+	int okRead = sem_init(&semaphoreReadReq, 0, 0);
+	int okReadRT = sem_init(&semaphoreRTReadReq, 0, 0);
+	if (okWrite == -1 || okWriteRT == -1 || okRead == -1 || okReadRT == -1) {
+	   std::cout << "*******Could not create unnamed on-demand semaphore\n";
 	   return false;
 	}
 	return true;
@@ -70,7 +73,7 @@ bool modWriteHandler::initWriteSem()
  * @param strTopic	:[in] topic for which to create error response
  * @param txID		:[in] transaction id
  */
-void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
+void onDemandHandler::createErrorResponse(msg_envelope_t** ptMsg,
 		eMbusStackErrorCode errorCode, uint8_t  u8FunCode, std::string &strTopic, unsigned short txID)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
@@ -145,11 +148,11 @@ void modWriteHandler::createErrorResponse(msg_envelope_t** ptMsg,
  * Thread function for on-demand info handler
  * @return appropriate error code
  */
-eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
+eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestData)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
-	stRequest writeReq;
+	//stRequest writeReq;
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	unsigned char  m_u8FunCode;
 	MbusAPI_t stMbusApiPram = {};
@@ -158,98 +161,90 @@ eMbusStackErrorCode modWriteHandler::onDemandInfoHandler()
 #ifdef REALTIME_THREAD_PRIORITY
 	PublishJsonHandler::instance().set_thread_priority();
 #endif
-
-	while(false == g_stopThread.load())
+	try
 	{
-		do
+		/// Enter TX Id
+		stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
+#ifdef INSTRUMENTATION_LOG
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("On-demand request::" + stRequestData.m_strMsg));
+#endif
+
+		root = cJSON_Parse(stRequestData.m_strMsg.c_str());
+		stOnDemandRequest reqData;
+		void* ptrAppCallback = NULL;
+
+		/// Comparing request topic for RT/Non-RT requests
+		string strSearchString = "_";
+		std::size_t found = stRequestData.m_strTopic.find_last_of(strSearchString);
+		string tempTopic = stRequestData.m_strTopic.substr(found+1, stRequestData.m_strTopic.length());
+		string strToCompare = "RT";
+		bool bCompareVal =  std::equal(tempTopic.begin(), tempTopic.end(),
+				strToCompare.begin(),
+	            [](char a, char b) {
+	                return tolower(a) == tolower(b);
+	            });
+		///if RT then "true" else "false"
+		reqData.m_isRT = bCompareVal ? true : false;
+
+		eFunRetType = jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData, &ptrAppCallback);
+
+		common_Handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
+
+		if(MBUS_STACK_NO_ERROR == eFunRetType && MBUS_MIN_FUN_CODE != m_u8FunCode)
 		{
-			//sem_wait(&semaphoreWriteReq);
-			if((sem_wait(&semaphoreWriteReq))== -1 && errno == EINTR)
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("On-Demand Process initiated..."));
+			eFunRetType = (eMbusStackErrorCode) Modbus_Stack_API_Call(
+					m_u8FunCode,
+					&stMbusApiPram,
+					ptrAppCallback);
+		}
+		else
+		{
+			if(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST != eFunRetType)
 			{
-				// Continue if interrupted by handler
-				continue;
-			}
-			try
-			{
-				if(false == getDataToProcess(writeReq))
-				{
-					return MBUS_STACK_ERROR_QUEUE_SEND;
-				}
+				msg_envelope_t *msg = NULL;
+				std::string strTopic = "";
+				createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
 
-				/// Enter TX Id
-				stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
+				zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(strTopic);
+				zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(strTopic);
+
+				PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, strTopic);
 #ifdef INSTRUMENTATION_LOG
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("On-demand request::" + writeReq.m_strMsg));
-#endif
-
-				root = cJSON_Parse(writeReq.m_strMsg.c_str());
-				stOnDemandRequest reqData;
-
-				eFunRetType = jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData);
-
-				common_Handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
-
-				if(MBUS_STACK_NO_ERROR == eFunRetType)
+				msg_envelope_serialized_part_t* parts = NULL;
+				int num_parts = msgbus_msg_envelope_serialize(msg, &parts);
+				if(num_parts > 0)
 				{
-					if(MBUS_MIN_FUN_CODE != m_u8FunCode)
+					if(NULL != parts[0].bytes)
 					{
-						CLogger::getInstance().log(DEBUG, LOGDETAILS("On-Demand Process initiated..."));
-						eFunRetType = (eMbusStackErrorCode) Modbus_Stack_API_Call(
-								m_u8FunCode,
-								&stMbusApiPram,
-								(void*)ModbusMaster_AppCallback);
+						std::string tempStr(parts[0].bytes);
+
+						string temp = "on-demand response received with following parameters :: ";
+						temp.append(tempStr);
+
+						CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
 					}
+
+					msgbus_msg_envelope_serialize_destroy(parts, num_parts);
 				}
-
-				else
-				{
-					if(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST != eFunRetType)
-					{
-						msg_envelope_t *msg = NULL;
-						std::string strTopic = "";
-						createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
-
-						zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(strTopic);
-						zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(strTopic);
-
-						PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, strTopic);
-#ifdef INSTRUMENTATION_LOG
-						msg_envelope_serialized_part_t* parts = NULL;
-						int num_parts = msgbus_msg_envelope_serialize(msg, &parts);
-						if(num_parts > 0)
-						{
-							if(NULL != parts[0].bytes)
-							{
-								std::string tempStr(parts[0].bytes);
-
-								string temp = "on-demand response received with following parameters :: ";
-								temp.append(tempStr);
-
-								CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-
-							}
-
-							msgbus_msg_envelope_serialize_destroy(parts, num_parts);
-						}
 #endif
-					}
-				}
 			}
-			catch(const std::exception &e)
-			{
-				eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
-				CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-			}
+		}
+	}
+	catch(const std::exception &e)
+	{
+		eFunRetType = MBUS_JSON_APP_ERROR_EXCEPTION_RISE;
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+	}
 
-			if(NULL != root)
-				cJSON_Delete(root);
+	if(NULL != root)
+		cJSON_Delete(root);
 
-			if(NULL != stMbusApiPram.m_pu8Data)
-			{
-				delete[] stMbusApiPram.m_pu8Data;
-				stMbusApiPram.m_pu8Data  = NULL;
-			}
-		}while(0);
+	if(NULL != stMbusApiPram.m_pu8Data)
+	{
+		delete[] stMbusApiPram.m_pu8Data;
+		stMbusApiPram.m_pu8Data  = NULL;
 	}
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
@@ -339,7 +334,7 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
  * @return 	true : on success,
  * 			false : on error
  */
-bool modWriteHandler::validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand)
+bool onDemandHandler::validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 	bool retValue = false;
@@ -370,19 +365,47 @@ bool modWriteHandler::validateInputJson(std::string stSourcetopic, std::string s
 }
 
 /**
+ * function to set callback for Read/Write for RT/Non-RT
+ * @param ptrAppCallback:[out] function pointer of callback function
+ * @param isRTFlag	:[in] flag to decide RT/Non-RT request
+ * @param isWriteFlag	:[in] flag to decide read/write request
+ */
+void onDemandHandler::setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFlag, bool isWriteFlag)
+{
+	if(true == isRTFlag && true == isWriteFlag)
+	{
+		**ptrAppCallback = (void*)OnDemandWriteRT_AppCallback;
+	}
+	else if(false == isRTFlag && true == isWriteFlag)
+	{
+		**ptrAppCallback = (void*)OnDemandWrite_AppCallback;
+	}
+	else if(true == isRTFlag && false == isWriteFlag)
+	{
+		**ptrAppCallback = (void*)OnDemandReadRT_AppCallback;
+	}
+	else
+	{
+		**ptrAppCallback = (void*)OnDemandRead_AppCallback;
+	}
+}
+
+/**
  * json parser for on demand requests
  * @param root			:[in] json string
  * @param stMbusApiPram	:[in] modbus API param
  * @param funcCode		:[in] function code
  * @param txID			:[in] transaction id
  * @param reqData		:[in] on demand request
+ * @param ptrAppCallback:[out] function pointer of callback function
  * @return appropriate error code
  */
-eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
+eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode,
 											unsigned short txID,
-											stOnDemandRequest& reqData)
+											stOnDemandRequest& reqData,
+											void** ptrAppCallback)
 {
 	if(NULL == root)
 	{
@@ -427,12 +450,25 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 				reqData.m_strTopic = strSourceTopic;
 				timespec_get(&reqData.m_obtReqRcvdTS, TIME_UTC);
 
-				//if write then "true" else "false"
-				isWrite = strSourceTopic.find("write") <= strSourceTopic.length() ? true : false;
+				/// Comparing sourcetopic for read/write request.
+				string strSearchString = "/";
+				std::size_t found = strSourceTopic.find_last_of(strSearchString);
+				string tempTopic = strSourceTopic.substr(found+1, strSourceTopic.length());
+				string strToCompare = "write";
+				bool bCompareVal =  std::equal(tempTopic.begin(), tempTopic.end(),
+						strToCompare.begin(),
+			            [](char a, char b) {
+			                return tolower(a) == tolower(b);
+			            });
+				///if write then "true" else "false"
+				isWrite = bCompareVal ? true : false;
+
 				if(true == isWrite)
 				{
 					if(value)
+					{
 						strValue = value->valuestring;
+					}
 					else
 					{
 						CLogger::getInstance().log(ERROR, LOGDETAILS(" Invalid input json parameter for write request"));
@@ -477,7 +513,8 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 			reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
 			reqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
 			reqData.m_strQOS = obj.getPollingConfig().m_usQOS;
-			reqData.m_isRT = obj.getPollingConfig().m_bIsRealTime;
+
+			setCallbackforOnDemand(&ptrAppCallback, reqData.m_isRT, isWrite);
 
 			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
 			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
@@ -615,19 +652,18 @@ eMbusStackErrorCode modWriteHandler::jsonParserForOnDemandRequest(cJSON *root,
 /**
  * Create write listener
  */
-void modWriteHandler::createWriteListener()
+void onDemandHandler::createOnDemandListener()
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
 	std::vector<std::string> stTopics = PublishJsonHandler::instance().getSubTopicList();
-	//for(auto sTopic : stTopics)
 	for(std::vector<std::string>::iterator it = stTopics.begin(); it != stTopics.end(); ++it)
 	{
 		if(it->empty()) {
 			CLogger::getInstance().log(ERROR, LOGDETAILS("SubTopics are not configured"));
 			continue;
 		}
-		std::thread(&modWriteHandler::subscribeDeviceListener, this, *it).detach();
+		std::thread(&onDemandHandler::subscribeDeviceListener, this, *it).detach();
 	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
@@ -636,9 +672,9 @@ void modWriteHandler::createWriteListener()
  * Return single instance of this class
  * @return
  */
-modWriteHandler& modWriteHandler::Instance()
+onDemandHandler& onDemandHandler::Instance()
 {
-	static modWriteHandler _self;
+	static onDemandHandler _self;
 	return _self;
 }
 
@@ -648,7 +684,7 @@ modWriteHandler& modWriteHandler::Instance()
  * @param stTopic:	[in] received topic
  * @param bIsWrite:	[in] flag to distinguish between read and write request
  */
-bool modWriteHandler::processMsg(msg_envelope_t *msg, std::string stTopic, long lPriority)
+bool onDemandHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
 {
 	msg_envelope_serialized_part_t* parts = NULL;
 	int num_parts = 0;
@@ -671,19 +707,18 @@ bool modWriteHandler::processMsg(msg_envelope_t *msg, std::string stTopic, long 
 	{
 		if(NULL != parts[0].bytes)
 		{
-			struct stRequest stWriteRequestNode;
+			struct stRequest stRequestNode;
 			std::string strMsg(parts[0].bytes);
 
-			stWriteRequestNode.m_strTopic = stTopic;
-			stWriteRequestNode.m_strMsg = strMsg;
-			stWriteRequestNode.m_lPriority = lPriority;
+			stRequestNode.m_strTopic = stTopic;
+			stRequestNode.m_strMsg = strMsg;
 
 			string initiate = " on-demand request initiated for msg:: ";
 			initiate.append(strMsg);
 
 			CLogger::getInstance().log(INFO, LOGDETAILS(initiate));
 			/// pushing write request to q to process.
-			pushToWriteTCPQueue(stWriteRequestNode);
+			onDemandInfoHandler(stRequestNode);
 
 			bRet = true;
 		}
@@ -719,7 +754,7 @@ bool modWriteHandler::processMsg(msg_envelope_t *msg, std::string stTopic, long 
  * Subscribe to device listener
  * @param stTopic	:[in] topic to subscribe
  */
-void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
+void onDemandHandler::subscribeDeviceListener(const std::string stTopic)
 {
 	msg_envelope_t *msg = NULL;
 	msgbus_ret_t ret;
@@ -730,19 +765,6 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 
 	try
 	{
-		string strSearchString = "_";
-		long lPriority;
-		std::size_t found = stTopic.find_last_of(strSearchString);
-		string tempTopic = stTopic.substr(found+1, stTopic.length());
-		string strToCompare = "WriteRequest";
-		bool bCompareVal =  std::equal(tempTopic.begin(), tempTopic.end(),
-				strToCompare.begin(),
-	            [](char a, char b) {
-	                return tolower(a) == tolower(b);
-	            });
-
-		lPriority = bCompareVal ? ON_DEMAND_WRITE_PRIORITY : ON_DEMAND_READ_PRIORITY;
-
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(stTopic);
 		zmq_handler::stZmqSubContext stsub_ctx = zmq_handler::getSubCTX(stTopic);
 
@@ -757,93 +779,11 @@ void modWriteHandler::subscribeDeviceListener(const std::string stTopic)
 			}
 
 			/// process messages
-			processMsg(msg, stTopic, lPriority);
+			processMsg(msg, stTopic);
 		}
 	}
 	catch(const std::exception& e)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
 	}
-}
-
-/**
- * Push write request to TCP queue
- * @param stWriteRequestNode
- * @return 	true : on success,
- * 			false : on error
- */
-bool modWriteHandler::pushToWriteTCPQueue(struct stRequest &stWriteRequestNode)
-{
-	try
-	{
-		std::lock_guard<std::mutex> lock(__writeReqMutex);
-		stackTCPWriteReqQ.push(stWriteRequestNode);
-		// Signal thread to process
-		sem_post(&semaphoreWriteReq);
-
-		return true;
-	}
-	catch(const std::exception& e)
-	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-	}
-
-	return false;
-}
-
-/**
- * Initialize write handler threads
- */
-void modWriteHandler::initWriteHandlerThreads()
-{
-	static bool bWriteSpawned = false;
-	try
-	{
-		if(false == bWriteSpawned)
-		{
-			// Spawn 5 thread to process write request
-			//for (int i = 0; i < 5; i++)
-			{
-				std::thread{std::bind(&modWriteHandler::onDemandInfoHandler, std::ref(*this))}.detach();
-			}
-			bWriteSpawned = true;
-		}
-	}
-	catch(const std::exception& e)
-	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-	}
-}
-
-/**
- * Get data to process from queue
- * @param stWriteProcessNode :[out] request to process
- * @return 	true : on success,
- * 			false : on error
- */
-bool modWriteHandler::getDataToProcess(struct stRequest &stWriteProcessNode)
-{
-	CLogger::getInstance().log(ERROR, LOGDETAILS("Start"));
-	bool retvalue = false;
-	try
-	{
-		std::lock_guard<std::mutex> lock(__writeReqMutex);
-		if(stackTCPWriteReqQ.empty())
-		{
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("Response queue is empty"));
-			return false;
-		}
-		stWriteProcessNode = stackTCPWriteReqQ.top();
-		stackTCPWriteReqQ.pop();
-
-		retvalue = true;
-	}
-	catch(const std::exception& e)
-	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		retvalue = false;
-	}
-
-	CLogger::getInstance().log(ERROR, LOGDETAILS("End"));
-	return retvalue;
 }

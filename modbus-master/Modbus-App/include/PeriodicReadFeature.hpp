@@ -18,6 +18,7 @@
 #include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
 #include <functional>
+#include "PeriodicRead.hpp"
 
 //#define QOS         1
 //#define TIMEOUT     10000L
@@ -39,6 +40,12 @@ class CTimeRecord
 	std::atomic<uint32_t> m_u32Interval; // in milliseconds
 	std::atomic<uint32_t> m_u32RemainingInterval; // in milliseconds
 	
+	// Cut-off interval
+	std::atomic<uint32_t> m_u32CutoffInterval; // in milliseconds
+	std::atomic<uint32_t> m_u32RemainingCutoffInterval; // in milliseconds
+	std::atomic<bool> m_bIsPollingNow; // Flag is true when polling counter is zero
+	std::atomic<bool> m_bIsCutoffNow; // Flag is true when cutoff counter is zero
+
 	std::vector<CRefDataForPolling> m_vPolledPoints;
 	std::vector<CRefDataForPolling> m_vPolledPointsRT;
 	std::mutex m_vectorMutex;
@@ -47,11 +54,6 @@ class CTimeRecord
 
 	public:
 	CTimeRecord(uint32_t a_u32Interval, CRefDataForPolling &a_oPoint);
-	/*: m_u32Interval(a_u32Interval), m_u32RemainingInterval(a_u32Interval),
-	  m_bIsRTAvailable(false), m_bIsNonRTAvailable(false)
-	{
-		m_vPolledPoints.push_back(a_oPoint);
-	}*/
 
 	CTimeRecord(CTimeRecord &a_oTimeRecord)
 	: m_vPolledPoints(a_oTimeRecord.m_vPolledPoints), m_vPolledPointsRT(a_oTimeRecord.m_vPolledPointsRT),
@@ -59,19 +61,66 @@ class CTimeRecord
 	{
 		m_u32Interval.store(a_oTimeRecord.m_u32Interval);
 		m_u32RemainingInterval.store(a_oTimeRecord.m_u32Interval);
+
+		m_u32CutoffInterval.store(a_oTimeRecord.m_u32CutoffInterval);
+		m_u32RemainingCutoffInterval.store(a_oTimeRecord.m_u32RemainingCutoffInterval);
 	}
 	
 	~CTimeRecord();
-	uint32_t decrementTime(uint32_t a_uiMSec)
+	void decrementTimerCounters(uint32_t a_uiMSec)
 	{
+		// Assign default values to flags
+		m_bIsPollingNow.store(false);
+		m_bIsCutoffNow.store(false);
+
+		// Decrement counters
 		m_u32RemainingInterval -= a_uiMSec;
+		m_u32RemainingCutoffInterval -= a_uiMSec;
+
+		// Check if cutoff timer is arrived
+		if (0 >= m_u32RemainingCutoffInterval)
+		{
+			// This is cutoff moment. Set the flag
+			m_bIsCutoffNow.store(true);
+			// For now, reload the cutoff timer counter with higher than polling frequency
+			// This will be reset with proper value once polling frequency is hit
+			m_u32RemainingCutoffInterval.store(m_u32Interval*2);
+		}
+		// Check if polling timer is arrived
 		if (0 >= m_u32RemainingInterval)
 		{
+			// This is polling moment. Set the flag
+			m_bIsPollingNow.store(true);
+			// Reload the timer counter
 			m_u32RemainingInterval.store(m_u32Interval);
-			return 0;
+			// Load the cutoff counter bcoz polling frequency is hit !
+			m_u32RemainingCutoffInterval.store(m_u32CutoffInterval);
 		}
-		//cout << "Remaining time to send request is :: "<<m_u32RemainingInterval<<endl;
-		return m_u32RemainingInterval;
+	}
+	bool isCutoffNow()
+	{
+		return m_bIsCutoffNow.load();
+	}
+	bool isPollingNow()
+	{
+		return m_bIsPollingNow.load();
+	}
+	uint32_t getIntervalTimerCounter()
+	{
+		return m_u32RemainingInterval.load();
+	}
+	uint32_t getCutoffIntervalTimerCounter()
+	{
+		return m_u32RemainingCutoffInterval.load();
+	}
+
+	uint32_t getInterval()
+	{
+		return m_u32Interval;
+	}
+	uint32_t getCutoffInterval()
+	{
+		return m_u32CutoffInterval;
 	}
 	std::vector<CRefDataForPolling>& getPolledPointList()
 	{
@@ -104,7 +153,6 @@ class CTimeMapper
 	// Default constructor
 	CTimeMapper();
 	
-	//void ioPeriodicReadTimer(int v);
 	uint32_t gcd(uint32_t num1, uint32_t num2);
 
 	public:
@@ -115,19 +163,22 @@ class CTimeMapper
 		return timeMapper;
 	}
 	void ioPeriodicReadTimer(int v);
-	//static void timerThreadFunc(const boost::system::error_code& e, boost::asio::steady_timer* t);
 	void checkTimer(uint32_t a_uiInterval);
 	void initTimerFunction();
 
 	~CTimeMapper();
-	std::vector<CRefDataForPolling>& getPolledPointList(uint32_t uiRef)
+	std::vector<CRefDataForPolling>& getPolledPointList(uint32_t uiRef, bool a_bIsRT)
 	{
+		if(true == a_bIsRT)
+		{
+			return m_mapTimeRecord.at(uiRef).getPolledPointListRT();
+		}
 		return m_mapTimeRecord.at(uiRef).getPolledPointList();
 	}
-	std::vector<CRefDataForPolling>& getPolledPointListRT(uint32_t uiRef)
+	/*std::vector<CRefDataForPolling>& getPolledPointListRT(uint32_t uiRef)
 	{
 		return m_mapTimeRecord.at(uiRef).getPolledPointListRT();
-	}
+	}*/
 	bool insert(uint32_t a_uTime, CRefDataForPolling &a_oPoint);
 
 	uint32_t getMinTimerFrequency();
@@ -143,27 +194,26 @@ private:
 	CRequestInitiator();
 
 	void threadReqInit(bool isRTPoint);
+	void threadCheckCutoffRespInit(bool isRTPoint);
 
-	void initiateRequest(std::vector<CRefDataForPolling>&);
+	void initiateRequest(std::vector<CRefDataForPolling>&, bool isRTRequest);
 
 	std::atomic<unsigned int> m_uiIsNextRequest;
-	//std::vector<std::string> m_vsPrevPendingRequests;
-	//std::mutex m_mutexPrevReqVector;
-	sem_t semaphoreReqProcess;
-	sem_t semaphoreRTReqProcess;
+	sem_t semaphoreReqProcess, semaphoreRespProcess;
+	sem_t semaphoreRTReqProcess, semaphoreRTRespProcess;
 
-	std::map<unsigned short, CRefDataForPolling> m_mapTxIDReqData;
+	std::map<unsigned short, std::reference_wrapper<CRefDataForPolling>> m_mapTxIDReqData;
 	/// mutex for operation on m_mapTxIDReqData map
 	std::mutex m_mutextTxIDMap;
 
 	bool init();
-	bool sendRequest(CRefDataForPolling a_stRdPrdObj, uint16_t &m_u16TxId);
+	bool sendRequest(CRefDataForPolling &a_stRdPrdObj, uint16_t &m_u16TxId, bool isRTRequest);
 
-	std::queue <uint32_t> m_qReqFreq;
-	std::queue <uint32_t> m_qReqFreqRT;
-	std::mutex m_mutexReqFreqQ;
-	bool getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT);
-	bool pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_objTimeRecord);
+	std::queue <uint32_t> m_qReqFreq, m_qRespFreq;
+	std::queue <uint32_t> m_qReqFreqRT, m_qRespFreqRT;
+	std::mutex m_mutexReqFreqQ, m_mutexRespFreqQ;
+	bool getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT, bool a_bIsReq);
+	bool pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq);
 
 public:
 	~CRequestInitiator();
@@ -175,12 +225,12 @@ public:
 		return self;
 	}
 
-	void initiateRequests(uint32_t a_uiRef, CTimeRecord &a_objTimeRecord);
+	void initiateMessages(uint32_t a_uiRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq);
 
-	CRefDataForPolling getTxIDReqData(unsigned short);
+	CRefDataForPolling& getTxIDReqData(unsigned short);
 
 	// function to insert new entry in map
-	void insertTxIDReqData(unsigned short, CRefDataForPolling);
+	void insertTxIDReqData(unsigned short, CRefDataForPolling&);
 
 	// function to remove entry from the map once reply is sent
 	void removeTxIDReqData(unsigned short);
@@ -194,6 +244,12 @@ public:
 	}
 };
 
+struct stLastGoodResponse
+{
+	std::string m_sValue;
+	stTimeStamps m_objStackTimestamps;
+};
+
 class CRefDataForPolling
 {
 	const network_info::CUniqueDataPoint& m_objDataPoint;
@@ -201,22 +257,43 @@ class CRefDataForPolling
 	const struct zmq_handler::stZmqPubContext& m_objPubContext;
 
 	uint8_t m_uiFuncCode;
-	//CRefDataForPolling& operator=(const CRefDataForPolling&) = delete;	// Copy assign
+
+	std::atomic<bool> m_bIsRespPosted;
+
+	std::atomic<bool> m_bIsLastRespAvailable;
+	stLastGoodResponse m_oLastGoodResponse;
+	std::mutex m_mutexLastResp;
+
+	std::atomic<uint16_t> m_uReqTxID;
 
 	public:
-	CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, struct stZmqContext& a_objBusContext, struct stZmqPubContext& a_objPubContext, uint8_t a_uiFuncCode) :
-				m_objDataPoint{a_objDataPoint}, m_objBusContext{a_objBusContext}, m_objPubContext{a_objPubContext}, m_uiFuncCode{a_uiFuncCode}
+	CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, struct stZmqContext& a_objBusContext, struct stZmqPubContext& a_objPubContext, uint8_t a_uiFuncCode);
+
+	CRefDataForPolling(const CRefDataForPolling &);
+
+	bool isResponsePosted()
 	{
-		//std::cout << "\nin CRefDataForPolling ctor";
+		return m_bIsRespPosted.load();
+	}
+
+	void setResponsePosted(bool a_bIsPosted)
+	{
+		m_bIsRespPosted.store(a_bIsPosted);
 	}
 
 	uint8_t getFunctionCode() {return m_uiFuncCode;}
-	//const CUniqueDataPoint & getDataPoint() {return m_objDataPoint;}
-	//const struct stZmqContext & getBusContext() {return m_objBusContext;}
 
 	const CUniqueDataPoint & getDataPoint() const {return m_objDataPoint;}
 	const struct stZmqContext & getBusContext() const {return m_objBusContext;}
 	const struct stZmqPubContext & getPubContext() const {return m_objPubContext;}
+
+	bool saveGoodResponse(const std::string a_sValue, stTimeStamps a_objStackTimestamps);
+	stLastGoodResponse getLastGoodResponse();
+
+	uint16_t getReqTxID() { return m_uReqTxID.load(); };
+	void setReqTxID(uint16_t a_uTxID) { m_uReqTxID.store(a_uTxID); };
+
+	bool isLastRespAvailable() const {return m_bIsLastRespAvailable.load();};
 };
 
 /**

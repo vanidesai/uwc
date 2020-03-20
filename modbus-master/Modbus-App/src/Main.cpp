@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.2.0"
+#define APP_VERSION "0.0.2.2a"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -73,7 +73,6 @@ void populatePollingRefData()
 		}
 		try
 		{
-
 			std::string sTopic = PublishJsonHandler::instance().getPolledDataTopic();
 
 			temp = "Topic for context search: ";
@@ -81,7 +80,9 @@ void populatePollingRefData()
 
 			CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
-			std::cout << "Point to poll: " << a.getID() << ", " << iCount++ << std::endl;
+			std::cout << iCount++ << ". Point to poll: " << a.getID() << ", RT: "
+					<< a.getDataPoint().getPollingConfig().m_bIsRealTime << ", Freq: "
+					<< a.getDataPoint().getPollingConfig().m_uiPollFreq << std::endl;
 			zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX(sTopic);
 			zmq_handler::stZmqPubContext &pubCTX = zmq_handler::getPubCTX(sTopic);
 
@@ -112,6 +113,8 @@ void populatePollingRefData()
 			temp.append(to_string((unsigned)uiFuncCode));
 			temp.append(", frequency ");
 			temp.append(to_string(a.getDataPoint().getPollingConfig().m_uiPollFreq));
+			temp.append(", RT ");
+			temp.append(to_string(a.getDataPoint().getPollingConfig().m_bIsRealTime));
 
 			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
 		}
@@ -196,8 +199,8 @@ bool CommonUtils::readEnvVariable(const char *pEnvVarName, string &storeVal)
 bool CommonUtils::readCommonEnvVariables()
 {
 	bool bRetVal = false;
-	std::list<std::string> topicList{"PolledData", "ReadResponse", "WriteResponse",
-		"ReadRequest", "WriteRequest", "SITE_LIST_FILE_NAME", "DEV_MODE"};
+	std::list<std::string> topicList{"PolledData", "PolledData_RT", "ReadResponse", "ReadResponse_RT", "WriteResponse",
+		"WriteResponse_RT", "ReadRequest", "ReadRequest_RT", "WriteRequest", "WriteRequest_RT", "SITE_LIST_FILE_NAME", "DEV_MODE"};
 
 #ifdef REALTIME_THREAD_PRIORITY
 		topicList.push_back({"THREAD_PRIORITY", "THREAD_POLICY"});
@@ -219,10 +222,15 @@ bool CommonUtils::readCommonEnvVariables()
 	}
 
 	PublishJsonHandler::instance().setPolledDataTopic(envTopics.at("PolledData"));
+	PublishJsonHandler::instance().setPolledDataTopicRT(envTopics.at("PolledData_RT"));
 	PublishJsonHandler::instance().setSReadResponseTopic(envTopics.at("ReadResponse"));
+	PublishJsonHandler::instance().setSReadResponseTopicRT(envTopics.at("ReadResponse_RT"));
 	PublishJsonHandler::instance().setSWriteResponseTopic(envTopics.at("WriteResponse"));
+	PublishJsonHandler::instance().setSWriteResponseTopicRT(envTopics.at("WriteResponse_RT"));
 	PublishJsonHandler::instance().setSReadRequestTopic(envTopics.at("ReadRequest"));
+	PublishJsonHandler::instance().setSReadRequestTopicRT(envTopics.at("ReadRequest_RT"));
 	PublishJsonHandler::instance().setSWriteRequestTopic(envTopics.at("WriteRequest"));
+	PublishJsonHandler::instance().setSWriteRequestTopicRT(envTopics.at("WriteRequest_RT"));
 	PublishJsonHandler::instance().setSiteListFileName(envTopics.at("SITE_LIST_FILE_NAME"));
 
 #ifdef REALTIME_THREAD_PRIORITY
@@ -293,6 +301,22 @@ int main(int argc, char* argv[])
 			std::cout << "Required common env variables are not set.\n";
 			exit(1);
 		}
+
+		string cutOff;
+		if(!CommonUtils::readEnvVariable("CUTOFF_INTERVAL_PERCENTAGE", cutOff))
+		{
+			CLogger::getInstance().log(INFO, LOGDETAILS("CUTOFF_INTERVAL_PERCENTAGE env variables are not set."));
+			cout << "CUTOFF_INTERVAL_PERCENTAGE env variables are not set."<<endl;
+			std::cout << "setting it to default i.e. 90 \n";
+			CLogger::getInstance().log(INFO, LOGDETAILS("setting it to default i.e. 90"));
+			PublishJsonHandler::instance().setCutoffIntervalPercentage(90);
+		}
+		else
+		{
+			PublishJsonHandler::instance().setCutoffIntervalPercentage(atoi(cutOff.c_str()));
+		}
+		std::cout << "Cutoff is set to: "
+				<< PublishJsonHandler::instance().getCutoffIntervalPercentage() << std::endl;
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 
@@ -412,7 +436,7 @@ int main(int argc, char* argv[])
 		cout << "Modbus container application is set to RTU mode.." << endl;
 #endif
 
-		if(false == modWriteHandler::Instance().isWriteInitialized())
+		if(false == onDemandHandler::Instance().isWriteInitialized())
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("modWriteHandler is not initialized"));
 		}
@@ -420,10 +444,8 @@ int main(int argc, char* argv[])
 		{
 			CLogger::getInstance().log(DEBUG, LOGDETAILS("modWriteHandler is properly initialized"));
 			/// Write request initializer thread.
-			modWriteHandler::Instance().initWriteHandlerThreads();
+			onDemandHandler::Instance().createOnDemandListener();
 		}
-		/// listening thread for write
-		modWriteHandler::Instance().createWriteListener();
 
 		// ZMQ contexts are built
 		// Network device data and unique point data are also available
@@ -464,7 +486,7 @@ int main(int argc, char* argv[])
 
 		CLogger::getInstance().log(INFO, LOGDETAILS("Exiting the application gracefully."));
 		cout << "************************************************************************************************" <<endl;
-		cout << "********************** Exiting modbus container  ***********" <<endl;
+		cout << "********************** Exiting modbus container ***********" <<endl;
 		cout << "************************************************************************************************" <<endl;
 
 		return EXIT_SUCCESS;

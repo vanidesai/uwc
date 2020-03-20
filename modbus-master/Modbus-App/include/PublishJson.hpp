@@ -40,13 +40,19 @@ class PublishJsonHandler
 
 	// topic for publish
 	std::string m_sPolledDataTopic;
+	std::string m_sPolledDataTopic_RT;
 	std::string m_sReadResponseTopic;
+	std::string m_sReadResponseTopic_RT;
 	std::string m_sWriteResponseTopic;
+	std::string m_sWriteResponseTopic_RT;
 
 	// topic for subscription
 	std::string m_sReadRequestTopic;
 	std::string m_sWriteRequestTopic;
+	std::string m_sReadRequestTopic_RT;
+	std::string m_sWriteRequestTopic_RT;
 	std::string m_siteListFileName;
+	uint32_t u32CutoffIntervalPercentage;
 #ifdef REALTIME_THREAD_PRIORITY
 	int m_intThreadPolicy;
 	int m_intThreadPriority;
@@ -79,6 +85,22 @@ public:
 	}
 
 	/**
+	 * Retrieve polled data topic for realtime
+	 * @return polled data topic
+	 */
+	const std::string& getPolledDataTopicRT() const {
+		return m_sPolledDataTopic_RT;
+	}
+
+	/**
+	 * set polled data topic for realtime
+	 * @param sCommomPubTopic :[in] topic to set
+	 */
+	void setPolledDataTopicRT(const std::string &sCommomPubTopic) {
+		m_sPolledDataTopic_RT = sCommomPubTopic;
+	}
+
+	/**
 	 * get read request topic
 	 * @return read request topic
 	 */
@@ -92,6 +114,22 @@ public:
 	 */
 	void setSReadRequestTopic(const std::string &sReadRequestTopic) {
 		m_sReadRequestTopic = sReadRequestTopic;
+	}
+
+	/**
+	 * get read request topic for realtime
+	 * @return read request topic
+	 */
+	const std::string& getSReadRequestTopicRT() const {
+		return m_sReadRequestTopic_RT;
+	}
+
+	/**
+	 * set read request topic for realtime
+	 * @param sReadRequestTopic :[in] topic to set
+	 */
+	void setSReadRequestTopicRT(const std::string &sReadRequestTopic) {
+		m_sReadRequestTopic_RT = sReadRequestTopic;
 	}
 
 	/**
@@ -111,6 +149,22 @@ public:
 	}
 
 	/**
+	 * get read response topic
+	 * @return read response topic
+	 */
+	const std::string& getSReadResponseTopicRT() const {
+		return m_sReadResponseTopic_RT;
+	}
+
+	/**
+	 * set read response topic
+	 * @param sReadResponseTopic :[in] topic to set for read response
+	 */
+	void setSReadResponseTopicRT(const std::string &sReadResponseTopic) {
+		m_sReadResponseTopic_RT = sReadResponseTopic;
+	}
+
+	/**
 	 * get write request topic
 	 * @return write request topic
 	 */
@@ -127,6 +181,22 @@ public:
 	}
 
 	/**
+	 * get write request topic
+	 * @return write request topic
+	 */
+	const std::string& getSWriteRequestTopicRT() const {
+		return m_sWriteRequestTopic_RT;
+	}
+
+	/**
+	 * set write request topic
+	 * @param sWriteRequestTopic :[in] write request topic to set
+	 */
+	void setSWriteRequestTopicRT(const std::string &sWriteRequestTopic) {
+		m_sWriteRequestTopic_RT = sWriteRequestTopic;
+	}
+
+	/**
 	 * get write response topic
 	 * @return write response topic
 	 */
@@ -140,6 +210,22 @@ public:
 	 */
 	void setSWriteResponseTopic(const std::string &sWriteResponseTopic) {
 		m_sWriteResponseTopic = sWriteResponseTopic;
+	}
+
+	/**
+	 * get write response topic
+	 * @return write response topic
+	 */
+	const std::string& getSWriteResponseTopicRT() const {
+		return m_sWriteResponseTopic_RT;
+	}
+
+	/**
+	 * set write response topic
+	 * @param sWriteResponseTopic :[in] write response topic to set
+	 */
+	void setSWriteResponseTopicRT(const std::string &sWriteResponseTopic) {
+		m_sWriteResponseTopic_RT = sWriteResponseTopic;
 	}
 
 	/**
@@ -179,8 +265,8 @@ public:
 	 */
 	unsigned short getTxId()
 	{
-		m_u16TxId++;
-		return m_u16TxId;
+		return ++m_u16TxId;
+		//return m_u16TxId.load();
 	}
 
 	/**
@@ -271,6 +357,14 @@ public:
 
 	void set_thread_priority();
 #endif
+
+	uint32_t getCutoffIntervalPercentage() const {
+		return u32CutoffIntervalPercentage;
+	}
+
+	void setCutoffIntervalPercentage(uint32_t cutoffIntervalPercentage) {
+		u32CutoffIntervalPercentage = cutoffIntervalPercentage;
+	}
 };
 
 

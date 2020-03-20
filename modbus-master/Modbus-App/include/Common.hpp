@@ -192,6 +192,25 @@ typedef enum MbusResponseType
 	MBUS_RESPONSE_ONDEMAND,
 }eMbusResponseType;
 
+enum eMbusRequestType
+{
+	MBUS_REQUEST_NONE,
+	MBUS_REQUEST_READ,
+	MBUS_REQUEST_READRT,
+	MBUS_REQUEST_WRITE,
+	MBUS_REQUEST_WRITERT,
+};
+
+enum eMbusCallbackType
+{
+	MBUS_CALLBACK_POLLING,
+	MBUS_CALLBACK_POLLING_RT,
+	MBUS_CALLBACK_ONDEMAND_READ,
+	MBUS_CALLBACK_ONDEMAND_READ_RT,
+	MBUS_CALLBACK_ONDEMAND_WRITE,
+	MBUS_CALLBACK_ONDEMAND_WRITE_RT,
+};
+
 struct stOnDemandRequest
 {
 	std::string m_strAppSeq;
@@ -203,6 +222,7 @@ struct stOnDemandRequest
 	bool m_isByteSwap;
 	bool m_isWordSwap;
 	bool m_isRT;
+	//bool m_isWrite;
 	struct timespec m_obtReqRcvdTS;
 	long m_lPriority;
 };
@@ -211,7 +231,10 @@ struct stOnDemandRequest
 uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 								MbusAPI_t *pstMbusApiPram,void* vpCallBackFun);
 
-void ModbusMaster_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
+void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
+void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
+void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
+void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
 
 using std::string;
 #include <string>
@@ -235,7 +258,7 @@ bool insertOnDemandReqData(unsigned short, stOnDemandRequest);
 void removeOnDemandReqData(unsigned short);
 }
 
-class modbusInterface
+/*class modbusInterface
 {
 	public :
 		/// function to process or call stack APIs
@@ -246,7 +269,7 @@ class modbusInterface
 
 		}
 
-};
+};*/
 
 
 #endif /* INCLUDE_INC_COMMON_HPP_ */

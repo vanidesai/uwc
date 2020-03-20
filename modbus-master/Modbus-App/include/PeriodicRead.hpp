@@ -42,6 +42,7 @@ struct stStackResponse
 	long m_lPriority;
 	uint8_t  m_u8FunCode;
 	eMbusResponseType m_operationType;
+	string m_strResponseTopic;
 };
 
 class CRefDataForPolling; 
@@ -49,20 +50,35 @@ class CRefDataForPolling;
 // class for Read periodic
 class CPeriodicReponseProcessor{
 private:
-	std::queue <stStackResponse> stackResQ;
-	std::mutex __resQMutex;
-	sem_t semaphoreRespProcess;
+	std::queue <stStackResponse> stackPollingResQ;
+	std::queue <stStackResponse> stackRTPollingResQ;
+	std::queue <stStackResponse> stackOnDemandReadResQ;
+	std::queue <stStackResponse> stackOnDemandRTReadResQ;
+	std::queue <stStackResponse> stackOnDemandWriteResQ;
+	std::queue <stStackResponse> stackOnDemandRTWriteResQ;
+	std::mutex __resQPollingMutex;
+	std::mutex __resQRTPollingMutex;
+	std::mutex __resQODReadMutex;
+	std::mutex __resQODRTReadMutex;
+	std::mutex __resQODWriteMutex;
+	std::mutex __resQODRTWriteMutex;
+	sem_t semPollingRespProcess;
+	sem_t semRTPollingRespProcess;
+	sem_t semODReadRespProcess;
+	sem_t semRTODReadRespProcess;
+	sem_t semODWriteRespProcess;
+	sem_t semRTODWriteRespProcess;
 	bool m_bIsInitialized;
 
-	BOOLEAN pushToQueue(struct stStackResponse &stStackResNode);
-	BOOLEAN getDataToProcess(struct stStackResponse &a_stStackResNode);
+	BOOLEAN pushToQueue(struct stStackResponse &stStackResNode, eMbusCallbackType operationCallbackType);
+	BOOLEAN getDataToProcess(struct stStackResponse &a_stStackResNode, eMbusCallbackType operationCallbackType);
 
 	BOOLEAN prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp);
 	BOOLEAN postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData);
 	BOOLEAN postResponseJSON(stStackResponse& a_stResp);
 
 	BOOLEAN initSem();
-	eMbusStackErrorCode respProcessThreads();
+	eMbusStackErrorCode respProcessThreads(eMbusCallbackType operationCallbackType);
 
 	CPeriodicReponseProcessor();
 	CPeriodicReponseProcessor(CPeriodicReponseProcessor const&);             /// copy constructor is private
@@ -70,10 +86,14 @@ private:
 
 public:
 	static CPeriodicReponseProcessor& Instance();
-	void handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, eMbusResponseType respType);
+	void handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams,
+						eMbusResponseType respType,
+						eMbusCallbackType operationCallbackType,
+						string strResponseTopic);
 	bool isInitialized() {return m_bIsInitialized;}
 	void initRespHandlerThreads();
-	BOOLEAN postDummyBADResponse(const CRefDataForPolling& a_objReqData, const stException_t m_stException);
+	BOOLEAN postDummyBADResponse(CRefDataForPolling& a_objReqData, const stException_t m_stException);
+	bool postLastResponseForCutoff(CRefDataForPolling& a_objReqData);
 };
 
 eMbusStackErrorCode SubscibeOrUnSubPeriodicRead(RestRdPeriodicTagPart_t &lRdPeridList);

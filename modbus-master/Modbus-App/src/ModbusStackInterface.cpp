@@ -25,26 +25,111 @@ std::mutex g_RWCommonCallbackMutex;
 /**
  *
  * DESCRIPTION
- * Function is used as application layer callback
+ * Function is used as application layer callback for on-demand read
  * for read/write coils,input register
  *
  * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
  * @return void nothing
  *
  */
-void ModbusMaster_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
+void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	if(pstMbusAppCallbackParams == NULL)
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null"));
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null for on-demand read"));
 		return;
 	}
 
-	eMbusResponseType respType = MBUS_RESPONSE_ONDEMAND;
+	// handle response
+	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
+															MBUS_RESPONSE_ONDEMAND,
+															MBUS_CALLBACK_ONDEMAND_READ,
+															PublishJsonHandler::instance().getSReadResponseTopic());
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+}
+
+/**
+ *
+ * DESCRIPTION
+ * Function is used as application layer callback for realtime on-demand read
+ * for read/write coils,input register
+ *
+ * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
+ * @return void nothing
+ *
+ */
+void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	if(pstMbusAppCallbackParams == NULL)
+	{
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null for realtime on-demand read"));
+		return;
+	}
 
 	// handle response
-	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams, respType);
+	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
+															MBUS_RESPONSE_ONDEMAND,
+															MBUS_CALLBACK_ONDEMAND_READ_RT,
+															PublishJsonHandler::instance().getSReadResponseTopicRT());
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+}
+
+/**
+ *
+ * DESCRIPTION
+ * Function is used as application layer callback for on-demand write
+ * for read/write coils,input register
+ *
+ * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
+ * @return void nothing
+ *
+ */
+void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	if(pstMbusAppCallbackParams == NULL)
+	{
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null for on-demand write"));
+		return;
+	}
+
+	// handle response
+	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
+														MBUS_RESPONSE_ONDEMAND,
+														MBUS_CALLBACK_ONDEMAND_WRITE,
+														PublishJsonHandler::instance().getSWriteResponseTopic());
+
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+}
+
+/**
+ *
+ * DESCRIPTION
+ * Function is used as application layer callback for realtime on-demand write
+ * for read/write coils,input register
+ *
+ * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
+ * @return void nothing
+ *
+ */
+void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	if(pstMbusAppCallbackParams == NULL)
+	{
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null for realtime on-demand write"));
+		return;
+	}
+
+	// handle response
+	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
+														MBUS_RESPONSE_ONDEMAND,
+														MBUS_CALLBACK_ONDEMAND_WRITE_RT,
+														PublishJsonHandler::instance().getSWriteResponseTopicRT());
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
@@ -219,7 +304,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
  * @return uint8_t		[out] return 0 on success
  *
  */
-uint8_t modbusInterface::MbusApp_Process_Request(RestMbusReqGeneric_t *pstMbusReqGen)
+/*uint8_t modbusInterface::MbusApp_Process_Request(RestMbusReqGeneric_t *pstMbusReqGen)
 {
 	MbusAPI_t stMbusApiPram = {};
 	uint8_t u8ReturnType = MBUS_JSON_APP_ERROR_NULL_POINTER;
@@ -249,4 +334,4 @@ uint8_t modbusInterface::MbusApp_Process_Request(RestMbusReqGeneric_t *pstMbusRe
 		}
 	}
 	return u8ReturnType;
-}
+}*/
