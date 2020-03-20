@@ -124,7 +124,8 @@ TEST_F(CWellSiteDevInfo_ut, getID_ForInvalidYml) {
 //*/
 
 #if 1 // To be updated later
-TEST_F(CWellSiteDevInfo_ut, build_NoId) {
+TEST_F(CWellSiteDevInfo_ut, build_NoId)
+{
 
 	try
 	{
@@ -193,7 +194,8 @@ Test: Behaviour of CWellSiteDevInfo::build when below is true in .yml file:
 CWellSiteDevInfo_ut::build_ForMissingField should throw an exception "Id key not found"
 */
 
-TEST_F(CWellSiteDevInfo_ut, build_ForMissingField) {
+TEST_F(CWellSiteDevInfo_ut, build_ForMissingField)
+{
 /*
 	std::string path("/Device_Config/PL1.yml");
 	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
@@ -228,16 +230,13 @@ TEST_F(CWellSiteDevInfo_ut, build_ForMissingField) {
 
 
 
-/*
+TEST_F(CWellSiteDevInfo_ut, build_ForMissingField_iPadd_TCP)
+{
 
-TEST_F(CWellSiteDevInfo_ut, build_ForMissingField_iPadd_TCP) {
-
-	std::string path("/Device_Config/PL1.yml");
-	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
-	std::string sYamlStr(cEtcdValue);
-	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);
 
 	baseNode = CommonUtils::loadYamlFile("PL1.yml");
+
+
 	for( auto test : baseNode)
 	{
 		if(test.second.IsSequence() && test.first.as<std::string>() == "devicelist")
@@ -261,22 +260,16 @@ TEST_F(CWellSiteDevInfo_ut, build_ForMissingField_iPadd_TCP) {
 
 }
 
-*/
+
 
 
 /***Test: CWellSiteDevInfo_ut::build_ForWrongYml in case of a wrong .yml file***/
 //CWellSiteDevInfo::build should throw an exception "Id key not found"
 
-TEST_F(CWellSiteDevInfo_ut, build_ForWrongYml) {
-
+TEST_F(CWellSiteDevInfo_ut, build_ForWrongYml)
+{
 	try
 	{
-		/*//baseNode = CommonUtils::loadYamlFile("site_list.yaml");
-		std::string path("/Device_Config/site_list.yaml");
-		const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
-		std::string sYamlStr(cEtcdValue);
-		baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
-
 		baseNode = CommonUtils::loadYamlFile("site_list.yaml");
 
 
@@ -304,7 +297,8 @@ TEST_F(CWellSiteDevInfo_ut, build_ForWrongYml) {
 //Test: Behaviour of CWellSiteDevInfo::build when any integer value is set as string"
 //getAddressInfo should return structure, updated with .yml file information.
 
-TEST_F(CWellSiteDevInfo_ut, build_wrongDataType) {
+TEST_F(CWellSiteDevInfo_ut, build_wrongDataType)
+{
 
 	//baseNode = CommonUtils::loadYamlFile("PLwrongDataType.yml");
 	std::string path("/Device_Config/PL1.yml");
@@ -341,7 +335,8 @@ build() function should throw an exception: "Required keys not found in . . ."
 Test: Behaviour of CWellSiteDevInfo::getAddressInfo when .yml file is "PROTOCOL_RTU"
 getAddressInfo should return structure, updated with .yml file information.
 */
-TEST_F(CWellSiteDevInfo_ut, buildReturnValueRTU) {
+TEST_F(CWellSiteDevInfo_ut, buildReturnValueRTU)
+{
 
 	std::string path("/Modbus-RTU-Master/config/Device_Config/PL0.yml");
 	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());

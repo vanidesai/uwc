@@ -136,6 +136,7 @@ TEST_F(CMQTTHandler_ut, pushMsgInQ)
 }
 #endif
 
+
 TEST_F(CMQTTHandler_ut, publish_ValMsg)
 {
 	string PubTpoic = "PubTopics";
@@ -143,7 +144,9 @@ TEST_F(CMQTTHandler_ut, publish_ValMsg)
 	struct timespec tsMsgRcvd;
 	timespec_get(&tsMsgRcvd, TIME_UTC);
 
-	bool retVal = CMQTTHandler::instance().publish(
+	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
+
+	bool retVal = CMQTTPublishHandler_obj.publish(
 			"{\"topic\": \"PL0_iou_write\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"1234\"}",
 			PubTpoic.c_str(),
 			0,
@@ -152,6 +155,7 @@ TEST_F(CMQTTHandler_ut, publish_ValMsg)
 	EXPECT_EQ(false, retVal);
 }
 
+
 TEST_F(CMQTTHandler_ut, publish_InValMsg)
 {
 	string PubTpoic = "PubTopics";
@@ -159,7 +163,9 @@ TEST_F(CMQTTHandler_ut, publish_InValMsg)
 	struct timespec tsMsgRcvd;
 	timespec_get(&tsMsgRcvd, TIME_UTC);
 
-	bool retVal = CMQTTHandler::instance().publish(
+	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
+
+	bool retVal = CMQTTPublishHandler_obj.publish(
 			"InvalidMsg",
 			PubTpoic.c_str(),
 			0,
@@ -168,6 +174,7 @@ TEST_F(CMQTTHandler_ut, publish_InValMsg)
 	EXPECT_EQ(false, retVal);
 }
 
+
 TEST_F(CMQTTHandler_ut, publish_MsgEmpty)
 {
 	string PubTpoic = "";
@@ -175,7 +182,9 @@ TEST_F(CMQTTHandler_ut, publish_MsgEmpty)
 	struct timespec tsMsgRcvd;
 	timespec_get(&tsMsgRcvd, TIME_UTC);
 
-	bool retVal = CMQTTHandler::instance().publish(
+	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
+
+	bool retVal = CMQTTPublishHandler_obj.publish(
 			"",
 			PubTpoic.c_str(),
 			0,
@@ -191,7 +200,9 @@ TEST_F(CMQTTHandler_ut, publish_TopicEmp)
 	struct timespec tsMsgRcvd;
 	timespec_get(&tsMsgRcvd, TIME_UTC);
 
-	bool retVal = CMQTTHandler::instance().publish(
+	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
+
+	bool retVal = CMQTTPublishHandler_obj.publish(
 			"{\"topic\": \"PL0_iou_write\"}",
 			PubTpoic.c_str(),
 			0,
@@ -200,19 +211,94 @@ TEST_F(CMQTTHandler_ut, publish_TopicEmp)
 	EXPECT_EQ(false, retVal);
 }
 
-TEST_F(CMQTTHandler_ut, CleanUp_Success)
+#if 0 //Queue removed
+TEST_F(CMQTTHandler_ut, getSubReadMsgFromQ_Fails)
 {
-	try
+	bool RetVal = true;
+	mqtt::const_message_ptr recvdMsg;
+
+	RetVal = CMQTTHandler::instance().getSubReadMsgFromQ(recvdMsg);
+	EXPECT_EQ(false, RetVal);
+}
+#endif
+
+
+#if 0 //Queue removed
+TEST_F(CMQTTHandler_ut, getSubReadMsgFromQ_Success)
+{
+	bool RetVal = false;
+
+
+	mqtt::const_message_ptr msg = mqtt::make_message(
+			"{\"topic\": \"MQTT_Export_ReadRequest\"}",
+	            "{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"0\"}");
+
+	if( true == CMQTTHandler::instance().pushSubMsgInQ(msg) )
 	{
-		CMQTTHandler::instance().cleanup();
-		EXPECT_EQ(1, 1); //No crash
+		mqtt::const_message_ptr recvdMsg;
+
+		RetVal = CMQTTHandler::instance().getSubReadMsgFromQ(recvdMsg);
+		EXPECT_EQ(true, RetVal);
 	}
-	catch(exception &e)
+	else
 	{
-		cout<<endl<<"ERROR in CleanUp()"<<endl;
-		cout<<e.what();
-		EXPECT_EQ(1, 2); //Error
+		cout<<endl<<"#####################ERROR##########################"<<endl;
+		cout<<"Could not push sub message in Q."<<endl<<"Exiting this test case";
+		cout<<endl<<"####################################################"<<endl;
+
+		EXPECT_EQ(true, RetVal);
 	}
+
+}
+#endif
+
+/*TEST_F(CMQTTHandler_ut, getOperation_)
+{
+	bool RetVal = false;
+
+
+	mqtt::const_message_ptr msg = mqtt::make_message(
+			"{\"topic\": \"MQTT_Export_WriteRequest\"}",
+	            "{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"0\"}");
+
+	CMQTTHandler::instance().pushSubMsgInQ(msg);
+
+
+}*/
+
+#if 0 //Queue removed
+TEST_F(CMQTTHandler_ut, getSubWriteMsgFromQ_Fails)
+{
+	bool RetVal = true;
+	mqtt::const_message_ptr recvdMsg;
+
+	RetVal = CMQTTHandler::instance().getSubWriteMsgFromQ(recvdMsg);
+	EXPECT_EQ(false, RetVal);
+}
+#endif
+
+#if 0 //Queue removed
+TEST_F(CMQTTHandler_ut, getSubRTWriteMsgFromQ_Fails)
+{
+	bool RetVal = true;
+	mqtt::const_message_ptr recvdMsg;
+
+	RetVal = CMQTTHandler::instance().getSubRTWriteMsgFromQ(recvdMsg);
+	EXPECT_EQ(false, RetVal);
+}
+#endif
+
+// How to confirm??
+// Working on it..
+TEST_F(CMQTTHandler_ut, cleanup_Success)
+{
+	CMQTTHandler::instance().cleanup();
+
 }
 
+TEST_F(CMQTTHandler_ut, cleanup_1_Success)
+{
+	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
 
+	CMQTTPublishHandler_obj.cleanup();
+}

@@ -240,8 +240,8 @@ TEST_F(CWellSiteInfo_ut, addDevice_return) {
 
 /*Test: Behaviour of CWellSiteInfo::build when adddevice() function is unsuccessful.*/
 
-#if 1 // To be updated later
-TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
+TEST_F(CWellSiteInfo_ut, build_Adddevice_positive)
+{
 
 	try
 	{
@@ -259,10 +259,25 @@ TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 				{
 					network_info::CWellSiteDevInfo CWellSiteDevInfo_obj;
 					CWellSiteDevInfo_obj.build(node2, CWellSiteDevInfo_obj);
-					CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
+					int i32RetVal = CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
+					if(0 == i32RetVal)
+					{
+						string temp = " : Added device with id: ";
+						/* Network type mentioned in .yml file doesn't match with "g_eNetworkType" */
+						EXPECT_EQ(0, CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj));
+					}
+					else if(-1 == i32RetVal)
+					{
+						/* Network type mentioned in .yml file doesn't match with "g_eNetworkType" */
+						EXPECT_EQ(-1, CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj));
 
-					/* Network type mentioned in .yml file doesn't match with "g_eNetworkType" */
-					EXPECT_EQ(-1, CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj));
+					}
+					else if(-2 == i32RetVal)
+					{
+						/* Network type mentioned in .yml file doesn't match with "g_eNetworkType" */
+						EXPECT_EQ(-2, CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj));
+
+					}
 				}
 			}
 		}
@@ -277,7 +292,9 @@ TEST_F(CWellSiteInfo_ut, build_ErrInAdddevice) {
 		EXPECT_EQ("bad file", (string)e.what());
 	}
 }
-#endif // To be updated later
+
+
+
 
 /*Test: Behaviour of CWellSiteInfo::build when "id" is not present in yml file.*/
 

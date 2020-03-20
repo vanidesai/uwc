@@ -32,6 +32,7 @@ TEST_F(MQTTCallback_ut, connection_lost_causeNotEmpty)
 	 */
 }
 
+#if 0 // function removed
 TEST_F(MQTTCallback_ut, message_arrived_SuccessfullAdditionInQ)
 {
 
@@ -46,6 +47,23 @@ TEST_F(MQTTCallback_ut, message_arrived_SuccessfullAdditionInQ)
 	string rcvdTopic = recvdMsg->get_topic();
 
 	EXPECT_EQ(TestMsg, rcvdTopic);
+}
+#endif
+
+TEST_F(MQTTCallback_ut, connection_lost_causeNotEmpty_CSyncCallback)
+{
+	CSyncCallback CSyncCallback_obj;
+
+	CSyncCallback_obj.connection_lost(cause);
+
+}
+
+TEST_F(MQTTCallback_ut, connection_lost_causeEmpty_CSyncCallback)
+{
+	CSyncCallback CSyncCallback_obj;
+
+	CSyncCallback_obj.connection_lost("");
+
 }
 
 #if 0

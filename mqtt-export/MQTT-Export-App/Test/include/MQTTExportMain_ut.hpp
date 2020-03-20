@@ -27,8 +27,9 @@
 #include <string>
 
 #include "EISMsgbusHandler.hpp"
-#include "TopicMapper.hpp"
-#include "MQTTHandler.hpp"
+#include "Common.hpp"
+#include "MQTTSubscribeHandler.hpp"
+#include "../include/MQTTPublishHandler.hpp"
 #include "ConfigManager.hpp"
 #include "Logger.hpp"
 

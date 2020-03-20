@@ -70,80 +70,58 @@ TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_InvTopic) {
 }
 
 
-#if 0 // To be updated later
-TEST_F(CEISMsgbusHandler_ut, 2_manatory_param) {
+
+TEST_F(CEISMsgbusHandler_ut, getCTX_ValidTopic) {
 
 	stZmqContext msgbusContext;
-	string topic = "PL01_iou_write"; //topic exists
+	string topic = "Modbus_TCP_Master_ReadResponse"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getCTX(topic, msgbusContext);
 
 	EXPECT_EQ(true, retVal);
 }
-#endif
 
-TEST_F(CEISMsgbusHandler_ut, 3_manatory_param) {
+
+TEST_F(CEISMsgbusHandler_ut, getCTX_InvTopic) {
 
 	bool retVal = true;
 
 	stZmqContext msgbusContext;
-	string topic = "PL01_iou_write_test"; //topic does not exist
+	string topic = "InvalidTopic"; //topic does not exist
 	retVal = CEISMsgbusHandler::Instance().getCTX(topic, msgbusContext);
 
 	EXPECT_EQ(false, retVal);
 }
 
-#if 0 // To be updated later
-TEST_F(CEISMsgbusHandler_ut, 4_manatory_param) {
+
+TEST_F(CEISMsgbusHandler_ut, getPubCTX_ValTopic) {
 
 	stZmqPubContext pubContext;
-	string topic = "PL01_iou_write"; //topic exists
+	string topic = "MQTT_Export_ReadRequest"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getPubCTX(topic, pubContext);
 
 	EXPECT_EQ(true, retVal);
 }
-#endif
+
 
 TEST_F(CEISMsgbusHandler_ut, getPubCTX_InvTopic) {
 
 	bool retVal = true;
 
 	stZmqPubContext pubContext;
-	string topic = "PL01_iou_write_test"; //topic does not exist
+	string topic = "InvalidTopic"; //topic does not exist
 	retVal = CEISMsgbusHandler::Instance().getPubCTX(topic, pubContext);
 
 	EXPECT_EQ(false, retVal);
 }
 
-TEST_F(CEISMsgbusHandler_ut, getPubCTX_ValTopic)
-{
-
-	bool retVal = false;
-	bool isInserted = false;
-
-	stZmqPubContext pubContext;
-	string topic = "PL01_iou_write"; //topic exists
-
-	if( true == CEISMsgbusHandler::Instance().insertPubCTX(topic, pubContext) )
-	{
-		retVal = CEISMsgbusHandler::Instance().getPubCTX(topic, pubContext);
-		EXPECT_EQ(true, retVal);
-	}
-	else
-	{
-		cout<<endl<<"[UT Msg]:  >>>>>>>>>>>>>Error in insertPubCTX() for topic "<<topic;
-	}
-}
-
-#if 0 // To be updated later
-TEST_F(CEISMsgbusHandler_ut, 6_manatory_param) {
+TEST_F(CEISMsgbusHandler_ut, getSubCTX_ValTopic) {
 
 	stZmqSubContext subContext;
-	string topic = "PL0_flowmeter1"; //topic exists
+	string topic = "Modbus_TCP_Master_WriteResponse"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getSubCTX(topic, subContext);
 
 	EXPECT_EQ(true, retVal);
 }
-#endif
 
 TEST_F(CEISMsgbusHandler_ut, getSubCTX_InvTopic) {
 
@@ -192,15 +170,10 @@ TEST_F(CEISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
 		cout<<"Skipping this test case";
 		cout<<endl<<"###################################################"<<endl;
 	}
-
-	//re-inserting removed context in context map
-	//CEISMsgbusHandler::Instance().prepareCommonContext("sub");
 }
 
-#if 0
-/* ############################################################## */
-/* ############################################################## */
-TEST_F(CEISMsgbusHandler_ut, 8_manatory_param) {
+#if 0 //CONTAINER
+TEST_F(CEISMsgbusHandler_ut, insertSubCTX__) {
 
 	recv_ctx_t* sub_ctx = NULL;
 
@@ -232,8 +205,6 @@ TEST_F(CEISMsgbusHandler_ut, 8_manatory_param) {
 		EXPECT_EQ(true, isInserted);
 	}
 }
-/* ############################################################## */
-/* ############################################################## */
 #endif
 
 
@@ -256,7 +227,7 @@ TEST_F(CEISMsgbusHandler_ut, 11_manatory_param) {
 	}
 }
 
-
+#if 0 //CONTAINER
 TEST_F(CEISMsgbusHandler_ut, 12_manatory_param) {
 
 	try {
@@ -270,6 +241,7 @@ TEST_F(CEISMsgbusHandler_ut, 12_manatory_param) {
 		EXPECT_EQ(true, false);
 	}
 }
+#endif
 
 TEST_F(CEISMsgbusHandler_ut, 13_manatory_param) {
 
@@ -286,6 +258,7 @@ TEST_F(CEISMsgbusHandler_ut, 13_manatory_param) {
 	}
 }
 
+#if 0 //CONTAINER
 TEST_F(CEISMsgbusHandler_ut, 14_manatory_param) {
 
 	bool retVal;
@@ -315,10 +288,8 @@ TEST_F(CEISMsgbusHandler_ut, 14_manatory_param) {
 	retVal = CEISMsgbusHandler::Instance().getCTX(topic, context);
 	EXPECT_EQ(false, retVal); // getCTX should return false after context removal
 
-	CEISMsgbusHandler::Instance().cleanup();
-
 }
-
+#endif
 
 TEST_F(CEISMsgbusHandler_ut, RemoveCtxt) {
 

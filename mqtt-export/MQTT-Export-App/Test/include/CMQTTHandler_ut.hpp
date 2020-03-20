@@ -13,7 +13,8 @@
 
 #include <gtest/gtest.h>
 
-#include "MQTTHandler.hpp"
+#include "MQTTSubscribeHandler.hpp"
+#include "MQTTPublishHandler.hpp";
 
 class CMQTTHandler_ut  : public ::testing::Test{
 

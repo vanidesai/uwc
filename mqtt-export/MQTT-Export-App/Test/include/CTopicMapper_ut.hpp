@@ -13,7 +13,7 @@
 
 #include <gtest/gtest.h>
 //#include "../../include/TopicMapper.hpp"
-#include "TopicMapper.hpp"
+#include "Common.hpp"
 
 
 class CTopicMapper_ut : public ::testing::Test {

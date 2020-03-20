@@ -12,7 +12,7 @@
 #define MQTTCALLBACK_UT_HPP_
 
 #include "MQTTCallback.hpp"
-#include "MQTTHandler.hpp"
+#include "MQTTSubscribeHandler.hpp"
 #include <gtest/gtest.h>
 
 class MQTTCallback_ut : public ::testing::Test{

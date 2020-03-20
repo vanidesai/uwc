@@ -265,7 +265,9 @@ function runETCDContainer()
 {
 	cd $Current_Dir
 	chmod +x *.sh
-	docker rm -f ia_etcd ia_etcd_provision
+	docker ps -q --filter "name=ia_etcd" | grep -q . && docker stop ia_etcd && docker rm -f ia_etcd
+	docker ps -q --filter "name=ia_etcd_provision" | grep -q . && docker stop ia_etcd_provision && docker rm -f ia_etcd_provision
+	docker ps -q --filter "name=mqtt_test_container" | grep -q . && docker stop mqtt_test_container && docker rm -f mqtt_test_container
 	./02_provisionEIS.sh > /dev/null 2>&1
 	if [ "$?" -ne "0" ]; then
 		echo ${RED}"Provisioning is failed. ${NC}"
