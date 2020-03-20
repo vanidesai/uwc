@@ -216,6 +216,9 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 						sVal = common_Handler::swapConversion(vt,
 								a_objReqData->getDataPoint().getDataPoint().getAddress().m_bIsByteSwap,
 								a_objReqData->getDataPoint().getDataPoint().getAddress().m_bIsWordSwap);
+								
+						// save last known response
+						(const_cast<CRefDataForPolling*>(a_objReqData))->saveGoodResponse(sVal, a_stResp.m_objStackTimestamps);
 					}
 					else if(MBUS_RESPONSE_ONDEMAND == a_stResp.m_operationType)
 					{
@@ -223,9 +226,6 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 								onDemandReqData.m_isByteSwap,
 								onDemandReqData.m_isWordSwap);
 					}
-
-					// save last known response
-					(const_cast<CRefDataForPolling*>(a_objReqData))->saveGoodResponse(sVal, a_stResp.m_objStackTimestamps);
 
 					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(sVal.c_str());
 					msgbus_msg_envelope_put(msg, "value", ptValue);
