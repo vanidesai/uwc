@@ -232,6 +232,9 @@ public:
 	// function to insert new entry in map
 	void insertTxIDReqData(unsigned short, CRefDataForPolling&);
 
+	// function to check if a txid is present in a map
+	bool isTxIDPresent(unsigned short tokenId);
+
 	// function to remove entry from the map once reply is sent
 	void removeTxIDReqData(unsigned short);
 

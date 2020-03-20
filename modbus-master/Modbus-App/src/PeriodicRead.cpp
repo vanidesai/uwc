@@ -462,6 +462,8 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 			CRequestInitiator::instance().removeTxIDReqData(a_stResp.u16TransacID);
 			// Response is received. Reset response awaited status
 			objReqData.getDataPoint().setIsAwaitResp(false);
+			// reset txid
+			objReqData.setReqTxID(0);
 
 			postResponseJSON(a_stResp, &objReqData);
 
@@ -1152,8 +1154,18 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
 			stException_t m_stException = {};
 			m_stException.m_u8ExcCode = 100;
 			m_stException.m_u8ExcStatus = 100;
+			uint16_t lastTxID = objReqData.getReqTxID();
+			CLogger::getInstance().log(INFO,
+					LOGDETAILS("Post dummy response as response not received for - Point: " + objReqData.getDataPoint().getID()
+						+ ", LastTxID: " + to_string(lastTxID)));
 			CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException);
-			objReqData.getDataPoint().setIsAwaitResp(false);
+
+			if(false == CRequestInitiator::instance().isTxIDPresent(lastTxID))
+			{
+				CLogger::getInstance().log(INFO,
+					LOGDETAILS("TxID is not present in map.Resetting the response status"));
+				objReqData.getDataPoint().setIsAwaitResp(false);
+			}
 			continue;
 		}
 
@@ -1167,6 +1179,12 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
 			// generate the TX ID
 			uint16_t m_u16TxId = PublishJsonHandler::instance().getTxId();
 
+			// set txid
+			objReqData.setReqTxID(m_u16TxId);
+
+			CLogger::getInstance().log(INFO,
+				LOGDETAILS("Trying to send request for - Point: " + objReqData.getDataPoint().getID()
+					+ ", with TxID: " + to_string(m_u16TxId)));
 			// The entry is found in map
 			// Send a request
 			if (true == sendRequest(objReqData, m_u16TxId, isRTRequest))
@@ -1194,6 +1212,8 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
 
 				/// remove node from TxID map
 				CRequestInitiator::instance().removeTxIDReqData(m_u16TxId);
+				// reset txid
+				objReqData.setReqTxID(0);
 				CLogger::getInstance().log(ERROR, LOGDETAILS("sendRequest failed"));
 			}
 		}
@@ -1412,6 +1432,25 @@ CRefDataForPolling& CRequestInitiator::getTxIDReqData(unsigned short tokenId)
 
 	// return the request ID
 	return m_mapTxIDReqData.at(tokenId);
+}
+
+/**
+ * Check if a give txid is presnet in txid map
+ * @param tokenId	:[in] check request for request with token
+ * @return true: present, false: absent
+ */
+bool CRequestInitiator::isTxIDPresent(unsigned short tokenId)
+{
+	/// Ensure that only on thread can execute at a time
+	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+
+	// return the request ID
+	if(m_mapTxIDReqData.end() == m_mapTxIDReqData.find(tokenId))
+	{
+		// token id is not found
+		return false;
+	}
+	return true;
 }
 
 /**

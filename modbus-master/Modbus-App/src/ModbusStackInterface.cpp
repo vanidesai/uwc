@@ -150,10 +150,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 {
 	string temp; //temporary string for logging
 
-	temp = "Start: Function Code: ";
-	temp.append(to_string(u8FunCode));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-
 	uint8_t u8ReturnType = MBUS_JSON_APP_ERROR_NULL_POINTER;
 
 	if(pstMbusApiPram != NULL)
@@ -287,9 +283,9 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 		}
 	}
 
-	temp = "End: Return: ";
-	temp.append(to_string(u8ReturnType));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+	//temp = "End: Return: ";
+	//temp.append(to_string(u8ReturnType));
+	//CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
 	return u8ReturnType;
 }
