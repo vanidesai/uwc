@@ -125,10 +125,10 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLArgument_Data) {
 
 
 
-/* TC003
+/* TC003 // Need to check this test case once again
 Test: Behaviour of handleResponse() when pstException->m_u8ExcCode and pstException->m_u8ExcStatus both are 0
  */
-
+/*
 TEST_F(PeriodicRead_ut, handleResponse_ExcStatus_ExcCode_0) {
 
 
@@ -150,7 +150,7 @@ TEST_F(PeriodicRead_ut, handleResponse_ExcStatus_ExcCode_0) {
 
 	}
 
-}
+}*/
 
 ///* TC004
 //Test: Execution should not hang when pstException->m_u8ExcStatus or pstException->m_u8ExcCode is not equal to 0
@@ -214,6 +214,7 @@ TEST_F(PeriodicRead_ut, handleResponse_dataSizeLessThanNumOfBytes) {
 
 }
 #endif
+#endif
 /******************************PeriodicRead::isInitialized*****************************************/
 
 /* TC006
@@ -244,7 +245,7 @@ TEST_F(PeriodicRead_ut, isInitialized_RetTrue) {
 	 */
 
 }
-#if 0
+#if 1
 
 /******************************PeriodicRead::InitRespHandlerThreads****************************************
 TC007
@@ -778,4 +779,4 @@ TEST_F(PeriodicRead_ut, Start_timer)
 }
 #endif
 #endif
-#endif
+
