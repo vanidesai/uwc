@@ -31,7 +31,7 @@ TEST_F(CTopicMapper_ut, readEnvVariable_ReadSuccess)
 	std::string envVar = "";
 	bool bRetVal = CTopicMapper::getInstance().readEnvVariable("ReadRequest", envVar);
 
-	EXPECT_EQ("MQTT_Export_ReadRequest", envVar);
+	EXPECT_EQ("MQTT_Export_RdReq", envVar);
 
 }
 
@@ -120,17 +120,3 @@ TEST_F(CTopicMapper_ut, setStrReadRequest_SetstrCorrect)
 	EXPECT_EQ("SetStrForUT", str_temp);
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

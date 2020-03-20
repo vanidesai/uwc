@@ -32,23 +32,6 @@ TEST_F(MQTTCallback_ut, connection_lost_causeNotEmpty)
 	 */
 }
 
-#if 0 // function removed
-TEST_F(MQTTCallback_ut, message_arrived_SuccessfullAdditionInQ)
-{
-
-	mqtt::const_message_ptr msg = mqtt::make_message(TestMsg,
-			"PL0_iou_write");
-	mqtt::const_message_ptr recvdMsg;
-
-	CMQTTCallback_obj.message_arrived(msg);
-
-	/* Get message to check if msg was successfully pushed in queue */
-	CMQTTHandler::instance().getSubMsgFromQ(recvdMsg);
-	string rcvdTopic = recvdMsg->get_topic();
-
-	EXPECT_EQ(TestMsg, rcvdTopic);
-}
-#endif
 
 TEST_F(MQTTCallback_ut, connection_lost_causeNotEmpty_CSyncCallback)
 {
@@ -66,15 +49,3 @@ TEST_F(MQTTCallback_ut, connection_lost_causeEmpty_CSyncCallback)
 
 }
 
-#if 0
-TEST_F(MQTTCallback_ut, on_failure_Successful)
-{
-
-	/*
-			Result of on_failure() cannot be tested.
-			Reason:
-			 It is non-public function and is not called from anywhere in app.
-	 */
-
-}
-#endif

@@ -174,22 +174,6 @@ TEST_F(MQTTExmportMain_ut, 1_parse_msg) {
 
 TEST_F(MQTTExmportMain_ut, addSrTopic_InvalidTopic)
 {
-	/*
-	mqtt::const_message_ptr recvdMsg;
-
-	if (true == CMQTTHandler::instance().getSubRTReadMsgFromQ(recvdMsg))
-	{
-		string strMsg = recvdMsg->get_payload();
-		string rcvdTopic = recvdMsg->get_topic();
-
-		bool bRes = addSrTopic(strMsg, rcvdTopic);
-	}
-	 */
-
-	/*mqtt::const_message_ptr recvdMsg;
-	CMQTTHandler::instance().getSubRTReadMsgFromQ(recvdMsg);
-	string strMsg = recvdMsg->get_payload();*/
-
 
 	string Inval_Topic = "";
 	string Inval_JsonText = "";
@@ -200,45 +184,6 @@ TEST_F(MQTTExmportMain_ut, addSrTopic_InvalidTopic)
 
 
 }
-/* temp
-TEST_F(MQTTExmportMain_ut, addSrTopic_ValidTopic)
-{
-
-	mqtt::const_message_ptr recvdMsg;
-	std::string StrMsg;
-	std::string TcvdTopic;
-
-	bool bRes = false;
-
-	mqtt::const_message_ptr msg = mqtt::make_message(
-				"{\"topic\": \"MQTT_Export_ReadRequest\"}",
-		            "{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}");
-
-	CMQTTHandler::instance().pushSubMsgInQ(msg);
-
-	if(false == g_shouldStop_ut.load())
-	{
-		if (true == CMQTTHandler::instance().getSubRTReadMsgFromQ(recvdMsg))
-		{
-			if( recvdMsg == NULL )
-			{
-				cout<<endl<<"######################ERROR##############################"<<endl;
-				cout<<"Could not push sub RT message in Q. "<<endl<<"Exiting this test case";
-				cout<<endl<<"#########################################################"<<endl;
-
-				EXPECT_EQ(true, bRes);
-			}
-			else
-			{
-				TcvdTopic = recvdMsg->get_topic();
-				StrMsg = recvdMsg->get_payload();
-
-				bRes = addSrTopic(TcvdTopic, StrMsg);
-				EXPECT_EQ(true, bRes);
-			}
-		}
-	}
-}*/
 
 TEST_F(MQTTExmportMain_ut, addSrTopic_ValidTopic)
 {
@@ -259,7 +204,6 @@ TEST_F(MQTTExmportMain_ut, addSrTopic_ValidTopic)
 		cout<<endl<<"######################ERROR##############################"<<endl;
 		cout<<"Failed to getSubMsgFromQ. "<<endl<<"Exiting this test case";
 		cout<<endl<<"#########################################################"<<endl;
-		EXPECT_EQ(true, RetVal);
 	}
 }
 
@@ -279,7 +223,7 @@ TEST_F(MQTTExmportMain_ut, processMsgToSendOnEIS_TopicEmpty)
 
 TEST_F(MQTTExmportMain_ut, processMsg_NULLMsg)
 {
-	string topic = "MQTT_Export_ReadRequest";
+	string topic = "MQTT_Export_RdReq";
 	CMQTTPublishHandler mqttPublisher(CTopicMapper::getInstance().getStrMqttExportURL().c_str(), topic.c_str());
 
 	bool RetVal = processMsg(NULL, mqttPublisher);
@@ -287,7 +231,6 @@ TEST_F(MQTTExmportMain_ut, processMsg_NULLMsg)
 	EXPECT_EQ(false, RetVal);
 }
 
-#if 1 // code changed (RT)
 TEST_F(MQTTExmportMain_ut, processMsg_ValArg)
 {
 	msg_envelope_t *msg = NULL;
@@ -301,7 +244,7 @@ TEST_F(MQTTExmportMain_ut, processMsg_ValArg)
 	msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
 	msgbus_msg_envelope_put(msg, "topic", ptTopic);
 
-	string topic = "MQTT_Export_ReadRequest";
+	string topic = "MQTT_Export_RdReq";
 	CMQTTPublishHandler mqttPublisher(CTopicMapper::getInstance().getStrMqttExportURL().c_str(), topic.c_str());
 
 
@@ -309,7 +252,6 @@ TEST_F(MQTTExmportMain_ut, processMsg_ValArg)
 
 	EXPECT_EQ(true, RetVal);
 }
-#endif
 
 TEST_F(MQTTExmportMain_ut, publishEISMsg_Suc)
 {
@@ -317,7 +259,7 @@ TEST_F(MQTTExmportMain_ut, publishEISMsg_Suc)
 	stZmqPubContext pubContext;
 	string topicType;
 
-	string Topic_pub = "MQTT_Export_WriteRequest";
+	string Topic_pub = "MQTT_Export_WrReq";
 	string Topic_sub = "TestTopic_sub";
 
 	bool RetVal = false;
@@ -380,7 +322,7 @@ void publishEISMsg_TestWrapper(stZmqContext msgbus_ctx, stZmqPubContext pub_ctx)
 TEST_F(MQTTExmportMain_ut, postMsgstoMQTT)
 {
 
-	string topic = "MQTT_Export_WriteRequest";
+	string topic = "MQTT_Export_WrReq";
 	string topicType = "sub";
 	string msg = "UT_msg2Publish";
 
@@ -427,7 +369,7 @@ TEST_F(MQTTExmportMain_ut, postMsgstoMQTT)
 // CEISMsgbusHandler::Instance().cleanup();
 TEST_F(MQTTExmportMain_ut, cleanup_Success)
 {
-	string topic = "MQTT_Export_WriteRequest";
+	string topic = "MQTT_Export_WrReq";
 	stZmqContext msgbus_ctx;
 
 	if( true == CEISMsgbusHandler::Instance().getCTX(topic, msgbus_ctx) )
