@@ -37,7 +37,7 @@ extern sem_t g_semNonRTWriteMsg;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.2.0"
+#define APP_VERSION "0.0.2.4"
 
 /**
  * add sourcetopic key in payload to publish on EIS
