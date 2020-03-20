@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 #include "MQTTCallback.hpp"
-#include "MQTTHandler.hpp"
+#include "MQTTSubscribeHandler.hpp"
 
 /**
  * Callback function gets called when subscriber is disconnected from MQTT broker
@@ -44,6 +44,8 @@ void CMQTTCallback::connected(const std::string& cause)
 	CMQTTHandler::printCounters();
 #endif
 	CMQTTHandler::instance().subscribeToTopics();
+
+	//start threads to send real-time messages if any in real-time queue
 }
 
 /**
@@ -68,7 +70,7 @@ void CMQTTActionListener::on_failure(const mqtt::token& tok)
 {
 	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT action (connect/message sending) failed"));
 #ifdef PERFTESTING
-	CMQTTHandler::m_ui32PublishFailed++;
+	CMQTTPublishHandler::m_ui32PublishFailed++;
 	CLogger::getInstance().log(ERROR, LOGDETAILS("CMQTTActionListener::on_failure:" + std::to_string(tok.get_message_id())));
 	CMQTTHandler::printCounters();
 #endif
@@ -81,7 +83,7 @@ void CMQTTActionListener::on_failure(const mqtt::token& tok)
 void CMQTTActionListener::on_success(const mqtt::token& tok)
 {
 #ifdef PERFTESTING
-	CMQTTHandler::m_ui32Published++;
+	CMQTTPublishHandler::m_ui32Published++;
 #endif
 }
 
@@ -91,8 +93,6 @@ void CMQTTActionListener::on_success(const mqtt::token& tok)
  */
 void CSyncCallback::connection_lost(const std::string& cause)
 {
-	CMQTTHandler::instance().setMQTTConfigState(MQTT_PUBLISHER_CONNECT_STATE);
-
 	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher lost MQTT Connection"));
 
 	if (!cause.empty())
@@ -100,8 +100,8 @@ void CSyncCallback::connection_lost(const std::string& cause)
 		CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher lost MQTT Connection : cause:  " + cause));
 	}
 #ifdef PERFTESTING
-	CMQTTHandler::m_ui32ConnectionLost++;
-	CMQTTHandler::printCounters();
+	CMQTTPublishHandler::m_ui32ConnectionLost++;
+	CMQTTPublishHandler::printCounters();
 #endif
 }
 
@@ -111,15 +111,9 @@ void CSyncCallback::connection_lost(const std::string& cause)
  */
 void CSyncCallback::connected(const std::string& cause)
 {
-	CMQTTHandler::instance().setMQTTConfigState(MQTT_PUBLISHER_PUBLISH_STATE);
-
 #ifdef PERFTESTING
-	CMQTTHandler::m_ui32Connection++;
-	CMQTTHandler::printCounters();
-#endif
-
-#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
-	CMQTTHandler::instance().postPendingMsgs();
+	CMQTTPublishHandler::m_ui32Connection++;
+	CMQTTPublishHandler::printCounters();
 #endif
 }
 
@@ -130,6 +124,6 @@ void CSyncCallback::connected(const std::string& cause)
 void CSyncCallback::delivery_complete(mqtt::delivery_token_ptr tok)
 {
 #ifdef PERFTESTING
-	CMQTTHandler::m_ui32DelComplete++;
+	CMQTTPublishHandler::m_ui32DelComplete++;
 #endif
 }

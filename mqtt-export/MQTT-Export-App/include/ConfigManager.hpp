@@ -19,10 +19,7 @@
 #include <iostream>
 
 #include "Logger.hpp"
-#include "TopicMapper.hpp"
-
-//#define DIR_PATH "/config"
-
+#include "Common.hpp"
 
 class CfgManager {
 public:

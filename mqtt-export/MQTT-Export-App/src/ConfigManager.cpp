@@ -34,6 +34,12 @@ CfgManager:: CfgManager()
 	}
 
 	isClientCreated = false;
+
+/*	if(config_mgr_client == NULL)
+	{
+		std::cout << "Failed to create configuration manager client" << std::endl;
+		exit(-1);
+	}*/
 }
 
 /** Returns the single instance of this class

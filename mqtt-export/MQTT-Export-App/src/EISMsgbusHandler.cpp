@@ -8,10 +8,10 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "MQTTHandler.hpp"
 #include <eis/utils/json_config.h>
 
 #include "EISMsgbusHandler.hpp"
+#include "MQTTSubscribeHandler.hpp"
 
 namespace
 {
@@ -234,7 +234,8 @@ bool CEISMsgbusHandler::getCTX(std::string a_sTopic, stZmqContext& msgbusContext
 	std::unique_lock<std::mutex> lck(__ctxMapLock);
 
 	//return the request ID
-	if( g_mapContextMap.end() != g_mapContextMap.find(a_sTopic)) {
+	if( g_mapContextMap.end() != g_mapContextMap.find(a_sTopic))
+	{
 		msgbusContext = g_mapContextMap.at(a_sTopic);
 		return true;
 	}
@@ -277,25 +278,27 @@ bool CEISMsgbusHandler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
  */
 void CEISMsgbusHandler::removeCTX(std::string a_sTopic)
 {
-	try{
+	try
+	{
 		stZmqContext zmqCtx;
-		if( getCTX(a_sTopic, zmqCtx)) {
+		if( getCTX(a_sTopic, zmqCtx))
+		{
 
 			std::unique_lock<std::mutex> lck(__ctxMapLock);
 			g_mapContextMap.erase(a_sTopic);
 
-			if(zmqCtx.m_pContext != NULL) {
-
+			if(zmqCtx.m_pContext != NULL)
+			{
 				msgbus_destroy(zmqCtx.m_pContext);
 			}
 		}
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("destroyed contexts for topic : " + a_sTopic));
 	}
-	catch(exception &ex){
+	catch(exception &ex)
+	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
 	}
-
 }
 
 /**
@@ -310,7 +313,8 @@ bool CEISMsgbusHandler::getSubCTX(std::string a_sTopic, stZmqSubContext& subCont
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
 
 	//return the context
-	if( g_mapSubContextMap.end() != g_mapSubContextMap.find(a_sTopic)) {
+	if( g_mapSubContextMap.end() != g_mapSubContextMap.find(a_sTopic))
+	{
 		subContext = g_mapSubContextMap.at(a_sTopic);
 		return true;
 	}
@@ -354,16 +358,20 @@ void CEISMsgbusHandler::removeSubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 {
 	try
 	{
-	stZmqSubContext zmqSubCtx;
-	if( getSubCTX(a_sTopic, zmqSubCtx)) {
-
-		std::unique_lock<std::mutex> lck(__SubctxMapLock);
+		stZmqSubContext zmqSubCtx;
+		if( getSubCTX(a_sTopic, zmqSubCtx))
+		{
+			std::unique_lock<std::mutex> lck(__SubctxMapLock);
 
 			g_mapSubContextMap.erase(a_sTopic);
 			if((zmqCtx.m_pContext != NULL) && (zmqSubCtx.m_pContext != NULL))
+			{
 				msgbus_recv_ctx_destroy(zmqCtx.m_pContext, zmqSubCtx.m_pContext);
+			}
 		}
-	}catch(exception &ex) {
+	}
+	catch(exception &ex)
+	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
 	}
@@ -382,7 +390,8 @@ bool CEISMsgbusHandler::getPubCTX(std::string a_sTopic, stZmqPubContext& pubCont
 {
 	std::unique_lock<std::mutex> lck(__PubctxMapLock);
 	// return the context
-	if( g_mapPubContextMap.end() != g_mapPubContextMap.find(a_sTopic)) {
+	if( g_mapPubContextMap.end() != g_mapPubContextMap.find(a_sTopic))
+	{
 		pubContext = g_mapPubContextMap.at(a_sTopic);
 		return true;
 	}
@@ -427,15 +436,19 @@ void CEISMsgbusHandler::removePubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 	try
 	{
 		stZmqPubContext zmqPubCtx;
-		if( getPubCTX(a_sTopic, zmqPubCtx)) {
-
+		if( getPubCTX(a_sTopic, zmqPubCtx))
+		{
 			std::unique_lock<std::mutex> lck(__PubctxMapLock);
 
 			g_mapPubContextMap.erase(a_sTopic);
 			if((zmqCtx.m_pContext != NULL) &&  (zmqPubCtx.m_pContext != NULL))
+			{
 				msgbus_publisher_destroy(zmqCtx.m_pContext, (publisher_ctx_t*) zmqPubCtx.m_pContext);
+			}
 		}
-	}catch(exception &ex) {
+	}
+	catch(exception &ex)
+	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
 	}
@@ -446,35 +459,39 @@ void CEISMsgbusHandler::removePubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 /**
  * Constructor
  */
-CEISMsgbusHandler::CEISMsgbusHandler(){
+CEISMsgbusHandler::CEISMsgbusHandler()
+{
 
 }
 
 /**
  * Destroys all the message bus and topic contexts from map
  */
-void CEISMsgbusHandler::cleanup() {
+void CEISMsgbusHandler::cleanup()
+{
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroying all contexts ..."));
 
 	try
 	{
 		//iterate over contexts maps and destroy
-		for (auto it = g_mapContextMap.cbegin(); it != g_mapContextMap.cend();
-				) {
-			if (!it->first.empty()) {
+		for (auto it = g_mapContextMap.cbegin(); it != g_mapContextMap.cend(); )
+		{
+			if (!it->first.empty())
+			{
 				string temp = "destroying context for topic : ";
 				temp.append(it->first);
 				CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
 				stZmqContext zmqCtx;
-				if (getCTX(it->first, zmqCtx)) {
-
+				if (getCTX(it->first, zmqCtx))
+				{
 					//check if it from sub or not
 					removeSubCTX(it->first, zmqCtx);
 					removePubCTX(it->first, zmqCtx);
 
 					std::unique_lock<std::mutex> lck(__ctxMapLock);
-					if (zmqCtx.m_pContext != NULL) {
+					if (zmqCtx.m_pContext != NULL)
+					{
 						msgbus_destroy(zmqCtx.m_pContext);
 						CLogger::getInstance().log(DEBUG, LOGDETAILS("destroyed contexts for topic : "
 								+ it->first));
@@ -483,23 +500,26 @@ void CEISMsgbusHandler::cleanup() {
 
 				std::unique_lock<std::mutex> lck(__ctxMapLock);
 				it = g_mapContextMap.erase(it);
-			} else {
+			}
+			else
+			{
 				++it;
 			}
 		}
 
-	}catch(exception &ex) {
+	}
+	catch(exception &ex)
+	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
-
 	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroyed all contexts"));
-
 }
 
 /**
  * Destructor
  */
-CEISMsgbusHandler::~CEISMsgbusHandler() {
+CEISMsgbusHandler::~CEISMsgbusHandler()
+{
 	// TODO Auto-generated destructor stub
 }

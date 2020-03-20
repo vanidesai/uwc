@@ -8,18 +8,18 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include "TopicMapper.hpp"
-
 #include "ConfigManager.hpp"
 #include <algorithm>
 
 #include <pthread.h>
 #include <sched.h>
+#include "Common.hpp"
 
 /**
  * Constructor
  */
-CTopicMapper::CTopicMapper() {
+CTopicMapper::CTopicMapper()
+{
 
 	readCommonEnvVariables();
 }
@@ -67,7 +67,7 @@ bool CTopicMapper::readCommonEnvVariables()
 		bool bRetVal = false;
 
 		std::list<std::string> topicList{"ReadRequest", "WriteRequest",
-			"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE"};
+			"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE", "ReadRequest_RT", "WriteRequest_RT"};
 
 #ifdef REALTIME_THREAD_PRIORITY
 		topicList.push_back({"THREAD_PRIORITY", "THREAD_POLICY"});
@@ -90,6 +90,12 @@ bool CTopicMapper::readCommonEnvVariables()
 
 		setStrReadRequest(envTopics.at("ReadRequest"));
 		setStrWriteRequest(envTopics.at("WriteRequest"));
+
+		//for RT
+		setStrRTReadRequest(envTopics.at("ReadRequest_RT"));
+		setStrRTWriteRequest(envTopics.at("WriteRequest_RT"));
+		//end
+
 		setStrAppName(envTopics.at("AppName"));
 		setStrMqttExportURL(envTopics.at("MQTT_URL_FOR_EXPORT"));
 
@@ -121,7 +127,8 @@ bool CTopicMapper::readCommonEnvVariables()
 			cout << "DEV_MODE is set to default false\n";
 		}
 	}
-	catch(exception &ex) {
+	catch(exception &ex)
+	{
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
 	}
 	return true;
@@ -159,6 +166,7 @@ void CTopicMapper::set_thread_priority() {
 /**
  * Destructor
  */
-CTopicMapper::~CTopicMapper() {
+CTopicMapper::~CTopicMapper()
+{
 	// TODO Auto-generated destructor stub
 }

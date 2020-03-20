@@ -13,12 +13,13 @@
 /**
  * Constructor
  */
-CLogger::CLogger() {
-
+CLogger::CLogger()
+{
 	logger = NULL;
 	// TODO Auto-generated constructor stub
 	const char* logPropsFile = std::getenv("Log4cppPropsFile");
-	if(logPropsFile == NULL) {
+	if(logPropsFile == NULL)
+	{
 		std::cout << __func__ << " Log4cppPropsFile Environment Variable is not set, exiting application" << std::endl;
 		exit(-1);
 	}
@@ -33,7 +34,8 @@ CLogger::CLogger() {
 /**
  * Destructor
  */
-CLogger::~CLogger() {
+CLogger::~CLogger()
+{
 	// TODO Auto-generated destructor stub
 	logger->removeAllAppenders();
 
@@ -44,7 +46,8 @@ CLogger::~CLogger() {
  * Write statement with info level
  * @param msg :[in] statement to log
  */
-void CLogger::LogInfo(std::string msg) {
+void CLogger::LogInfo(std::string msg)
+{
 	logger->info(msg);
 }
 
@@ -52,7 +55,8 @@ void CLogger::LogInfo(std::string msg) {
  * Write statement with debug level
  * @param msg :[in] statement to log
  */
-void CLogger::LogDebug(std::string msg) {
+void CLogger::LogDebug(std::string msg)
+{
 	logger->debug(msg);
 }
 
@@ -60,7 +64,8 @@ void CLogger::LogDebug(std::string msg) {
  * Write statement with warn level
  * @param msg :[in] statement to log
  */
-void CLogger::LogWarn(std::string msg) {
+void CLogger::LogWarn(std::string msg)
+{
 	logger->warn(msg);
 }
 
@@ -68,7 +73,8 @@ void CLogger::LogWarn(std::string msg) {
  * Write statement with error level
  * @param msg :[in] statement to log
  */
-void CLogger::LogError(std::string msg) {
+void CLogger::LogError(std::string msg)
+{
 	logger->error(msg);
 }
 
@@ -76,7 +82,8 @@ void CLogger::LogError(std::string msg) {
  * Write statement with fatal level
  * @param msg :[in] statement to log
  */
-void CLogger::LogFatal(std::string msg) {
+void CLogger::LogFatal(std::string msg)
+{
 	logger->fatal(msg);
 }
 
@@ -85,14 +92,18 @@ void CLogger::LogFatal(std::string msg) {
  * @param lvl :[in] log level
  * @param msg :[in] statement to log
  */
-void CLogger::log(LogLevel lvl, std::string msg) {
-	try {
-		if(logger == NULL)	{
+void CLogger::log(LogLevel lvl, std::string msg)
+{
+	try
+	{
+		if(logger == NULL)
+		{
 			std::cout << __func__ << " null logger instance \n";
 			return;
 		}
 
-		switch (lvl) {
+		switch (lvl)
+		{
 		case INFO:
 			logger->info(msg);
 			break;
@@ -112,8 +123,9 @@ void CLogger::log(LogLevel lvl, std::string msg) {
 			std::cout << __func__ << " Invalid log level \n";
 		}
 
-	} catch (std::exception &e) {
+	}
+	catch (std::exception &e)
+	{
 		std::cout << __func__ << ":" << __LINE__ << "Exception : " << e.what() << std::endl;
 	}
 }
-

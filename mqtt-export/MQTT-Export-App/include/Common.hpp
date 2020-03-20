@@ -30,7 +30,9 @@ private:
 	CTopicMapper& operator=(CTopicMapper const&);
 
 	std::string m_strReadRequest;
+	std::string m_strRTReadRequest;
 	std::string m_strWriteRequest;
+	std::string m_strRTWriteRequest;
 	std::string m_strAppName;
 	std::string m_strMqttExportURL;
 #ifdef REALTIME_THREAD_PRIORITY
@@ -61,6 +63,24 @@ public:
 	void setStrWriteRequest(const std::string &strWriteRequest) {
 		m_strWriteRequest = strWriteRequest;
 	}
+
+	//real time
+	const std::string& getStrRTWriteRequest() const {
+		return m_strRTWriteRequest;
+	}
+
+	void setStrRTWriteRequest(const std::string &strWriteRequest) {
+		m_strRTWriteRequest = strWriteRequest;
+	}
+
+	const std::string& getStrRTReadRequest() const {
+		return m_strRTReadRequest;
+	}
+
+	void setStrRTReadRequest(const std::string &strReadRequest) {
+		m_strRTReadRequest = strReadRequest;
+	}
+	//
 
 	void setStrAppName(const std::string &strAppName) {
 		m_strAppName = strAppName;

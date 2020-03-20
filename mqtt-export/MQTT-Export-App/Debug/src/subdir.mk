@@ -15,27 +15,30 @@ CPP_SRCS += \
 ../src/EISMsgbusHandler.cpp \
 ../src/Logger.cpp \
 ../src/MQTTCallback.cpp \
-../src/MQTTHandler.cpp \
-../src/MQTT_Export.cpp \
-../src/TopicMapper.cpp 
+../src/MQTTSubscribeHandler.cpp \
+../src/MQTTPublishHandler.cpp \
+../src/Main.cpp \
+../src/Common.cpp 
 
 OBJS += \
 ./src/ConfigManager.o \
 ./src/EISMsgbusHandler.o \
 ./src/Logger.o \
 ./src/MQTTCallback.o \
-./src/MQTTHandler.o \
-./src/MQTT_Export.o \
-./src/TopicMapper.o 
+./src/MQTTSubscribeHandler.o \
+./src/MQTTPublishHandler.o \
+./src/Main.o \
+./src/Common.o 
 
 CPP_DEPS += \
 ./src/ConfigManager.d \
 ./src/EISMsgbusHandler.d \
 ./src/Logger.d \
 ./src/MQTTCallback.d \
-./src/MQTTHandler.d \
-./src/MQTT_Export.d \
-./src/TopicMapper.d 
+./src/MQTTSubscribeHandler.d \
+./src/MQTTPublishHandler.d \
+./src/Main.d \
+./src/Common.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
