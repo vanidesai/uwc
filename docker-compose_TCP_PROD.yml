@@ -79,7 +79,7 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      AppName: "Modbus_TCP_Master"
+      AppName: "TCP1"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
@@ -91,18 +91,30 @@ services:
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
       SITE_LIST_FILE_NAME: "site_list.yml"
-      PubTopics: "Modbus_TCP_Master_PolledData,Modbus_TCP_Master_ReadResponse,Modbus_TCP_Master_WriteResponse"
-      PolledData: "Modbus_TCP_Master_PolledData"
-      ReadResponse: "Modbus_TCP_Master_ReadResponse"
-      WriteResponse: "Modbus_TCP_Master_WriteResponse"
-      Modbus_TCP_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5000"
-      Modbus_TCP_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5001"
-      Modbus_TCP_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5002"
-      SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
-      ReadRequest: "MQTT_Export_ReadRequest"
-      WriteRequest: "MQTT_Export_WriteRequest"
-      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:5003"
-      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:5004"
+      PubTopics: "TCP1_PolledData,TCP1_PolledData_RT,TCP1_RdResp,TCP1_RdResp_RT,TCP1_WrResp,TCP1_WrResp_RT"
+      SubTopics: "MQTT_Export/MQTT_Export_RdReq,MQTT_Export/MQTT_Export_RdReq_RT,MQTT_Export/MQTT_Export_WrReq,MQTT_Export/MQTT_Export_WrReq_RT"
+      # non-realtime topics
+      PolledData: "TCP1_PolledData"
+      ReadResponse: "TCP1_RdResp"
+      WriteResponse: "TCP1_WrResp"
+      TCP1_PolledData_cfg: "zmq_tcp,127.0.0.1:5000"
+      TCP1_RdResp_cfg: "zmq_tcp,127.0.0.1:5001"
+      TCP1_WrResp_cfg: "zmq_tcp,127.0.0.1:5002"
+      ReadRequest: "MQTT_Export_RdReq"
+      WriteRequest: "MQTT_Export_WrReq"
+      MQTT_Export_RdReq_cfg: "zmq_tcp,127.0.0.1:5003"
+      MQTT_Export_WrReq_cfg: "zmq_tcp,127.0.0.1:5004"
+      # realtime topics
+      PolledData_RT: "TCP1_PolledData_RT"
+      ReadResponse_RT: "TCP1_RdResp_RT"
+      WriteResponse_RT: "TCP1_WrResp_RT"
+      TCP1_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:5005"
+      TCP1_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:5006"
+      TCP1_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:5007"
+      ReadRequest_RT: "MQTT_Export_RdReq_RT"
+      WriteRequest_RT: "MQTT_Export_WrReq_RT"
+      MQTT_Export_RdReq_RT_cfg: "zmq_tcp,127.0.0.1:5008"
+      MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:5009"
     logging:
         driver: "json-file"
         options:
@@ -113,8 +125,8 @@ services:
     user: ${EIS_UID}
     secrets:
       - ca_etcd
-      - etcd_Modbus_TCP_Master_cert
-      - etcd_Modbus_TCP_Master_key
+      - etcd_TCP1_cert
+      - etcd_TCP1_key
 
   modbus-rtu-master:
     depends_on:
@@ -132,7 +144,7 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      AppName: "Modbus_RTU_Master"
+      AppName: "RTU1"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
@@ -149,18 +161,30 @@ services:
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
       SITE_LIST_FILE_NAME: "site_list.yml"
-      PubTopics: "Modbus_RTU_Master_PolledData,Modbus_RTU_Master_ReadResponse,Modbus_RTU_Master_WriteResponse"
-      PolledData: "Modbus_RTU_Master_PolledData"
-      ReadResponse: "Modbus_RTU_Master_ReadResponse"
-      WriteResponse: "Modbus_RTU_Master_WriteResponse"
-      Modbus_RTU_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5005"
-      Modbus_RTU_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5006"
-      Modbus_RTU_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5007"
-      SubTopics: "MQTT_Export/MQTT_Export_ReadRequest,MQTT_Export/MQTT_Export_WriteRequest"
-      ReadRequest: "MQTT_Export_ReadRequest"
-      WriteRequest: "MQTT_Export_WriteRequest"
-      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:5003"
-      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:5004"
+      PubTopics: "RTU1_PolledData,RTU1_RdResp,RTU1_WrResp,RTU1_PolledData_RT,RTU1_RdResp_RT,RTU1_WrResp_RT"
+      SubTopics: "MQTT_Export/MQTT_Export_RdReq,MQTT_Export/MQTT_Export_WrReq,MQTT_Export/MQTT_Export_RdReq_RT,MQTT_Export/MQTT_Export_WrReq_RT"
+      # non-realtime topics
+      PolledData: "RTU1_PolledData"
+      ReadResponse: "RTU1_RdResp"
+      WriteResponse: "RTU1_WrResp"
+      RTU1_PolledData_cfg: "zmq_tcp,127.0.0.1:5010"
+      RTU1_RdResp_cfg: "zmq_tcp,127.0.0.1:5011"
+      RTU1_WrResp_cfg: "zmq_tcp,127.0.0.1:5012"
+      ReadRequest: "MQTT_Export_RdReq"
+      WriteRequest: "MQTT_Export_WrReq"
+      MQTT_Export_RdReq_cfg: "zmq_tcp,127.0.0.1:5003"
+      MQTT_Export_WrReq_cfg: "zmq_tcp,127.0.0.1:5004"
+      # realtime topics
+      PolledData_RT: "RTU1_PolledData_RT"
+      ReadResponse_RT: "RTU1_RdResp_RT"
+      WriteResponse_RT: "RTU1_WrResp_RT"
+      RTU1_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:5013"
+      RTU1_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:5014"
+      RTU1_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:5015"
+      ReadRequest_RT: "MQTT_Export_RdReq_RT"
+      WriteRequest_RT: "MQTT_Export_WrReq_RT"
+      MQTT_Export_RdReq_RT_cfg: "zmq_tcp,127.0.0.1:5008"
+      MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:5009"
     logging:
         driver: "json-file"
         options:
@@ -174,8 +198,8 @@ services:
     privileged: true
     secrets:
       - ca_etcd
-      - etcd_Modbus_RTU_Master_cert
-      - etcd_Modbus_RTU_Master_key
+      - etcd_RTU1_cert
+      - etcd_RTU1_key
 
   mqtt_container:
     depends_on:
@@ -226,19 +250,32 @@ services:
       MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:1883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      Clients: "Modbus_TCP_Master,Modbus_RTU_Master"
-      SubTopics: "Modbus_TCP_Master/Modbus_TCP_Master_PolledData,Modbus_TCP_Master/Modbus_TCP_Master_ReadResponse,Modbus_TCP_Master/Modbus_TCP_Master_WriteResponse,Modbus_RTU_Master/Modbus_RTU_Master_PolledData,Modbus_RTU_Master/Modbus_RTU_Master_ReadResponse,Modbus_RTU_Master/Modbus_RTU_Master_WriteResponse"
-      PubTopics: "MQTT_Export_ReadRequest,MQTT_Export_WriteRequest"
-      Modbus_TCP_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5000"
-      MQTT_Export_ReadRequest_cfg: "zmq_tcp,127.0.0.1:5003"
-      MQTT_Export_WriteRequest_cfg: "zmq_tcp,127.0.0.1:5004"
-      Modbus_TCP_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5001"
-      Modbus_TCP_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5002"
-      Modbus_RTU_Master_PolledData_cfg: "zmq_tcp,127.0.0.1:5005"
-      Modbus_RTU_Master_ReadResponse_cfg: "zmq_tcp,127.0.0.1:5006"
-      Modbus_RTU_Master_WriteResponse_cfg: "zmq_tcp,127.0.0.1:5007"
-      ReadRequest: MQTT_Export_ReadRequest
-      WriteRequest: MQTT_Export_WriteRequest
+      Clients: "TCP1,RTU1"
+      SubTopics: "TCP1/TCP1_PolledData,TCP1/TCP1_RdResp,TCP1/TCP1_WrResp,RTU1/RTU1_PolledData,RTU1/RTU1_RdResp,RTU1/RTU1_WrResp,TCP1/TCP1_PolledData_RT,TCP1/TCP1_RdResp_RT,TCP1/TCP1_WrResp_RT,RTU1/RTU1_PolledData_RT,RTU1/RTU1_RdResp_RT,RTU1/RTU1_WrResp_RT"
+      PubTopics: "MQTT_Export_RdReq,MQTT_Export_WrReq,MQTT_Export_RdReq_RT,MQTT_Export_WrReq_RT"
+      # non-realtime topics
+      TCP1_PolledData_cfg: "zmq_tcp,127.0.0.1:5000"
+      TCP1_RdResp_cfg: "zmq_tcp,127.0.0.1:5001"
+      TCP1_WrResp_cfg: "zmq_tcp,127.0.0.1:5002"
+      RTU1_PolledData_cfg: "zmq_tcp,127.0.0.1:5010"
+      RTU1_RdResp_cfg: "zmq_tcp,127.0.0.1:5011"
+      RTU1_WrResp_cfg: "zmq_tcp,127.0.0.1:5012"
+      ReadRequest: "MQTT_Export_RdReq"
+      WriteRequest: "MQTT_Export_WrReq"
+      MQTT_Export_RdReq_cfg: "zmq_tcp,127.0.0.1:5003"
+      MQTT_Export_WrReq_cfg: "zmq_tcp,127.0.0.1:5004"
+      # realtime topics
+      TCP1_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:5005"
+      TCP1_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:5006"
+      TCP1_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:5007"
+      RTU1_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:5013"
+      RTU1_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:5014"
+      RTU1_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:5015"
+      ReadRequest_RT: "MQTT_Export_RdReq_RT"
+      WriteRequest_RT: "MQTT_Export_WrReq_RT"
+      MQTT_Export_RdReq_RT_cfg: "zmq_tcp,127.0.0.1:5008"
+      MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:5009"
+      # general topics
       mqtt_SubReadTopic: "/+/+/+/read"
       mqtt_SubWriteTopic: "/+/+/+/write"
     logging:
@@ -259,14 +296,14 @@ secrets:
     file: provision/Certificates/root/root_client_certificate.pem
   etcd_root_key:
     file: provision/Certificates/root/root_client_key.pem
-  etcd_Modbus_TCP_Master_cert:
-    file: provision/Certificates/Modbus_TCP_Master/Modbus_TCP_Master_client_certificate.pem
-  etcd_Modbus_TCP_Master_key:
-    file: provision/Certificates/Modbus_TCP_Master/Modbus_TCP_Master_client_key.pem
-  etcd_Modbus_RTU_Master_cert:
-    file: provision/Certificates/Modbus_RTU_Master/Modbus_RTU_Master_client_certificate.pem
-  etcd_Modbus_RTU_Master_key:
-    file: provision/Certificates/Modbus_RTU_Master/Modbus_RTU_Master_client_key.pem
+  etcd_TCP1_cert:
+    file: provision/Certificates/TCP1/TCP1_client_certificate.pem
+  etcd_TCP1_key:
+    file: provision/Certificates/TCP1/TCP1_client_key.pem
+  etcd_RTU1_cert:
+    file: provision/Certificates/RTU1/RTU1_client_certificate.pem
+  etcd_RTU1_key:
+    file: provision/Certificates/RTU1/RTU1_client_key.pem
   etcd_MQTT_Export_cert:
     file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
   etcd_MQTT_Export_key:
