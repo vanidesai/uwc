@@ -14,7 +14,7 @@
 ## Directory details
 The directory comprises of following:
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/modbus-master">modbus-master</a> :
-  This directory contains the modbus container sources and docker file for building the container. 
+  This directory contains the modbus TCP and RTU containers sources and docker file for building the container. 
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/mqtt-export">mqtt-export</a> :
   This directory contains the mqtt-export container sources and docker file for building the container. 
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/MQTT">MQTT</a> :
