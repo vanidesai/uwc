@@ -19,7 +19,7 @@ The directory comprises of following:
   This directory contains the mqtt-export container sources and docker file for building the container. 
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/MQTT">MQTT</a> :
   This directory contains the mqtt container sources and docker file for building the container.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/masterOthers">Others</a> :
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Others">Others</a> :
   This directory contains configurations for ETCD required during provisioning. 
 * <a href="https://github.impcloud.net/uwc/UWC-Core/blob/master/docker-compose.yml">docker-compose.yml</a> :
   This file will deploy the modbus container with EIS in IPC with DEV mode.
