@@ -54,6 +54,7 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 		reqData.m_strTopic = "kzdjfhdszh";
 		reqData.m_strVersion = "2.1";
 		reqData.m_strWellhead = "test";
+		uint16_t uTxID = 20;
 
 		stMbusAppCallbackParams.m_au8MbusRXDataDataFields[260];
 		stMbusAppCallbackParams.m_lPriority = 1;
@@ -78,7 +79,7 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 		//zmq_handler::prepareCommonContext("pub");
 		//zmq_handler::getOnDemandReqData(0, onDemandReqData);
 
-		OnDemandRead_AppCallback(pstMbusAppCallbackParams);
+		OnDemandRead_AppCallback(pstMbusAppCallbackParams, uTxID);
 
 	}
 	catch(std::exception &e)
@@ -94,11 +95,12 @@ try
 {
 	msg_envelope_t *msg = NULL;
 	stOnDemandRequest reqData;
+	uint16_t uTxID = 20;
 	stOnDemandRequest onDemandReqData;
 
 	zmq_handler::insertOnDemandReqData(0, reqData);
 	zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
-	OnDemandRead_AppCallback(pstMbusAppCallbackParams);
+	OnDemandRead_AppCallback(pstMbusAppCallbackParams, uTxID);
 
 }
 catch(std::exception &e)
@@ -126,8 +128,9 @@ TEST_F(ModbusStackInterface_ut, AppCallback_null_ip)
 		msg_envelope_t *msg = NULL;
 		stOnDemandRequest reqData;
 		stOnDemandRequest onDemandReqData ;
+		uint16_t uTxID = 20;
 
-		OnDemandRead_AppCallback(MbusAppCallbackParams);
+		OnDemandRead_AppCallback(MbusAppCallbackParams, uTxID);
 
 	}
 	catch(std::exception &e)
@@ -144,11 +147,12 @@ try
 	msg_envelope_t *msg = NULL;
 	stOnDemandRequest reqData;
 	stOnDemandRequest onDemandReqData;
+	uint16_t uTxID = 20;
 
 	zmq_handler::insertOnDemandReqData(0, reqData);
 
 	//zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
-	OnDemandRead_AppCallback(MbusAppCallbackParams);
+	OnDemandRead_AppCallback(MbusAppCallbackParams, uTxID);
 
 
 }
@@ -165,9 +169,11 @@ catch(std::exception &e)
 
 TEST_F(ModbusStackInterface_ut, OnDemandRead_RT)
 {
+	uint16_t uTxID = 20;
+
 	try
 	{
-		OnDemandReadRT_AppCallback(pstMbusAppCallbackParams);
+		OnDemandReadRT_AppCallback(pstMbusAppCallbackParams, uTxID);
 	}
 	catch(std::exception &e)
 	{
@@ -179,9 +185,10 @@ TEST_F(ModbusStackInterface_ut, OnDemandRead_RT)
 
 TEST_F(ModbusStackInterface_ut, OnDemandRead_RT_NULL)
 {
+	uint16_t uTxID = 20;
 	try
 	{
-		OnDemandReadRT_AppCallback(MbusAppCallbackParams);
+		OnDemandReadRT_AppCallback(MbusAppCallbackParams, uTxID);
 	}
 	catch(std::exception &e)
 	{
@@ -191,9 +198,10 @@ TEST_F(ModbusStackInterface_ut, OnDemandRead_RT_NULL)
 
 TEST_F(ModbusStackInterface_ut, OnDemandWrite)
 {
+	uint16_t uTxID = 20;
 	try
 	{
-		OnDemandWrite_AppCallback(pstMbusAppCallbackParams);
+		OnDemandWrite_AppCallback(pstMbusAppCallbackParams, uTxID);
 	}
 	catch(std::exception &e)
 	{
@@ -204,9 +212,10 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite)
 
 TEST_F(ModbusStackInterface_ut, OnDemandWrite_NULL)
 {
+	uint16_t uTxID = 20;
 	try
 	{
-		OnDemandWrite_AppCallback(MbusAppCallbackParams);
+		OnDemandWrite_AppCallback(MbusAppCallbackParams, uTxID);
 	}
 	catch(std::exception &e)
 	{
@@ -216,9 +225,10 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite_NULL)
 
 TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT)
 {
+	uint16_t uTxID = 20;
 	try
 	{
-		OnDemandWriteRT_AppCallback(pstMbusAppCallbackParams);
+		OnDemandWriteRT_AppCallback(pstMbusAppCallbackParams, uTxID);
 	}
 	catch(std::exception &e)
 	{
@@ -228,9 +238,10 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT)
 
 TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT_NULL)
 {
+	uint16_t uTxID = 20;
 	try
 	{
-		OnDemandWriteRT_AppCallback(MbusAppCallbackParams);
+		OnDemandWriteRT_AppCallback(MbusAppCallbackParams, uTxID);
 	}
 	catch(std::exception &e)
 	{

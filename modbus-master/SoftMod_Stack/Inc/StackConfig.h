@@ -22,6 +22,11 @@
 //#define MODBUS_STACK_TCPIP_ENABLED
 #define MAX_REQUESTS 5000
 
+#define THREAD_PRIORITY 30
+#define THREAD_SCHEDULER SCHED_RR
+
+#define handle_error_en(en, msg) do { errno = en; perror(msg); } while (0)
+
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	#define TCP_MODBUS_ADU_LENGTH 260
 	#define MODBUS_DATA_LENGTH (260)
@@ -218,9 +223,20 @@ struct stReqManager {
 	Mutex_H m_mutexReqArray;
 };
 
+typedef enum ThreadScheduler
+{
+	OTHER,
+	FIFO,
+	RR,
+	UNKNOWN
+}eThreadScheduler;
+
 void initReqManager();
 stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq);
 void freeReqNode(stMbusPacketVariables_t* a_pobjReq);
+
+// Function to set thread parameters
+void set_thread_sched_param();
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 

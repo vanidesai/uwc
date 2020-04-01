@@ -12,14 +12,6 @@
 #define INCLUDE_PUBLISHJSON_HPP_
 
 #include "Common.hpp"
-/*
-#include <eis/utils/thread_safe_queue.h>
-#include <eis/utils/config.h>
-#include <eis/utils/json_config.h>
-#include <eis/msgbus/msgbus.h>
-#include <eis/config_manager/env_config.h>
-#include <eis/config_manager/config_manager.h>
-*/
 
 /**
  * Structure to contain state for a publisher thread
@@ -32,8 +24,8 @@ typedef struct {
 class PublishJsonHandler
 {
 	/// delete copy and move constructors and assign operators
-	PublishJsonHandler(const PublishJsonHandler&) = delete;	 			/// Copy construct
-	PublishJsonHandler& operator=(const PublishJsonHandler&) = delete;	/// Copy assign
+	PublishJsonHandler(const PublishJsonHandler&) = delete;	 			/// Copy constructor
+	PublishJsonHandler& operator=(const PublishJsonHandler&) = delete;	/// assignmnet operator
 
 	/// constructor
 	PublishJsonHandler();

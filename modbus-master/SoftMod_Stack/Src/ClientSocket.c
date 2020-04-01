@@ -139,7 +139,7 @@ int8_t checkforblockingread(void);
 
 #endif
 
-void (*ModbusMaster_ApplicationCallback)(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
+void (*ModbusMaster_ApplicationCallback)(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t u16TransactionID);
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 void (*ReadFileRecord_CallbackFunction)(uint8_t, uint8_t*,uint16_t, uint16_t,uint8_t,
@@ -256,7 +256,7 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 			stMbusAppCallbackParams.m_u16Quantity = pstMBusRequesPacket->m_u16Quantity;
 			stMbusAppCallbackParams.m_objTimeStamps = pstMBusRequesPacket->m_objTimeStamps;
 
-			ModbusMaster_ApplicationCallback(&stMbusAppCallbackParams);
+			ModbusMaster_ApplicationCallback(&stMbusAppCallbackParams, pstMBusRequesPacket->m_u16TransactionID);
 		}
 		break;
 

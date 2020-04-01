@@ -18,7 +18,7 @@
 /**
  * Constructor
  */
-CTopicMapper::CTopicMapper()
+CCommon::CCommon()
 {
 
 	readCommonEnvVariables();
@@ -31,7 +31,7 @@ CTopicMapper::CTopicMapper()
  * @return 	true : on success,
  * 			false : on error
  */
-bool CTopicMapper::readEnvVariable(const char *pEnvVarName, string &storeVal)
+bool CCommon::readEnvVariable(const char *pEnvVarName, string &storeVal)
 {
 	if(NULL == pEnvVarName)
 	{
@@ -60,7 +60,7 @@ bool CTopicMapper::readEnvVariable(const char *pEnvVarName, string &storeVal)
  * @return 	true : on success,
  * 			false : on error
  */
-bool CTopicMapper::readCommonEnvVariables()
+bool CCommon::readCommonEnvVariables()
 {
 	try
 	{
@@ -69,9 +69,6 @@ bool CTopicMapper::readCommonEnvVariables()
 		std::list<std::string> topicList{"ReadRequest", "WriteRequest",
 			"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE", "ReadRequest_RT", "WriteRequest_RT"};
 
-#ifdef REALTIME_THREAD_PRIORITY
-		topicList.push_back({"THREAD_PRIORITY", "THREAD_POLICY"});
-#endif
 		std::map <std::string, std::string> envTopics;
 
 		for (auto &topic : topicList)
@@ -99,10 +96,6 @@ bool CTopicMapper::readCommonEnvVariables()
 		setStrAppName(envTopics.at("AppName"));
 		setStrMqttExportURL(envTopics.at("MQTT_URL_FOR_EXPORT"));
 
-#ifdef REALTIME_THREAD_PRIORITY
-		setStrThreadPriority(envTopics.at("THREAD_PRIORITY"));
-		setStrThreadPolicy(envTopics.at("THREAD_POLICY"));
-#endif
 		string devMode = envTopics.at("DEV_MODE");
 		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
 
@@ -134,39 +127,91 @@ bool CTopicMapper::readCommonEnvVariables()
 	return true;
 }
 
-#ifdef REALTIME_THREAD_PRIORITY
-/**
- * Sets the thread priority to specified in environment variables
- */
-void CTopicMapper::set_thread_priority() {
-	//set priority
-	sched_param param;
-	int iThreadPriority = getIntThreadPriority();
-	int iThreadPolicy = getIntThreadPolicy();
-
-	int defaultPolicy;
-	if(0 != pthread_getschedparam(pthread_self(), &defaultPolicy, &param)){
-		CLogger::getInstance().log(WARN, LOGDETAILS("Cannot fetch scheduling parameters of current thread"));
-		std::cout << __func__ << ":" << __LINE__ << "Cannot fetch scheduling parameters of current thread" << std::endl;
-	}
-	else
-	{
-		param.sched_priority = iThreadPriority;
-		int result = pthread_setschedparam(pthread_self(), iThreadPolicy, &param);
-		if(0 != result)
-		{
-			CLogger::getInstance().log(WARN, LOGDETAILS("Cannot set thread priority to : " + std::to_string(iThreadPriority)));
-			std::cout << __func__ << ":" << __LINE__ << " Cannot set thread priority, result : " << result << std::endl;
-		}
-	}
-	//end of set priority for current thread
-}
-#endif
-
 /**
  * Destructor
  */
-CTopicMapper::~CTopicMapper()
+CCommon::~CCommon()
 {
 	// TODO Auto-generated destructor stub
+}
+
+/*
+ * Gets current time in nano seconds
+ * @param ts :[in] structure of current time
+ * @return current time in nano seconds
+*/
+unsigned long get_nanos(struct timespec ts)
+{
+    return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
+}
+
+/**
+ * Get current epoch time in string
+ * @param strCurTime
+ */
+void CCommon::getCurrentTimestampsInString(std::string &strCurTime)
+{
+	try
+	{
+		struct timespec tsMsgReceived;
+		timespec_get(&tsMsgReceived, TIME_UTC);
+		strCurTime = std::to_string(get_nanos(tsMsgReceived));
+	}
+	catch(exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS("Cannot get current time in string"));
+	}
+}
+
+/**
+ * Add current time stamp in message payload
+ * @param a_sMsg 		:[in] message in which to add time
+ * @param a_tsMsgRcvd	:[in] time stamp in nano seconds
+ * @return 	true : on success,
+ * 			false : on error
+ */
+bool CCommon::addTimestampsToMsg(std::string &a_sMsg, string tsKey, string strTimestamp)
+{
+	cJSON *root = NULL;
+	try
+	{
+		root = cJSON_Parse(a_sMsg.c_str());
+		if (NULL == root)
+		{
+			CLogger::getInstance().log(ERROR,
+					LOGDETAILS("ZMQ Message could not be parsed in json format"));
+			return false;
+		}
+
+		cJSON_AddStringToObject(root, tsKey.c_str(), strTimestamp.c_str());
+
+		a_sMsg.clear();
+		char *psNewJson = cJSON_Print(root);
+		if(NULL != psNewJson)
+		{
+			a_sMsg.assign(psNewJson);
+			free(psNewJson);
+			psNewJson = NULL;
+		}
+
+		if(root != NULL)
+		{
+			cJSON_Delete(root);
+		}
+
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Added timestamp in payload for MQTT"));
+		return true;
+
+	}
+	catch (exception &ex)
+	{
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to add timestamp in payload for MQTT" + std::string(ex.what())));
+
+		if(root != NULL)
+		{
+			cJSON_Delete(root);
+		}
+
+		return false;
+	}
 }

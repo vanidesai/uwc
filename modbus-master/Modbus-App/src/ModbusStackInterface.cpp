@@ -29,10 +29,11 @@ std::mutex g_RWCommonCallbackMutex;
  * for read/write coils,input register
  *
  * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
+ * @uTxID :[in] response sequence number
  * @return void nothing
  *
  */
-void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
+void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	if(pstMbusAppCallbackParams == NULL)
@@ -43,7 +44,6 @@ void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParam
 
 	// handle response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
-															MBUS_RESPONSE_ONDEMAND,
 															MBUS_CALLBACK_ONDEMAND_READ,
 															PublishJsonHandler::instance().getSReadResponseTopic());
 
@@ -57,10 +57,11 @@ void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParam
  * for read/write coils,input register
  *
  * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
+ * @uTxID :[in] response sequence number
  * @return void nothing
  *
  */
-void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
+void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	if(pstMbusAppCallbackParams == NULL)
@@ -71,7 +72,6 @@ void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPar
 
 	// handle response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
-															MBUS_RESPONSE_ONDEMAND,
 															MBUS_CALLBACK_ONDEMAND_READ_RT,
 															PublishJsonHandler::instance().getSReadResponseTopicRT());
 
@@ -85,10 +85,11 @@ void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPar
  * for read/write coils,input register
  *
  * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
+ * @uTxID :[in] response sequence number
  * @return void nothing
  *
  */
-void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
+void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	if(pstMbusAppCallbackParams == NULL)
@@ -99,7 +100,6 @@ void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPara
 
 	// handle response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
-														MBUS_RESPONSE_ONDEMAND,
 														MBUS_CALLBACK_ONDEMAND_WRITE,
 														PublishJsonHandler::instance().getSWriteResponseTopic());
 
@@ -113,10 +113,11 @@ void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPara
  * for read/write coils,input register
  *
  * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
+ * @uTxID :[in] response sequence number
  * @return void nothing
  *
  */
-void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams)
+void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 	if(pstMbusAppCallbackParams == NULL)
@@ -127,7 +128,6 @@ void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPa
 
 	// handle response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
-														MBUS_RESPONSE_ONDEMAND,
 														MBUS_CALLBACK_ONDEMAND_WRITE_RT,
 														PublishJsonHandler::instance().getSWriteResponseTopicRT());
 
@@ -149,7 +149,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					void* vpCallBackFun)
 {
 	string temp; //temporary string for logging
-
 	uint8_t u8ReturnType = MBUS_JSON_APP_ERROR_NULL_POINTER;
 
 	if(pstMbusApiPram != NULL)

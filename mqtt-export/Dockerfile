@@ -18,14 +18,15 @@ FROM ia_common:$EIS_VERSION as common
 # Build Paho C Library
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
+COPY MQTTAsync.c /
 RUN git clone --branch v1.3.1 https://github.com/eclipse/paho.mqtt.c.git \
+    &&  rm -rf paho.mqtt.c/src/MQTTAsync.c && cp /MQTTAsync.c paho.mqtt.c/src \
     &&	cd paho.mqtt.c \
     &&	mkdir build && cd build \
     &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=ON \
 	-DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS=OFF .. \
     &&	make -s \
     &&	make install
-
 
 # Build Paho CPP Library
 FROM eisbase as build-pahocpp
@@ -50,6 +51,19 @@ RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-
     && make \
     && make install
 
+# yaml build
+FROM eisbase as build-yaml
+
+RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
+    && cd yaml-cpp \
+    &&	mkdir build && cd build \
+    &&	cmake -DYAML_BUILD_SHARED_LIBS=ON ../ \
+    &&	make yaml-cpp \
+    &&	mkdir -p /usr/yaml \
+    &&  mkdir -p /usr/yaml/lib \
+    &&  cp lib* /usr/yaml/lib \
+    &&  cp -r ../include /usr/yaml \
+    && cd ../../
 
 # Build MQTT-Export application
 FROM eisbase as mqtt-export
@@ -58,6 +72,10 @@ COPY --from=common /usr/local/include /usr/local/include
 COPY --from=common /usr/local/lib /usr/local/lib
 COPY --from=common /usr/local/include/safe_* /usr/local/include/
 COPY MQTT-Export-App /MQTT-Export-App/. 
+
+COPY --from=build-yaml /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
+COPY --from=build-yaml /usr/yaml/lib/* /usr/local/lib/
+
 COPY --from=build-pahoc /usr/paho-c/lib/lib* /MQTT-Export-App/lib/
 COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* /MQTT-Export-App/lib/
 COPY --from=build-pahocpp /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
@@ -80,6 +98,7 @@ RUN mkdir -p /opt/intel/app
 RUN mkdir -p /opt/intel/config
 WORKDIR ${APP_WORK_DIR}
 COPY --from=mqtt-export /MQTT-Export-App/Release/MQTT_Export ${APP_WORK_DIR}
+COPY --from=build-yaml /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=build-pahoc /usr/paho-c/lib/lib* ${APP_WORK_DIR}
 COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}

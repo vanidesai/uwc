@@ -33,7 +33,9 @@ RUN wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz \
 # Build Paho C Library
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
+COPY MQTTAsync.c /
 RUN git clone --branch v1.3.1 https://github.com/eclipse/paho.mqtt.c.git \
+    &&  rm -rf paho.mqtt.c/src/MQTTAsync.c && cp /MQTTAsync.c paho.mqtt.c/src \
     &&	cd paho.mqtt.c \
     &&	mkdir build && cd build \
     &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=ON \
@@ -64,6 +66,21 @@ RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-
     && make \
     && make install
 
+# yaml build
+FROM eisbase as build-yaml
+
+RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
+    && cd yaml-cpp \
+    &&	mkdir build && cd build \
+    &&	cmake -DYAML_BUILD_SHARED_LIBS=ON ../ \
+    &&	make yaml-cpp \
+    &&	make install \
+    &&	mkdir -p /usr/yaml \
+    &&  mkdir -p /usr/yaml/lib \
+    &&  cp lib* /usr/yaml/lib \
+    &&  cp -r ../include /usr/yaml \
+    && cd ../../
+
 # Build MQTT-Export application
 FROM eisbase as mqtt-export
 WORKDIR /
@@ -80,6 +97,10 @@ COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/in
 COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
 COPY --from=gtest-lib /EIS/googletest-release-1.8.0/googletest/include/gtest /usr/local/include/gtest
 COPY --from=gtest-lib /EIS/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
+
+COPY --from=build-yaml /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
+COPY --from=build-yaml /usr/yaml/lib/* /usr/local/lib/
+
 
 RUN cd /MQTT-Export-App/Build.test \
     &&	export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \

@@ -124,6 +124,7 @@ typedef struct MbusAPI
 	long m_lPriority;
 	/** Holds the Mse Timeout  */
 	uint32_t m_u32mseTimeout;
+	int m_nRetry;
 }MbusAPI_t;
 
 // This structure defines request parameters for read periodic
@@ -186,12 +187,6 @@ typedef enum MbusStackErrorCode
 	MBUS_APP_ERROR_AUTHENTICATION_FAILED,
 }eMbusStackErrorCode;
 
-typedef enum MbusResponseType
-{
-	MBUS_RESPONSE_POLLING,
-	MBUS_RESPONSE_ONDEMAND,
-}eMbusResponseType;
-
 enum eMbusRequestType
 {
 	MBUS_REQUEST_NONE,
@@ -218,23 +213,24 @@ struct stOnDemandRequest
 	std::string m_strMetric;
 	std::string m_strVersion;
 	std::string m_strTopic;
-	std::string m_strQOS;
 	bool m_isByteSwap;
 	bool m_isWordSwap;
 	bool m_isRT;
 	//bool m_isWrite;
 	struct timespec m_obtReqRcvdTS;
 	long m_lPriority;
+	std::string m_strMqttTime;
+	std::string m_strEisTime;
 };
 
 /// function to call Modbus stack APIs
 uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 								MbusAPI_t *pstMbusApiPram,void* vpCallBackFun);
 
-void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
-void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
-void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
-void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
+void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
+void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
+void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
+void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
 
 using std::string;
 #include <string>
@@ -256,20 +252,18 @@ bool insertOnDemandReqData(unsigned short, stOnDemandRequest);
 
 /// function to remove entry from the map
 void removeOnDemandReqData(unsigned short);
+
+/// function to get request json
+bool getReqData(unsigned short seqno, MbusAPI_t& reqData);
+
+/// function to insert new entry in map
+bool insertReqData(unsigned short, MbusAPI_t);
+
+/// function to update map value
+bool updateReqData(unsigned short, MbusAPI_t);
+
+/// function to remove entry from the map
+void removeReqData(unsigned short);
 }
-
-/*class modbusInterface
-{
-	public :
-		/// function to process or call stack APIs
-		uint8_t MbusApp_Process_Request(RestMbusReqGeneric_t *pstMbusReqGen);
-
-		modbusInterface()
-		{
-
-		}
-
-};*/
-
 
 #endif /* INCLUDE_INC_COMMON_HPP_ */

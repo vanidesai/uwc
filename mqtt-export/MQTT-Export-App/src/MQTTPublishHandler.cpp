@@ -9,21 +9,21 @@
  ************************************************************************************/
 
 #include "MQTTPublishHandler.hpp"
-#include <vector>
 #include "cjson/cJSON.h"
 #include <semaphore.h>
 #include "Common.hpp"
-
+#include "ConfigManager.hpp"
 /**
  * constructor
  * @param strPlBusUrl :[in] MQTT broker URL
  */
-CMQTTPublishHandler::CMQTTPublishHandler(std::string strPlBusUrl, std::string strClientID):
+CMQTTPublishHandler::CMQTTPublishHandler(std::string strPlBusUrl, std::string strClientID, int iQOS):
 		publisher(strPlBusUrl, strClientID), ConfigState(MQTT_PUBLISHER_CONNECT_STATE)
 {
 	try
 	{
 		m_bIsFirst = true;
+		m_QOS = iQOS;
 		//connect options for sync publisher/client
 		syncConnOpts.set_keep_alive_interval(20);
 		syncConnOpts.set_clean_session(true);
@@ -151,52 +151,26 @@ bool CMQTTPublishHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespe
 }
 
 /**
- * Publish message to MQTT broker without message queue
- * @param a_sMsg 		:[in] message to publish
- * @param a_sTopic		:[in] topic on which to publish
- * @param qos			:[in] QOS with which to publish
- * @param a_tsMsgRcvd	:[in] time when message is received
- * @return 	true : on success,
- * 			false : on error
- */
-bool CMQTTPublishHandler::publish(std::string a_sMsg, std::string a_sTopic, int qos, struct timespec a_tsMsgRcvd) {
-
-	if (true == m_bIsFirst)
-	{
-		connect();
-		m_bIsFirst = false;
-	}
-
-	try
-	{
-		// Add timestamp to message
-		addTimestampsToMsg(a_sMsg, a_tsMsgRcvd);
-		publish(a_sMsg, a_sTopic, qos);
-	}
-	catch (const mqtt::exception &exc)
-	{
-#ifdef PERFTESTING
-		m_ui32PublishExcep++;
-#endif
-		CLogger::getInstance().log(FATAL, LOGDETAILS(exc.what()));
-	}
-	return false;
-}
-
-/**
  * Publish message on MQTT broker
  * @param a_sMsg 	:[in] message to publish
  * @param a_sTopic	:[in] topic on which to publish message
- * @param a_iQOS	:[in] QOS with which to publish message
- * @param a_bFromQ	:[in] is message from queue
+ * @param a_tsMsgRcvd :[in] time stamp to add while publishing
  * @return 	true : on success,
  * 			false : on error
  */
-bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQOS,
-		bool a_bFromQ)
+bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic, struct timespec a_tsMsgRcvd)
 {
 	try
 	{
+		if (true == m_bIsFirst)
+		{
+			connect();
+			m_bIsFirst = false;
+		}
+
+		// Add timestamp to message
+		addTimestampsToMsg(a_sMsg, a_tsMsgRcvd);
+
 		std::lock_guard<std::mutex> lock(mqttMutexLock);
 
 		// Check if topic is blank
@@ -221,32 +195,22 @@ bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic, in
 		{
 			if(false == connect())
 			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher is not connected with MQTT broker" + std::to_string(a_iQOS)));
+				CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher is not connected with MQTT broker"));
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to publish msg on MQTT : " + a_sMsg));
 				return false;
 			}
 		}
 
-		publisher.publish(mqtt::message(a_sTopic, a_sMsg, a_iQOS, false));
+		publisher.publish(mqtt::message(a_sTopic, a_sMsg, m_QOS, false));
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Published message on MQTT broker successfully with QOS:"
-									+ std::to_string(a_iQOS)));
+									+ std::to_string(m_QOS)));
 		return true;
 	}
 	catch (const mqtt::exception &exc)
 	{
-		if (false == a_bFromQ)
-		{
-#ifdef PERFTESTING
-			m_ui32PublishStrExcep++;
-#endif
-		}
-		else
-		{
 #ifdef PERFTESTING
 			m_ui32PublishExcep++;
 #endif
-		}
-
 		CLogger::getInstance().log(FATAL, LOGDETAILS(exc.what()));
 	}
 	return false;

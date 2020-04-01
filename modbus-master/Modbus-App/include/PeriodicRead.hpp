@@ -23,11 +23,9 @@
 #include <vector>
 #include <numeric>
 #include "Common.hpp"
-//#include "session.hpp"
-//#include "cpprest/http_listener.h"
-//#include "Httprest.hpp"
 #include "cjson/cJSON.h"
 #include "PublishJson.hpp"
+#include "ConfigManager.hpp"
 #include "API.h"
 
 /// node for response Q
@@ -41,7 +39,7 @@ struct stStackResponse
 	stTimeStamps m_objStackTimestamps;
 	long m_lPriority;
 	uint8_t  m_u8FunCode;
-	eMbusResponseType m_operationType;
+	eMbusCallbackType m_operationType;
 	string m_strResponseTopic;
 };
 
@@ -72,13 +70,16 @@ private:
 
 	BOOLEAN pushToQueue(struct stStackResponse &stStackResNode, eMbusCallbackType operationCallbackType);
 	BOOLEAN getDataToProcess(struct stStackResponse &a_stStackResNode, eMbusCallbackType operationCallbackType);
+	BOOLEAN checkForRetry(struct stStackResponse &a_stStackResNode, eMbusCallbackType operationCallbackType);
+	void getCallbackForRetry(void** callbackFunc, eMbusCallbackType operationCallbackType);
 
 	BOOLEAN prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp);
 	BOOLEAN postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData);
 	BOOLEAN postResponseJSON(stStackResponse& a_stResp);
 
 	BOOLEAN initSem();
-	eMbusStackErrorCode respProcessThreads(eMbusCallbackType operationCallbackType);
+	eMbusStackErrorCode respProcessThreads(eMbusCallbackType operationCallbackType,
+			sem_t& a_refSem, globalConfig::COperation a_refOps);
 
 	CPeriodicReponseProcessor();
 	CPeriodicReponseProcessor(CPeriodicReponseProcessor const&);             /// copy constructor is private
@@ -87,7 +88,6 @@ private:
 public:
 	static CPeriodicReponseProcessor& Instance();
 	void handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams,
-						eMbusResponseType respType,
 						eMbusCallbackType operationCallbackType,
 						string strResponseTopic);
 	bool isInitialized() {return m_bIsInitialized;}

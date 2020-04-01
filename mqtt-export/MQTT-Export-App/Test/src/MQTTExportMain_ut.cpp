@@ -91,7 +91,7 @@ TEST_F(MQTTExmportMain_ut, parse_msg_EmptyTopic) {
 
 	try
 	{
-		const char *json = "{\"topic\": \"\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"1234\"}";
+		const char *json = "{\"topic\": 0, \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"1234\"}";
 
 		int qos = 0;
 		std::string topicName = parse_msg(json, qos);
@@ -104,37 +104,40 @@ TEST_F(MQTTExmportMain_ut, parse_msg_EmptyTopic) {
 }
 
 /* Valid JSON; "qos present in JASON */
-TEST_F(MQTTExmportMain_ut, parse_msg_QOSPresent) {
+TEST_F(MQTTExmportMain_ut, parse_msg_QOSPresent)
+{
 
-	try
-	{
 		const char *json = "{\"qos\": \"1\", \"topic\": \"PL0_iou_write\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"1234\"}";
 
 		int qos = 0;
 		std::string topicName = parse_msg(json, qos);
-		std::cout << __func__ << " topic name parsed : " << topicName << endl;
-		//EXPECT_EQ(topicName, "");
 
-	}catch(exception &ex) {
-		EXPECT_EQ("", "PL0_iou_write");
-	}
+		EXPECT_EQ(1, qos);
 }
 
 /* Valid JSON; using default qos */
-TEST_F(MQTTExmportMain_ut, parse_msg_QOSDefault) {
+TEST_F(MQTTExmportMain_ut, parse_msg_QOSDefault)
+{
 
-	try
-	{
-		const char *json = "{\"qos\": \"5\", \"topic\": \"PL0_iou_write\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"1234\"}";
+	const char *json = "{\"qos\": \"5\", \"topic\": \"PL0_iou_write\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"1234\"}";
 
-		int qos = 0;
+	int qos = 10;
+	std::string topicName = parse_msg(json, qos);
+
+	EXPECT_EQ(0, qos);
+}
+
+TEST_F(MQTTExmportMain_ut, parse_msg_QOSInv_NULL)
+{
+
+
+		const char *json = "{\"qos\": 6, \"topic\": \"PL0_iou_write\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"1234\"}";
+
+		int qos = 6;
 		std::string topicName = parse_msg(json, qos);
-		std::cout << __func__ << " topic name parsed : " << topicName << endl;
-		//EXPECT_EQ(topicName, "");
 
-	}catch(exception &ex) {
-		EXPECT_EQ("", "PL0_iou_write");
-	}
+		EXPECT_EQ(6, qos);
+
 }
 
 /* Invalid JSON */
@@ -231,6 +234,29 @@ TEST_F(MQTTExmportMain_ut, processMsg_NULLMsg)
 	EXPECT_EQ(false, RetVal);
 }
 
+TEST_F(MQTTExmportMain_ut, processMsg_EmptyTopic)
+{
+	msg_envelope_t *msg = NULL;
+
+	msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
+	msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string("TestStr");
+	msg_envelope_elem_body_t* ptTopic = msgbus_msg_envelope_new_string("");
+
+	msg = msgbus_msg_envelope_new(CT_JSON);
+	msgbus_msg_envelope_put(msg, "version", ptVersion);
+	msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
+	msgbus_msg_envelope_put(msg, "topic", ptTopic);
+
+	string topic = "MQTT_Export_RdReq";
+	CMQTTPublishHandler mqttPublisher(CTopicMapper::getInstance().getStrMqttExportURL().c_str(), topic.c_str());
+
+
+	bool RetVal = processMsg(msg, mqttPublisher);
+
+	EXPECT_EQ(false, RetVal);
+}
+
+
 TEST_F(MQTTExmportMain_ut, processMsg_ValArg)
 {
 	msg_envelope_t *msg = NULL;
@@ -288,6 +314,44 @@ TEST_F(MQTTExmportMain_ut, publishEISMsg_Suc)
 	}
 
 	EXPECT_EQ(true, RetVal);
+}
+
+TEST_F(MQTTExmportMain_ut, publishEISMsg_InvEISMsg)
+{
+	stZmqContext context;
+	stZmqPubContext pubContext;
+	string topicType;
+	string EisMsg_UT = "InvalMsg";
+
+	string Topic_pub = "MQTT_Export_WrReq";
+	string Topic_sub = "TestTopic_sub";
+
+	bool RetVal = true;
+
+
+	/*****************publishEISMsg***************************/
+	if( true == CEISMsgbusHandler::Instance().getCTX(Topic_pub, context) )
+	{
+		if( true == CEISMsgbusHandler::Instance().getPubCTX(Topic_pub, pubContext) )
+		{
+			//Test target
+			RetVal = publishEISMsg(EisMsg_UT, context, pubContext);
+		}
+		else
+		{
+			cout<<endl<<"#############################################"<<endl;
+			cout<<"Error in getPubCTX() of pubContext; Skipped test MQTTExmportMain_ut.publishEISMsg_Suc";
+			cout<<endl<<"#############################################"<<endl;
+		}
+	}
+	else
+	{
+		cout<<endl<<"#############################################"<<endl;
+		cout<<"Error in getCTX() of context; Skipped test MQTTExmportMain_ut.publishEISMsg_Suc";
+		cout<<endl<<"#############################################"<<endl;
+	}
+
+	EXPECT_EQ(false, RetVal);
 }
 
 TEST_F(MQTTExmportMain_ut, publishEISMsg_NULLArg)

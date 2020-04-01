@@ -16,7 +16,7 @@
 CLogger::CLogger()
 {
 	logger = NULL;
-	// TODO Auto-generated constructor stub
+
 	const char* logPropsFile = std::getenv("Log4cppPropsFile");
 	if(logPropsFile == NULL)
 	{
@@ -36,9 +36,7 @@ CLogger::CLogger()
  */
 CLogger::~CLogger()
 {
-	// TODO Auto-generated destructor stub
 	logger->removeAllAppenders();
-
 	logger->shutdownForced();
 }
 

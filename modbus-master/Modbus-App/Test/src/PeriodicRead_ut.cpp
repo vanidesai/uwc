@@ -31,8 +31,8 @@ void PeriodicRead_ut::TearDown()
 
 
 //#ifdef MODBUS_STACK_TCPIP_ENABLED
-extern eMbusStackErrorCode readPeriodicRTCallBack(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
-extern eMbusStackErrorCode readPeriodicCallBack(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
+extern eMbusStackErrorCode readPeriodicRTCallBack(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
+extern eMbusStackErrorCode readPeriodicCallBack(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
 //#else
 
 
@@ -215,6 +215,18 @@ TEST_F(PeriodicRead_ut, handleResponse_dataSizeLessThanNumOfBytes) {
 }
 #endif
 #endif
+
+
+TEST_F(PeriodicRead_ut, insertTxIDReqData_test)
+{
+	struct stZmqContext a_objBusContext;
+	struct stZmqPubContext a_objPubContext;
+	uint8_t a_uiFuncCode = 1;
+	CRefDataForPolling a_stRdPrdObj{CUniqueDataPoint_obj, a_objBusContext, a_objPubContext, a_uiFuncCode};
+	CRequestInitiator::instance().insertTxIDReqData(9472, a_stRdPrdObj);
+
+}
+
 /******************************PeriodicRead::isInitialized*****************************************/
 
 /* TC006
@@ -295,19 +307,21 @@ TC009
 Test: Behaviour of readPeriodicCallBack()
  */
 
-TEST_F(PeriodicRead_ut, readPeriodicCallBack_NULLArg1) {
+TEST_F(PeriodicRead_ut, readPeriodicCallBack_NULLArg1)
+{
+	uint16_t uTxID = 20;
 
 	try
 	{
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 
 		//readPeriodicCallBack(u8UnitID, u16TransacID, NULL, u16Port, u8FunCode, pstException, u8numBytes, pu8data, u16StartAddress, u16Quantity, a_objStackTimestamps);
-		readPeriodicCallBack(pstMbusAppCallbackParams);
+		readPeriodicCallBack(pstMbusAppCallbackParams, uTxID);
 
 #else
 
 		//readPeriodicCallBack(u8UnitID, u16TransacID, NULL, u8FunCode, pstException, u8numBytes, pu8data, u16StartAddress, u16Quantity, a_objStackTimestamps);
-		readPeriodicCallBack(pstMbusAppCallbackParams);
+		readPeriodicCallBack(pstMbusAppCallbackParams, uTxID);
 
 #endif
 	}
@@ -370,13 +384,14 @@ Test: Behaviour of readPeriodicCallBack()
  */
 #endif
 
-#if 0
+#if 1
 //TRhis test is should not be commented
-TEST_F(PeriodicRead_ut, insertTxIDReqData_return) {
+TEST_F(PeriodicRead_ut, isTxIDPresent_return) {
 
 	try
 	{
-		CRequestInitiator::instance().insertTxIDReqData(3, CRefDataForPolling_obj);
+		//CRequestInitiator::instance().insertTxIDReqData(3, CRefDataForPolling_obj);
+		CRequestInitiator::instance().isTxIDPresent(3);
 		EXPECT_EQ(1, 1); //Programme doesnt hang
 
 	}
@@ -388,7 +403,9 @@ TEST_F(PeriodicRead_ut, insertTxIDReqData_return) {
 }
 #endif
 
-#if 0
+
+
+#if 1
 // This test should not be commented
 TEST_F(PeriodicRead_ut, timer_Start)
 {
@@ -449,7 +466,7 @@ TC0015
 Test: Behaviour of checkTimer()
  */
 
-#if 0
+#if 1
 // Need to be checked once again this test should not be commented.
 TEST_F(PeriodicRead_ut, checkTimer_return)
 {
@@ -518,7 +535,7 @@ TEST_F(PeriodicRead_ut, get_Timer_freq)
 	}
 }
 
-#if 0
+#if 1
 TEST_F(PeriodicRead_ut, timer_Thread)
 {
     bool g_stopTimer;
@@ -558,14 +575,15 @@ TEST_F(PeriodicRead_ut, readPeriodic_callback_true)
 {
 	bool isRTRequest = true;
 	uint8_t u8ReturnType = MBUS_STACK_NO_ERROR;
+	uint16_t uTxID = 20;
 	if(true == isRTRequest)
 	{
-		u8ReturnType = readPeriodicRTCallBack(pstMbusAppCallbackParams);
+		u8ReturnType = readPeriodicRTCallBack(pstMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(true, isRTRequest);
 	}
 	else
 	{
-		u8ReturnType = readPeriodicCallBack(pstMbusAppCallbackParams);
+		u8ReturnType = readPeriodicCallBack(pstMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(false, isRTRequest);
 	}
 }
@@ -574,17 +592,18 @@ TEST_F(PeriodicRead_ut, readPeriodic_callback_true)
 TEST_F(PeriodicRead_ut, readPeriodic_callback_true_NULL)
 {
 	bool isRTRequest = true;
-		uint8_t u8ReturnType = MBUS_STACK_NO_ERROR;
-		if(true == isRTRequest)
-		{
-			u8ReturnType = readPeriodicRTCallBack(stMbusAppCallbackParams);
-			EXPECT_EQ(true, isRTRequest);
-		}
-		else
-		{
-			u8ReturnType = readPeriodicCallBack(stMbusAppCallbackParams);
-			EXPECT_EQ(false, isRTRequest);
-		}
+	uint8_t u8ReturnType = MBUS_STACK_NO_ERROR;
+	uint16_t uTxID = 20;
+	if(true == isRTRequest)
+	{
+		u8ReturnType = readPeriodicRTCallBack(stMbusAppCallbackParams, uTxID);
+		EXPECT_EQ(true, isRTRequest);
+	}
+	else
+	{
+		u8ReturnType = readPeriodicCallBack(stMbusAppCallbackParams, uTxID);
+		EXPECT_EQ(false, isRTRequest);
+	}
 }
 
 
@@ -592,14 +611,15 @@ TEST_F(PeriodicRead_ut, readPeriodic_callback_false)
 {
 	bool isRTRequest = false;
 	uint8_t u8ReturnType = MBUS_STACK_NO_ERROR;
+	uint16_t uTxID = 20;
 	if(true == isRTRequest)
 	{
-		u8ReturnType = readPeriodicRTCallBack(pstMbusAppCallbackParams);
+		u8ReturnType = readPeriodicRTCallBack(pstMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(true, isRTRequest);
 	}
 	else
 	{
-		u8ReturnType = readPeriodicCallBack(pstMbusAppCallbackParams);
+		u8ReturnType = readPeriodicCallBack(pstMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(false, isRTRequest);
 	}
 }
@@ -608,14 +628,15 @@ TEST_F(PeriodicRead_ut, readPeriodic_callback_false_NULL)
 {
 	bool isRTRequest = false;
 	uint8_t u8ReturnType = MBUS_STACK_NO_ERROR;
+	uint16_t uTxID = 20;
 	if(true == isRTRequest)
 	{
-		u8ReturnType = readPeriodicRTCallBack(stMbusAppCallbackParams);
+		u8ReturnType = readPeriodicRTCallBack(stMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(true, isRTRequest);
 	}
 	else
 	{
-		u8ReturnType = readPeriodicCallBack(stMbusAppCallbackParams);
+		u8ReturnType = readPeriodicCallBack(stMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(false, isRTRequest);
 	}
 }
@@ -674,19 +695,41 @@ TEST_F(PeriodicRead_ut, polled_point_list_false)
 	}
 }
 
+TEST_F(PeriodicRead_ut, saveResponse_test)
+{
+	bool result;
+	std::string  response= "Response";
+	stTimeStamps objStackTimestamps;
+
+	zmq_handler::stZmqContext a_BusContext;
+	zmq_handler::stZmqPubContext a_objPubContext;
+	uint8_t a_uiFuncCode;
+	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
+	result = CRefDataForPolling_obj.saveGoodResponse(response, objStackTimestamps);
+
+}
 
 
+TEST_F(PeriodicRead_ut, lastGoodReaspose_test)
+{
+	zmq_handler::stZmqContext a_BusContext;
+	zmq_handler::stZmqPubContext a_objPubContext;
+	uint8_t a_uiFuncCode;
+	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
+	stLastGoodResponse stLastGoodResponse_obj = CRefDataForPolling_obj.getLastGoodResponse();
+}
 
 /*
+ *  Check this test case again
+
 TEST_F(PeriodicRead_ut, Awaitresp)
 {
-	uint32_t uiRef;
-	CRequestInitiator CRequestInitiator_obj;
-	if(false == CRequestInitiator_obj.getFreqRefForPollCycle(uiRef))
-	{
-		break;
-	}
-	std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef);
+	stException_t m_stException = {};
+	m_stException.m_u8ExcCode = 100;
+	m_stException.m_u8ExcStatus = 100;
+	uint32_t uiRef  = 20;
+
+	std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef, false);
 
 	for(auto a_oReqData: a_vReqData)
 	{
@@ -697,7 +740,7 @@ TEST_F(PeriodicRead_ut, Awaitresp)
 
 			if(true == objReqData.getDataPoint().isIsAwaitResp())
 			{
-				CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData);
+				CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException);
 				continue;
 			}
 		}
@@ -712,11 +755,37 @@ TEST_F(PeriodicRead_ut, Awaitresp)
 
 	}
 
+}
+*/
+
+/*  Should check this test case for isIsAwaitResp() and setIsAwaitResp() functions
+
+TEST_F(PeriodicRead_ut, AwaitRes)
+{
+	stException_t m_stException = {};
+	m_stException.m_u8ExcCode = 100;
+	m_stException.m_u8ExcStatus = 100;
+	stStackResponse res;
+	//CRefDataForPolling objReqData ;
+
+	try
+	{
+		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(res.u16TransacID);
+		// Response is received. Reset response awaited status
+		objReqData.getDataPoint().isIsAwaitResp();
 
 
+	}
+	catch(std::exception &e)
+	{
+		cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
+		cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
+		cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
+		cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
 
-}*/
-/*
+	}
+}
+
 
 TEST_F(PeriodicRead_ut, set_Await)
 {
@@ -727,7 +796,7 @@ TEST_F(PeriodicRead_ut, set_Await)
 	{
 		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(res.u16TransacID);
 		// Response is received. Reset response awaited status
-		objReqData.getDataPoint().setIsAwaitResp(false);
+		objReqData.getDataPoint().setIsAwaitResp(true);
 
 		//CPeriodicReponseProcessor_obj.postResponseJSON(a_stResp, objReqData);
 	}
@@ -739,44 +808,7 @@ TEST_F(PeriodicRead_ut, set_Await)
 		EXPECT_EQ("map::at", (string)e.what());
 
 	}
-}
- */
+}*/
 
-
-
-
-/******************************CTimeMapper::ioPeriodicReadTimer****************************************
-TC0016
-Test: Behaviour of ioPeriodicReadTimer()
- */
-#if 0
-TEST_F(PeriodicRead_ut, ioPeriodicReadTimer_return) {
-
-	try
-	{
-		CTimeMapper::instance().ioPeriodicReadTimer(1);
-		EXPECT_EQ(1,1);
-
-	}
-	catch(exception &e)
-	{
-		EXPECT_EQ("", e.what()); //Test fails.s
-	}
-
-}
-
-
-TEST_F(PeriodicRead_ut, Start_timer)
-{
-	try{
-
-		LinuxTimer::start_timer(1);
-	}
-	catch(std::exception &e)
-	{
-		EXPECT_EQ("",(string)e.what());
-	}
-}
-#endif
 #endif
 

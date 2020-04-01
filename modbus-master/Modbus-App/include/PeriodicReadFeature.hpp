@@ -19,10 +19,7 @@
 #include "ZmqHandler.hpp"
 #include <functional>
 #include "PeriodicRead.hpp"
-
-//#define QOS         1
-//#define TIMEOUT     10000L
-//#define MAX_RDPRD_REQ_RETRIES 10
+#include "ConfigManager.hpp"
 
 using network_info::CUniqueDataPoint;
 using zmq_handler::stZmqContext;
@@ -124,7 +121,6 @@ class CTimeRecord
 	}
 	std::vector<CRefDataForPolling>& getPolledPointList()
 	{
-		//std::lock_guard<std::mutex> lock(m_vectorMutex);
 		return m_vPolledPoints;
 	}
 	std::vector<CRefDataForPolling>& getPolledPointListRT()
@@ -175,10 +171,7 @@ class CTimeMapper
 		}
 		return m_mapTimeRecord.at(uiRef).getPolledPointList();
 	}
-	/*std::vector<CRefDataForPolling>& getPolledPointListRT(uint32_t uiRef)
-	{
-		return m_mapTimeRecord.at(uiRef).getPolledPointListRT();
-	}*/
+
 	bool insert(uint32_t a_uTime, CRefDataForPolling &a_oPoint);
 
 	uint32_t getMinTimerFrequency();
@@ -193,8 +186,8 @@ private:
 	// Default constructor
 	CRequestInitiator();
 
-	void threadReqInit(bool isRTPoint);
-	void threadCheckCutoffRespInit(bool isRTPoint);
+	void threadReqInit(bool isRTPoint, const globalConfig::COperation a_refOps);
+	void threadCheckCutoffRespInit(bool isRTPoint, const globalConfig::COperation a_refOps);
 
 	void initiateRequest(std::vector<CRefDataForPolling>&, bool isRTRequest);
 
@@ -250,7 +243,7 @@ public:
 struct stLastGoodResponse
 {
 	std::string m_sValue;
-	stTimeStamps m_objStackTimestamps;
+	std::string m_sLastUsec;
 };
 
 class CRefDataForPolling
@@ -290,7 +283,7 @@ class CRefDataForPolling
 	const struct stZmqContext & getBusContext() const {return m_objBusContext;}
 	const struct stZmqPubContext & getPubContext() const {return m_objPubContext;}
 
-	bool saveGoodResponse(const std::string a_sValue, stTimeStamps a_objStackTimestamps);
+	bool saveGoodResponse(const std::string& a_sValue, const std::string& a_sUsec);
 	stLastGoodResponse getLastGoodResponse();
 
 	uint16_t getReqTxID() { return m_uReqTxID.load(); };

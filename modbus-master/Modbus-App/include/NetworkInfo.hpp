@@ -49,7 +49,6 @@ namespace network_info
 	{
 		unsigned int m_uiPollFreq;
 		bool m_bIsRealTime;
-		string m_usQOS;
 	};
 	class CDataPoint
 	{
@@ -60,8 +59,6 @@ namespace network_info
 		
 		public:
 		const std::string& getID() const {return m_sId;}
-		//const struct stDataPointAddress& getAddress() { return m_stAddress;}
-		//const struct stPollingData& getPollingConfig() { return m_stPollingConfig;}
 
 		const struct stDataPointAddress& getAddress() const { return m_stAddress;}
 		const struct stPollingData& getPollingConfig() const { return m_stPollingConfig;}
@@ -89,12 +86,6 @@ namespace network_info
 	};
 	struct stRTUAddrInfo
 	{
-		std::string m_sPortAddress;
-		unsigned int m_uiBaudRate;
-		unsigned int m_uiDataBits;
-		unsigned int m_uiParity;
-		unsigned int m_uiStart;
-		unsigned int m_uiStop;
 		unsigned int m_uiSlaveId;
 	};
 	struct stModbusAddrInfo
@@ -114,8 +105,6 @@ namespace network_info
 
 		public:
 		std::string getID() const {return m_sId;}
-		//const struct stModbusAddrInfo& getAddressInfo() {return m_stAddress;}
-		//const struct CDeviceInfo& getDevInfo() {return m_oDev;}
 
 		const struct stModbusAddrInfo& getAddressInfo() const {return m_stAddress;}
 		const struct CDeviceInfo& getDevInfo() const {return m_oDev;}
@@ -158,11 +147,6 @@ namespace network_info
 		CUniqueDataPoint(const CUniqueDataPoint&);
 
 		CUniqueDataPoint& operator=(const CUniqueDataPoint&) = delete;	// Copy assign
-
-		//std::string getID() {return m_sId;}
-		//const CWellSiteInfo& getWellSite() {return m_rWellSite;}
-		//const CWellSiteDevInfo& getWellSiteDev() {return m_rWellSiteDev;}
-		//const CDataPoint& getDataPoint() {return m_rPoint;}
 
 		std::string getID() const {return m_sId;}
 		const CWellSiteInfo& getWellSite() const {return m_rWellSite;}

@@ -12,15 +12,13 @@
 #define MQTTHANDLER_HPP_
 
 #include <atomic>
-#include <vector>
-#include <semaphore.h>
-#include "mqtt/async_client.h"
-#include "mqtt/client.h"
+#include <mqtt/async_client.h>
+#include <mqtt/client.h>
 #include "MQTTCallback.hpp"
 #include "Common.hpp"
 #include "EISMsgbusHandler.hpp"
 #include <eis/msgbus/msgbus.h>
-#include <queue>
+#include "QueueMgr.hpp"
 
 using namespace std;
 
@@ -37,42 +35,6 @@ typedef enum MQTT_SUBSCRIBER_CONFIG_STATE
 	MQTT_SUSCRIBER_CONNECT_STATE,
 	MQTT_SUSCRIBER_SUBSCRIBE_STATE
 }Mqtt_Sub_Config_state_t;
-
-struct queueSemaphore
-{
-	int type;
-	std::mutex queueMutex;
-	std::queue <mqtt::const_message_ptr> msgQueue;
-};
-
-class CQueueMgr
-{
-	bool initSem();
-
-public:
-
-	queueSemaphore msgVector[4];
-	//std::vector<queueSemaphore> msgVector;
-
-	bool pushMsg(int requestType, mqtt::const_message_ptr &msg);
-	CQueueMgr();
-	~CQueueMgr();
-
- 	bool getOperation(string &topic, bool &isWrite);
- 	bool parseMQTTMsg(const char *json, bool &isRealtime);
-
-	bool getSubMsgFromQ(int msgRequestType, mqtt::const_message_ptr &msg);
-
- 	void cleanup();
-
-	//semaphore for real-time msg
-	sem_t g_semRTReadMsg;
-	sem_t g_semRTWriteMsg;
-	//semaphore for non-real-time msg
-	sem_t g_semReadMsg;
-	sem_t g_semWriteMsg;
-
-};
 
 class CMQTTHandler
 {
@@ -94,7 +56,6 @@ class CMQTTHandler
 
 	std::atomic<Mqtt_Sub_Config_state_t> subConfigState;
 
- 	//bool initSem();
  	bool connectSubscriber();
  	bool subscribeToTopics();
 
@@ -103,6 +64,13 @@ class CMQTTHandler
 
 	friend class CMQTTCallback;
 	friend class CMQTTActionListener;
+
+	/**
+	* fill the default realtime from global config
+	* @param isWrite	:[in] opearation type
+	* @return realtime value
+	*/
+	bool fillDefaultRealtime(const bool isWrite);
 
 #ifdef PERFTESTING
 	// For testing
@@ -120,7 +88,8 @@ public:
 	~CMQTTHandler();
 	static CMQTTHandler& instance(); //function to get single instance of this class
 
-	CQueueMgr queueMgr;
+	bool getOperation(string &topic, bool &isWrite);
+ 	bool parseMQTTMsg(const char *json, bool &isRealtime, const bool isWrite);
 
 	bool pushSubMsgInQ(mqtt::const_message_ptr msg);
  	void cleanup();

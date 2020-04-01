@@ -12,33 +12,39 @@
 #include <thread>
 #include <vector>
 #include <iterator>
-#include <assert.h>
+//#include <assert.h>
 #include <semaphore.h>
-#include <csignal>
+//#include <csignal>
 
 #include "Common.hpp"
+#include "QueueMgr.hpp"
 #include "MQTTSubscribeHandler.hpp"
 #include "EISMsgbusHandler.hpp"
 #include "ConfigManager.hpp"
 #include "Logger.hpp"
 #include "MQTTPublishHandler.hpp"
+#include "ConfigManager.hpp"
 
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
 #endif
 
 vector<std::thread> g_vThreads;
-//semaphore for real-time msg
-extern sem_t g_semRTReadMsg;
-extern sem_t g_semRTWriteMsg;
-//semaphore for non-real-time msg
-extern sem_t g_semNonRTReadMsg;
-extern sem_t g_semNonRTWriteMsg;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.2.4"
+#define APP_VERSION "0.0.2.6"
 
+// patterns to be used to find on-demand topic strings
+// topic syntax -
+// for non-RT topic for polling - <topic_name>__PolledData
+// for RT topic read RT - <topic_name>__RdReq_RT
+#define POLLING			 		"_PolledData"
+#define POLLING_RT 				"_PolledData_RT"
+#define READ_RESPONSE 			"_RdResp"
+#define READ_RESPONSE_RT		"_RdResp_RT"
+#define WRITE_RESPONSE 			"_WrResp"
+#define WRITE_RESPONSE_RT		"_WrResp_RT"
 /**
  * add sourcetopic key in payload to publish on EIS
  * @param json	:[in] json string in which to add topic name
@@ -98,7 +104,7 @@ bool addSrTopic(string &json, string& topic)
  * @param qos	:[out] QOS
  * @return parsed topic name from message
  */
-std::string parse_msg(const char *json, int& qos)
+std::string parse_msg(const char *json)
 {
 	std::string topic_name = "";
 	try
@@ -133,36 +139,6 @@ std::string parse_msg(const char *json, int& qos)
 
 		topic_name.assign(ctopic_name);
 
-		if(! cJSON_HasObjectItem(root, "qos"))
-		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("Message received from ZMQ does not have key : qos, using default QOS = 0"));
-
-			qos = 0;
-		}
-		else
-		{
-			char *c_qos = cJSON_GetObjectItem(root, "qos")->valuestring;
-			if (NULL == c_qos)
-			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Key 'qos' could not be found in message received from ZMQ, using default QOS = 0"));
-			}
-			else
-			{
-				if((strcmp(c_qos, "0") == 0) || (strcmp(c_qos, "1") == 0) || (strcmp(c_qos, "2") == 0))
-				{
-					std::string::size_type sz;   // alias of size_t
-					qos = std::stoi(c_qos, &sz);
-				}
-				else
-				{
-					CLogger::getInstance().log(ERROR, LOGDETAILS("Received invalid value for QOS, using default QOS = 0"));
-					qos = 0;
-				}
-
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Using 'QOS' for message received from ZMQ : " + std::string(c_qos)));
-			}
-		}
-
 		if (NULL != root)
 		{
 			cJSON_Delete(root);
@@ -180,6 +156,8 @@ std::string parse_msg(const char *json, int& qos)
 /**
  * Process ZMQ message
  * @param msg	:	[in] actual message
+ * returns true on success
+ * 			false on failure
  */
 bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 {
@@ -205,8 +183,7 @@ bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 	{
 		if(NULL != parts[0].bytes)
 		{
-			int iQOS = 0;
-			std::string revdTopic(parse_msg(parts[0].bytes, iQOS));
+			std::string revdTopic(parse_msg(parts[0].bytes));
 
 			if (revdTopic == "")
 			{
@@ -224,8 +201,7 @@ bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 						+ std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 				+ ", Msg: " + mqttMsg));
 	#endif
-				mqttPublisher.publish(mqttMsg,
-						revdTopic.c_str(), iQOS, tsMsgRcvd);
+				mqttPublisher.publish(mqttMsg, revdTopic, tsMsgRcvd);
 
 				bRetVal = true;
 			}
@@ -251,23 +227,70 @@ bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 
 	return bRetVal;
 }
+
+/**
+ * get operation info from global config depending on the topic name
+ * @param topic			:[in] topic for which to retrieve operation info
+ * @param operation		:[out] operation info
+ * @return none
+ */
+void getOperation(string topic, globalConfig::COperation& operation)
+{
+	if(std::string::npos != topic.find(POLLING_RT,
+			topic.length() - std::string(POLLING_RT).length(),
+			std::string(POLLING_RT).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig();
+	}
+	else if(std::string::npos != topic.find(POLLING,
+			topic.length() - std::string(POLLING).length(),
+			std::string(POLLING).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig();
+	}
+	else if(std::string::npos != topic.find(READ_RESPONSE_RT,
+			topic.length() - std::string(READ_RESPONSE_RT).length(),
+			std::string(READ_RESPONSE_RT).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getRTConfig();
+	}
+	else if(std::string::npos != topic.find(WRITE_RESPONSE_RT,
+			topic.length() - std::string(WRITE_RESPONSE_RT).length(),
+			std::string(WRITE_RESPONSE_RT).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getRTConfig();
+	}
+	else if(std::string::npos != topic.find(READ_RESPONSE,
+			topic.length() - std::string(READ_RESPONSE).length(),
+			std::string(READ_RESPONSE).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getNonRTConfig();
+	}
+	else if(std::string::npos != topic.find(WRITE_RESPONSE,
+			topic.length() - std::string(WRITE_RESPONSE).length(),
+			std::string(WRITE_RESPONSE).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getNonRTConfig();
+	}
+}
+
 /**
  * Thread function to listen on EIS and send data to MQTT
  * @param topic 	:[in] topic to listen onto
  * @param context	:[in] msg bus context
  * @param subContext:[in] sub context
  */
-void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext)
+void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext, globalConfig::COperation operation)
 {
-#ifdef REALTIME_THREAD_PRIORITY
-	CTopicMapper::getInstance().set_thread_priority();
-#endif
+	globalConfig::set_thread_sched_param(operation);
+	globalConfig::display_thread_sched_attr(topic + " listenOnEIS");
+	int qos = operation.getQos();
 
 	void *msgbus_ctx = context.m_pContext;
 	recv_ctx_t *sub_ctx = subContext.m_pContext;
 
 	//consider topic name as distinguishing factor for publisher
-	CMQTTPublishHandler mqttPublisher(CTopicMapper::getInstance().getStrMqttExportURL().c_str(), topic.c_str());
+	CMQTTPublishHandler mqttPublisher(CCommon::getInstance().getStrMqttExportURL().c_str(), topic.c_str(), qos);
 
 	CLogger::getInstance().log(INFO, LOGDETAILS("ZMQ listening for topic : " + topic));
 
@@ -328,7 +351,7 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
 
 	// Creating message to be published
 	msg_envelope_t *msg = msgbus_msg_envelope_new(CT_JSON);
-
+	cJSON *root = NULL;
 	try
 	{
 		if(msg == NULL)
@@ -338,7 +361,7 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
 		}
 
 		//parse from root element
-		cJSON *root = cJSON_Parse(eisMsg.c_str());
+		root = cJSON_Parse(eisMsg.c_str());
 		if (NULL == root)
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not parse value received from MQTT"));
@@ -354,15 +377,23 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
 		cJSON *device = root->child;
 		while (device)
 		{
-			string temp(device->string);
-			temp.append(" : ");
-			temp.append(device->valuestring);
-			CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
-			msg_envelope_elem_body_t *value = msgbus_msg_envelope_new_string(
-					device->valuestring);
-			msgbus_msg_envelope_put(msg, device->string, value);
+			if(cJSON_IsString(device))
+			{
+				string temp(device->string);
+				temp.append(" : ");
+				temp.append(device->valuestring);
+				CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
+
+				msg_envelope_elem_body_t *value = msgbus_msg_envelope_new_string(
+						device->valuestring);
+				msgbus_msg_envelope_put(msg, device->string, value);
+			}
+			else
+			{
+				throw string("Invalid JSON");
+			}
 			// get and print key
 			device = device->next;
 		}
@@ -372,25 +403,42 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
 			cJSON_Delete(root);
 		}
 
+		//add time stamp before publishing msg on EIS
+		std::string strTsReceived;
+		CCommon::getInstance().getCurrentTimestampsInString(strTsReceived);
+
+		msg_envelope_elem_body_t* msgPublishOnEIS = msgbus_msg_envelope_new_string(strTsReceived.c_str());
+		if(msgPublishOnEIS != NULL)
+		{
+			msgbus_msg_envelope_put(msg, "tsMsgPublishOnEIS", msgPublishOnEIS);
+		}
+
 		msgbus_publisher_publish(context.m_pContext,
 				(publisher_ctx_t*) pubContext.m_pContext, msg);
 		if(msg != NULL)
 			msgbus_msg_envelope_destroy(msg);
 
-		retVal = true;
-
+		return true;
 	}
-	catch (exception &ex)
+	catch(string& strException)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(strException));
+	}
+	catch(exception &ex)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
-
-		if(msg != NULL)
-		{
-			msgbus_msg_envelope_destroy(msg);
-		}
-		retVal = false;
 	}
-	return retVal;
+
+	if(msg != NULL)
+	{
+		msgbus_msg_envelope_destroy(msg);
+	}
+	if (root)
+	{
+		cJSON_Delete(root);
+	}
+
+	return false;
 }
 
 /**
@@ -426,22 +474,22 @@ bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 		{
 			if(isRealtime)
 			{
-				eisTopic.assign(CTopicMapper::getInstance().getStrRTWriteRequest());
+				eisTopic.assign(CCommon::getInstance().getStrRTWriteRequest());
 			}
 			else
 			{
-				eisTopic.assign(CTopicMapper::getInstance().getStrWriteRequest());
+				eisTopic.assign(CCommon::getInstance().getStrWriteRequest());
 			}
 		}
 		else//read request
 		{
 			if(isRealtime)
 			{
-				eisTopic.assign(CTopicMapper::getInstance().getStrRTReadRequest());
+				eisTopic.assign(CCommon::getInstance().getStrRTReadRequest());
 			}
 			else
 			{
-				eisTopic.assign(CTopicMapper::getInstance().getStrReadRequest());
+				eisTopic.assign(CCommon::getInstance().getStrReadRequest());
 			}
 		}
 
@@ -486,7 +534,7 @@ bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 			{
 				CLogger::getInstance().log(DEBUG, LOGDETAILS("Published EIS message : "	+ strMsg + " on topic :" + eisTopic));
 				bRetVal = true;
-				std::cout << "Published EIS message : "	<< strMsg << " on topic :" << eisTopic << std::endl;
+				//std::cout << "Published EIS message : "	<< strMsg << " on topic :" << eisTopic << std::endl;
 			}
 			else
 			{
@@ -512,158 +560,74 @@ bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 }
 
 /**
- * Thread function to read non-RT read-request from queue filled up by MQTT and send data to EIS
+ * set thread priority for threads which send msgs from MQTT-Export to EIS
+ * @param isRealtime
+ * @param isRead
  */
-void postReadMsgsToEIS()
+void set_thread_priority_for_eis(bool& isRealtime, bool& isRead)
+{
+	globalConfig::COperation operation;
+
+	try
+	{
+		if(isRealtime)
+		{
+			if(isRead)
+			{
+				operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getRTConfig();
+			}
+			else
+			{
+				operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getRTConfig();
+			}
+		}
+		else
+		{
+			if(isRead)
+			{
+				operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getNonRTConfig();
+			}
+			else
+			{
+				operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getNonRTConfig();
+			}
+		}
+		globalConfig::set_thread_sched_param(operation);
+		CLogger::getInstance().log(DEBUG, LOGDETAILS("Set thread priorities"));
+		std::cout << "** Set thread priorities for isRead: " << isRead << ", isRealtime : " << isRealtime << endl;
+	}
+	catch(exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+	}
+}
+
+/**
+ * Thread function to read requests from queue filled up by MQTT and send data to EIS
+ * @param qMgr 	:[in] pointer to respective queue manager
+ */
+void postMsgsToEIS(QMgr::CQueueMgr& qMgr)
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting thread to send messages on EIS"));
 
-	try
-	{
-		mqtt::const_message_ptr recvdMsg;
-		bool isRealtime = false;
-		bool isRead = true;
+	bool isRealtime = qMgr.isRealTime();
+	bool isRead = qMgr.isRead();
 
-		while (false == g_shouldStop.load())
-		{
-			if((sem_wait(&CMQTTHandler::instance().queueMgr.g_semReadMsg)) == -1 && errno == EINTR)
-			{
-				// Continue if interrupted by handler
-				continue;
-			}
+	//set priority to send msgs on EIS from MQTT-export (on-demand)
+	set_thread_priority_for_eis(isRealtime, isRead);
 
-
-			int msgRequestType = 0;
-			if (false == CMQTTHandler::instance().queueMgr.getSubMsgFromQ(msgRequestType, recvdMsg))
-			{
-				CLogger::getInstance().log(INFO, LOGDETAILS("No message to send to EIS in queue"));
-				continue;
-			}
-
-			processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
-		}
-	}
-	catch (const std::exception &e)
-	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-	}
-}
-
-/**
- * Thread function to read non-RT write-request from queue filled up by MQTT and send data to EIS
- */
-void postWriteMsgsToEIS()
-{
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting thread to send messages on EIS"));
+	globalConfig::display_thread_sched_attr("postMsgsToEIS");
 
 	try
 	{
 		mqtt::const_message_ptr recvdMsg;
-		bool isRealtime = false;
-		bool isRead = false;
 
 		while (false == g_shouldStop.load())
 		{
-			if((sem_wait(&CMQTTHandler::instance().queueMgr.g_semWriteMsg)) == -1 && errno == EINTR)
+			if(true == qMgr.isMsgArrived(recvdMsg))
 			{
-				// Continue if interrupted by handler
-				continue;
+				processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
 			}
-
-			int msgRequestType = 2;
-			if (false == CMQTTHandler::instance().queueMgr.getSubMsgFromQ(msgRequestType, recvdMsg))
-			{
-				CLogger::getInstance().log(INFO, LOGDETAILS("No message to send to EIS in queue"));
-				continue;
-			}
-
-			processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
-		}
-
-	}
-	catch (const std::exception &e)
-	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-	}
-}
-
-
-/**
- * Thread function to read real-time read-request from queue filled up by MQTT and send data to EIS
- */
-void postRTReadMsgsToEIS()
-{
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting thread to send real-time messages on EIS"));
-
-#ifdef REALTIME_THREAD_PRIORITY
-	//set priority
-	CTopicMapper::getInstance().set_thread_priority();
-#endif
-
-	try
-	{
-		mqtt::const_message_ptr recvdMsg;
-		bool isRealtime = true;
-		bool isRead = true;
-
-		while (false == g_shouldStop.load())
-		{
-			if((sem_wait(&CMQTTHandler::instance().queueMgr.g_semRTReadMsg)) == -1 && errno == EINTR)
-			{
-				// Continue if interrupted by handler
-				continue;
-			}
-
-			int msgRequestType = 1;
-			if (false == CMQTTHandler::instance().queueMgr.getSubMsgFromQ(msgRequestType, recvdMsg))
-			{
-				CLogger::getInstance().log(INFO, LOGDETAILS("No message to send to EIS in queue"));
-				continue;
-			}
-
-			processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
-		}
-	}
-	catch (const std::exception &e)
-	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-	}
-}
-
-/**
- * Thread function to read real-time read-request from queue filled up by MQTT and send data to EIS
- */
-void postRTWriteMsgsToEIS()
-{
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting thread to send real-time messages on EIS"));
-
-#ifdef REALTIME_THREAD_PRIORITY
-	//set priority
-	CTopicMapper::getInstance().set_thread_priority();
-#endif
-
-	try
-	{
-		mqtt::const_message_ptr recvdMsg;
-		bool isRealtime = true;
-		bool isRead = false;
-
-		while (false == g_shouldStop.load())
-		{
-			if((sem_wait(&CMQTTHandler::instance().queueMgr.g_semRTWriteMsg)) == -1 && errno == EINTR)
-			{
-				// Continue if interrupted by handler
-				continue;
-			}
-
-			int msgRequestType = 3;
-			if (false == CMQTTHandler::instance().queueMgr.getSubMsgFromQ(msgRequestType, recvdMsg))
-			{
-				CLogger::getInstance().log(INFO, LOGDETAILS("No message to send to EIS in queue"));
-				continue;
-			}
-
-			processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
 		}
 	}
 	catch (const std::exception &e)
@@ -710,8 +674,12 @@ void postMsgstoMQTT() {
 
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Full topic - " + topic + " AND listening on: " + topic));
 
+		//get operation depending on the topic
+		globalConfig::COperation objOperation;
+		getOperation(topic, objOperation);
+
 		g_vThreads.push_back(
-				std::thread(listenOnEIS, topic, context, subContext));
+				std::thread(listenOnEIS, topic, context, subContext, objOperation));
 	}
 }
 
@@ -786,7 +754,7 @@ int main(int argc, char *argv[])
 	try
 	{
 		/// register callback for dynamic ETCD change
-		string AppName = CTopicMapper::getInstance().getStrAppName();
+		string AppName = CCommon::getInstance().getStrAppName();
 		if(AppName.empty())
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("AppName Environment Variable is not set"));
@@ -797,8 +765,23 @@ int main(int argc, char *argv[])
 		CLogger::getInstance().log(INFO, LOGDETAILS("MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION)));
 		cout << "MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION) << endl;
 
-		//Create topic mapping
-		CTopicMapper::getInstance();
+		// load global configuration for container real-time setting
+		bool bRetVal = globalConfig::loadGlobalConfigurations();
+		if(!bRetVal)
+		{
+			CLogger::getInstance().log(INFO, LOGDETAILS("Global configuration is set with some default parameters"));
+			cout << "\nGlobal configuration is set with some default parameters\n\n";
+		}
+		else
+		{
+			CLogger::getInstance().log(INFO, LOGDETAILS("Global configuration is set successfully"));
+			cout << "\nGlobal configuration for container real-time is set successfully\n\n";
+		}
+
+		globalConfig::CPriorityMgr::getInstance();
+
+		//read environment values from settings
+		CCommon::getInstance();
 
 		//Prepare MQTT for publishing & subscribing
 		//subscribing to topics happens in callback of connect()
@@ -816,10 +799,11 @@ int main(int argc, char *argv[])
 		postMsgstoMQTT();
 
 		//threads to send on-demand requests on EIS
-		g_vThreads.push_back(std::thread(postRTReadMsgsToEIS));
-		g_vThreads.push_back(std::thread(postRTWriteMsgsToEIS));
-		g_vThreads.push_back(std::thread(postReadMsgsToEIS));
-		g_vThreads.push_back(std::thread(postWriteMsgsToEIS));
+		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRTRead())));
+		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRTWrite())));
+		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRead())));
+		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getWrite())));
+
 
 		for (auto &th : g_vThreads)
 		{

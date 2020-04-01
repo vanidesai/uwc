@@ -203,6 +203,8 @@ void* SessionControlThread(void* threadArg)
 
 	i32MsgQueIdSC = *((int32_t *)threadArg);
 
+	// set thread priority
+	set_thread_sched_param();
 
 	//while (NULL != threadArg)
 	while(false == g_bThreadExit)
@@ -411,6 +413,9 @@ void* EpollRecvThread()
 	int event_count = 0;
 	size_t bytes_read = 0;
 	size_t bytes_to_read = 0;
+
+	// set thread priority
+	set_thread_sched_param();
 
 	//allocate no of polling events
 	m_events = (struct epoll_event*) calloc(MAXEVENTS, sizeof(m_event));
@@ -719,6 +724,9 @@ void* resquestTimeOutThreadFunction(void* threadArg)
 	stMbusPacketVariables_t *pstTemp = NULL;
 	stMbusPacketVariables_t *pstCur = NULL;
 
+	// set thread priority
+	set_thread_sched_param();
+
 	while(false == g_bThreadExit)
 	{
 		//unsigned long tm1, tm2;
@@ -774,6 +782,10 @@ void* postResponseToApp(void* threadArg)
 	Linux_Msg_t stScMsgQue = { 0 };
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	int32_t i32RetVal = 0;
+
+	// set thread priority
+	set_thread_sched_param();
+
 	while(false == g_bThreadExit)
 	{
 		//sem_wait(&g_stRespProcess.m_semaphoreResp);
@@ -942,6 +954,9 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 
 	i32MsgQueIdSSTC = *((int32_t *)threadArg);
 
+	// set thread priority
+	set_thread_sched_param();
+
 	//while (NULL != threadArg)
 	while(false == g_bThreadExit)
 	{
@@ -1041,6 +1056,9 @@ void* handleClientReponseThreadFunction(void* threadArg)
 {
 
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
+
+	// set thread priority
+	set_thread_sched_param();
 
 	// TCP IP message format
 	// 2 bytes = TxID, 2 bytes = Protocol ID, 2 bytes = length, 1 byte = unit id
@@ -1148,3 +1166,34 @@ int initHandleResponseContext()
 	return 0;
 }
 #endif
+
+// Function to set thread parameters
+void set_thread_sched_param()
+{
+	int iThreadPriority = 0;
+	eThreadScheduler threadPolicy;
+
+	iThreadPriority = THREAD_PRIORITY;
+	threadPolicy = THREAD_SCHEDULER;
+
+	//set priority
+	struct sched_param param;
+
+	param.sched_priority = iThreadPriority;
+	printf("Thread priority :: %d\n", param.sched_priority);
+	printf("Thread scheduler :: %d\n" ,threadPolicy);
+
+	int result;
+	result = pthread_setschedparam(pthread_self(), threadPolicy, &param);
+	if(0 != result)
+	{
+		handle_error_en(result, "pthread_setschedparam");
+		printf(" Cannot set thread priority, result : %d\n",result);
+	}
+	else
+	{
+		printf("thread priority to set to: %d\n", iThreadPriority);
+	}
+
+	//end of set priority for current thread
+}

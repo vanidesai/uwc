@@ -12,7 +12,9 @@
 
 #include "EISMsgbusHandler.hpp"
 #include "MQTTSubscribeHandler.hpp"
-
+/**
+ * namespace for EIS contexts
+ */
 namespace
 {
 	std::map<std::string, stZmqContext> g_mapContextMap;
@@ -20,6 +22,7 @@ namespace
 	std::map<std::string, stZmqPubContext> g_mapPubContextMap;
 }
 
+//mutexes for EIS contexts
 std::mutex __ctxMapLock;
 std::mutex __PubctxMapLock;
 std::mutex __SubctxMapLock;

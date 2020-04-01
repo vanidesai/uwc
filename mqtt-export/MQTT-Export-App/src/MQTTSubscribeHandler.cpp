@@ -49,7 +49,7 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
  */
 CMQTTHandler& CMQTTHandler::instance()
 {
-	static string strPlBusUrl = CTopicMapper::getInstance().getStrMqttExportURL();
+	static string strPlBusUrl = CCommon::getInstance().getStrMqttExportURL();
 
 	if(strPlBusUrl.empty())
 	{
@@ -189,38 +189,11 @@ bool CMQTTHandler::connectSubscriber()
 }
 
 /**
- * Retrieve non-RT read message from message queue to publish on EIS
- * @param msg :[in] reference to message to retrieve from queue
- * @return 	true : on success,
- * 			false : on error
- */
-bool CQueueMgr::getSubMsgFromQ(int msgRequestType, mqtt::const_message_ptr &msg)
-{
-	try
-	{
-		if(msgVector[msgRequestType].msgQueue.empty())
-		{
-			return false;
-		}
-
-		std::lock_guard<std::mutex> lock(msgVector[msgRequestType].queueMutex);
-		msg = msgVector[msgRequestType].msgQueue.front();
-		msgVector[msgRequestType].msgQueue.pop();
-	}
-	catch (const std::exception &e)
-	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		return false;
-	}
-	return true;
-}
-
-/**
 * parse message to check if topic is of read or write
 * @param json	:[in] message from which to check read/write operation
 * @return bool
 */
-bool CQueueMgr::getOperation(string &topic, bool &isWrite)
+bool CMQTTHandler::getOperation(string &topic, bool &isWrite)
 {
 	//compare if request received for write or read
 	if(topic.find("write") != std::string::npos)
@@ -241,11 +214,32 @@ bool CQueueMgr::getOperation(string &topic, bool &isWrite)
 }
 
 /**
+* fill the default realtime from global config
+* @param isWrite	:[in] opearation type
+* @return realtime value
+*/
+bool CMQTTHandler::fillDefaultRealtime(const bool isWrite)
+{
+	/* fill the default realtime from global configurations based on operation
+	  if realtime flag is missing from received request */
+	if(isWrite)
+	{
+		return globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandWriteConfig().getDefaultRTConfig();
+	}
+	else
+	{
+		return globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandReadConfig().getDefaultRTConfig();
+	}
+}
+
+/**
 * parse message to retrieve QOS and topic names
 * @param json	:[in] message from which to retrieve real-time
 * @return bool
 */
-bool CQueueMgr::parseMQTTMsg(const char *json, bool &isRealtime)
+bool CMQTTHandler::parseMQTTMsg(const char *json, bool &isRealtime, const bool isWrite)
 {
 	bool bRetVal = false;
 
@@ -264,7 +258,7 @@ bool CQueueMgr::parseMQTTMsg(const char *json, bool &isRealtime)
 			if (NULL != root)
 				cJSON_Delete(root);
 
-			isRealtime = false;
+			isRealtime = fillDefaultRealtime(isWrite);
 			return true;
 		}
 
@@ -273,9 +267,11 @@ bool CQueueMgr::parseMQTTMsg(const char *json, bool &isRealtime)
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("Key 'realtime' could not be found in message received from ZMQ"));
 			if (NULL != root)
+			{
 				cJSON_Delete(root);
-
-			return false;
+			}
+			isRealtime = fillDefaultRealtime(isWrite);
+			return true;
 		}
 		else
 		{
@@ -289,7 +285,7 @@ bool CQueueMgr::parseMQTTMsg(const char *json, bool &isRealtime)
 			}
 			else
 			{
-				isRealtime = false;
+				isRealtime = fillDefaultRealtime(isWrite);
 			}
 		}
 
@@ -318,6 +314,10 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg)
 	bool bRet = true;
 	try
 	{
+		//add time stamp before publishing msg on EIS
+		std::string strTsReceivedFromMQTT;
+		CCommon::getInstance().getCurrentTimestampsInString(strTsReceivedFromMQTT);
+
 		string topic = msg->get_topic();
 		string payload = msg->get_payload();
 
@@ -329,7 +329,7 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg)
 		}
 
 		bool isWrite = false;//toggle between read and write operation
-		if(! queueMgr.getOperation(topic, isWrite))
+		if(! getOperation(topic, isWrite))
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid topic received from MQTT on MQTT-Export"));
 			return false;
@@ -337,37 +337,39 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg)
 
 		//parse payload to check if realtime is true or false
 		bool isRealTime = false;
-		if( ! queueMgr.parseMQTTMsg(payload.c_str(), isRealTime))
+		if( ! parseMQTTMsg(payload.c_str(), isRealTime, isWrite))
 		{
 			CLogger::getInstance().log(DEBUG, LOGDETAILS("Could not parse MQTT msg"));
 			return false;
 		}
 
-		int requestType = -1;
+		//add timestamp in msg and stored in queue
+		CCommon::getInstance().addTimestampsToMsg(payload, "tsMsgRcvdFromMQTT", strTsReceivedFromMQTT);
+		mqtt::const_message_ptr newMsg = mqtt::make_message(topic, payload);
+
 		//if payload contains realtime flag, push message to real time queue
 		if(isRealTime)
 		{
 			if(isWrite)
 			{
-				requestType = 3;
+				QMgr::getRTWrite().pushMsg(newMsg);
 			}
 			else
 			{
-				requestType = 1;
+				QMgr::getRTRead().pushMsg(newMsg);
 			}
 		}
 		else //non-RT
 		{
 			if(isWrite)
 			{
-				requestType = 2;
+				QMgr::getWrite().pushMsg(newMsg);
 			}
 			else
 			{
-				requestType = 0;
+				QMgr::getRead().pushMsg(newMsg);
 			}
 		}
-		queueMgr.pushMsg(requestType, msg);
 
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Pushed MQTT message in queue"));
 		bRet = true;
@@ -398,123 +400,8 @@ void CMQTTHandler::cleanup()
 }
 
 /**
- * Clean up, destroy semaphores, disables callback, disconnect from MQTT broker
- */
-void CQueueMgr::cleanup()
-{
-	sem_destroy(&g_semReadMsg);
-	sem_destroy(&g_semRTReadMsg);
-
-	sem_destroy(&g_semWriteMsg);
-	sem_destroy(&g_semRTWriteMsg);
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroyed CMQTTHandler instance"));
-}
-
-/**
  * Destructor
  */
 CMQTTHandler::~CMQTTHandler()
 {
-}
-
-/////////////////////////////////////////////
-//CQueueMgr
-////////////////////////////////////////////
-CQueueMgr::CQueueMgr()
-{
-
-	//initialize struct for all 4 operations
-	for(int i = 0 ; i < 4; i++)
-	{
-		msgVector[i].type = i;
-	}
-
-	initSem();
-}
-
-CQueueMgr::~CQueueMgr()
-{
-	cleanup();
-}
-
-/**
- * Initialize semaphores
- * @return 	true : on success,
- * 			false : on error
- */
-bool CQueueMgr::initSem()
-{
-	/* Initial value of zero*/
-	if(-1 == sem_init(&g_semRTReadMsg, 0, 0))
-	{
-	   CLogger::getInstance().log(ERROR, LOGDETAILS("could not create semaphore for real-time msgs, exiting"));
-	   std::cout << __func__ << ":" << __LINE__ << " Error : could not create semaphore for real-time msgs, exiting" <<  std::endl;
-	   exit(0);
-	}
-
-	if( -1 == sem_init(&g_semRTWriteMsg, 0, 0))
-	{
-	   CLogger::getInstance().log(ERROR, LOGDETAILS("could not create semaphore for real-time msgs, exiting"));
-	   std::cout << __func__ << ":" << __LINE__ << " Error : could not create semaphore for real-time msgs, exiting" <<  std::endl;
-	   exit(0);
-	}
-
-	if( -1 == sem_init(&g_semReadMsg, 0, 0))
-	{
-	   CLogger::getInstance().log(ERROR, LOGDETAILS("could not create semaphore for non-real-time msgs, exiting"));
-	   std::cout << __func__ << ":" << __LINE__ << " Error : could not create semaphore for non-real-time msgs, exiting" <<  std::endl;
-	   exit(0);
-	}
-
-	if( -1 == sem_init(&g_semWriteMsg, 0, 0))
-	{
-	   CLogger::getInstance().log(ERROR, LOGDETAILS("could not create semaphore for non-real-time msgs, exiting"));
-	   std::cout << __func__ << ":" << __LINE__ << " Error : could not create semaphore for non-real-time msgs, exiting" <<  std::endl;
-	   exit(0);
-	}
-
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Semaphores initialized successfully"));
-
-	return true;
-}
-
-bool CQueueMgr::pushMsg(int requestType, mqtt::const_message_ptr &msg)
-{
-	try
-	{
-		std::lock_guard<std::mutex> lock(msgVector[requestType].queueMutex);
-		msgVector[requestType].msgQueue.push(msg);
-
-		switch(requestType)
-		{
-			case 0://read
-			{
-				sem_post(&g_semReadMsg);
-			}
-			break;
-			case 1://RT-read
-			{
-				sem_post(&g_semRTReadMsg);
-			}
-			break;
-			case 2://write
-			{
-				sem_post(&g_semWriteMsg);
-			}
-			break;
-			case 3://RT-write
-			{
-				sem_post(&g_semRTWriteMsg);
-			}
-			break;
-			default:
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Invalid msg type"));
-			break;
-		}
-	}
-	catch(exception &ex)
-	{
-		return false;
-	}
-	return true;
 }

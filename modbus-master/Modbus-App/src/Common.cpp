@@ -18,9 +18,11 @@
 namespace
 {
 	std::map<unsigned short, stOnDemandRequest> g_mapAppSeq;
+	std::map<unsigned short, MbusAPI_t> g_mapRequest;
 }
 
 std::mutex __appSeqMapLock;
+std::mutex __appReqJsonLock;
 
 
 /**
@@ -206,6 +208,102 @@ void common_Handler::removeOnDemandReqData(unsigned short seqno)
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
 	std::unique_lock<std::mutex> lck(__appSeqMapLock);
 	g_mapAppSeq.erase(seqno);
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+}
+
+/**
+ * Get request data
+ * @param seqno		:[in] sequence no
+ * @param reqData	:[out] reference to store request data
+ * @return 	true : on success,
+ * 			false : on error
+ */
+bool common_Handler::getReqData(unsigned short seqno, MbusAPI_t& reqData)
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
+	bool bRet = true;
+	try
+	{
+		std::unique_lock<std::mutex> lck(__appReqJsonLock);
+
+		/// return the context
+		reqData = g_mapRequest.at(seqno);
+	}
+	catch(exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		bRet = false;
+	}
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+
+	return bRet;
+}
+
+/**
+ * Insert request data
+ * @param seqno		:[in] sequence no
+ * @param reqData	:[in] request data
+ * @return 	true : on success,
+ * 			false : on error
+ */
+bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t reqData)
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: "));
+	bool bRet = true;
+	try
+	{
+		std::unique_lock<std::mutex> lck(__appReqJsonLock);
+
+		/// insert the data
+		g_mapRequest.insert(std::pair <unsigned short, MbusAPI_t> (seqno, reqData));
+	}
+	catch (exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		bRet = false;
+	}
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+
+	return bRet;
+}
+
+/**
+ * Update map value at specified key
+ * @param seqno		:[in] sequence no
+ * @param reqData	:[in] request data
+ * @return 	true : on success,
+ * 			false : on error
+ */
+bool common_Handler::updateReqData(unsigned short seqno, MbusAPI_t reqData)
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: "));
+	bool bRet = true;
+	try
+	{
+		std::unique_lock<std::mutex> lck(__appReqJsonLock);
+
+		/// insert the data
+		g_mapRequest[seqno] = reqData;
+	}
+	catch (exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		bRet = false;
+	}
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+
+	return bRet;
+}
+
+/**
+ * Remove request json data
+ * @param seqno	:[in] sequence no of request to remove
+ */
+void common_Handler::removeReqData(unsigned short seqno)
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
+	std::unique_lock<std::mutex> lck(__appReqJsonLock);
+	g_mapRequest.erase(seqno);
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
 }
 

@@ -137,3 +137,227 @@ TEST_F(CMQTTHandler_ut, cleanup_1_Success)
 
 	CMQTTPublishHandler_obj.cleanup();
 }
+
+TEST_F(CMQTTHandler_ut, getOperation_IsWrite)
+{
+	string topic = "write_toipic";
+	bool isWrite = false;
+
+	if( true == CMQTTHandler::instance().queueMgr.getOperation(topic, isWrite) )
+	{
+		EXPECT_EQ(true, isWrite);
+	}
+
+}
+
+TEST_F(CMQTTHandler_ut, getOperation_IsNotRead)
+{
+	string topic = "read_toipic";
+	bool isWrite = true;
+
+	if( true == CMQTTHandler::instance().queueMgr.getOperation(topic, isWrite) )
+	{
+		EXPECT_EQ(false, isWrite);
+	}
+
+}
+
+TEST_F(CMQTTHandler_ut, getOperation_InvalidTopic)
+{
+	string topic = "Other_toipic";
+	bool isWrite = true;
+	bool RetVal = true;
+
+	RetVal = CMQTTHandler::instance().queueMgr.getOperation(topic, isWrite);
+
+	EXPECT_EQ(false, RetVal);
+
+}
+
+TEST_F(CMQTTHandler_ut, parseMQTTMsg_Inv_Json)
+{
+
+	bool isRealTime = false;
+	bool RetVal = false;
+
+	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg("", isRealTime);
+
+	EXPECT_EQ(false, RetVal);
+
+}
+
+TEST_F(CMQTTHandler_ut, parseMQTTMsg_NoRT)
+{
+
+	bool isRealTime = true;
+	bool RetVal = false;
+
+	string topic = "{\"topicname\": \"TestTopic\"}";
+
+	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg(topic.c_str(), isRealTime);
+
+	if( RetVal == true )
+	{
+		EXPECT_EQ(false, isRealTime);
+	}
+	else
+	{
+		EXPECT_EQ(true, RetVal);
+	}
+
+}
+
+TEST_F(CMQTTHandler_ut, parseMQTTMsg_RT_OtherThan0_1)
+{
+
+	bool isRealTime = true;
+	bool RetVal = false;
+
+	string topic = "{\"realtime\": \"2\"}";
+
+	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg(topic.c_str(), isRealTime);
+
+	if( true == RetVal)
+	{
+		EXPECT_EQ(false, isRealTime);
+	}
+	else
+	{
+		EXPECT_EQ(true, RetVal);
+	}
+
+}
+
+TEST_F(CMQTTHandler_ut, parseMQTTMsg_RT_0)
+{
+
+	bool isRealTime = true;
+	bool RetVal = false;
+
+	string topic = "{\"realtime\": \"0\"}";
+
+	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg(topic.c_str(), isRealTime);
+
+	if( true == RetVal)
+	{
+		EXPECT_EQ(false, isRealTime);
+	}
+	else
+	{
+		EXPECT_EQ(true, RetVal);
+	}
+
+}
+
+TEST_F(CMQTTHandler_ut, parseMQTTMsg_RT_1)
+{
+
+	bool isRealTime = true;
+	bool RetVal = false;
+
+	string topic = "{\"realtime\": \"1\"}";
+
+	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg(topic.c_str(), isRealTime);
+
+	if( true == RetVal)
+	{
+		EXPECT_EQ(true, isRealTime);
+	}
+	else
+	{
+		EXPECT_EQ(true, RetVal);
+	}
+
+}
+
+TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp3)
+{
+
+	bool RetVal = true;
+	mqtt::const_message_ptr msg;
+
+	msg =  mqtt::make_message(
+			"{\"topic\": \"UT_writeRequest\"}",
+			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}"
+			);
+
+	RetVal = CMQTTHandler::instance().pushSubMsgInQ(msg);
+	EXPECT_EQ(true, RetVal);
+}
+
+TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp1)
+{
+
+	bool RetVal = true;
+	mqtt::const_message_ptr msg;
+
+	msg =  mqtt::make_message(
+			"{\"topic\": \"UT_readRequest\"}",
+			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}"
+			);
+
+	RetVal = CMQTTHandler::instance().pushSubMsgInQ(msg);
+	EXPECT_EQ(true, RetVal);
+}
+
+TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp2)
+{
+
+	bool RetVal = true;
+	mqtt::const_message_ptr msg;
+
+	msg =  mqtt::make_message(
+			"{\"topic\": \"UT_writeRequest\"}",
+			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"0	\"}"
+			);
+
+	RetVal = CMQTTHandler::instance().pushSubMsgInQ(msg);
+	EXPECT_EQ(true, RetVal);
+}
+
+TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp0)
+{
+
+	bool RetVal = true;
+	mqtt::const_message_ptr msg;
+
+	msg =  mqtt::make_message(
+			"{\"topic\": \"UT_readRequest\"}",
+			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"0	\"}"
+			);
+
+	RetVal = CMQTTHandler::instance().pushSubMsgInQ(msg);
+	EXPECT_EQ(true, RetVal);
+}
+
+TEST_F(CMQTTHandler_ut, pushSubMsgInQ_OtherThanReadWrite)
+{
+
+	bool RetVal = true;
+	mqtt::const_message_ptr msg;
+
+	msg =  mqtt::make_message(
+			"{\"topic\": \"other\"}",
+			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}"
+			);
+
+	RetVal = CMQTTHandler::instance().pushSubMsgInQ(msg);
+	EXPECT_EQ(false, RetVal);
+}
+
+TEST_F(CMQTTHandler_ut, pushSubMsgInQ_parseMQTTMsgFails)
+{
+
+	bool RetVal = true;
+	mqtt::const_message_ptr msg;
+
+	msg =  mqtt::make_message(
+			"{\"topic\": \"UT_writeRequest\"}",
+			"{Invalid}"
+			);
+
+	RetVal = CMQTTHandler::instance().pushSubMsgInQ(msg);
+	EXPECT_EQ(false, RetVal);
+}
+
+//{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}

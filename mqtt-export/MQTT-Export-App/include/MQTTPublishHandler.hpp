@@ -19,13 +19,6 @@
 
 using namespace std;
 
-// Declarations used for MQTT
-//#define CLIENTID    							    "MQTT_EXPORT"
-//#define LWT_PAYLOAD	                                "MQTT Export - Last will and testament."
-#define QOS         							    0
-#define ON_DEMAND_WRITE_PRIORITY					1 	//Write-On Demand Priority set as highest(1)
-#define ON_DEMAND_READ_PRIORITY						2 	//Read-On Demand Priority set as 2
-
 typedef enum MQTT_CONFIG_STATE
 {
 	MQTT_PUBLISHER_CONNECT_STATE,
@@ -39,6 +32,7 @@ class CMQTTPublishHandler
 	mqtt::connect_options syncConnOpts;
 	mqtt::token_ptr conntok;
 	mqtt::delivery_token_ptr pubtok;
+	int m_QOS;
 
 	CSyncCallback syncCallback;
 	CMQTTActionListener listener;
@@ -74,14 +68,13 @@ class CMQTTPublishHandler
 	static std::atomic<uint32_t> m_uiQReqTried;
 #endif
 
-	bool publish(std::string &a_sMsg, std::string &a_sTopic, int &a_iQOS, bool a_bFromQ = false);
 	bool addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsMsgRcvd);
 	
 public:
-	CMQTTPublishHandler(std::string strPlBusUrl, std::string strClientID);
+	CMQTTPublishHandler(std::string strPlBusUrl, std::string strClientID, int iQOS);
 	~CMQTTPublishHandler();
 
-	bool publish(std::string a_sMsg, std::string a_sTopic, int qos, struct timespec a_tsMsgRcvd);
+	bool publish(std::string &a_sMsg, std::string &a_sTopic, struct timespec a_tsMsgRcvd);
 
 	bool connect();
 

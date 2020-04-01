@@ -8,26 +8,23 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
-#ifndef INCLUDE_TOPICMAPPER_HPP_
-#define INCLUDE_TOPICMAPPER_HPP_
+#ifndef INCLUDE_COMMON_HPP_
+#define INCLUDE_COMMON_HPP_
 
 #include <string>
 #include <map>
 #include <vector>
 #include <algorithm>
 #include <list>
-/*
- * TopicMapper Class to map MQTT topics with ZMQ topics
- */
 
 using namespace std;
 
-class CTopicMapper {
+class CCommon {
 private:
 	// Private constructor so that no objects can be created.
-	CTopicMapper();
-	CTopicMapper(const CTopicMapper & obj){}
-	CTopicMapper& operator=(CTopicMapper const&);
+	CCommon();
+	CCommon(const CCommon & obj){}
+	CCommon& operator=(CCommon const&);
 
 	std::string m_strReadRequest;
 	std::string m_strRTReadRequest;
@@ -35,122 +32,140 @@ private:
 	std::string m_strRTWriteRequest;
 	std::string m_strAppName;
 	std::string m_strMqttExportURL;
-#ifdef REALTIME_THREAD_PRIORITY
-	int m_intThreadPriority;
-	int m_intThreadPolicy;
-#endif
+
 	bool m_devMode;
 
 public:
-	virtual ~CTopicMapper();
+	virtual ~CCommon();
 
 	bool readCommonEnvVariables();
 	bool readEnvVariable(const char *pEnvVarName, std::string &storeVal);
-	void set_thread_priority();
 
+	bool addTimestampsToMsg(std::string &a_sMsg, string tsKey, string strTimestamp);
+	void getCurrentTimestampsInString(std::string &a_sMsg);
+
+	/**
+	 * Get read request topic
+	 * @return topic name in string
+	 */
 	const std::string& getStrReadRequest() const {
 		return m_strReadRequest;
 	}
 
+	/**
+	 * Set read request topic
+	 * @param strReadRequest
+	 */
 	void setStrReadRequest(const std::string &strReadRequest) {
 		m_strReadRequest = strReadRequest;
 	}
 
+	/**
+	 * Get write request topic
+	 * @return topic in string format
+	 */
 	const std::string& getStrWriteRequest() const {
 		return m_strWriteRequest;
 	}
 
+	/**
+	 * Set write request topic
+	 * @param strWriteRequest
+	 */
 	void setStrWriteRequest(const std::string &strWriteRequest) {
 		m_strWriteRequest = strWriteRequest;
 	}
 
-	//real time
+	/**
+	 * Get RT write request topic
+	 * @return RT write request topic in string
+	 */
 	const std::string& getStrRTWriteRequest() const {
 		return m_strRTWriteRequest;
 	}
 
+	/**
+	 * Set RT write request topic
+	 * @param strWriteRequest
+	 */
 	void setStrRTWriteRequest(const std::string &strWriteRequest) {
 		m_strRTWriteRequest = strWriteRequest;
 	}
 
+	/**
+	 * Get RT read request topic
+	 * @return RT read request topic in string
+	 */
 	const std::string& getStrRTReadRequest() const {
 		return m_strRTReadRequest;
 	}
 
+	/**
+	 * Set RT read request topic
+	 * @param strReadRequest
+	 */
 	void setStrRTReadRequest(const std::string &strReadRequest) {
 		m_strRTReadRequest = strReadRequest;
 	}
-	//
 
+	/**
+	 * Set application name
+	 * @param strAppName
+	 */
 	void setStrAppName(const std::string &strAppName) {
 		m_strAppName = strAppName;
 	}
 
+	/**
+	 * Get application name
+	 * @return application name in string
+	 */
 	const std::string& getStrAppName() const {
 		return m_strAppName;
 	}
 
+	/**
+	 * Set MQTT Export URL to connect with MQTT broker
+	 * @param strMqttExportURL
+	 */
 	void setStrMqttExportURL(const std::string &strMqttExportURL) {
 		m_strMqttExportURL = strMqttExportURL;
 	}
 
+	/**
+	 * Get MQTT-Export broker connection URL
+	 * @return connection URL in string
+	 */
 	const std::string& getStrMqttExportURL() const {
 		return m_strMqttExportURL;
 	}
 
-#ifdef REALTIME_THREAD_PRIORITY
-
-	void setStrThreadPriority(const std::string &strThreadPriority) {
-		try {
-			std::string::size_type sz;   // alias of size_t
-			m_intThreadPriority = std::stoi(strThreadPriority, &sz);
-
-			/*Processes scheduled under one of the real-time policies (SCHED_FIFO,
-			       SCHED_RR) have a sched_priority value in the range 1 (low) to 99
-			       (high)*/
-			if(m_intThreadPriority < 1 || m_intThreadPriority > 99) {
-				m_intThreadPolicy = 50;//medium priority
-			}
-		}catch(exception &ex) {
-			m_intThreadPriority = -1;
-		}
-	}
-
-	const int& getIntThreadPriority() const {
-		return m_intThreadPriority;
-	}
-
-	void setStrThreadPolicy(const std::string &strThreadPolicy) {
-		try {
-			std::string::size_type sz;   // alias of size_t
-			m_intThreadPolicy = std::stoi(strThreadPolicy, &sz);
-
-			if(m_intThreadPolicy < 0 || m_intThreadPolicy > 2) {
-				m_intThreadPolicy = SCHED_RR;
-			}
-		}catch(exception &ex) {
-			m_intThreadPolicy = -1;
-		}
-	}
-
-	const int& getIntThreadPolicy() const {
-		return m_intThreadPolicy;
-	}
-#endif
-
-	static CTopicMapper& getInstance() {
-		static CTopicMapper _self;
+	/**
+	 * Get single instance of this class
+	 * @return
+	 */
+	static CCommon& getInstance() {
+		static CCommon _self;
 			return _self;
 	}
 
+	/**
+	 * Check if application set for dev mode or not
+	 * @return true if set to devMode
+	 * 			false if not set to devMode
+	 */
 	bool isDevMode() const {
 		return m_devMode;
 	}
 
+	/**
+	 * Set dev mode
+	 * @param devMode
+	 */
 	void setDevMode(bool devMode) {
 		m_devMode = devMode;
 	}
 };
 
 
-#endif /* INCLUDE_TOPICMAPPER_HPP_ */
+#endif
