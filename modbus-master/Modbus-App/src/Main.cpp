@@ -20,9 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include "ModbusOnDemandHandler.hpp"
 #include "YamlUtil.hpp"
 #include "ConfigManager.hpp"
-#include "ModbusWriteHandler.hpp"
 #include "Logger.hpp"
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.2.4"
+#define APP_VERSION "0.0.2.6"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -47,7 +47,7 @@ extern std::atomic<bool> g_stopThread;
  */
 void populatePollingRefData()
 {
-	string temp;
+	string temp = "";
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
 	using network_info::CUniqueDataPoint;
@@ -64,10 +64,7 @@ void populatePollingRefData()
 		const CUniqueDataPoint &a = mapUniquePoint.at(pt.first);
 		if(0 == a.getDataPoint().getPollingConfig().m_uiPollFreq)
 		{
-			temp = "Polling is not set for ";
-			temp.append(a.getDataPoint().getID());
-
-			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+			CLogger::getInstance().log(INFO, LOGDETAILS("Polling is not set for "+ a.getDataPoint().getID()));
 			// Polling frequency is not set
 			continue; // go to next point
 		}
@@ -75,10 +72,7 @@ void populatePollingRefData()
 		{
 			std::string sTopic = PublishJsonHandler::instance().getPolledDataTopic();
 
-			temp = "Topic for context search: ";
-			temp.append(sTopic);
-
-			CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+			CLogger::getInstance().log(DEBUG, LOGDETAILS("Topic for context search: " + sTopic));
 
 			std::cout << iCount++ << ". Point to poll: " << a.getID() << ", RT: "
 					<< a.getDataPoint().getPollingConfig().m_bIsRealTime << ", Freq: "
@@ -287,6 +281,19 @@ int main(int argc, char* argv[])
 		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus container app version is set to :: " + std::string(APP_VERSION)));
 		cout <<"\nModbus container app version is :: " + std::string(APP_VERSION) << "\n"<<endl;
 
+		// load global configuration for container real-time setting
+		bool bRetVal = globalConfig::loadGlobalConfigurations();
+		if(!bRetVal)
+		{
+			CLogger::getInstance().log(INFO, LOGDETAILS("Global configuration is set with some default parameters"));
+			cout << "\nGlobal configuration is set with some default parameters\n\n";
+		}
+		else
+		{
+			CLogger::getInstance().log(INFO, LOGDETAILS("Global configuration is set successfully"));
+			cout << "\nGlobal configuration for container real-time is set successfully\n\n";
+		}
+
 		string sAppName;
 		if(!CommonUtils::readEnvVariable("AppName", sAppName))
 		{
@@ -443,7 +450,7 @@ int main(int argc, char* argv[])
 		else
 		{
 			CLogger::getInstance().log(DEBUG, LOGDETAILS("modWriteHandler is properly initialized"));
-			/// Write request initializer thread.
+			/// On-Demand request initializer thread.
 			onDemandHandler::Instance().createOnDemandListener();
 		}
 

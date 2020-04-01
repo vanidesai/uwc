@@ -8,8 +8,8 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#ifndef INCLUDE_MODBUSWRITEHANDLER_HPP_
-#define INCLUDE_MODBUSWRITEHANDLER_HPP_
+#ifndef INCLUDE_MODBUSONDEMANDHANDLER_HPP_
+#define INCLUDE_MODBUSONDEMANDHANDLER_HPP_
 
 #include "Common.hpp"
 #include <vector>
@@ -39,6 +39,14 @@ class onDemandHandler
 	onDemandHandler(onDemandHandler const&);             /// copy constructor is private
 	onDemandHandler& operator=(onDemandHandler const&);  /// assignment operator is private
 
+	/**
+	 * get operation info from global config depending on the topic name
+	 * @param topic			:[in] topic for which to retrieve operation info
+	 * @param operation		:[out] operation info
+	 * @return none
+	 */
+	bool getOperation(string topic, globalConfig::COperation& operation);
+
 public:
 	static onDemandHandler& Instance();
 
@@ -55,25 +63,29 @@ public:
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode,
 											unsigned short txID,
+											bool& isWrite,
 											stOnDemandRequest& reqData,
 											void** ptrAppCallback);
 
-	void setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFlag, bool isWriteFlag);
+	void setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFlag, bool isWriteFlag, MbusAPI_t &stMbusApiPram);
 
 	void createOnDemandListener();
 
-	void subscribeDeviceListener(const std::string stTopic);
+	void subscribeDeviceListener(const std::string stTopic,
+			const globalConfig::COperation a_refOps);
 
 	bool isWriteInitialized() {return m_bIsWriteInitialized;}
 
 	bool validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand);
 
-	void createErrorResponse(msg_envelope_t** ptMsg,
-			eMbusStackErrorCode errorCode,
-			uint8_t  u8FunCode ,
-			std::string &strTopic,
-			unsigned short txID);
+	void createErrorResponse(eMbusStackErrorCode errorCode,
+			uint8_t  u8FunCode,
+			unsigned short txID,
+			bool isRT,
+			bool isWrite);
+
+	bool compareString(const std::string stBaseString, const std::string strToCompare);
 };
 
 
-#endif /* INCLUDE_MODBUSWRITEHANDLER_HPP_ */
+#endif /* INCLUDE_MODBUSONDEMANDHANDLER_HPP_ */

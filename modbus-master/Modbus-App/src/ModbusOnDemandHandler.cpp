@@ -10,7 +10,6 @@
 
 #include "Logger.hpp"
 
-#include "ModbusWriteHandler.hpp"
 #include "utils/YamlUtil.hpp"
 #include <thread>
 #include <mutex>
@@ -24,10 +23,20 @@
 #include <cstdlib>
 #include <stdio.h>
 #include "eis/utils/json_config.h"
+#include "ModbusOnDemandHandler.hpp"
 
 /// stop thread flag
 extern std::atomic<bool> g_stopThread;
 /// reference if to store request data
+
+// patterns to be used to find on-demand topic strings
+// topic syntax -
+// for non-RT topic for read - <topic_name>__RdReq
+// for RT topic read RT - <topic_name>__RdReq_RT
+#define READ	 	"_RdReq"
+#define READ_RT 	"_RdReq_RT"
+#define WRITE 		"_WrReq"
+#define WRITE_RT 	"_WrReq_RT"
 
 /**
  * Constructor
@@ -46,6 +55,22 @@ onDemandHandler::onDemandHandler() : m_bIsWriteInitialized(false)
 }
 
 /**
+ * Validate input json
+ * @param stBaseString	:[in] original string from which comparison can be made
+ * @param strToCompare	:[in] string value to compare
+ * @return 	true : on success,
+ * 			false : on error
+ */
+bool onDemandHandler::compareString(const std::string stBaseString, const std::string strToCompare)
+{
+	return std::equal(stBaseString.begin(), stBaseString.end(),
+			strToCompare.begin(),
+            [](char a, char b) {
+                return tolower(a) == tolower(b);
+            });
+}
+
+/**
  * Create error response
  * @param ptMsg 	:[out] pointer to message envelope structure to fill up
  * @param errorCode	:[in] error code
@@ -53,75 +78,50 @@ onDemandHandler::onDemandHandler() : m_bIsWriteInitialized(false)
  * @param strTopic	:[in] topic for which to create error response
  * @param txID		:[in] transaction id
  */
-void onDemandHandler::createErrorResponse(msg_envelope_t** ptMsg,
-		eMbusStackErrorCode errorCode, uint8_t  u8FunCode, std::string &strTopic, unsigned short txID)
+void onDemandHandler::createErrorResponse(eMbusStackErrorCode errorCode,
+		uint8_t  u8FunCode,
+		unsigned short txID,
+		bool isRT,
+		bool isWrite)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	stMbusAppCallbackParams_t objCallback;
+	eMbusCallbackType operationType = MBUS_CALLBACK_ONDEMAND_READ;
+	std::string strResponseTopic = "";
+	timespec ts{0};
+	objCallback.m_u8FunctionCode = u8FunCode;
+	objCallback.m_u8ExceptionExcCode = errorCode;
+	objCallback.m_u8ExceptionExcStatus = 2;
+	objCallback.m_u16TransactionID = txID;
+	objCallback.m_objTimeStamps.tsReqRcvd = ts;
+	objCallback.m_objTimeStamps.tsReqSent = ts;
+	objCallback.m_objTimeStamps.tsRespRcvd = ts;
+	objCallback.m_objTimeStamps.tsRespSent = ts;
 
-	if( u8FunCode == READ_COIL_STATUS ||
-			u8FunCode == READ_HOLDING_REG ||
-			u8FunCode == READ_INPUT_STATUS ||
-			u8FunCode == READ_INPUT_REG)
+	if(true == isRT && true == isWrite)
 	{
-		strTopic = PublishJsonHandler::instance().getSReadResponseTopic();
+		operationType = MBUS_CALLBACK_ONDEMAND_WRITE_RT;
+		strResponseTopic = PublishJsonHandler::instance().getSWriteResponseTopicRT();
+	}
+	else if(false == isRT && true == isWrite)
+	{
+		operationType = MBUS_CALLBACK_ONDEMAND_WRITE;
+		strResponseTopic = PublishJsonHandler::instance().getSWriteResponseTopic();
+	}
+	else if(true == isRT && false == isWrite)
+	{
+		operationType = MBUS_CALLBACK_ONDEMAND_READ_RT;
+		strResponseTopic = PublishJsonHandler::instance().getSReadResponseTopicRT();
 	}
 	else
 	{
-		strTopic = PublishJsonHandler::instance().getSWriteResponseTopic();
+		operationType = MBUS_CALLBACK_ONDEMAND_READ;
+		strResponseTopic = PublishJsonHandler::instance().getSReadResponseTopic();
 	}
 
-	stOnDemandRequest onDemandReqData;
-	bool bRetVal = common_Handler::getOnDemandReqData(txID, onDemandReqData);
-	if(false == bRetVal)
-	{
-		throw std::runtime_error("Request not found in map");
-	}
-	msg_envelope_t *msg = NULL;
-	msg = msgbus_msg_envelope_new(CT_JSON);
-
-	msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string((
-			(to_string(errorCode)) + ", " +  (to_string(2))).c_str());
-	msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
-
-	msg_envelope_elem_body_t* ptErrorStatus = msgbus_msg_envelope_new_string("Bad");
-	msgbus_msg_envelope_put(msg, "status", ptErrorStatus);
-
-	/// topic
-	msg_envelope_elem_body_t* ptResTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.append("Response").c_str());
-	msgbus_msg_envelope_put(msg, "topic", ptResTopic);
-	/// wellhead
-	msg_envelope_elem_body_t* ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());
-	msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
-	/// application sequence
-	msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(onDemandReqData.m_strAppSeq.c_str());
-	msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
-	/// metric
-	msg_envelope_elem_body_t* ptMetric = msgbus_msg_envelope_new_string(onDemandReqData.m_strMetric.c_str());
-	msgbus_msg_envelope_put(msg, "metric", ptMetric);
-	/// version
-	msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string(onDemandReqData.m_strVersion.c_str());
-	msgbus_msg_envelope_put(msg, "version", ptVersion);
-	/// QOS
-	msg_envelope_elem_body_t* ptQos =  msgbus_msg_envelope_new_string(onDemandReqData.m_strQOS.c_str());
-	msgbus_msg_envelope_put(msg, "qos", ptQos);
-	/// RealTIme
-	msg_envelope_elem_body_t* ptRealTime =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_isRT).c_str());
-	msgbus_msg_envelope_put(msg, "realtime", ptRealTime);
-	/// Priority
-	//msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_lPriority).c_str());
-	//msgbus_msg_envelope_put(msg, "priority", ptPriority);
-	std::string strTimestamp, strUsec;
-	common_Handler::getTimeParams(strTimestamp, strUsec);
-	/// usec
-	msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(strUsec.c_str());
-	msgbus_msg_envelope_put(msg, "usec", ptUsec);
-	/// timestamp
-	msg_envelope_elem_body_t* ptTimestamp = msgbus_msg_envelope_new_string(strTimestamp.c_str());
-	msgbus_msg_envelope_put(msg, "timestamp", ptTimestamp);
-
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
-
-	*ptMsg = msg;
+	// handle response
+	CPeriodicReponseProcessor::Instance().handleResponse(&objCallback,
+															operationType,
+															strResponseTopic);
 }
 
 /**
@@ -132,7 +132,6 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 {
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
 
-	//stRequest writeReq;
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	unsigned char  m_u8FunCode;
 	MbusAPI_t stMbusApiPram = {};
@@ -154,21 +153,32 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 		void* ptrAppCallback = NULL;
 
 		/// Comparing request topic for RT/Non-RT requests
-		string strSearchString = "_";
+		string strSearchString = "_", tempTopic;
 		std::size_t found = stRequestData.m_strTopic.find_last_of(strSearchString);
-		string tempTopic = stRequestData.m_strTopic.substr(found+1, stRequestData.m_strTopic.length());
+		if (found!=std::string::npos)
+		{
+			tempTopic = stRequestData.m_strTopic.substr(found+1, stRequestData.m_strTopic.length());
+		}
 		string strToCompare = "RT";
-		bool bCompareVal =  std::equal(tempTopic.begin(), tempTopic.end(),
-				strToCompare.begin(),
-	            [](char a, char b) {
-	                return tolower(a) == tolower(b);
-	            });
-		///if RT then "true" else "false"
-		reqData.m_isRT = bCompareVal ? true : false;
+		reqData.m_isRT = compareString(tempTopic, strToCompare);
+		bool isWrite = false;
 
-		eFunRetType = jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData, &ptrAppCallback);
+		eFunRetType = jsonParserForOnDemandRequest(root,
+				stMbusApiPram,
+				m_u8FunCode,
+				stMbusApiPram.m_u16TxId,
+				isWrite,
+				reqData,
+				&ptrAppCallback);
 
-		common_Handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData);
+		if(false == common_Handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData))
+		{
+			CLogger::getInstance().log(WARN, LOGDETAILS("Failed to add OnDemand data to map."));
+		}
+		if(false == common_Handler::insertReqData(stMbusApiPram.m_u16TxId, stMbusApiPram))
+		{
+			CLogger::getInstance().log(WARN, LOGDETAILS("Failed to add MbusAPI_t data to map."));
+		}
 
 		if(MBUS_STACK_NO_ERROR == eFunRetType && MBUS_MIN_FUN_CODE != m_u8FunCode)
 		{
@@ -182,33 +192,8 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 		{
 			if(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST != eFunRetType)
 			{
-				msg_envelope_t *msg = NULL;
 				std::string strTopic = "";
-				createErrorResponse(&msg, eFunRetType, m_u8FunCode, strTopic, stMbusApiPram.m_u16TxId);
-
-				zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(strTopic);
-				zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(strTopic);
-
-				PublishJsonHandler::instance().publishJson(msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, strTopic);
-#ifdef INSTRUMENTATION_LOG
-				msg_envelope_serialized_part_t* parts = NULL;
-				int num_parts = msgbus_msg_envelope_serialize(msg, &parts);
-				if(num_parts > 0)
-				{
-					if(NULL != parts[0].bytes)
-					{
-						std::string tempStr(parts[0].bytes);
-
-						string temp = "on-demand response received with following parameters :: ";
-						temp.append(tempStr);
-
-						CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-
-					}
-
-					msgbus_msg_envelope_serialize_destroy(parts, num_parts);
-				}
-#endif
+				createErrorResponse(eFunRetType, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData.m_isRT, isWrite);
 			}
 		}
 	}
@@ -228,6 +213,7 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 	}
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+
 	return eFunRetType;
 }
 
@@ -320,14 +306,29 @@ bool onDemandHandler::validateInputJson(std::string stSourcetopic, std::string s
 	bool retValue = false;
 	try
 	{
-		std::string strSearchStrin = "/";
-		std::size_t found = stSourcetopic.find(strSearchStrin);
-		std::size_t found1 = stSourcetopic.find(strSearchStrin.c_str(), found+1);
-		std::size_t found2 = stSourcetopic.find(strSearchStrin.c_str(), found1+1);
-		std::string tempWellhead = stSourcetopic.substr(found1+1, found2-found1-1);
-
-		std::size_t found3 = stSourcetopic.find(strSearchStrin.c_str(), found2+1);
-		std::string tempCommand = stSourcetopic.substr(found2+1, found3-found2-1);
+		std::size_t found=std::string::npos;
+		std::size_t found1=std::string::npos;
+		std::size_t found2=std::string::npos;
+		std::size_t found3=std::string::npos;
+		std::string strSearchStrin = "/", tempWellhead, tempCommand;
+		found = stSourcetopic.find(strSearchStrin);
+		if (found!=std::string::npos)
+		{
+			found1 = stSourcetopic.find(strSearchStrin.c_str(), found+1);
+		}
+		if (found1!=std::string::npos)
+		{
+			found2 = stSourcetopic.find(strSearchStrin.c_str(), found1+1);
+		}
+		if (found2!=std::string::npos)
+		{
+			tempWellhead = stSourcetopic.substr(found1+1, found2-found1-1);
+			found3 = stSourcetopic.find(strSearchStrin.c_str(), found2+1);
+		}
+		if (found3!=std::string::npos)
+		{
+			tempCommand = stSourcetopic.substr(found2+1, found3-found2-1);
+		}
 
 		if(tempWellhead == stWellhead && tempCommand == stCommand)
 		{
@@ -350,23 +351,27 @@ bool onDemandHandler::validateInputJson(std::string stSourcetopic, std::string s
  * @param isRTFlag	:[in] flag to decide RT/Non-RT request
  * @param isWriteFlag	:[in] flag to decide read/write request
  */
-void onDemandHandler::setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFlag, bool isWriteFlag)
+void onDemandHandler::setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFlag, bool isWriteFlag, MbusAPI_t &stMbusApiPram)
 {
 	if(true == isRTFlag && true == isWriteFlag)
 	{
 		**ptrAppCallback = (void*)OnDemandWriteRT_AppCallback;
+		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getRTConfig().getRetries();
 	}
 	else if(false == isRTFlag && true == isWriteFlag)
 	{
 		**ptrAppCallback = (void*)OnDemandWrite_AppCallback;
+		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getNonRTConfig().getRetries();
 	}
 	else if(true == isRTFlag && false == isWriteFlag)
 	{
 		**ptrAppCallback = (void*)OnDemandReadRT_AppCallback;
+		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getRTConfig().getRetries();
 	}
 	else
 	{
 		**ptrAppCallback = (void*)OnDemandRead_AppCallback;
+		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getNonRTConfig().getRetries();
 	}
 }
 
@@ -384,6 +389,7 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode,
 											unsigned short txID,
+											bool& isWrite,
 											stOnDemandRequest& reqData,
 											void** ptrAppCallback)
 {
@@ -396,9 +402,8 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 
 	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 	string strCommand, strValue, strWellhead, strVersion, strSourceTopic, strAppSeq;
-	//stOnDemandRequest reqData;
 	network_info::CDataPoint obj;
-	bool isWrite = false, isValidJson = false;
+	bool isValidJson = false;
 	try
 	{
 		if(MBUS_STACK_NO_ERROR == eFunRetType)
@@ -413,8 +418,10 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 			cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
 			cJSON *timestamp=cJSON_GetObjectItem(root,"timestamp");
 			cJSON *usec=cJSON_GetObjectItem(root,"usec");
+			cJSON *mqttTime=cJSON_GetObjectItem(root,"tsMsgRcvdFromMQTT");
+			cJSON *eisTime=cJSON_GetObjectItem(root,"tsMsgPublishOnEIS");
 
-			if(cmd && appseq && wellhead && version && timestamp && usec && sourcetopic)
+			if(cmd && appseq && wellhead && version && timestamp && usec && sourcetopic && mqttTime && eisTime)
 			{
 				isValidJson = true;
 				strAppSeq = appseq->valuestring;
@@ -428,20 +435,19 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 				reqData.m_strVersion = strVersion;
 				reqData.m_strWellhead = strWellhead;
 				reqData.m_strTopic = strSourceTopic;
+				reqData.m_strMqttTime = mqttTime->valuestring;
+				reqData.m_strEisTime = eisTime->valuestring;
 				timespec_get(&reqData.m_obtReqRcvdTS, TIME_UTC);
 
 				/// Comparing sourcetopic for read/write request.
-				string strSearchString = "/";
+				string strSearchString = "/", tempTopic;
 				std::size_t found = strSourceTopic.find_last_of(strSearchString);
-				string tempTopic = strSourceTopic.substr(found+1, strSourceTopic.length());
+				if (found!=std::string::npos)
+				{
+					tempTopic = strSourceTopic.substr(found+1, strSourceTopic.length());
+				}
 				string strToCompare = "write";
-				bool bCompareVal =  std::equal(tempTopic.begin(), tempTopic.end(),
-						strToCompare.begin(),
-			            [](char a, char b) {
-			                return tolower(a) == tolower(b);
-			            });
-				///if write then "true" else "false"
-				isWrite = bCompareVal ? true : false;
+				isWrite = compareString(tempTopic, strToCompare);
 
 				if(true == isWrite)
 				{
@@ -464,9 +470,17 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 				eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
 			}
 
-			string strSearchString = "/";
+			string strSearchString = "/", stTopic = "";
 			std::size_t found = strSourceTopic.find_last_of(strSearchString);
-			string stTopic = strSourceTopic.substr(0, found);
+			if (found!=std::string::npos)
+			{
+				stTopic = strSourceTopic.substr(0, found);
+			}
+			if(stTopic.empty())
+			{
+				CLogger::getInstance().log(ERROR, LOGDETAILS("Topic is not found in request json."));
+				eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
+			}
 
 			const std::map<std::string, network_info::CUniqueDataPoint>& mpp = network_info::getUniquePointList();
 			struct network_info::stModbusAddrInfo addrInfo;
@@ -492,9 +506,8 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 #endif
 			reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
 			reqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
-			reqData.m_strQOS = obj.getPollingConfig().m_usQOS;
 
-			setCallbackforOnDemand(&ptrAppCallback, reqData.m_isRT, isWrite);
+			setCallbackforOnDemand(&ptrAppCallback, reqData.m_isRT, isWrite, stMbusApiPram);
 
 			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
 			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
@@ -540,8 +553,8 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 			else if(WRITE_MULTIPLE_COILS == funcCode)
 			{
 				uint8_t u8ByteCount = (0 != (stMbusApiPram.m_u16Quantity%8))
-											?((stMbusApiPram.m_u16Quantity/8)+1)
-											:(stMbusApiPram.m_u16Quantity/8);
+													?((stMbusApiPram.m_u16Quantity/8)+1)
+															:(stMbusApiPram.m_u16Quantity/8);
 
 				stMbusApiPram.m_u16ByteCount = (uint8_t)u8ByteCount;
 			}
@@ -601,16 +614,6 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 						eFunRetType = MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER;
 					}
 				}
-				/*else
-				{
-					char* token = strtok(strValue.c_str(), ",");
-					for (unsigned int i= 0 ; i< stMbusApiPram.m_u16ByteCount && NULL != token; ++i)
-					{
-						uint32_t val = stoi(token);
-						stMbusApiPram.m_pu8Data[i] = (uint8_t)val;
-						token = strtok(NULL, ",");
-					}
-				}*/
 			}
 			else
 			{
@@ -626,7 +629,42 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 	}
 
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+
 	return eFunRetType;
+}
+
+/**
+ * get operation info from global config depending on the topic name
+ * @param topic			:[in] topic for which to retrieve operation info
+ * @param operation		:[out] operation info
+ * @return none
+ */
+bool onDemandHandler::getOperation(string topic, globalConfig::COperation& operation)
+{
+	bool bRet = true;
+	if(std::string::npos != topic.find(READ, topic.length() - std::string(READ).length(), std::string(READ).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getNonRTConfig();
+	}
+	else if(std::string::npos != topic.find(READ_RT, topic.length() - std::string(READ_RT).length(), std::string(READ_RT).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getRTConfig();
+	}
+	else if(std::string::npos != topic.find(WRITE, topic.length() - std::string(WRITE).length(), std::string(WRITE).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getNonRTConfig();
+	}
+	else if(std::string::npos != topic.find(WRITE_RT, topic.length() - std::string(WRITE_RT).length(), std::string(WRITE_RT).length()))
+	{
+		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getRTConfig();
+	}
+	else
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid topic name in SubTopics"));
+		bRet = false;
+	}
+
+	return bRet;
 }
 
 /**
@@ -643,7 +681,16 @@ void onDemandHandler::createOnDemandListener()
 			CLogger::getInstance().log(ERROR, LOGDETAILS("SubTopics are not configured"));
 			continue;
 		}
-		std::thread(&onDemandHandler::subscribeDeviceListener, this, *it).detach();
+		globalConfig::COperation ops;
+		if(!getOperation(*it, ops))
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid topic name in SubTopics..hence ignoring"));
+
+			// continue iterating next topic
+			continue;
+		}
+
+		std::thread(&onDemandHandler::subscribeDeviceListener, this, *it, ops).detach();
 	}
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 }
@@ -683,31 +730,18 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
 				" Failed to serialize message"));
 	}
 
-	if(NULL != parts)
+	if(NULL != parts && NULL != parts[0].bytes)
 	{
-		if(NULL != parts[0].bytes)
-		{
-			struct stRequest stRequestNode;
-			std::string strMsg(parts[0].bytes);
+		struct stRequest stRequestNode;
+		std::string strMsg(parts[0].bytes);
 
-			stRequestNode.m_strTopic = stTopic;
-			stRequestNode.m_strMsg = strMsg;
+		stRequestNode.m_strTopic = stTopic;
+		stRequestNode.m_strMsg = strMsg;
 
-			string initiate = " on-demand request initiated for msg:: ";
-			initiate.append(strMsg);
+		CLogger::getInstance().log(INFO, LOGDETAILS(" on-demand request initiated for msg:: "+ strMsg));
+		onDemandInfoHandler(stRequestNode);
 
-			CLogger::getInstance().log(INFO, LOGDETAILS(initiate));
-			/// pushing write request to q to process.
-			onDemandInfoHandler(stRequestNode);
-
-			bRet = true;
-		}
-		else
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS(
-					"NULL pointer received while processing msg."));
-			bRet = false;
-		}
+		bRet = true;
 	}
 	else
 	{
@@ -734,15 +768,16 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
  * Subscribe to device listener
  * @param stTopic	:[in] topic to subscribe
  */
-void onDemandHandler::subscribeDeviceListener(const std::string stTopic)
+void onDemandHandler::subscribeDeviceListener(const std::string stTopic,
+		const globalConfig::COperation a_refOps)
 {
 	msg_envelope_t *msg = NULL;
 	msgbus_ret_t ret;
 
-#ifdef REALTIME_THREAD_PRIORITY
-	PublishJsonHandler::instance().set_thread_priority();
-#endif
+	//set the thread priority
+	globalConfig::set_thread_sched_param(a_refOps);
 
+	globalConfig::display_thread_sched_attr(stTopic + " subscribeDeviceListener param :: ");
 	try
 	{
 		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(stTopic);
@@ -757,7 +792,6 @@ void onDemandHandler::subscribeDeviceListener(const std::string stTopic)
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to receive message errno ::" + std::to_string(ret)));
 				continue;
 			}
-
 			/// process messages
 			processMsg(msg, stTopic);
 		}
