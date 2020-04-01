@@ -124,6 +124,7 @@ services:
             max-size: "10m"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config"
       - "vol_uwc_socket:${SOCKET_DIR}"
     user: ${EIS_UID}
 
@@ -192,6 +193,7 @@ services:
             max-size: "10m"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config"
       - "vol_uwc_socket:${SOCKET_DIR}"
     user: ${EIS_UID}
     devices:
@@ -283,6 +285,7 @@ services:
     user: ${EIS_UID}
     volumes:
       - "vol_uwc_socket:${SOCKET_DIR}"
+      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config"
 
 volumes:
   vol_uwc_socket:

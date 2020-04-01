@@ -98,6 +98,7 @@ services:
       MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:6009"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config"
       - "$PWD/unit_test_reports/modbus-tcp-master:/reports/modbus-tcp-master"
 
   modbus-rtu-test-master:
@@ -158,6 +159,7 @@ services:
       MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:6009"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
+      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config"
       - "$PWD/unit_test_reports/modbus-rtu-master:/reports/modbus-rtu-master"
     devices:
       - /dev:/dev
@@ -234,3 +236,4 @@ services:
       mqtt_SubWriteTopic: "/+/+/+/write"
     volumes:
       - "$PWD/unit_test_reports/mqtt-export:/reports/mqtt-export"
+      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config"

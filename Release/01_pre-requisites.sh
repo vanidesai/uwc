@@ -209,7 +209,18 @@ createDockerVolumeDir()
         	echo "${RED}Failed to create docker volume directory${NC}"
 		exit 1;
 	fi
-    fi	
+    fi
+    if [ ! -d /opt/intel/eis/uwc_data/common_config ]; then
+    	echo "${GREEN}common_config directory is not present in /opt/intel/eis/ directory.${NC}"
+    	echo "${GREEN}Creating /opt/intel/eis/uwc_data/common_config directory.${NC}"
+    	mkdir -p /opt/intel/eis/uwc_data/common_config
+	if [ "$?" -eq "0" ]; then
+		echo "${GREEN}/opt/intel/eis/uwc_data/common_config is sucessfully created. ${NC}"
+	else
+        	echo "${RED}Failed to create docker volume directory${NC}"
+		exit 1;
+	fi
+    fi
 }
 
 # ----------------------------
@@ -223,8 +234,9 @@ addUWCContainersInEIS()
     cd UWC
     cp -r modbus-master/ MQTT/ mqtt-export/ ../
     cp docker-compose.yml ../docker_setup/docker-compose.yml
-    cp -r Others/ETCD_Config/UWC/YML_Config/* /opt/intel/eis/uwc_data
-    cp Others/ETCD_Config/UWC/etcd_pre_load.json ../docker_setup/provision/config/
+    cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
+    cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
+    cp Others/Config/UWC/Global_Config.yml /opt/intel/eis/uwc_data/common_config/Global_Config.yml
     copy_verification=$(echo $?)
     if [ "$copy_verification" -eq "0" ]; then
         echo "${GREEN}UWC containers are successfully copied ${NC}"
