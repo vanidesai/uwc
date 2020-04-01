@@ -1,0 +1,81 @@
+# Global YML configurations
+# UWC performs majorly 3 operations - polling, on-demand-write, on-demand-read
+# Based on realtime requirement, these operations are further classified into following sub-operations
+#	1. polling realtime
+#	2. polling non-realtime
+#	3. on-demand read realtime
+#	4. on-demand read non-realtime
+#	5. on-demand write realtime
+#	6. on-demand write non-realtime
+#
+# This file contains configuration to be used for these operations across UWC containers (e.g. TCP1, RTU1, MQTT-Export, etc.).
+# Following fields are defined in this for all 3 major operations:
+# 	default_realtime: 
+#		values: true or false
+#		It defines how an operation should be performed in absence of corresponding realtime indicator.
+#		E.g. in case of on-demand-write or read request, the json payload contains a field called "realtime".
+# 		which tells whether the request is of realtime nature or not. 
+#		This field defines realtime nature in absence of such a field in on-demand request or polling configuration.
+#	realtime: 
+#		This is a group field, say operation_subtype, explained below.
+#	non-realtime: 
+#		This is a group field, say operation_subtype, explained below.
+#
+#	operation_subtype:
+#		This is a group field. It defines configuration parameters for sub-operations i.e. realtime and non-realtime.
+#		It contains following fields.
+#		operation_priority: 
+#			values: 1 to 6
+#			The field defines priority to be assigned to 6 sub-operations, listed above.
+#			1 is lowest priority and 6 is highest priority. 
+#			Hence, if there are 2 requests ready for execution, a request with higher priority will be executed first.
+#		retries: 
+#			values: 0 to 4
+#			This field specifies if a request of particular type should be resent if a response is not received
+#			within specified limit. Value 0 means no retry is needed. value 1 means, retry once.
+#		qos: 
+#			values: 0, 1, 2
+#			MQTT-Export will use this QoS value while publishing a message on MQTT.
+#
+# If incorrect value is specified for any of above fields, a default value (listed below) will be used:
+#	default_realtime: false
+#	operation_priority: 1
+#	retries: 0
+#	qos: 0
+#
+# If configuration parameter or section is missing for any of the sub-operation, then default values mentioned above will be used.
+#
+
+Global:
+    Operations:
+        - Polling:
+            default_realtime: false
+            realtime:
+              operation_priority: 4
+              retries: 1
+              qos: 1
+            non-realtime:
+              operation_priority: 1
+              retries: 0
+              qos: 0
+        - on-demand-read:
+            default_realtime: false
+            realtime: 
+              operation_priority: 5
+              retries: 1
+              qos: 2
+            non-realtime:
+              operation_priority: 2
+              retries: 0
+              qos: 0
+        - on-demand-write:
+            default_realtime: true
+            realtime:
+              operation_priority: 6
+              retries: 1
+              qos: 2
+            non-realtime:
+              operation_priority: 3
+              retries: 0
+              qos: 0
+          

@@ -1,0 +1,67 @@
+---
+file:
+  version: "1.0.0"
+  author: "Intel"
+  date: "Sun Sep 1 13:34:13 PDT 2019"
+  description: "Data for Demo IOUnit data points"
+datapoints:
+- id: "Arrival"
+  attributes:
+    type: "DISCRETE_INPUT"
+    addr: 2048
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: true
+
+
+- id: "AValve"
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 640
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: true
+
+
+- id: "DValve"
+  attributes:
+    type: "COIL"
+    addr: 2048
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: true
+
+
+- id: "TubingPressure"
+  attributes:
+    type: "INPUT_REGISTER"
+    addr: 1025
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: true
+
+
+- id: "CasingPressure"
+  attributes:
+    type: "INPUT_REGISTER"
+    addr: 1024
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: true
+
+
+- id: "KeepAlive"
+  attributes:
+    type: "COIL"
+    addr: 3073
+    width: 1
+  polling:
+    pollinterval: 1000
+    realtime: true
+
+ 

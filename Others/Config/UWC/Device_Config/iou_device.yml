@@ -1,0 +1,12 @@
+---
+file:
+  version: "1.0.0"
+  author: "Intel"
+  date: "Sun Sep 1 13:34:13 PDT 2019"
+  description: "Information for Demo IOUnit"
+device_info:
+  name: "IO Unit"
+  description: "Power Scout Meter"
+  manufacturer: "Dent Instruments"
+  model: "PS3037"
+pointlist: "iou_datapoints.yml"
