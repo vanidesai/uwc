@@ -186,8 +186,8 @@ private:
 	// Default constructor
 	CRequestInitiator();
 
-	void threadReqInit(bool isRTPoint, const globalConfig::COperation a_refOps);
-	void threadCheckCutoffRespInit(bool isRTPoint, const globalConfig::COperation a_refOps);
+	void threadReqInit(bool isRTPoint, const globalConfig::COperation& a_refOps);
+	void threadCheckCutoffRespInit(bool isRTPoint, const globalConfig::COperation& a_refOps);
 
 	void initiateRequest(std::vector<CRefDataForPolling>&, bool isRTRequest);
 

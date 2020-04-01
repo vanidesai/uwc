@@ -494,7 +494,7 @@ bool CPeriodicReponseProcessor::initSem()
  */
 eMbusStackErrorCode CPeriodicReponseProcessor::respProcessThreads(eMbusCallbackType operationCallbackType,
 		sem_t& a_refSem,
-		globalConfig::COperation a_refOps)
+		globalConfig::COperation& a_refOps)
 {
 	eMbusStackErrorCode eRetType = MBUS_STACK_NO_ERROR;
 	sem_t& l_sem = a_refSem;
@@ -998,17 +998,17 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 			{
 				//std::thread{std::bind(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this))}.detach();
 				std::thread(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this),
-						MBUS_CALLBACK_POLLING, std::ref(semPollingRespProcess),globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig()).detach();
+						MBUS_CALLBACK_POLLING, std::ref(semPollingRespProcess),std::ref(globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig())).detach();
 				std::thread(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this),
-						MBUS_CALLBACK_POLLING_RT, std::ref(semRTPollingRespProcess),globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig()).detach();
+						MBUS_CALLBACK_POLLING_RT, std::ref(semRTPollingRespProcess),std::ref(globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig())).detach();
 				std::thread(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this),
-						MBUS_CALLBACK_ONDEMAND_READ, std::ref(semODReadRespProcess),globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getNonRTConfig()).detach();
+						MBUS_CALLBACK_ONDEMAND_READ, std::ref(semODReadRespProcess),std::ref(globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getNonRTConfig())).detach();
 				std::thread(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this),
-						MBUS_CALLBACK_ONDEMAND_READ_RT, std::ref(semRTODReadRespProcess),globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getRTConfig()).detach();
+						MBUS_CALLBACK_ONDEMAND_READ_RT, std::ref(semRTODReadRespProcess),std::ref(globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getRTConfig())).detach();
 				std::thread(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this),
-						MBUS_CALLBACK_ONDEMAND_WRITE, std::ref(semODWriteRespProcess),globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getNonRTConfig()).detach();
+						MBUS_CALLBACK_ONDEMAND_WRITE, std::ref(semODWriteRespProcess),std::ref(globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getNonRTConfig())).detach();
 				std::thread(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this),
-						MBUS_CALLBACK_ONDEMAND_WRITE_RT, std::ref(semRTODWriteRespProcess),globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getRTConfig()).detach();
+						MBUS_CALLBACK_ONDEMAND_WRITE_RT, std::ref(semRTODWriteRespProcess),std::ref(globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getRTConfig())).detach();
 			}
 			bSpawned = true;
 		}
@@ -1038,7 +1038,7 @@ bool CRequestInitiator::init()
 	std::thread{std::bind(&CRequestInitiator::threadReqInit,
 			std::ref(*this),
 			false,
-			globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig())}.detach();
+			std::ref(globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig()))}.detach();
 
 	retVal = sem_init(&semaphoreRTReqProcess, 0, 0 /* Initial value of zero*/);
 	if (retVal == -1)
@@ -1049,7 +1049,7 @@ bool CRequestInitiator::init()
 	std::thread{std::bind(&CRequestInitiator::threadReqInit,
 			std::ref(*this),
 			true,
-			globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig())}.detach();
+			std::ref(globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig()))}.detach();
 
 	// Initiate semaphore for responses
 	retVal = sem_init(&semaphoreRTRespProcess, 0, 0 /* Initial value of zero*/);
@@ -1061,7 +1061,7 @@ bool CRequestInitiator::init()
 	std::thread{std::bind(&CRequestInitiator::threadCheckCutoffRespInit,
 			std::ref(*this),
 			true,
-			globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig())}.detach();
+			std::ref(globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig()))}.detach();
 
 	retVal = sem_init(&semaphoreRespProcess, 0, 0 /* Initial value of zero*/);
 	if (retVal == -1)
@@ -1072,7 +1072,7 @@ bool CRequestInitiator::init()
 	std::thread{std::bind(&CRequestInitiator::threadCheckCutoffRespInit,
 			std::ref(*this),
 			false,
-			globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig())}.detach();
+			std::ref(globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig()))}.detach();
 
 
 	return true;
@@ -1283,7 +1283,7 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
  * @param isRTPoint	:[in] bool variable to differentiate between RT/Non-RT
  */
 void CRequestInitiator::threadReqInit(bool isRTPoint,
-		const globalConfig::COperation a_refOps)
+		const globalConfig::COperation& a_refOps)
 {
 	try
 	{
@@ -1341,7 +1341,7 @@ void CRequestInitiator::threadReqInit(bool isRTPoint,
  * @param isRTPoint	:[in] bool variable to differentiate between RT/Non-RT
  */
 void CRequestInitiator::threadCheckCutoffRespInit(bool isRTPoint,
-		const globalConfig::COperation a_refOps)
+		const globalConfig::COperation& a_refOps)
 {
 	try
 	{

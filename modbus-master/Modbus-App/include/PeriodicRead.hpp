@@ -79,7 +79,7 @@ private:
 
 	BOOLEAN initSem();
 	eMbusStackErrorCode respProcessThreads(eMbusCallbackType operationCallbackType,
-			sem_t& a_refSem, globalConfig::COperation a_refOps);
+			sem_t& a_refSem, globalConfig::COperation& a_refOps);
 
 	CPeriodicReponseProcessor();
 	CPeriodicReponseProcessor(CPeriodicReponseProcessor const&);             /// copy constructor is private
