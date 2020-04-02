@@ -50,6 +50,19 @@ RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-
     && make \
     && make install
 
+# yaml build
+FROM eisbase as build-yaml
+
+RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
+    && cd yaml-cpp \
+    &&	mkdir build && cd build \
+    &&	cmake -DYAML_BUILD_SHARED_LIBS=ON ../ \
+    &&	make yaml-cpp \
+    &&	mkdir -p /usr/yaml \
+    &&  mkdir -p /usr/yaml/lib \
+    &&  cp lib* /usr/yaml/lib \
+    &&  cp -r ../include /usr/yaml \
+    && cd ../../
 
 # Build MQTT-Export application
 FROM eisbase as mqtt-export
@@ -58,6 +71,10 @@ COPY --from=common /usr/local/include /usr/local/include
 COPY --from=common /usr/local/lib /usr/local/lib
 COPY --from=common /usr/local/include/safe_* /usr/local/include/
 COPY MQTT-Export-App /MQTT-Export-App/. 
+
+COPY --from=build-yaml /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
+COPY --from=build-yaml /usr/yaml/lib/* /usr/local/lib/
+
 COPY --from=build-pahoc /usr/paho-c/lib/lib* /MQTT-Export-App/lib/
 COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* /MQTT-Export-App/lib/
 COPY --from=build-pahocpp /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
@@ -117,6 +134,7 @@ RUN mkdir -p /opt/intel/app
 RUN mkdir -p /opt/intel/config
 WORKDIR ${APP_WORK_DIR}
 COPY --from=mqtt-export /MQTT-Export-App/Release/MQTT_Export ${APP_WORK_DIR}
+COPY --from=build-yaml /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=build-pahoc /usr/paho-c/lib/lib* ${APP_WORK_DIR}
 COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
