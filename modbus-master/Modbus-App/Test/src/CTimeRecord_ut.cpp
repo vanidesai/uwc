@@ -99,7 +99,21 @@ TEST_F(CTimeRecord_ut, time_record_notavailable)
 
 }
 
+TEST_F(CTimeRecord_ut, IntervalTimer_counter_test)
+{
+	uint32_t Interval;
+	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
+	CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj};
+	Interval =  CTimeRecord_obj.getIntervalTimerCounter();
+}
 
+TEST_F(CTimeRecord_ut, CutoffIntervalTimerCounter_ut)
+{
+	uint32_t cutoff;
+	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
+	CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj};
+	cutoff = CTimeRecord_obj.getCutoffIntervalTimerCounter();
 
+}
 
 
