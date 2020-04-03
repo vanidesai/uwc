@@ -8,7 +8,7 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "../include/CEISMsgbusHandler_ut.hpp"
+#include "../include/EISMsgbusHandler_ut.hpp"
 
 
 #include <gtest/internal/gtest-internal.h>
@@ -23,16 +23,16 @@ config_t config_t_obj;
 using namespace std;
 
 
-void CEISMsgbusHandler_ut::SetUp() {
+void EISMsgbusHandler_ut::SetUp() {
 	// Setup code
 }
 
-void CEISMsgbusHandler_ut::TearDown() {
+void EISMsgbusHandler_ut::TearDown() {
 	// TearDown code
 }
 
 // Topic is other that "pub" and "sub"
-TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_InvTopic) {
+TEST_F(EISMsgbusHandler_ut, prepareCommonContext_InvTopic) {
 
 	bool bRetVal = true;
 
@@ -40,7 +40,7 @@ TEST_F(CEISMsgbusHandler_ut, prepareCommonContext_InvTopic) {
 	EXPECT_EQ(false, bRetVal);
 }
 
-TEST_F(CEISMsgbusHandler_ut, getCTX_ValidTopic) {
+TEST_F(EISMsgbusHandler_ut, getCTX_ValidTopic) {
 
 	stZmqContext msgbusContext;
 	string topic = "TCP1_RdResp"; //topic exists
@@ -49,7 +49,7 @@ TEST_F(CEISMsgbusHandler_ut, getCTX_ValidTopic) {
 	EXPECT_EQ(true, retVal);
 }
 
-TEST_F(CEISMsgbusHandler_ut, getCTX_InvTopic) {
+TEST_F(EISMsgbusHandler_ut, getCTX_InvTopic) {
 
 	bool retVal = true;
 
@@ -61,7 +61,7 @@ TEST_F(CEISMsgbusHandler_ut, getCTX_InvTopic) {
 }
 
 
-TEST_F(CEISMsgbusHandler_ut, getPubCTX_ValTopic) {
+TEST_F(EISMsgbusHandler_ut, getPubCTX_ValTopic) {
 
 	stZmqPubContext pubContext;
 	string topic = "MQTT_Export_RdReq"; //topic exists
@@ -70,7 +70,7 @@ TEST_F(CEISMsgbusHandler_ut, getPubCTX_ValTopic) {
 	EXPECT_EQ(true, retVal);
 }
 
-TEST_F(CEISMsgbusHandler_ut, getPubCTX_InvTopic) {
+TEST_F(EISMsgbusHandler_ut, getPubCTX_InvTopic) {
 
 	bool retVal = true;
 
@@ -81,7 +81,7 @@ TEST_F(CEISMsgbusHandler_ut, getPubCTX_InvTopic) {
 	EXPECT_EQ(false, retVal);
 }
 
-TEST_F(CEISMsgbusHandler_ut, getSubCTX_ValTopic) {
+TEST_F(EISMsgbusHandler_ut, getSubCTX_ValTopic) {
 
 	stZmqSubContext subContext;
 	string topic = "TCP1_RdResp"; //topic exists
@@ -90,7 +90,7 @@ TEST_F(CEISMsgbusHandler_ut, getSubCTX_ValTopic) {
 	EXPECT_EQ(true, retVal);
 }
 
-TEST_F(CEISMsgbusHandler_ut, getSubCTX_InvTopic) {
+TEST_F(EISMsgbusHandler_ut, getSubCTX_InvTopic) {
 
 	bool retVal = true;
 
@@ -101,7 +101,7 @@ TEST_F(CEISMsgbusHandler_ut, getSubCTX_InvTopic) {
 	EXPECT_EQ(false, retVal);
 }
 
-TEST_F(CEISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
+TEST_F(EISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
 
 	bool retVal = false;
 
@@ -139,7 +139,7 @@ TEST_F(CEISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
 	}
 }
 
-TEST_F(CEISMsgbusHandler_ut, 11_manatory_param) {
+TEST_F(EISMsgbusHandler_ut, 11_manatory_param) {
 
 	stZmqPubContext pubContext;
 	string topic = "MQTT_Export_RdReq"; //topic exists
@@ -158,7 +158,7 @@ TEST_F(CEISMsgbusHandler_ut, 11_manatory_param) {
 	}
 }
 
-TEST_F(CEISMsgbusHandler_ut, 13_manatory_param) {
+TEST_F(EISMsgbusHandler_ut, 13_manatory_param) {
 
 	stZmqContext context;
 	string topic = "MQTT_Export_RdReq"; //topic exists
@@ -174,7 +174,7 @@ TEST_F(CEISMsgbusHandler_ut, 13_manatory_param) {
 }
 
 
-TEST_F(CEISMsgbusHandler_ut, RemoveCtxt) {
+TEST_F(EISMsgbusHandler_ut, RemoveCtxt) {
 
 	bool retVal = true;
 	stZmqContext context;

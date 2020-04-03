@@ -8,15 +8,15 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#ifndef CTOPICMAPPER_UT_H_
-#define CTOPICMAPPER_UT_H_
+#ifndef INCLUDE_CMQTTHANDLER_UT_HPP_
+#define INCLUDE_CMQTTHANDLER_UT_HPP_
 
 #include <gtest/gtest.h>
-//#include "../../include/TopicMapper.hpp"
-#include "Common.hpp"
 
+#include "MQTTPublishHandler.hpp";
+#include "eis/msgbus/msg_envelope.h";
 
-class CTopicMapper_ut : public ::testing::Test {
+class MQTTPublishHandler_ut  : public ::testing::Test{
 
 protected:
 	virtual void SetUp();
@@ -25,4 +25,4 @@ protected:
 public:
 };
 
-#endif /* CTOPICMAPPER_UT_H_ */
+#endif /* INCLUDE_CMQTTHANDLER_UT_HPP_ */

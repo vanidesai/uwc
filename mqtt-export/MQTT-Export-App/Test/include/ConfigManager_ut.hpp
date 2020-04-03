@@ -8,23 +8,20 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#ifndef CEISMSGBUSHANDLER_UT_H_
-#define CEISMSGBUSHANDLER_UT_H_
+#ifndef CONFIGMANAGER_UT_H_
+#define CONFIGMANAGER_UT_H_
 
 #include <gtest/gtest.h>
+#include "ConfigManager.hpp"
 
-#include "../../include/EISMsgbusHandler.hpp"
-#include "eis/utils/config.h"
 
-class CEISMsgbusHandler_ut : public ::testing::Test{
+class ConfigManager_ut : public ::testing::Test {
 
 protected:
 	virtual void SetUp();
 	virtual void TearDown();
 
 public:
-
-
 };
 
-#endif /* CEISMSGBUSHANDLER_UT_H_ */
+#endif /* CONFIGMANAGER_UT_H_ */

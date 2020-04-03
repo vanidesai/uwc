@@ -8,51 +8,51 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "../include/CTopicMapper_ut.hpp"
+#include "../include/Common_ut.hpp"
 #include <string>
 #include <vector>
 
 
 using namespace std;
 
-void CTopicMapper_ut::SetUp()
+void Common_ut::SetUp()
 {
 	// Setup code
 }
 
-void CTopicMapper_ut::TearDown()
+void Common_ut::TearDown()
 {
 	// TearDown code
 }
 
-TEST_F(CTopicMapper_ut, readEnvVariable_ReadSuccess)
+TEST_F(Common_ut, readEnvVariable_ReadSuccess)
 {
 
 	std::string envVar = "";
-	bool bRetVal = CTopicMapper::getInstance().readEnvVariable("ReadRequest", envVar);
+	bool bRetVal = CCommon::getInstance().readEnvVariable("ReadRequest", envVar);
 
 	EXPECT_EQ("MQTT_Export_RdReq", envVar);
 
 }
 
-TEST_F(CTopicMapper_ut, readEnvVariable_ReadUnSuccess)
+TEST_F(Common_ut, readEnvVariable_ReadUnSuccess)
 {
 
 	std::string envVar = "";
-	bool bRetVal = CTopicMapper::getInstance().readEnvVariable("NotDefined", envVar);
+	bool bRetVal = CCommon::getInstance().readEnvVariable("NotDefined", envVar);
 
 	EXPECT_EQ(false, bRetVal);
 
 }
 
-TEST_F(CTopicMapper_ut, readCommonEnvVariables_ReadSuccess)
+TEST_F(Common_ut, readCommonEnvVariables_ReadSuccess)
 {
 	//Setting environment variable for testing purpose
 	setenv("ReadRequest", "ReadRequest_UT", 0);
 	setenv("WriteRequest", "WriteRequest_UT", 0);
 	setenv("APP_VERSION", "APP_VERSION", 0);
 
-	bool bRetVal = CTopicMapper::getInstance().readCommonEnvVariables();
+	bool bRetVal = CCommon::getInstance().readCommonEnvVariables();
 
 	EXPECT_EQ(true, bRetVal);
 
@@ -63,17 +63,17 @@ TEST_F(CTopicMapper_ut, readCommonEnvVariables_ReadSuccess)
 }
 
 // env variables are not set
-TEST_F(CTopicMapper_ut, readCommonEnvVariables_Invalid)
+TEST_F(Common_ut, readCommonEnvVariables_Invalid)
 {
 
-	bool bRetVal = CTopicMapper::getInstance().readCommonEnvVariables();
+	bool bRetVal = CCommon::getInstance().readCommonEnvVariables();
 
 	EXPECT_EQ(false, bRetVal);
 
 }
 
 // DevMode = FALSE
-TEST_F(CTopicMapper_ut, readCommonEnvVariables_DevModeFalse)
+TEST_F(Common_ut, readCommonEnvVariables_DevModeFalse)
 {
 	//Setting environment variable for testing purpose
 	setenv("ReadRequest", "ReadRequest_UT", 0);
@@ -81,7 +81,7 @@ TEST_F(CTopicMapper_ut, readCommonEnvVariables_DevModeFalse)
 	setenv("APP_VERSION", "APP_VERSION", 0);
 	setenv("DEV_MODE", "false", 1);
 
-	bool bRetVal = CTopicMapper::getInstance().readCommonEnvVariables();
+	bool bRetVal = CCommon::getInstance().readCommonEnvVariables();
 
 	EXPECT_EQ(true, bRetVal);
 
@@ -93,14 +93,14 @@ TEST_F(CTopicMapper_ut, readCommonEnvVariables_DevModeFalse)
 }
 
 // DevMode = other than true and false
-TEST_F(CTopicMapper_ut, readCommonEnvVariables_DevModeOther)
+TEST_F(Common_ut, readCommonEnvVariables_DevModeOther)
 {
 	setenv("ReadRequest", "ReadRequest_UT", 0);
 	setenv("WriteRequest", "WriteRequest_UT", 0);
 	setenv("APP_VERSION", "APP_VERSION", 0);
 	setenv("DEV_MODE", "other", 1);
 
-	bool bRetVal = CTopicMapper::getInstance().readCommonEnvVariables();
+	bool bRetVal = CCommon::getInstance().readCommonEnvVariables();
 
 	EXPECT_EQ(true, bRetVal);
 
@@ -110,13 +110,31 @@ TEST_F(CTopicMapper_ut, readCommonEnvVariables_DevModeOther)
 	setenv("DEV_MODE", "true", 1);
 }
 
-TEST_F(CTopicMapper_ut, setStrReadRequest_SetstrCorrect)
+TEST_F(Common_ut, setStrReadRequest_SetstrCorrect)
 {
 
-	CTopicMapper::getInstance().setStrReadRequest("SetStrForUT");
+	CCommon::getInstance().setStrReadRequest("SetStrForUT");
 
-	string str_temp = CTopicMapper::getInstance().getStrReadRequest();
+	string str_temp = CCommon::getInstance().getStrReadRequest();
 
 	EXPECT_EQ("SetStrForUT", str_temp);
+
+}
+
+TEST_F(Common_ut, addTimestampsToMsg_InvMsg)
+{
+
+	std::string strTsReceivedFromMQTT;
+	std::string message_Inv = "InvMsg";
+	std::string tsMsgRcvdFromMQTT = "RecMsg";
+	bool RetVal = true;
+
+
+	CCommon::getInstance().getCurrentTimestampsInString(strTsReceivedFromMQTT);
+
+
+	RetVal = CCommon::getInstance().addTimestampsToMsg(message_Inv, tsMsgRcvdFromMQTT, strTsReceivedFromMQTT);
+
+	EXPECT_EQ(false, RetVal);
 
 }

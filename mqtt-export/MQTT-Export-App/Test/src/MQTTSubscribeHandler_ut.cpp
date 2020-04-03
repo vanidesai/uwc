@@ -8,7 +8,7 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "../include/CMQTTHandler_ut.hpp"
+#include "../include/MQTTSubscribeHandler_ut.hpp"
 
 #include <gtest/internal/gtest-internal.h>
 #include <cstdlib>
@@ -19,17 +19,16 @@ using namespace std;
 
 extern void postMsgsToEIS();
 
-void CMQTTHandler_ut::SetUp() {
+void MQTTSubscribeHandler_ut::SetUp() {
 	// Setup code
 }
 
-void CMQTTHandler_ut::TearDown() {
+void MQTTSubscribeHandler_ut::TearDown() {
 	// TearDown code
 }
 
-
-//test 01
-TEST_F(CMQTTHandler_ut, instance_ValMqtURL) {
+TEST_F(MQTTSubscribeHandler_ut, instance_ValMqtURL)
+{
 	try
 	{
 		CMQTTHandler::instance();
@@ -39,162 +38,66 @@ TEST_F(CMQTTHandler_ut, instance_ValMqtURL) {
 	}
 }
 
-
-#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
-TEST_F(CMQTTHandler_ut, pushMsgInQ)
-{
-
-	CMQTTHandler::instance().postPendingMsgs();
-}
-#endif
-
-
-TEST_F(CMQTTHandler_ut, publish_ValMsg)
-{
-	string PubTpoic = "PubTopics";
-
-	struct timespec tsMsgRcvd;
-	timespec_get(&tsMsgRcvd, TIME_UTC);
-
-	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
-
-	bool retVal = CMQTTPublishHandler_obj.publish(
-			"{\"topic\": \"PL0_iou_write\", \"command\": \" DValve\", \"value\": \"0x00\", \"app_seq\":\"1234\"}",
-			PubTpoic.c_str(),
-			0,
-			tsMsgRcvd);
-
-	EXPECT_EQ(false, retVal);
-}
-
-
-TEST_F(CMQTTHandler_ut, publish_InValMsg)
-{
-	string PubTpoic = "PubTopics";
-
-	struct timespec tsMsgRcvd;
-	timespec_get(&tsMsgRcvd, TIME_UTC);
-
-	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
-
-	bool retVal = CMQTTPublishHandler_obj.publish(
-			"InvalidMsg",
-			PubTpoic.c_str(),
-			0,
-			tsMsgRcvd);
-
-	EXPECT_EQ(false, retVal);
-}
-
-
-TEST_F(CMQTTHandler_ut, publish_MsgEmpty)
-{
-	string PubTpoic = "";
-
-	struct timespec tsMsgRcvd;
-	timespec_get(&tsMsgRcvd, TIME_UTC);
-
-	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
-
-	bool retVal = CMQTTPublishHandler_obj.publish(
-			"",
-			PubTpoic.c_str(),
-			0,
-			tsMsgRcvd);
-
-	EXPECT_EQ(false, retVal);
-}
-
-TEST_F(CMQTTHandler_ut, publish_TopicEmp)
-{
-	string PubTpoic = "";
-
-	struct timespec tsMsgRcvd;
-	timespec_get(&tsMsgRcvd, TIME_UTC);
-
-	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
-
-	bool retVal = CMQTTPublishHandler_obj.publish(
-			"{\"topic\": \"PL0_iou_write\"}",
-			PubTpoic.c_str(),
-			0,
-			tsMsgRcvd);
-
-	EXPECT_EQ(false, retVal);
-}
-
-// How to confirm??
-// Working on it..
-TEST_F(CMQTTHandler_ut, cleanup_Success)
-{
-	CMQTTHandler::instance().cleanup();
-
-}
-
-TEST_F(CMQTTHandler_ut, cleanup_1_Success)
-{
-	CMQTTPublishHandler CMQTTPublishHandler_obj("str1", "str2");
-
-	CMQTTPublishHandler_obj.cleanup();
-}
-
-TEST_F(CMQTTHandler_ut, getOperation_IsWrite)
+TEST_F(MQTTSubscribeHandler_ut, getOperation_IsWrite)
 {
 	string topic = "write_toipic";
 	bool isWrite = false;
 
-	if( true == CMQTTHandler::instance().queueMgr.getOperation(topic, isWrite) )
+	if( true == CMQTTHandler::instance().getOperation(topic, isWrite) )
 	{
 		EXPECT_EQ(true, isWrite);
 	}
 
 }
 
-TEST_F(CMQTTHandler_ut, getOperation_IsNotRead)
+TEST_F(MQTTSubscribeHandler_ut, getOperation_IsNotRead)
 {
 	string topic = "read_toipic";
 	bool isWrite = true;
 
-	if( true == CMQTTHandler::instance().queueMgr.getOperation(topic, isWrite) )
+	if( true == CMQTTHandler::instance().getOperation(topic, isWrite) )
 	{
 		EXPECT_EQ(false, isWrite);
 	}
 
 }
 
-TEST_F(CMQTTHandler_ut, getOperation_InvalidTopic)
+
+TEST_F(MQTTSubscribeHandler_ut, getOperation_InvalidTopic)
 {
 	string topic = "Other_toipic";
 	bool isWrite = true;
 	bool RetVal = true;
 
-	RetVal = CMQTTHandler::instance().queueMgr.getOperation(topic, isWrite);
+	RetVal = CMQTTHandler::instance().getOperation(topic, isWrite);
 
 	EXPECT_EQ(false, RetVal);
 
 }
 
-TEST_F(CMQTTHandler_ut, parseMQTTMsg_Inv_Json)
+TEST_F(MQTTSubscribeHandler_ut, parseMQTTMsg_Inv_Json)
 {
 
 	bool isRealTime = false;
+	bool isWrite = false;
 	bool RetVal = false;
 
-	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg("", isRealTime);
+	RetVal = CMQTTHandler::instance().parseMQTTMsg("", isRealTime, isWrite);
 
 	EXPECT_EQ(false, RetVal);
 
 }
 
-TEST_F(CMQTTHandler_ut, parseMQTTMsg_NoRT)
+TEST_F(MQTTSubscribeHandler_ut, parseMQTTMsg_NoRT)
 {
 
 	bool isRealTime = true;
+	bool isWrite = false;
 	bool RetVal = false;
 
 	string topic = "{\"topicname\": \"TestTopic\"}";
 
-	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg(topic.c_str(), isRealTime);
+	RetVal = CMQTTHandler::instance().parseMQTTMsg(topic.c_str(), isRealTime, isWrite);
 
 	if( RetVal == true )
 	{
@@ -207,15 +110,37 @@ TEST_F(CMQTTHandler_ut, parseMQTTMsg_NoRT)
 
 }
 
-TEST_F(CMQTTHandler_ut, parseMQTTMsg_RT_OtherThan0_1)
+TEST_F(MQTTSubscribeHandler_ut, parseMQTTMsg_RTisNULL)
 {
 
 	bool isRealTime = true;
+	bool isWrite = false;
+	bool RetVal = true;
+
+	string topic = "{\"realtime\": 7}";
+
+	RetVal = CMQTTHandler::instance().parseMQTTMsg(topic.c_str(), isRealTime, isWrite);
+	if(true ==  RetVal)
+	{
+		EXPECT_EQ(false, isRealTime);
+	}
+	else
+	{
+		EXPECT_EQ(true, RetVal);
+	}
+
+}
+
+TEST_F(MQTTSubscribeHandler_ut, parseMQTTMsg_RT_OtherThan0_1)
+{
+
+	bool isRealTime = true;
+	bool isWrite = false;
 	bool RetVal = false;
 
 	string topic = "{\"realtime\": \"2\"}";
 
-	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg(topic.c_str(), isRealTime);
+	RetVal = CMQTTHandler::instance().parseMQTTMsg(topic.c_str(), isRealTime, isWrite);
 
 	if( true == RetVal)
 	{
@@ -228,15 +153,16 @@ TEST_F(CMQTTHandler_ut, parseMQTTMsg_RT_OtherThan0_1)
 
 }
 
-TEST_F(CMQTTHandler_ut, parseMQTTMsg_RT_0)
+TEST_F(MQTTSubscribeHandler_ut, parseMQTTMsg_RT_0)
 {
 
 	bool isRealTime = true;
+	bool isWrite = false;
 	bool RetVal = false;
 
 	string topic = "{\"realtime\": \"0\"}";
 
-	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg(topic.c_str(), isRealTime);
+	RetVal = CMQTTHandler::instance().parseMQTTMsg(topic.c_str(), isRealTime, isWrite);
 
 	if( true == RetVal)
 	{
@@ -249,15 +175,16 @@ TEST_F(CMQTTHandler_ut, parseMQTTMsg_RT_0)
 
 }
 
-TEST_F(CMQTTHandler_ut, parseMQTTMsg_RT_1)
+TEST_F(MQTTSubscribeHandler_ut, parseMQTTMsg_RT_1)
 {
 
 	bool isRealTime = true;
+	bool IsWrite = false;
 	bool RetVal = false;
 
 	string topic = "{\"realtime\": \"1\"}";
 
-	RetVal = CMQTTHandler::instance().queueMgr.parseMQTTMsg(topic.c_str(), isRealTime);
+	RetVal = CMQTTHandler::instance().parseMQTTMsg(topic.c_str(), isRealTime, IsWrite);
 
 	if( true == RetVal)
 	{
@@ -270,7 +197,8 @@ TEST_F(CMQTTHandler_ut, parseMQTTMsg_RT_1)
 
 }
 
-TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp3)
+
+TEST_F(MQTTSubscribeHandler_ut, pushSubMsgInQ_ReqTyp3)
 {
 
 	bool RetVal = true;
@@ -285,7 +213,22 @@ TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp3)
 	EXPECT_EQ(true, RetVal);
 }
 
-TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp1)
+TEST_F(MQTTSubscribeHandler_ut, pushSubMsgInQ_EmptyPayload)
+{
+
+	bool RetVal = true;
+	mqtt::const_message_ptr msg;
+
+	msg =  mqtt::make_message(
+			"{\"topic\": \"UT_writeRequest\"}",
+			""
+			);
+
+	RetVal = CMQTTHandler::instance().pushSubMsgInQ(msg);
+	EXPECT_EQ(false, RetVal);
+}
+
+TEST_F(MQTTSubscribeHandler_ut, pushSubMsgInQ_ReqTyp1)
 {
 
 	bool RetVal = true;
@@ -300,7 +243,7 @@ TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp1)
 	EXPECT_EQ(true, RetVal);
 }
 
-TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp2)
+TEST_F(MQTTSubscribeHandler_ut, pushSubMsgInQ_ReqTyp2)
 {
 
 	bool RetVal = true;
@@ -315,7 +258,7 @@ TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp2)
 	EXPECT_EQ(true, RetVal);
 }
 
-TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp0)
+TEST_F(MQTTSubscribeHandler_ut, pushSubMsgInQ_ReqTyp0)
 {
 
 	bool RetVal = true;
@@ -330,7 +273,7 @@ TEST_F(CMQTTHandler_ut, pushSubMsgInQ_ReqTyp0)
 	EXPECT_EQ(true, RetVal);
 }
 
-TEST_F(CMQTTHandler_ut, pushSubMsgInQ_OtherThanReadWrite)
+TEST_F(MQTTSubscribeHandler_ut, pushSubMsgInQ_OtherThanReadWrite)
 {
 
 	bool RetVal = true;
@@ -345,7 +288,7 @@ TEST_F(CMQTTHandler_ut, pushSubMsgInQ_OtherThanReadWrite)
 	EXPECT_EQ(false, RetVal);
 }
 
-TEST_F(CMQTTHandler_ut, pushSubMsgInQ_parseMQTTMsgFails)
+TEST_F(MQTTSubscribeHandler_ut, pushSubMsgInQ_parseMQTTMsgFails)
 {
 
 	bool RetVal = true;
@@ -360,4 +303,33 @@ TEST_F(CMQTTHandler_ut, pushSubMsgInQ_parseMQTTMsgFails)
 	EXPECT_EQ(false, RetVal);
 }
 
-//{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}
+/*TEST_F(MQTTSubscribeHandler_ut, instance_MqttExportURL_Empty)
+{
+
+	CCommon::getInstance().setStrMqttExportURL("");
+
+	CMQTTHandler::instance();
+
+}*/
+
+TEST_F(MQTTSubscribeHandler_ut, subscribeToTopics_Empty_SubReadTopic)
+{
+	unsetenv("mqtt_SubReadTopic");
+
+	CMQTTCallback CMQTTCallback_obj;
+	CMQTTCallback_obj.connected("Cause_UT");
+
+	setenv("mqtt_SubReadTopic", "/+/+/+/read", 1);
+
+	EXPECT_EQ(true, true);
+	//Code doesnt hang
+
+}
+
+// How to confirm??
+// Working on it..
+TEST_F(MQTTSubscribeHandler_ut, cleanup_Success)
+{
+	CMQTTHandler::instance().cleanup();
+
+}

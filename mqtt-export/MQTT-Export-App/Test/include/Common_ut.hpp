@@ -8,15 +8,15 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#ifndef INCLUDE_CMQTTHANDLER_UT_HPP_
-#define INCLUDE_CMQTTHANDLER_UT_HPP_
+#ifndef CTOPICMAPPER_UT_H_
+#define CTOPICMAPPER_UT_H_
 
 #include <gtest/gtest.h>
+//#include "../../include/TopicMapper.hpp"
+#include "Common.hpp"
 
-#include "MQTTSubscribeHandler.hpp"
-#include "MQTTPublishHandler.hpp";
 
-class CMQTTHandler_ut  : public ::testing::Test{
+class Common_ut : public ::testing::Test {
 
 protected:
 	virtual void SetUp();
@@ -25,4 +25,4 @@ protected:
 public:
 };
 
-#endif /* INCLUDE_CMQTTHANDLER_UT_HPP_ */
+#endif /* CTOPICMAPPER_UT_H_ */

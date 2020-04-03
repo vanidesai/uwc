@@ -33,8 +33,38 @@
 #include "ConfigManager.hpp"
 #include "Logger.hpp"
 
+#include "QueueMgr.hpp"
 
-class MQTTExmportMain_ut : public ::testing::Test{
+
+std::string parse_msg(const char *json);
+extern bool initEISContext();
+extern void postMsgstoMQTT();
+extern void signalHandler(int signal);
+extern bool addSrTopic(string &json, string& topic);
+extern void postMsgsToEIS(QMgr::CQueueMgr& qMgr);
+extern bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher);
+extern bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool &isRealtime);
+
+extern vector<std::thread> g_vThreads;
+
+extern void Temp_Function(string& topic);
+
+
+extern void listenOnEIS(string topic, stZmqContext context,
+		stZmqSubContext subContext);
+
+extern bool publishEISMsg(string eisMsg, stZmqContext &context,
+		stZmqPubContext &pubContext);
+
+extern void set_thread_priority_for_eis(bool& isRealtime, bool& isRead);
+
+extern std::atomic<bool> g_shouldStop;
+
+
+vector<std::thread> g_vThreads_UT;
+
+
+class Main_ut : public ::testing::Test{
 
 protected:
 	virtual void SetUp();
