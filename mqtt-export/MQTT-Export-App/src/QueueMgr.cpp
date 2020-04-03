@@ -154,6 +154,9 @@ bool QMgr::CQueueMgr::pushMsg(mqtt::const_message_ptr &msg)
 	}
 	catch(exception &ex)
 	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS(
+				"Exception received while pushing msg in queue :: "+ std::string(ex.what())));
+
 		return false;
 	}
 	return true;
