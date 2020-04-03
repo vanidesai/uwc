@@ -44,6 +44,11 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 	//	writeReq.m_strMsg = msg;
 	writeReq.m_strMsg = msg;
 
+	cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
+	cout<<msg<<endl;
+	cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
+
+/*
 
 	stMbusApiPram.m_lPriority = 1;
 	stMbusApiPram.m_pu8Data = NULL;
@@ -54,19 +59,25 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 	stMbusApiPram.m_u16TxId = 23;
 	stMbusApiPram.m_u32mseTimeout = 45;
 	stMbusApiPram.m_u8DevId = 5;
-	stMbusApiPram.m_u8IpAddr[4];
+	stMbusApiPram.m_u8IpAddr[4];*/
 
-	reqData.m_isByteSwap = true;
-	reqData.m_isWordSwap = false;
-	reqData.m_obtReqRcvdTS.tv_nsec = 21132323;
-	reqData.m_obtReqRcvdTS.tv_sec = 1;
-	reqData.m_strAppSeq = "455";
-	reqData.m_strMetric = "Test";
-	reqData.m_strTopic = "kzdjfhdszh";
-	reqData.m_strVersion = "2.1";
-	reqData.m_strWellhead = "test";
+	stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = true;
+	stMbusApiPram.m_stOnDemandReqData.m_isRT = true;
+	stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = true;
+	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_nsec = 21132323;
+	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_sec = 1;
+	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = "455";
+	stMbusApiPram.m_stOnDemandReqData.m_strEisTime = "2020-03-31 12:34:56";
+	stMbusApiPram.m_stOnDemandReqData.m_strMetric = "Test";
+	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = "2020-03-13 12:34:56";
+	stMbusApiPram.m_stOnDemandReqData.m_strTopic = "UnitTest";
+	stMbusApiPram.m_stOnDemandReqData.m_strVersion ="2.1";
+	stMbusApiPram.m_stOnDemandReqData.m_strWellhead = "test";
+
+
 
 	root = cJSON_Parse(writeReq.m_strMsg.c_str());
+
 
 	cJSON *appseq = cJSON_GetObjectItem(root,"app_seq");
 	cJSON *cmd=cJSON_GetObjectItem(root,"command");
@@ -76,6 +87,8 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 	cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
 	cJSON *timestamp=cJSON_GetObjectItem(root,"timestamp");
 	cJSON *usec=cJSON_GetObjectItem(root,"usec");
+	cJSON *mqttTime=cJSON_GetObjectItem(root,"tsMsgRcvdFromMQTT");
+	cJSON *eisTime=cJSON_GetObjectItem(root,"tsMsgPublishOnEIS");
 	void* ptrAppCallback = NULL;
 	bool isWrite = false;
 
@@ -84,9 +97,9 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 
 		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, isWrite, &ptrAppCallback);
 
-		//EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
+		EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
 		//EXPECT_EQ(MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER, eFunRetType);
-		EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
+		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 
 
 	}
@@ -101,11 +114,9 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 {
 	writeReq.m_strTopic = topic;
-	//	writeReq.m_strMsg = msg;
+
 	writeReq.m_strMsg = msg;
 	void* ptrAppCallback = NULL;
-
-	//cJSON *root = cJSON_Parse(writeReq.m_strMsg.c_str());
 
 	bool isWrite = true;
 	stMbusApiPram.m_lPriority = 1;
@@ -139,6 +150,8 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 	cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
 	cJSON *timestamp=cJSON_GetObjectItem(root,"timestamp");
 	cJSON *usec=cJSON_GetObjectItem(root,"usec");
+	cJSON *mqttTime=cJSON_GetObjectItem(root,"tsMsgRcvdFromMQTT");
+	cJSON *eisTime=cJSON_GetObjectItem(root,"tsMsgPublishOnEIS");
 
 
 	try
@@ -146,9 +159,9 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 
 		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, isWrite, &ptrAppCallback);
 
-		//EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
+		EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
 		//EXPECT_EQ(MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER, eFunRetType);
-		EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
+		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 
 	}
 	catch( exception &e)
@@ -178,6 +191,8 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_InvalidTopicMsg)
 	cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
 	cJSON *timestamp=cJSON_GetObjectItem(root,"timestamp");
 	cJSON *usec=cJSON_GetObjectItem(root,"usec");
+	cJSON *mqttTime=cJSON_GetObjectItem(root,"tsMsgRcvdFromMQTT");
+	cJSON *eisTime=cJSON_GetObjectItem(root,"tsMsgPublishOnEIS");
 	void* ptrAppCallback = NULL;
 	bool isWrite = true;
 
@@ -234,8 +249,11 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite)
 	cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
 	cJSON *timestamp=cJSON_GetObjectItem(root,"timestamp");
 	cJSON *usec=cJSON_GetObjectItem(root,"usec");
+	cJSON *mqttTime=cJSON_GetObjectItem(root,"tsMsgRcvdFromMQTT");
+	cJSON *eisTime=cJSON_GetObjectItem(root,"tsMsgPublishOnEIS");
 
-	if(pstModbusRxPacket == NULL) {
+	if(pstModbusRxPacket == NULL)
+	{
 		std::cout << __func__ << " pstModbusRxPacket == NULL" << std::endl;
 		EXPECT_EQ(true, false);
 	}
@@ -443,16 +461,7 @@ TEST_F(ModbusWriteHandler_ut, thread_init_DValve_sub)
 	//sem_post(&semaphoreWriteReq);
 	try
 	{
-		//Check the below commented line once again
-		//onDemandHandler::Instance().initWriteHandlerThreads();
-		//TODO
-		//modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).createWriteListener();
 
-    //  bool result = modWriteHandler::Instance().processMsg(g_msg)
-		//sem_t semaphoreWriteReq = onDemandHandler::Instance().getSemaphoreWriteReq();
-		//sem_post(&onDemandHandler::Instance().getSemaphoreWriteReq());
-
-		// Creating message to be published
 
 		msg_envelope_elem_body_t* msgCommand =msgbus_msg_envelope_new_string("DValve");
 		msg_envelope_elem_body_t* msgAppSeq = msgbus_msg_envelope_new_string("1234");
@@ -664,8 +673,8 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_write)
 
 }
 
-/*
 
+/*
 TEST_F(ModbusWriteHandler_ut, callBack_OnDemand_test)
 {
 	//void** ptrAppCallback = NULL;
@@ -683,8 +692,21 @@ TEST_F(ModbusWriteHandler_ut, callBack_OnDemand_test)
 	 bool isRTFlag = true;
 	 bool isWriteFlag = false;
 	 MbusAPI_t stMbusApiPram;
+	 stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = true;
+	 stMbusApiPram.m_stOnDemandReqData.m_isRT = true;
+	 stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = true;
+	 stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_nsec = 21132323;
+	 stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_sec = 1;
+	 stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = "455";
+	 stMbusApiPram.m_stOnDemandReqData.m_strEisTime = "2020-03-31 12:34:56";
+	 stMbusApiPram.m_stOnDemandReqData.m_strMetric = "Test";
+	 stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = "2020-03-13 12:34:56";
+	 stMbusApiPram.m_stOnDemandReqData.m_strTopic = "UnitTest";
+	 stMbusApiPram.m_stOnDemandReqData.m_strVersion ="2.1";
+	 stMbusApiPram.m_stOnDemandReqData.m_strWellhead = "test";
+
 	 onDemandHandler::Instance().setCallbackforOnDemand(&ptrAppCallback, isRTFlag, isWriteFlag, stMbusApiPram);
-}
-*/
+}*/
+
 
 

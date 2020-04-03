@@ -47,7 +47,7 @@ public:
 	//			"{ 	\"value\": \"0xFF00\", 	\"command\": \"AValve\", 	\"app_seq\": \"1234\", \"wellhead\": \"PL0\",  \"version\": \"0.0.0.1\", \"sourcetopic\":\"Response\", \"timestamp\": \"2020-02-12 06:14:15\", \"usec\": \"1581488055204186\" }";
 
 	string msg =
-			"{ 	\"value\": \"0xFF00\", 	\"command\": \"Flow\", 	\"app_seq\": \"1234\", \"wellhead\": \"PL0\",  \"version\": \"0.0.0.1\", \"sourcetopic\":\"/flowmeter/PL0/Flow/read\", \"timestamp\": \"2020-02-12 06:14:15\", \"usec\": \"1581488055204186\" }";
+			"{ 	\"value\": \"0xFF00\", 	\"command\": \"Flow\", 	\"app_seq\": \"1234\", \"tsMsgPublishOnEIS\":\"2020-03-31 12:34:56\", \"tsMsgRcvdFromMQTT\":\"2020-03-13 12:34:56\",  \"wellhead\": \"PL0\",  \"version\": \"0.0.0.1\", \"sourcetopic\":\"/flowmeter/PL0/Flow/read\", \"timestamp\": \"2020-02-12 06:14:15\", \"usec\": \"1581488055204186\" }";
 
 	string str = "data";
 	uint8_t* target = NULL;
