@@ -641,6 +641,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(u16StartCoil, u16NumOfcoils, u8UnitId, pFunCallBack, u8FunctionCode,0);
 	if(STACK_NO_ERROR != u8ReturnType)
@@ -697,7 +701,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
+
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -757,6 +762,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(u16StartDI, u16NumOfDI, u8UnitId, pFunCallBack, u8FunctionCode, 0);
 	if(STACK_NO_ERROR != u8ReturnType)
@@ -815,7 +824,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -877,6 +886,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(u16StartReg, u16NumberOfRegisters, u8UnitId, pFunCallBack, u8FunctionCode,0);
 	if(STACK_NO_ERROR != u8ReturnType)
@@ -932,7 +945,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -993,6 +1006,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(u16StartReg, u16NumberOfRegisters, u8UnitId, pFunCallBack, u8FunctionCode, 0);
 	if(STACK_NO_ERROR != u8ReturnType)
@@ -1050,7 +1067,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -1108,6 +1125,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(u16StartCoil,u16OutputVal, u8UnitId, pFunCallBack, u8FunctionCode,0);
 	if(STACK_NO_ERROR != u8ReturnType)
@@ -1161,7 +1182,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -1219,6 +1240,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(u16StartReg, u16RegOutputVal, u8UnitId, pFunCallBack, u8FunctionCode,0);
 	if(STACK_NO_ERROR != u8ReturnType)
@@ -1271,7 +1296,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -1332,6 +1357,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(u16Startcoil, u16NumOfCoil, u8UnitId, pFunCallBack, u8FunctionCode,u8ByteCount);
 	if(STACK_NO_ERROR != u8ReturnType)
@@ -1397,7 +1426,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -1459,6 +1488,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 	stEndianess_t stEndianess = { 0 };
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(u16StartReg, u16NumOfReg, u8UnitId, pFunCallBack, u8FunctionCode,u8ByteCount);
 	if(STACK_NO_ERROR != u8ReturnType)
@@ -1532,7 +1565,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -1591,6 +1624,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 	stEndianess_t stEndianess = { 0 };
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(0,
 			u8byteCount,
@@ -1695,7 +1732,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -1754,6 +1791,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(0,
 			u8ReqDataLen,
@@ -1868,7 +1909,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
 	}
 
 	///pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -1934,6 +1975,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	u8ReturnType = InputParameterVerification(u16ReadRegAddress,
 			u16NoOfReadReg,
@@ -2040,7 +2085,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;
@@ -2100,6 +2145,10 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	stMbusPacketVariables_t stMBusRequesPacket = {0};
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	Post_Thread_Msg_t stPostThreadMsg = { 0 };
+	struct timespec tsReqRcvd = (struct timespec){0};
+
+	// Init req rcvd timestamp
+	timespec_get(&tsReqRcvd, TIME_UTC);
 
 	if(NULL == pFunCallBack)
 	{
@@ -2175,7 +2224,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	}
 
 	//pstMBusRequesPacket = (stMbusPacketVariables_t*)malloc(sizeof(stMbusPacketVariables_t));
-	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket);
+	pstMBusRequesPacket = emplaceNewRequest(&stMBusRequesPacket, tsReqRcvd);
 	if(NULL == pstMBusRequesPacket)
 	{
 		//return STACK_ERROR_MALLOC_FAILED;

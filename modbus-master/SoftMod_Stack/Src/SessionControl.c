@@ -97,10 +97,12 @@ void initReqManager()
  * emplace new request in request queue
  *
  * @param - a_pObjTempReq
+ * @param - tsReqRcvd - request received time-stamp
  * @returns pointer to stMbusPacketVariables_t
  *
  */
-stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq)
+stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq,
+		const struct timespec tsReqRcvd)
 {
 	if(NULL == a_pObjTempReq)
 	{
@@ -128,8 +130,10 @@ stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempRe
 			ptr->m_state = REQ_RCVD_FROM_APP;
 			ptr->m_ulMyId = iCount;
 
-			// Init req rcvd timestamp
-			timespec_get(&(ptr->m_objTimeStamps.tsReqRcvd), TIME_UTC);
+			// copy the req recvd timestamp
+			memcpy_s(&(ptr->m_objTimeStamps.tsReqRcvd), sizeof(struct timespec),
+					&tsReqRcvd, sizeof(struct timespec));
+
 			// Init other timestamps to 0
 			ptr->m_objTimeStamps.tsReqSent = (struct timespec){0};
 			ptr->m_objTimeStamps.tsRespRcvd = (struct timespec){0};
