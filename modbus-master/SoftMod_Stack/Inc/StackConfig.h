@@ -232,7 +232,8 @@ typedef enum ThreadScheduler
 }eThreadScheduler;
 
 void initReqManager();
-stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq);
+stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq,
+		const struct timespec tsReqRcvd);
 void freeReqNode(stMbusPacketVariables_t* a_pobjReq);
 
 // Function to set thread parameters
