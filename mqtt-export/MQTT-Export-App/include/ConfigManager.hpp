@@ -106,7 +106,8 @@ enum eOperationType
 {
 	POLLING,       //!< POLLING
 	ON_DEMAND_READ,//!< ON_DEMAND_READ
-	ON_DEMAND_WRITE//!< ON_DEMAND_WRITE
+	ON_DEMAND_WRITE,//!< ON_DEMAND_WRITE
+	UNKNOWN_OPERATION
 };
 
 /**
@@ -150,6 +151,10 @@ class COperation
 	int m_retries;
 
 public:
+
+	// default constructor to initialize default values
+	COperation();
+
 	/** Populate COperation data structures
 	 *
 	 * @param : a_baseNode [in] : YAML node to read from
@@ -212,6 +217,9 @@ class COperationInfo
 	COperation m_NonRTConfig;
 
 public:
+
+	// default constructor
+	COperationInfo();
 
 	/** Populate COperation data structures
 	 *

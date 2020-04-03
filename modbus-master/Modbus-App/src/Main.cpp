@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.2.6"
+#define APP_VERSION "0.0.2.7"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -196,9 +196,6 @@ bool CommonUtils::readCommonEnvVariables()
 	std::list<std::string> topicList{"PolledData", "PolledData_RT", "ReadResponse", "ReadResponse_RT", "WriteResponse",
 		"WriteResponse_RT", "ReadRequest", "ReadRequest_RT", "WriteRequest", "WriteRequest_RT", "SITE_LIST_FILE_NAME", "DEV_MODE"};
 
-#ifdef REALTIME_THREAD_PRIORITY
-		topicList.push_back({"THREAD_PRIORITY", "THREAD_POLICY"});
-#endif
 	std::map <std::string, std::string> envTopics;
 
 	for (auto &topic : topicList)
@@ -226,11 +223,6 @@ bool CommonUtils::readCommonEnvVariables()
 	PublishJsonHandler::instance().setSWriteRequestTopic(envTopics.at("WriteRequest"));
 	PublishJsonHandler::instance().setSWriteRequestTopicRT(envTopics.at("WriteRequest_RT"));
 	PublishJsonHandler::instance().setSiteListFileName(envTopics.at("SITE_LIST_FILE_NAME"));
-
-#ifdef REALTIME_THREAD_PRIORITY
-	PublishJsonHandler::instance().setStrThreadPriority(envTopics.at("THREAD_PRIORITY"));
-	PublishJsonHandler::instance().setStrThreadPolicy(envTopics.at("THREAD_POLICY"));
-#endif
 
 
 	string devMode = envTopics.at("DEV_MODE");
@@ -328,24 +320,38 @@ int main(int argc, char* argv[])
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 
 		string sPortName, sBaudrate, sParity, sStopBit;
+		eParity parity;
 		if (!((CommonUtils::readEnvVariable("PORT_NAME", sPortName)) &&
 				(CommonUtils::readEnvVariable("BAUD_RATE", sBaudrate)) &&
 				(CommonUtils::readEnvVariable("PARITY", sParity)) &&
 				(CommonUtils::readEnvVariable("STOPBIT", sStopBit))))
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("Required environment variables are not found for RTU"));
-			std::cout << "Required environment variables are not found for RTU\n";
+			std::cout << "Required environment variables are not found for RTU" << endl;
 			exit(1);
 		}
 		else
 		{
 			CLogger::getInstance().log(INFO, LOGDETAILS("Required environment variables are found for RTU"));
 		}
+
+		if(sParity == "N" || sParity == "n" ||
+				sParity == "E" || sParity == "e" ||
+				sParity == "O" || sParity == "o")
+		{
+			parity = (sParity == "N" || sParity == "n") ? eNone : (sParity == "O" || sParity == "o") ? eOdd : eEven;
+		}
+		else
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Set Parity is wrong for RTU. Set correct parity N/E/O"));
+			std::cout << "Set Parity \"" << sParity << "\" is wrong for RTU. Set correct parity N/E/O" << endl;
+			exit(1);
+		}
 		cout << "********************************************************************"<<endl;
 		cout << "Modbus RTU container is running with below configuration.."<<endl;
 		cout<<"Baud rate = "<< stoi(sBaudrate)<< endl;
 		cout<<"Port Name = "<< sPortName<< endl;
-		cout<<"Parity = "<< stoi(sParity)<< endl;
+		cout<<"Parity = "<< sParity << endl;
 		cout<<"StopBit = "<< stoi(sStopBit)<< endl;
 		cout << "********************************************************************"<<endl;
 
@@ -370,7 +376,7 @@ int main(int argc, char* argv[])
 		do{
 			fd = initSerialPort((uint8_t*)(sPortName.c_str()),
 					stoi(sBaudrate),
-					stoi(sParity),
+					parity,
 					stoi(sStopBit));
 			if(fd < 0)
 			{

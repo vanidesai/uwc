@@ -109,6 +109,22 @@ typedef struct RestMbusReqGeneric
 
 #endif
 
+struct stOnDemandRequest
+{
+	std::string m_strAppSeq;
+	std::string m_strWellhead;
+	std::string m_strMetric;
+	std::string m_strVersion;
+	std::string m_strTopic;
+	bool m_isByteSwap;
+	bool m_isWordSwap;
+	bool m_isRT;
+	struct timespec m_obtReqRcvdTS;
+	//long m_lPriority;
+	std::string m_strMqttTime;
+	std::string m_strEisTime;
+};
+
 // This structure defines generic parameters for modbus common API
 typedef struct MbusAPI
 {
@@ -125,6 +141,7 @@ typedef struct MbusAPI
 	/** Holds the Mse Timeout  */
 	uint32_t m_u32mseTimeout;
 	int m_nRetry;
+	stOnDemandRequest m_stOnDemandReqData;
 }MbusAPI_t;
 
 // This structure defines request parameters for read periodic
@@ -206,23 +223,6 @@ enum eMbusCallbackType
 	MBUS_CALLBACK_ONDEMAND_WRITE_RT,
 };
 
-struct stOnDemandRequest
-{
-	std::string m_strAppSeq;
-	std::string m_strWellhead;
-	std::string m_strMetric;
-	std::string m_strVersion;
-	std::string m_strTopic;
-	bool m_isByteSwap;
-	bool m_isWordSwap;
-	bool m_isRT;
-	//bool m_isWrite;
-	struct timespec m_obtReqRcvdTS;
-	long m_lPriority;
-	std::string m_strMqttTime;
-	std::string m_strEisTime;
-};
-
 /// function to call Modbus stack APIs
 uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 								MbusAPI_t *pstMbusApiPram,void* vpCallBackFun);
@@ -243,15 +243,6 @@ std::string swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap = f
 
 /// function to read current time and usec
 void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
-
-/// function to get app sequence number given in request json
-bool getOnDemandReqData(unsigned short seqno, stOnDemandRequest& reqData);
-
-/// function to insert new entry in map
-bool insertOnDemandReqData(unsigned short, stOnDemandRequest);
-
-/// function to remove entry from the map
-void removeOnDemandReqData(unsigned short);
 
 /// function to get request json
 bool getReqData(unsigned short seqno, MbusAPI_t& reqData);

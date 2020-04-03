@@ -76,6 +76,22 @@ globalConfig::CGlobalConfig& globalConfig::CGlobalConfig::getInstance()
 	return _self;
 }
 
+// default constructor to initialize default values
+globalConfig::COperation::COperation()
+{
+	m_isRT = false;
+	m_operationPriority = 0;
+	m_qos = 0;
+	m_retries = 0;
+}
+
+// default constructor to initialize default values
+globalConfig::COperationInfo::COperationInfo()
+{
+	m_opType = UNKNOWN_OPERATION;
+	m_defaultIsRT = false;
+}
+
 /**
  * Display scheduler attributes
  * @param policy : [in] scheduler policy
@@ -83,12 +99,25 @@ globalConfig::CGlobalConfig& globalConfig::CGlobalConfig::getInstance()
  */
 void globalConfig::display_sched_attr(int policy, struct sched_param& param)
 {
-	printf("    policy=%s, priority=%d\n",
-			(policy == SCHED_FIFO)  ? "SCHED_FIFO" :
-					(policy == SCHED_RR)    ? "SCHED_RR" :
-							(policy == SCHED_OTHER) ? "SCHED_OTHER" :
-									"???",
-									param.sched_priority);
+	string sPolicy = "";
+	if(policy == SCHED_FIFO)
+	{
+		sPolicy = "FIFO";
+	}
+	else if(policy == SCHED_RR)
+	{
+		sPolicy = "RR";
+	}
+	else if(policy == SCHED_OTHER)
+	{
+		sPolicy = "SCHED_OTHER";
+	}
+	else
+	{
+		sPolicy = "UNKNOWN";
+	}
+	CLogger::getInstance().log(INFO, LOGDETAILS("policy = " + sPolicy +
+			" priority = "+ to_string(param.sched_priority)));
 }
 
 /**
@@ -103,12 +132,12 @@ void globalConfig::display_thread_sched_attr(const std::string a_sMsg)
 
 	s = pthread_getschedparam(pthread_self(), &policy, &param);
 	if (s != 0)
+	{
 		handle_error_en(s, "pthread_getschedparam");
-	cout << "\n**************************************************************************\n"<<endl;
-	cout << "Thread count :: "<<count++ <<" Thread Name :: "<<a_sMsg << endl;
+	}
+	CLogger::getInstance().log(INFO, LOGDETAILS("Thread number :: " + to_string(count++) +" Thread Name :: " + a_sMsg));
 
 	display_sched_attr(policy, param);
-	cout << "**************************************************************************\n"<<endl;
 }
 
 /**
@@ -163,29 +192,19 @@ void globalConfig::set_thread_sched_param(const COperation a_OpsInfo,
 		return;
 	}
 
-	int defaultPolicy;
-	if(0 != pthread_getschedparam(pthread_self(), &defaultPolicy, &param)){
-		CLogger::getInstance().log(WARN, LOGDETAILS("Cannot fetch scheduling parameters of current thread"));
-		std::cout << __func__ << ":" << __LINE__ << "Cannot fetch scheduling parameters of current thread" << std::endl;
+	param.sched_priority = iThreadPriority;
+
+	int result;
+	result = pthread_setschedparam(pthread_self(), threadPolicy, &param);
+	if(0 != result)
+	{
+		handle_error_en(result, "pthread_setschedparam");
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Cannot set thread priority to : " + std::to_string(iThreadPriority)));
+		std::cout << __func__ << ":" << __LINE__ << " Cannot set thread priority, result : " << result << std::endl;
 	}
 	else
 	{
-		param.sched_priority = iThreadPriority;
-		cout << "Thread priority :: " << param.sched_priority << endl;
-		cout << "Thread scheduler :: " << threadPolicy << endl;
-
-		int result;
-		result = pthread_setschedparam(pthread_self(), threadPolicy, &param);
-		if(0 != result)
-		{
-			handle_error_en(result, "pthread_setschedparam");
-			CLogger::getInstance().log(WARN, LOGDETAILS("Cannot set thread priority to : " + std::to_string(iThreadPriority)));
-			std::cout << __func__ << ":" << __LINE__ << " Cannot set thread priority, result : " << result << std::endl;
-		}
-		else
-		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("thread priority to set to: " + std::to_string(iThreadPriority)));
-		}
+		CLogger::getInstance().log(INFO, LOGDETAILS("thread priority to set to: " + std::to_string(iThreadPriority)));
 	}
 	//end of set priority for current thread
 }
@@ -434,8 +453,6 @@ bool globalConfig::loadGlobalConfigurations()
 								globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig(),
 								POLLING);
 						isPollingExist = true;
-						cout << "******************************************************\n";
-						CLogger::getInstance().log(INFO, LOGDETAILS( "******************************************************"));
 						continue;
 					}
 					else if (key["on-demand-read"])
@@ -447,9 +464,6 @@ bool globalConfig::loadGlobalConfigurations()
 								globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig(),
 								ON_DEMAND_READ);
 						isOdReadExist= true;
-						cout << "******************************************************\n";
-						CLogger::getInstance().log(INFO, LOGDETAILS( "******************************************************"));
-
 						continue;
 					}
 					else if (key["on-demand-write"])
@@ -461,8 +475,6 @@ bool globalConfig::loadGlobalConfigurations()
 								globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig(),
 								ON_DEMAND_WRITE);
 						isOdWriteExist= true;
-						cout << "******************************************************\n";
-						CLogger::getInstance().log(INFO, LOGDETAILS( "******************************************************"));
 						continue;
 					}
 				}

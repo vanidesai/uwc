@@ -1180,8 +1180,6 @@ void set_thread_sched_param()
 	struct sched_param param;
 
 	param.sched_priority = iThreadPriority;
-	printf("Thread priority :: %d\n", param.sched_priority);
-	printf("Thread scheduler :: %d\n" ,threadPolicy);
 
 	int result;
 	result = pthread_setschedparam(pthread_self(), threadPolicy, &param);
@@ -1192,7 +1190,8 @@ void set_thread_sched_param()
 	}
 	else
 	{
-		printf("thread priority to set to: %d\n", iThreadPriority);
+		//printf("Modbus stack :: thread parameters: %d\n", iThreadPriority);
+		// success
 	}
 
 	//end of set priority for current thread

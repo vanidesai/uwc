@@ -159,7 +159,8 @@ void CCommon::getCurrentTimestampsInString(std::string &strCurTime)
 	}
 	catch(exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS("Cannot get current time in string"));
+		CLogger::getInstance().log(FATAL, LOGDETAILS("Cannot get current time in string :: " +
+				std::string(e.what())));
 	}
 }
 
