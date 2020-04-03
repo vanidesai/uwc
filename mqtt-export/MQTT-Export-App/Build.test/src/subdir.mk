@@ -17,7 +17,8 @@ CPP_SRCS += \
 ../src/MQTTCallback.cpp \
 ../src/MQTTPublishHandler.cpp \
 ../src/MQTTSubscribeHandler.cpp \
-../src/Main.cpp 
+../src/Main.cpp \
+../src/QueueMgr.cpp 
 
 OBJS += \
 ./src/Common.o \
@@ -27,7 +28,8 @@ OBJS += \
 ./src/MQTTCallback.o \
 ./src/MQTTPublishHandler.o \
 ./src/MQTTSubscribeHandler.o \
-./src/Main.o 
+./src/Main.o \
+./src/QueueMgr.o 
 
 CPP_DEPS += \
 ./src/Common.d \
@@ -37,7 +39,8 @@ CPP_DEPS += \
 ./src/MQTTCallback.d \
 ./src/MQTTPublishHandler.d \
 ./src/MQTTSubscribeHandler.d \
-./src/Main.d 
+./src/Main.d \
+./src/QueueMgr.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

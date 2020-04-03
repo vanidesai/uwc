@@ -62,7 +62,7 @@ TEST_F(QueueMgr_ut, getSubMsgFromQ_RTRead)
 
 }
 
-TEST_F(QueueMgr_ut, isMsgArrived_TC001)
+TEST_F(QueueMgr_ut, isMsgArrived_NoSubMsgInQueue)
 {
 	mqtt::const_message_ptr msg = mqtt::make_message(
 					"{\"topic\": \"MQTT_Export_ReadRequest\"}",
@@ -71,6 +71,6 @@ TEST_F(QueueMgr_ut, isMsgArrived_TC001)
 
 	bool RetVal = QMgr::getRTRead().isMsgArrived(msg);
 
-	EXPECT_EQ(true, RetVal);
+	EXPECT_EQ(false, RetVal);
 
 }
