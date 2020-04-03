@@ -82,9 +82,6 @@ services:
     hostname: modbus-tcp-master
     network_mode: host
     restart: unless-stopped
-    privileged: true
-    cap_add: 
-      - sys_nice
     ulimits:
      rtprio:
        soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -137,7 +134,7 @@ services:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
       - "vol_uwc_socket:${SOCKET_DIR}"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config"
-    #user: ${EIS_UID}
+    user: ${EIS_UID}
     secrets:
       - ca_etcd
       - etcd_TCP1_cert
@@ -158,9 +155,6 @@ services:
     hostname: modbus-rtu-master
     network_mode: host
     restart: unless-stopped
-    privileged: true
-    cap_add: 
-      - sys_nice
     ulimits:
      rtprio:
        soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -176,7 +170,7 @@ services:
       CUTOFF_INTERVAL_PERCENTAGE: 90
       SERIAL_PORT_RETRY_INTERVAL: 1
       BAUD_RATE: 9600
-      PARITY: 1
+      PARITY: "E"
       PORT_NAME: "/dev/ttyUSB0"
       STOPBIT: 1
       MY_APP_ID: 2
@@ -217,7 +211,7 @@ services:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config"
       - "vol_uwc_socket:${SOCKET_DIR}"
-    #user: ${EIS_UID}
+    user: ${EIS_UID}
     devices:
       - /dev:/dev
     privileged: true
@@ -266,9 +260,6 @@ services:
     hostname: mqtt-export
     network_mode: host
     restart: unless-stopped
-    privileged: true
-    cap_add: 
-      - sys_nice
     ulimits:
      rtprio:
        soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -315,7 +306,7 @@ services:
         options:
             max-file: "3"
             max-size: "10m"
-    #user: ${EIS_UID}
+    user: ${EIS_UID}
     volumes:
       - "vol_uwc_socket:${SOCKET_DIR}"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config"

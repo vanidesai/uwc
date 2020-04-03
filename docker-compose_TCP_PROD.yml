@@ -78,6 +78,10 @@ services:
     hostname: modbus-tcp-master
     network_mode: host
     restart: unless-stopped
+    ulimits:
+     rtprio:
+       soft: "99" # these are the maximum values of priorites to be used inside the container application
+       hard: "99"
     environment:
       AppName: "TCP1"
       DEV_MODE: ${DEV_MODE}
@@ -144,6 +148,10 @@ services:
     hostname: modbus-rtu-master
     network_mode: host
     restart: unless-stopped
+    ulimits:
+     rtprio:
+       soft: "99" # these are the maximum values of priorites to be used inside the container application
+       hard: "99"
     environment:
       AppName: "RTU1"
       DEV_MODE: ${DEV_MODE}
@@ -154,7 +162,7 @@ services:
       INTERFRAME_DELAY: 1
       SERIAL_PORT_RETRY_INTERVAL: 1
       BAUD_RATE: 9600
-      PARITY: 1
+      PARITY: "E"
       PORT_NAME: "/dev/ttyUSB0"
       STOPBIT: 1
       MY_APP_ID: 2
@@ -243,6 +251,10 @@ services:
     hostname: mqtt-export
     network_mode: host
     restart: unless-stopped
+    ulimits:
+     rtprio:
+       soft: "99" # these are the maximum values of priorites to be used inside the container application
+       hard: "99"
     environment:
       AppName: "MQTT_Export"
       DEV_MODE: ${DEV_MODE}
