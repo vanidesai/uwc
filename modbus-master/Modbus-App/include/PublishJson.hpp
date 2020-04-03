@@ -45,10 +45,6 @@ class PublishJsonHandler
 	std::string m_sWriteRequestTopic_RT;
 	std::string m_siteListFileName;
 	uint32_t u32CutoffIntervalPercentage;
-#ifdef REALTIME_THREAD_PRIORITY
-	int m_intThreadPolicy;
-	int m_intThreadPriority;
-#endif
 	std::vector<std::string> subTopicList;
 
 	std::string m_sAppName;
@@ -292,63 +288,6 @@ public:
 	void insertSubTopicInList(const std::string &a_sTopic) {
 		subTopicList.push_back(a_sTopic);
 	}
-
-#ifdef REALTIME_THREAD_PRIORITY
-	/**
-	 * set thread priority
-	 * @param strThreadPriority :[in] priority to set
-	 */
-	void setStrThreadPriority(const std::string &strThreadPriority) {
-		try {
-			std::string::size_type sz;   // alias of size_t
-			m_intThreadPriority = std::stoi(strThreadPriority, &sz);
-
-			/*Processes scheduled under one of the real-time policies (SCHED_FIFO,
-			       SCHED_RR) have a sched_priority value in the range 1 (low) to 99
-			       (high)*/
-			if(m_intThreadPriority < 1 || m_intThreadPriority > 99) {
-				m_intThreadPolicy = 50;//medium priority
-			}
-		}catch(exception &ex) {
-			m_intThreadPriority = -1;
-		}
-	}
-
-	/**
-	 * get thread priority
-	 * @return thread priority
-	 */
-	const int& getIntThreadPriority() const {
-		return m_intThreadPriority;
-	}
-
-	/**
-	 * set thread policy
-	 * @param strThreadPolicy :[in] thread policy to set
-	 */
-	void setStrThreadPolicy(const std::string &strThreadPolicy) {
-		try {
-			std::string::size_type sz;   // alias of size_t
-			m_intThreadPolicy = std::stoi(strThreadPolicy, &sz);
-
-			if(m_intThreadPolicy < 0 || m_intThreadPolicy > 2) {
-				m_intThreadPolicy = SCHED_RR;
-			}
-		}catch(exception &ex) {
-			m_intThreadPolicy = -1;
-		}
-	}
-
-	/**
-	 * get thread policy to set
-	 * @return thread policy to set
-	 */
-	const int& getIntThreadPolicy() const {
-		return m_intThreadPolicy;
-	}
-
-	void set_thread_priority();
-#endif
 
 	uint32_t getCutoffIntervalPercentage() const {
 		return u32CutoffIntervalPercentage;

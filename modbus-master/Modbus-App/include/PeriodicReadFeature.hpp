@@ -162,6 +162,13 @@ class CTimeMapper
 	void checkTimer(uint32_t a_uiInterval);
 	void initTimerFunction();
 
+	/**
+	 * get freq index as per frequency
+	 * @param a_uFreq: [in]: frequency to find index
+	 * @return 	uint32_t : [out] returns actual index at given frequency
+	 */
+	uint32_t getFreqIndex(const uint32_t a_uFreq);
+
 	~CTimeMapper();
 	std::vector<CRefDataForPolling>& getPolledPointList(uint32_t uiRef, bool a_bIsRT)
 	{
@@ -189,7 +196,9 @@ private:
 	void threadReqInit(bool isRTPoint, const globalConfig::COperation& a_refOps);
 	void threadCheckCutoffRespInit(bool isRTPoint, const globalConfig::COperation& a_refOps);
 
-	void initiateRequest(std::vector<CRefDataForPolling>&, bool isRTRequest);
+	void initiateRequest(std::vector<CRefDataForPolling>&,
+			bool isRTRequest,
+			const long a_lPriority);
 
 	std::atomic<unsigned int> m_uiIsNextRequest;
 	sem_t semaphoreReqProcess, semaphoreRespProcess;
@@ -200,7 +209,8 @@ private:
 	std::mutex m_mutextTxIDMap;
 
 	bool init();
-	bool sendRequest(CRefDataForPolling &a_stRdPrdObj, uint16_t &m_u16TxId, bool isRTRequest);
+	bool sendRequest(CRefDataForPolling &a_stRdPrdObj, uint16_t &m_u16TxId,
+			bool isRTRequest, const long a_lPriority);
 
 	std::queue <uint32_t> m_qReqFreq, m_qRespFreq;
 	std::queue <uint32_t> m_qReqFreqRT, m_qRespFreqRT;
@@ -261,6 +271,8 @@ class CRefDataForPolling
 	std::mutex m_mutexLastResp;
 
 	std::atomic<uint16_t> m_uReqTxID;
+
+	CRefDataForPolling& operator=(const CRefDataForPolling&) = delete;	// Copy assign
 
 	public:
 	CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, struct stZmqContext& a_objBusContext, struct stZmqPubContext& a_objPubContext, uint8_t a_uiFuncCode);

@@ -21,9 +21,6 @@
 #include "ZmqHandler.hpp"
 #include "PeriodicReadFeature.hpp"
 
-#define ON_DEMAND_WRITE_PRIORITY 1 	//Write-On Demand Priority set as highest(1)
-#define ON_DEMAND_READ_PRIORITY 2 	//Read-On Demand Priority set as 2
-
 /// node for writerequest Q
 struct stRequest
 {
@@ -45,7 +42,7 @@ class onDemandHandler
 	 * @param operation		:[out] operation info
 	 * @return none
 	 */
-	bool getOperation(string topic, globalConfig::COperation& operation);
+	bool getOperation(string a_sTopic, globalConfig::COperation& a_Operation);
 
 public:
 	static onDemandHandler& Instance();
@@ -64,7 +61,6 @@ public:
 											unsigned char& funcCode,
 											unsigned short txID,
 											bool& isWrite,
-											stOnDemandRequest& reqData,
 											void** ptrAppCallback);
 
 	void setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFlag, bool isWriteFlag, MbusAPI_t &stMbusApiPram);
@@ -85,6 +81,13 @@ public:
 			bool isWrite);
 
 	bool compareString(const std::string stBaseString, const std::string strToCompare);
+
+	/**
+	 * get request priority from global configuration depending on the operation priority
+	 * @param a_Ops			:[in] global config for which to retrieve operation priority
+	 * @return [long]		:[out] request priority to be sent to stack.(lower is the value higher is the priority)
+	 */
+	long getReqPriority(const globalConfig::COperation a_Ops);
 };
 
 

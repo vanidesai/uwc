@@ -12,6 +12,7 @@
 #include "PeriodicRead.hpp"
 #include "PeriodicReadFeature.hpp"
 #include "ConfigManager.hpp"
+#include "ModbusOnDemandHandler.hpp"
 #include "utils/YamlUtil.hpp"
 #include <sstream>
 #include <ctime>
@@ -29,6 +30,9 @@ std::atomic<bool> g_stopTimer(false);
 extern "C" {
 	#include <safe_lib.h>
 }
+
+#define TIMER_THREAD_PRIORITY 65
+#define TIMER_THREAD_SCHEDULER globalConfig::threadScheduler::RR
 
 #ifdef PERFTESTING // will be removed afterwards
 
@@ -123,7 +127,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 	msg_envelope_t *msg = NULL;
 	try
 	{
-		stOnDemandRequest onDemandReqData;
+		MbusAPI_t stMbusApiPram = {};
 		std::string sTimestamp, sUsec, sTxID;
 		msg_envelope_elem_body_t* ptTopic = NULL;
 		msg_envelope_elem_body_t* ptWellhead = NULL;
@@ -149,7 +153,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		}
 		else
 		{
-			bool bRetVal = common_Handler::getOnDemandReqData(a_stResp.u16TransacID, onDemandReqData);
+			bool bRetVal = common_Handler::getReqData(a_stResp.u16TransacID, stMbusApiPram);
 			if(false == bRetVal)
 			{
 				CLogger::getInstance().log(FATAL, LOGDETAILS("Could not get data in map for on-demand request"));
@@ -158,29 +162,29 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 			common_Handler::getTimeParams(sTimestamp, sUsec);
 
 			/// application sequence
-			msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(onDemandReqData.m_strAppSeq.c_str());
+			msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strAppSeq.c_str());
 			/// topic
-			ptTopic = msgbus_msg_envelope_new_string(onDemandReqData.m_strTopic.append("Response").c_str());
+			ptTopic = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strTopic.append("Response").c_str());
 			/// wellhead
-			ptWellhead = msgbus_msg_envelope_new_string(onDemandReqData.m_strWellhead.c_str());
+			ptWellhead = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strWellhead.c_str());
 			/// metric
-			ptMetric = msgbus_msg_envelope_new_string(onDemandReqData.m_strMetric.c_str());
+			ptMetric = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strMetric.c_str());
 			/// RealTime
-			ptRealTime =  msgbus_msg_envelope_new_string(to_string(onDemandReqData.m_isRT).c_str());
-			// add timestamps for req recvd by app
-			msg_envelope_elem_body_t* ptAppTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(onDemandReqData.m_obtReqRcvdTS))).c_str() );
-			// message received from MQTT Time
-			msg_envelope_elem_body_t* ptMqttTime = msgbus_msg_envelope_new_string(onDemandReqData.m_strMqttTime.c_str());
-			// message received from MQTT Time
-			msg_envelope_elem_body_t* ptEisTime = msgbus_msg_envelope_new_string(onDemandReqData.m_strEisTime.c_str());
+			ptRealTime =  msgbus_msg_envelope_new_string(to_string(stMbusApiPram.m_stOnDemandReqData.m_isRT).c_str());
+			/// add timestamps for req recvd by app
+			msg_envelope_elem_body_t* ptAppTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS))).c_str() );
+			/// message received from MQTT Time
+			msg_envelope_elem_body_t* ptMqttTime = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strMqttTime.c_str());
+			/// message received from MQTT Time
+			msg_envelope_elem_body_t* ptEisTime = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strEisTime.c_str());
 
 			msgbus_msg_envelope_put(msg, "reqRcvdByApp", ptAppTSReqRcvd);
 			msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
 			msgbus_msg_envelope_put(msg, "tsMsgRcvdFromMQTT", ptMqttTime);
 			msgbus_msg_envelope_put(msg, "tsMsgPublishOnEIS", ptEisTime);
 
-			bIsByteSwap = onDemandReqData.m_isByteSwap;
-			bIsWordSwap = onDemandReqData.m_isWordSwap;
+			bIsByteSwap = stMbusApiPram.m_stOnDemandReqData.m_isByteSwap;
+			bIsWordSwap = stMbusApiPram.m_stOnDemandReqData.m_isWordSwap;
 		}
 
 		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
@@ -336,6 +340,8 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 		}
 		else
 		{
+			common_Handler::removeReqData(a_stResp.u16TransacID);	/// removing request structure from map
+
 			if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 			{
 				if(true == PublishJsonHandler::instance().publishJson(g_msg, a_objReqData->getBusContext().m_pContext,
@@ -408,7 +414,7 @@ BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(CRefDataForPolling& a_ob
 		stResp.m_operationType = MBUS_CALLBACK_POLLING;
 		stResp.m_u8FunCode = a_objReqData.getFunctionCode();
 		//Set polling frequency as priority
-		stResp.m_lPriority = a_objReqData.getDataPoint().getDataPoint().getPollingConfig().m_uiPollFreq;
+		//stResp.m_lPriority = a_objReqData.getDataPoint().getDataPoint().getPollingConfig().m_uiPollFreq;
 
 		// Post it
 		postResponseJSON(stResp, &a_objReqData);
@@ -435,7 +441,6 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 {
 	try
 	{
-		common_Handler::removeReqData(a_stResp.u16TransacID);	/// remove retry structure from map
 		if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 		{
 			CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(a_stResp.u16TransacID);
@@ -1200,7 +1205,9 @@ bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT, 
  * @param a_vReqData	:[in] reference to store polling frequency
  * @param isRTRequest	:[in] boolean variable to distinguish between RT/Non-RT requests
  */
-void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqData, bool isRTRequest)
+void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqData,
+		bool isRTRequest,
+		const long a_lPriority)
 {
 	for(auto &objReqData: a_vReqData)
 	{
@@ -1245,7 +1252,7 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
 					+ ", with TxID: " + to_string(m_u16TxId)));
 			// The entry is found in map
 			// Send a request
-			if (true == sendRequest(objReqData, m_u16TxId, isRTRequest))
+			if (true == sendRequest(objReqData, m_u16TxId, isRTRequest, a_lPriority))
 			{
 				// Request is sent successfully
 				// No action
@@ -1285,10 +1292,10 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
 void CRequestInitiator::threadReqInit(bool isRTPoint,
 		const globalConfig::COperation& a_refOps)
 {
-	try
-	{
+
 		// set the thread priority
 		globalConfig::set_thread_sched_param(a_refOps);
+		long l_reqPriority = onDemandHandler::Instance().getReqPriority(a_refOps);
 
 		globalConfig::display_thread_sched_attr("threadReqInit param::");
 
@@ -1309,31 +1316,35 @@ void CRequestInitiator::threadReqInit(bool isRTPoint,
 		}
 		while(false == g_stopThread.load())
 		{
-			do
+			try
 			{
-				if((sem_wait(pSem)) == -1 && errno == EINTR)
+				do
 				{
-					// Continue if interrupted by handler
-					continue;
-				}
-				if(true == g_stopThread.load())
-				{
-					break;
-				}
-				uint32_t uiRef;
-				if(false == getFreqRefForPollCycle(uiRef, isRTPoint, true))
-				{
-					break;
-				}
-				std::vector<CRefDataForPolling>& vReqData = CTimeMapper::instance().getPolledPointList(uiRef, isRTPoint);
-				initiateRequest(vReqData, isRTPoint);
-			} while(0);
+					if((sem_wait(pSem)) == -1 && errno == EINTR)
+					{
+						// Continue if interrupted by handler
+						continue;
+					}
+					if(true == g_stopThread.load())
+					{
+						break;
+					}
+					uint32_t uiRef;
+					if(false == getFreqRefForPollCycle(uiRef, isRTPoint, true))
+					{
+						break;
+					}
+					std::vector<CRefDataForPolling>& vReqData = CTimeMapper::instance().getPolledPointList(uiRef, isRTPoint);
+					initiateRequest(vReqData, isRTPoint, (CTimeMapper::instance().getFreqIndex(uiRef) +
+							l_reqPriority + 1));
+				} while(0);
+
+			}
+			catch (exception &e)
+			{
+				CLogger::getInstance().log(FATAL, LOGDETAILS("failed to initiate request :: " + std::string(e.what())));
+			}
 		}
-	}
-	catch (exception &e)
-	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-	}
 }
 
 /**
@@ -1616,7 +1627,10 @@ void CTimeMapper::checkTimer(uint32_t a_uiInterval)
  * @return 	true : on success,
  * 			false : on error
  */
-bool CRequestInitiator::sendRequest(CRefDataForPolling &a_stRdPrdObj, uint16_t &m_u16TxId, bool isRTRequest)
+bool CRequestInitiator::sendRequest(CRefDataForPolling &a_stRdPrdObj,
+		uint16_t &m_u16TxId,
+		bool isRTRequest,
+		const long a_lPriority)
 {
 	MbusAPI_t stMbusApiPram = {};
 	uint8_t u8ReturnType = MBUS_STACK_NO_ERROR;
@@ -1629,14 +1643,8 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling &a_stRdPrdObj, uint16_t &
 		stMbusApiPram.m_u16Quantity = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
 		stMbusApiPram.m_u16ByteCount = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
 
-		if(true == a_stRdPrdObj.getDataPoint().getDataPoint().getPollingConfig().m_bIsRealTime)
-		{
-			stMbusApiPram.m_lPriority = 3;
-		}
-		else
-		{
-			stMbusApiPram.m_lPriority = 4;
-		}
+		// set the priority
+		stMbusApiPram.m_lPriority = a_lPriority;
 
 		// Coil and discrete input are single bytes. All others are 2 byte registers
 		if((network_info::eEndPointType::eCoil != a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_eType) &&
@@ -1827,6 +1835,26 @@ uint32_t CTimeMapper::gcd(uint32_t num1, uint32_t num2)
 }
 
 /**
+ * get freq index as per frequency
+ * @param a_uFreq: [in]: frequency to find index
+ * @return 	uint32_t : [out] returns actual index at given frequency
+ */
+uint32_t CTimeMapper::getFreqIndex(const uint32_t a_uFreq)
+{
+	int index = 0;
+	for (auto itr = m_mapTimeRecord.begin(); itr != m_mapTimeRecord.end(); itr++)
+	{
+		index++;
+		if(itr->first == a_uFreq)
+		{
+			// index found
+			break;
+		}
+	}
+	return index;
+}
+
+/**
  * Gets minimum time frequency that can be used based on current records
  * @param
  * @return 	number : minimum polling frequency in milliseconds
@@ -1952,8 +1980,8 @@ void PeriodicTimer::timerThread(uint32_t interval)
 	// set thread priority
 	globalConfig::set_thread_sched_param(
 			globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig(),
-			65,
-			globalConfig::threadScheduler::RR,
+			TIMER_THREAD_PRIORITY,
+			TIMER_THREAD_SCHEDULER,
 			true);
 
 	globalConfig::display_thread_sched_attr("timerThread param::");
@@ -1996,7 +2024,7 @@ void PeriodicTimer::timerThread(uint32_t interval)
 
 	while(!g_stopTimer)
 	{
-		uint64_t uiTimerHitCount;
+		uint64_t uiTimerHitCount = 0;
 		ssize_t s = read(fd, &uiTimerHitCount, sizeof(uint64_t));
 		if (s != sizeof(uint64_t))
 		{
@@ -2004,7 +2032,12 @@ void PeriodicTimer::timerThread(uint32_t interval)
 					+ to_string(errno)));
 			continue;
 		}
-		CTimeMapper::instance().checkTimer(interval * uiTimerHitCount);
+
+		//  address KW issue of range check. ...  ideal value expected is 1
+		if(uiTimerHitCount >=1 && uiTimerHitCount < 1000)
+		{
+			CTimeMapper::instance().checkTimer(interval * uiTimerHitCount);
+		}
 	}
 }
 
