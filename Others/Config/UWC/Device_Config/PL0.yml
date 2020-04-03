@@ -15,8 +15,8 @@ devicelist:
     port: 502
     unitid: 1
 
-- deviceinfo: iou_device.yml
+- deviceinfo: "iou_device.yml"
   id: "iou"
   protocol:
-    protocol: PROTOCOL_RTU
+    protocol: "PROTOCOL_RTU"
     slaveid: '10'
