@@ -55,6 +55,8 @@ TEST_F(CConfigManager_ut, getInstance)
 }
 
 
+
+
 TEST_F(CConfigManager_ut, IsClientCreated)
 {
 
@@ -62,5 +64,67 @@ TEST_F(CConfigManager_ut, IsClientCreated)
 
 }
 
+
+//Nothing to check in this function , this function is here for code coverage point of view..
+TEST_F(CConfigManager_ut, display_sched_attr_test)
+{
+	struct sched_param param;
+
+	globalConfig::display_sched_attr(2, param);
+
+}
+
+
+
+TEST_F(CConfigManager_ut, display_thread_sched_attr_test)
+{
+	char msg;
+	globalConfig::display_thread_sched_attr(&msg);
+
+	if(msg == NULL)
+		{
+			EXPECT_EQ(1, true);
+		}
+		else
+		{
+			EXPECT_EQ(0, false);
+		}
+}
+
+TEST_F(CConfigManager_ut, set_thread_param_true)
+{
+	globalConfig::COperation a_OpsInfo;
+	globalConfig::eThreadScheduler a_eSched;
+	bool a_bIsOperation = true;
+	globalConfig::set_thread_sched_param(a_OpsInfo, 1, a_eSched, a_bIsOperation);
+}
+
+
+
+TEST_F(CConfigManager_ut, set_thread_param_false)
+{
+	globalConfig::COperation a_OpsInfo;
+	globalConfig::eThreadScheduler a_eSched;
+	bool a_bIsOperation = false;
+	globalConfig::set_thread_sched_param(a_OpsInfo, 1, a_eSched, a_bIsOperation);
+}
+
+TEST_F(CConfigManager_ut, setDefaultconfig_polling)
+{
+	globalConfig::eOperationType a_eOpType;
+	globalConfig::setDefaultConfig(a_eOpType);
+}
+/*
+TEST_F(CConfigManager_ut, loadGlobalConfig_test)
+{
+	bool bRetVal = true;
+	bool isPollingExist = true;
+	bool isOdReadExist = true;
+	bool isOdWriteExist = true;
+	bool result = globalConfig::loadGlobalConfigurations();
+	cout<<"#############################################################"<<endl;
+	cout<<result<<endl;
+	cout<<"#############################################################"<<endl;
+}*/
 
 #endif

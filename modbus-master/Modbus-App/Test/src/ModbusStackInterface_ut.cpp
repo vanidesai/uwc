@@ -42,6 +42,7 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 		msg_envelope_t *msg = NULL;
 		stOnDemandRequest reqData;
 		stOnDemandRequest onDemandReqData ;
+		MbusAPI_t stMbusApiPram = {};
 
 		uint16_t u16TxID = 52;
 		reqData.m_isByteSwap = true;
@@ -50,7 +51,6 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 		reqData.m_obtReqRcvdTS.tv_sec = 1;
 		reqData.m_strAppSeq = "455";
 		reqData.m_strMetric = "Test";
-		reqData.m_strQOS = "0";
 		reqData.m_strTopic = "kzdjfhdszh";
 		reqData.m_strVersion = "2.1";
 		reqData.m_strWellhead = "test";
@@ -74,7 +74,8 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 		stMbusAppCallbackParams.m_u8UnitID = 0;
 		stMbusAppCallbackParams.u16Port = 0;
 
-		common_Handler::insertOnDemandReqData(u16TxID, reqData);
+		//common_Handler::insertOnDemandReqData(u16TxID, reqData);
+		common_Handler::insertReqData(u16TxID, stMbusApiPram);
 
 		//zmq_handler::prepareCommonContext("pub");
 		//zmq_handler::getOnDemandReqData(0, onDemandReqData);

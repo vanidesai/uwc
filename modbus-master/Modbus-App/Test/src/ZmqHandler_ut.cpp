@@ -49,42 +49,6 @@ TEST_F(ZmqHandler_ut, getParams)
 }
 
 
-/********************************zmq_handler::prepareCommonContext()*************************************************/
-
-/* This test is to check whether topic type is getting or not */
-//************check for the Pub Topic************
-
-/*
-
-TEST_F(ZmqHandler_ut, prepare_test_pub)
-{
-	MsgbusManager msgbusMgr;
-	EnvConf_Caller CallerObj;
-	config_Caller CallerConfigobj;
-	MsgbusEnvelope msgbusEnvelope;
-
-
-	zmq_handler::zmqHandler zmqhandler(msgbusMgr, CallerObj, CallerConfigobj,msgbusEnvelope);
-
-		bool bRes = zmq_handler::zmqHandler(msgbusMgr, CallerObj, CallerConfigobj, msgbusEnvelope).prepareCommonContext("pub");
-		if(!bRes)
-		{
-			retValue =bRes;
-
-			EXPECT_EQ(false, retValue);
-		}
-		else{
-			retValue =bRes;
-
-			EXPECT_EQ(true, retValue);
-
-		}
-
-
-}
-
-
-*/
 
 //#if 1
 
@@ -145,32 +109,28 @@ TEST_F(ZmqHandler_ut, prepare_test_other1)
 
 }
 
-
-
-
-/***************************************ZmqHandler::insertSubCTX()************************************************/
-
-/*
-
-TEST_F(ZmqHandler_ut, insertSubCTX)
+TEST_F(ZmqHandler_ut, gerReqData_test)
 {
-	try{
-		const char* pcPubTopic = std::getenv("SubTopics");
-		bool bRes = zmq_handler::prepareCommonContext("sub");
-		//  zmqhandler.insertSubCTX("PL0_flowmeter1", objTempSubCtx);
-		zmq_handler::insertSubCTX("MQTT-Export/Modbus-TCP-Master_ReadRequest", *TempSubCtx);
-		EXPECT_EQ(true, bRes);
+	MbusAPI_t reqData;
+	bool result = common_Handler::getReqData(25, reqData);
 
-	}
-	catch(std::exception &e)
-	{
-		bool bRes= false;
-		cout<<e.what()<<endl;
-		EXPECT_EQ(false, bRes);
-	}
-
+	EXPECT_EQ(0, result);
 }
- */
+
+TEST_F(ZmqHandler_ut, updateReqData_test)
+{
+	MbusAPI_t reqData;
+	bool result = common_Handler::updateReqData(25, reqData);
+	cout<<"###################################################################"<<endl;
+	cout<<result<<endl;
+	cout<<"###################################################################"<<endl;
+}
+
+TEST_F(ZmqHandler_ut, removeReqData_test)
+{
+	common_Handler::removeReqData(25);
+	EXPECT_EQ(1, 1);
+}
 
 /****************************populatePollingRefData()
  *********This function test is to test the getCTX function******/
@@ -274,38 +234,6 @@ TEST_F(ZmqHandler_ut, getSubCtx)
 }
 
 
-
-
-/***************************getSubCTX()***********************************/
-//this test checks for correct context for correct sub topic accordingly
-//and throws exceptions accordingly
-
-//THIS TEST IS COMMENTED BECAUSE TEST IS GETTING FAILED**********************
-
-/*
-TEST_F(ZmqHandler_ut, getSubCtx2)
-{
-
-	try
-	{
-
-		bool bRes = zmq_handler::prepareCommonContext("sub");
-
-		busSubCTX = zmq_handler::getSubCTX("PL0_flowmeter1_write");
-		 //EXPECT_EQ(1,1);
-		std::cout<<"################################### Inside the try block"<<endl;
-
-	}
-	catch(std::exception &e)
-	{
-
-       busSubCTX = zmq_handler::getSubCTX("MQTT-Export/PL0_flowmeter1_write");
-       EXPECT_EQ("map::at", (string)e.what());
-       std::cout<<"################################### Inside the catch block"<<endl;
-	}
-
-}*/
-
 /******************************************getPubCTX()***********************************/
 
 TEST_F(ZmqHandler_ut, getPubCtx)
@@ -384,27 +312,7 @@ TEST_F(ZmqHandler_ut, removeCTX)
 		EXPECT_EQ("map::at", (string)e.what());
 	}
 }
-/*
-TEST_F(ZmqHandler_ut, removeCTX1)
-{
-	MsgbusManager msgbusMgr;
-		EnvConf_Caller CallerObj;
-		config_Caller CallerConfigobj;
-		MsgbusEnvelope msgbusEnvelope;
 
-	zmq_handler::zmqHandler zmqhandler(msgbusMgr, CallerObj, CallerConfigobj, msgbusEnvelope);
-   try
-   {
-	   zmqhandler.removeCTX("PL2_flowmeter3");
-
-   }
-   catch(std::exception &e)
-   {
-
-	   EXPECT_EQ("map::at", (string)e.what());
-   }
-}
- */
 /*******************************removeSubCTX()***********************************/
 
 TEST_F(ZmqHandler_ut, removeSubCTX)
@@ -440,35 +348,14 @@ TEST_F(ZmqHandler_ut, removePubCTX)
 }
 
 
-/********************************insertAppCTX******************************/
-
-//THIS TETST IS COMMENTED BECAUSE insertAppCTX() function is no longer available******
-
-/*TEST_F(ZmqHandler_ut, insertAppCTX)
-{
-	bool bRet = true;
-	try
-	{
-		zmq_handler::insertAppSeq(1, "2048");
-		EXPECT_EQ(bRet,true);
-	}
-	catch(std::exception &e)
-	{
-		bool bRet = false;
-		EXPECT_EQ(bRet, false);
-	}
-
-
-}*/
-
 /**************************removeOnDemandReqData()************************************/
 
 TEST_F(ZmqHandler_ut, removeAppCTX)
 {
 	try
 	{
-
-		common_Handler::removeOnDemandReqData(1);
+		common_Handler::removeReqData(1);
+		EXPECT_EQ(1, 1);
 	}
 	catch(std::exception &e)
 	{
@@ -505,39 +392,6 @@ TEST_F(ZmqHandler_ut, buildNettest)
 #endif
 
 }
-
-/**************************getOnDemandReqData()************************************/
-/* ZmqHandler_ut::getOnDemandReq_test() this test checks the functionality of the getOnDemandReqData() function***/
-TEST_F(ZmqHandler_ut, getOnDemandReq_test)
-{
-	try{
-		stOnDemandRequest onDemandReqData;
-		common_Handler::getOnDemandReqData(2, onDemandReqData);
-
-	}
-	catch(std::exception &e)
-	{
-		EXPECT_EQ("", e.what());
-	}
-}
-
-/*************************&&insertOnDemandReqData************************************/
-
-TEST_F(ZmqHandler_ut, insert_OnDemand)
-{
-	try{
-		stOnDemandRequest reqData;
-		common_Handler::insertOnDemandReqData(2, reqData);
-
-	}
-	catch(std::exception &e)
-	{
-
-		cout<<e.what()<<endl;
-		EXPECT_EQ("", (string)e.what());
-	}
-}
-
 
 
 

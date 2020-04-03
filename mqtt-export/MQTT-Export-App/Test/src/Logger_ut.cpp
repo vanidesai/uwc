@@ -47,3 +47,8 @@ TEST(Logger_ut, Log_Default)
 {
 	CLogger::getInstance().log(23, "Default");
 }
+
+TEST(Logger_ut, log_Warn)
+{
+	CLogger::getInstance().log(WARN, "LogWarn_TestMsg");
+}

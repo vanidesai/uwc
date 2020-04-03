@@ -49,3 +49,17 @@ TEST_F(MQTTCallback_ut, connection_lost_causeEmpty_CSyncCallback)
 
 }
 
+TEST_F(MQTTCallback_ut, message_arrived_ValMsg)
+{
+	CMQTTCallback CMQTTCallback_obj;
+
+	mqtt::const_message_ptr msg =  mqtt::make_message(
+				"{\"topic\": \"UT_writeRequest\"}",
+				"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"0	\"}"
+				);
+
+	CMQTTCallback_obj.message_arrived(msg);
+
+	//EXPECT: Code should not hang
+
+}

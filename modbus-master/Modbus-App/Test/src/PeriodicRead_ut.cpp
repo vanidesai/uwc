@@ -50,7 +50,7 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLArguments) {
 	{
 		/*CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, NULL,
 			u8numBytes, pu8data, u16StartAddress, u16Quantity,a_objStackTimestamps);*/
-		CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams, MBUS_RESPONSE_ONDEMAND, MBUS_CALLBACK_ONDEMAND_READ, "Response");
+		CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams, MBUS_CALLBACK_ONDEMAND_READ, "Response");
 
 		EXPECT_EQ("", test_str);
 	}
@@ -473,17 +473,14 @@ TEST_F(PeriodicRead_ut, checkTimer_return)
 	try
 	{
 		zmq_handler::stZmqContext a_BusContext;
-		//zmq_handler::stZmqPubContext a_objPubContext;
-		//uint8_t a_uiFuncCode;
+
 		uint8_t a_uiFuncCode = 1;
 		uint32_t U32_code;
-		//zmq_handler::stZmqContext a_BusContext;
-	//	zmq_handler::stZmqPubContext a_objPubContext;
+
 		bool g_stopTimer;
 
-		struct stZmqContext a_objBusContext = zmq_handler::getCTX("Modbus-TCP-Master_WriteResponse");
-
-		struct stZmqPubContext a_objPubContext = zmq_handler::getPubCTX("Modbus-TCP-Master_WriteResponse");
+		zmq_handler::stZmqContext a_objBusContext = zmq_handler::getCTX("TCP1_RdResp");
+		zmq_handler::stZmqPubContext a_objPubContext = zmq_handler::getPubCTX("TCP1_RdResp");
 		//uint8_t a_uiFuncCode;
 		CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
 		CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj};
@@ -497,14 +494,14 @@ TEST_F(PeriodicRead_ut, checkTimer_return)
 		sem_t semaphoreWriteReq = CRequestInitiator::instance().getSemaphoreReqProcess();
 		sem_post(&CRequestInitiator::instance().getSemaphoreReqProcess());
 		//CRequestInitiator::instance().initiateRequests(2);
-		std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef, true);
+		//std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef, true);
 		//CRequestInitiator::instance().initiateRequest(a_vReqData, true);
 		CRefDataForPolling *CRefDataForPolling_pt = &a_stRdPrdObj;
 		CTimeMapper::instance().insert(1, a_stRdPrdObj);
-		CTimeMapper::instance().checkTimer(1000);
+		CTimeMapper::instance().checkTimer(10000);
 		//CTimeMapper::instance().insert(1, a_stRdPrdObj);
 		//CTimeMapper::instance().insert(1, a_stRdPrdObj);
-		CTimeMapper::instance().checkTimer(1000);
+		CTimeMapper::instance().checkTimer(10000);
 		CPeriodicReponseProcessor::Instance().postDummyBADResponse(a_stRdPrdObj, m_stException);
 		//EXPECT_EQ(1,1);
 		cout<<"*******************************************************************************************"<<endl;
@@ -642,17 +639,15 @@ TEST_F(PeriodicRead_ut, readPeriodic_callback_false_NULL)
 }
 
 
-/*
-
 TEST_F(PeriodicRead_ut, Post_dummy_BAD)
 {
 	stException_t m_stException = {};
 	m_stException.m_u8ExcCode = 100;
 	m_stException.m_u8ExcStatus = 100;
 	bool result;
-	struct stZmqContext a_objBusContext = zmq_handler::getCTX("Modbus-TCP-Master_WriteResponse");
-
-	struct stZmqPubContext a_objPubContext = zmq_handler::getPubCTX("Modbus-TCP-Master_WriteResponse");
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+	zmq_handler::stZmqContext a_objBusContext = zmq_handler::getCTX("TCP1_RdResp");
+	zmq_handler::stZmqPubContext a_objPubContext = zmq_handler::getPubCTX("TCP1_RdResp");
 	uint8_t a_uiFuncCode = 1;
 	try
 	{
@@ -667,7 +662,26 @@ TEST_F(PeriodicRead_ut, Post_dummy_BAD)
 	{
 		EXPECT_EQ("map::at", (string)e.what());
 	}
-}*/
+#else
+	zmq_handler::stZmqContext a_objBusContext = zmq_handler::getCTX("RTU1_RdResp");
+	zmq_handler::stZmqPubContext a_objPubContext = zmq_handler::getPubCTX("RTU1_RdResp");
+	uint8_t a_uiFuncCode = 1;
+	try
+	{
+		uint32_t uiRef;
+		CRefDataForPolling a_stRdPrdObj{CUniqueDataPoint_obj, a_objBusContext, a_objPubContext, a_uiFuncCode};
+		//std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(1);
+		CPeriodicReponseProcessor::Instance().postDummyBADResponse(a_stRdPrdObj, m_stException);
+		EXPECT_EQ(1,1);
+
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("map::at", (string)e.what());
+	}
+#endif
+
+}
 
 TEST_F(PeriodicRead_ut, polled_point_list_true)
 {
@@ -699,13 +713,15 @@ TEST_F(PeriodicRead_ut, saveResponse_test)
 {
 	bool result;
 	std::string  response= "Response";
+	std::string sUse;
 	stTimeStamps objStackTimestamps;
 
 	zmq_handler::stZmqContext a_BusContext;
 	zmq_handler::stZmqPubContext a_objPubContext;
 	uint8_t a_uiFuncCode;
+
 	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-	result = CRefDataForPolling_obj.saveGoodResponse(response, objStackTimestamps);
+	result = CRefDataForPolling_obj.saveGoodResponse(response, sUse);
 
 }
 

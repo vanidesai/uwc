@@ -22,10 +22,7 @@
 #include "PeriodicReadFeature.hpp"
 #include "NetworkInfo.hpp"
 #include "ZmqHandler.hpp"
-#include "ModbusWriteHandler.hpp"
-//#include "MsgbusManager.hpp"
-//#include "ModBus_EnvConfig_Caller.hpp"
-//#include "config_Caller.hpp"
+#include "ModbusOnDemandHandler.hpp"
 #include "NetworkInfo.hpp"
 #include "PublishJson.hpp"
 

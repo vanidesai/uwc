@@ -29,7 +29,7 @@
 #include "eis/msgbus/msgbus.h"
 #include "eis/utils/json_config.h"
 #include <semaphore.h>
-#include "ModbusWriteHandler.hpp"
+#include "ModbusOnDemandHandler.hpp"
 
 
 class ModbusWriteHandler_ut : public ::testing::Test {
