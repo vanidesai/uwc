@@ -56,6 +56,10 @@ services:
       AppName: "EtcdUi"
       DEV_MODE: ${DEV_MODE}
     user: ${EIS_UID}
+    secrets:
+      - ca_etcd
+      - etcd_root_cert
+      - etcd_root_key
 
  # UWC containers
  # 1. modbus-tcp-master
@@ -91,6 +95,7 @@ services:
       MY_APP_ID: 1
       RESPONSE_TIMEOUT: 80
       INTERFRAME_DELAY: 1
+      CUTOFF_INTERVAL_PERCENTAGE: 90
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
@@ -160,6 +165,7 @@ services:
       ZMQ_RECV_HWM: "1000"
       RESPONSE_TIMEOUT: 80
       INTERFRAME_DELAY: 1
+      CUTOFF_INTERVAL_PERCENTAGE: 90
       SERIAL_PORT_RETRY_INTERVAL: 1
       BAUD_RATE: 9600
       PARITY: "E"
