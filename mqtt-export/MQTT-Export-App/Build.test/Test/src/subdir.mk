@@ -10,28 +10,37 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../Test/src/CEISMsgbusHandler_ut.cpp \
-../Test/src/CMQTTHandler_ut.cpp \
-../Test/src/CTopicMapper_ut.cpp \
+../Test/src/Common_ut.cpp \
+../Test/src/ConfigManager_ut.cpp \
+../Test/src/EISMsgbusHandler_ut.cpp \
 ../Test/src/Logger_ut.cpp \
 ../Test/src/MQTTCallback_ut.cpp \
-../Test/src/MQTTExportMain_ut.cpp 
+../Test/src/MQTTPublishHandler_ut.cpp \
+../Test/src/MQTTSubscribeHandler_ut.cpp \
+../Test/src/Main_ut.cpp \
+../Test/src/QueueMgr_ut.cpp 
 
 OBJS += \
-./Test/src/CEISMsgbusHandler_ut.o \
-./Test/src/CMQTTHandler_ut.o \
-./Test/src/CTopicMapper_ut.o \
+./Test/src/Common_ut.o \
+./Test/src/ConfigManager_ut.o \
+./Test/src/EISMsgbusHandler_ut.o \
 ./Test/src/Logger_ut.o \
 ./Test/src/MQTTCallback_ut.o \
-./Test/src/MQTTExportMain_ut.o 
+./Test/src/MQTTPublishHandler_ut.o \
+./Test/src/MQTTSubscribeHandler_ut.o \
+./Test/src/Main_ut.o \
+./Test/src/QueueMgr_ut.o 
 
 CPP_DEPS += \
-./Test/src/CEISMsgbusHandler_ut.d \
-./Test/src/CMQTTHandler_ut.d \
-./Test/src/CTopicMapper_ut.d \
+./Test/src/Common_ut.d \
+./Test/src/ConfigManager_ut.d \
+./Test/src/EISMsgbusHandler_ut.d \
 ./Test/src/Logger_ut.d \
 ./Test/src/MQTTCallback_ut.d \
-./Test/src/MQTTExportMain_ut.d 
+./Test/src/MQTTPublishHandler_ut.d \
+./Test/src/MQTTSubscribeHandler_ut.d \
+./Test/src/Main_ut.d \
+./Test/src/QueueMgr_ut.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
