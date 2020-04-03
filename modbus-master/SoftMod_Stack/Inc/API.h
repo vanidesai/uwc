@@ -39,13 +39,6 @@ typedef unsigned long   	ulong32_t;  /* unsinged long declarations */
 
 #define MODBUS_DATA_LENGTH (260)
 
-#ifndef MODBUS_STACK_TCPIP_ENABLED
-/*parity selection*/
-#define NO_PARITY   (0)
-#define EVEN_PARITY  (1)
-#define ODD_PARITY  (2)
-#endif
-
 /**
  @enum MODBUS_ERROR_CODE
  @brief
@@ -92,6 +85,13 @@ typedef enum {
 	READ_DEVICE_IDENTIFICATION = 43,	///43
 	MBUS_MAX_FUN_CODE
 } eModbusFuncCode_enum;
+
+typedef enum
+{
+	eNone,
+	eOdd,
+	eEven
+}eParity;
 
 /**
  @struct MbusReadFileRecord
@@ -430,7 +430,7 @@ typedef struct _stMbusAppCallbackParams
 
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
-MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uint8_t  parity, uint8_t stop_bit);
+MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, eParity  parity, uint8_t stop_bit);
 #endif
 
 

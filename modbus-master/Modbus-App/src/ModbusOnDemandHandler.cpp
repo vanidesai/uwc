@@ -137,9 +137,6 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 	MbusAPI_t stMbusApiPram = {};
 	cJSON *root = NULL;
 
-#ifdef REALTIME_THREAD_PRIORITY
-	PublishJsonHandler::instance().set_thread_priority();
-#endif
 	try
 	{
 		/// Enter TX Id
@@ -149,7 +146,6 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 #endif
 
 		root = cJSON_Parse(stRequestData.m_strMsg.c_str());
-		stOnDemandRequest reqData;
 		void* ptrAppCallback = NULL;
 
 		/// Comparing request topic for RT/Non-RT requests
@@ -160,7 +156,7 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 			tempTopic = stRequestData.m_strTopic.substr(found+1, stRequestData.m_strTopic.length());
 		}
 		string strToCompare = "RT";
-		reqData.m_isRT = compareString(tempTopic, strToCompare);
+		stMbusApiPram.m_stOnDemandReqData.m_isRT = compareString(tempTopic, strToCompare);
 		bool isWrite = false;
 
 		eFunRetType = jsonParserForOnDemandRequest(root,
@@ -168,13 +164,8 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 				m_u8FunCode,
 				stMbusApiPram.m_u16TxId,
 				isWrite,
-				reqData,
 				&ptrAppCallback);
 
-		if(false == common_Handler::insertOnDemandReqData(stMbusApiPram.m_u16TxId, reqData))
-		{
-			CLogger::getInstance().log(WARN, LOGDETAILS("Failed to add OnDemand data to map."));
-		}
 		if(false == common_Handler::insertReqData(stMbusApiPram.m_u16TxId, stMbusApiPram))
 		{
 			CLogger::getInstance().log(WARN, LOGDETAILS("Failed to add MbusAPI_t data to map."));
@@ -193,7 +184,11 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 			if(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST != eFunRetType)
 			{
 				std::string strTopic = "";
-				createErrorResponse(eFunRetType, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData.m_isRT, isWrite);
+				createErrorResponse(eFunRetType,
+						m_u8FunCode,
+						stMbusApiPram.m_u16TxId,
+						stMbusApiPram.m_stOnDemandReqData.m_isRT,
+						isWrite);
 			}
 		}
 	}
@@ -381,7 +376,7 @@ void onDemandHandler::setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFl
  * @param stMbusApiPram	:[in] modbus API param
  * @param funcCode		:[in] function code
  * @param txID			:[in] transaction id
- * @param reqData		:[in] on demand request
+ * @param isWrite		:[in] boolean variable to differentiate between read/write request
  * @param ptrAppCallback:[out] function pointer of callback function
  * @return appropriate error code
  */
@@ -390,7 +385,6 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 											unsigned char& funcCode,
 											unsigned short txID,
 											bool& isWrite,
-											stOnDemandRequest& reqData,
 											void** ptrAppCallback)
 {
 	if(NULL == root)
@@ -430,14 +424,14 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 				strVersion = version->valuestring;
 				strSourceTopic = sourcetopic->valuestring;
 
-				reqData.m_strAppSeq = strAppSeq;
-				reqData.m_strMetric = strCommand;
-				reqData.m_strVersion = strVersion;
-				reqData.m_strWellhead = strWellhead;
-				reqData.m_strTopic = strSourceTopic;
-				reqData.m_strMqttTime = mqttTime->valuestring;
-				reqData.m_strEisTime = eisTime->valuestring;
-				timespec_get(&reqData.m_obtReqRcvdTS, TIME_UTC);
+				stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = strAppSeq;
+				stMbusApiPram.m_stOnDemandReqData.m_strMetric = strCommand;
+				stMbusApiPram.m_stOnDemandReqData.m_strVersion = strVersion;
+				stMbusApiPram.m_stOnDemandReqData.m_strWellhead = strWellhead;
+				stMbusApiPram.m_stOnDemandReqData.m_strTopic = strSourceTopic;
+				stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = mqttTime->valuestring;
+				stMbusApiPram.m_stOnDemandReqData.m_strEisTime = eisTime->valuestring;
+				timespec_get(&stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS, TIME_UTC);
 
 				/// Comparing sourcetopic for read/write request.
 				string strSearchString = "/", tempTopic;
@@ -504,20 +498,42 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 #else
 			stMbusApiPram.m_u8DevId = addrInfo.m_stRTU.m_uiSlaveId;
 #endif
-			reqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
-			reqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
+			stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
+			stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
 
-			setCallbackforOnDemand(&ptrAppCallback, reqData.m_isRT, isWrite, stMbusApiPram);
+			setCallbackforOnDemand(&ptrAppCallback, stMbusApiPram.m_stOnDemandReqData.m_isRT, isWrite, stMbusApiPram);
 
 			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
 			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
 			if(true == isWrite)
 			{
-				stMbusApiPram.m_lPriority = ON_DEMAND_WRITE_PRIORITY;
+				if(stMbusApiPram.m_stOnDemandReqData.m_isRT)
+				{
+					stMbusApiPram.m_lPriority = getReqPriority(
+							globalConfig::CGlobalConfig::getInstance().
+							getOpOnDemandWriteConfig().getRTConfig());
+				}
+				else
+				{
+					stMbusApiPram.m_lPriority = getReqPriority(
+							globalConfig::CGlobalConfig::getInstance().
+							getOpOnDemandWriteConfig().getNonRTConfig());
+				}
 			}
 			else
 			{
-				stMbusApiPram.m_lPriority = ON_DEMAND_READ_PRIORITY;
+				if(stMbusApiPram.m_stOnDemandReqData.m_isRT)
+				{
+					stMbusApiPram.m_lPriority = getReqPriority(
+							globalConfig::CGlobalConfig::getInstance().
+							getOpOnDemandReadConfig().getRTConfig());
+				}
+				else
+				{
+					stMbusApiPram.m_lPriority = getReqPriority(
+							globalConfig::CGlobalConfig::getInstance().
+							getOpOnDemandReadConfig().getNonRTConfig());
+				}
 			}
 			network_info::eEndPointType eType = obj.getAddress().m_eType;
 
@@ -642,21 +658,33 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 bool onDemandHandler::getOperation(string topic, globalConfig::COperation& operation)
 {
 	bool bRet = true;
-	if(std::string::npos != topic.find(READ, topic.length() - std::string(READ).length(), std::string(READ).length()))
+	if(std::string::npos != topic.find(READ,
+			topic.length() - std::string(READ).length(),
+			std::string(READ).length()))
 	{
-		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getNonRTConfig();
+		operation = globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandReadConfig().getNonRTConfig();
 	}
-	else if(std::string::npos != topic.find(READ_RT, topic.length() - std::string(READ_RT).length(), std::string(READ_RT).length()))
+	else if(std::string::npos != topic.find(READ_RT,
+			topic.length() - std::string(READ_RT).length(),
+			std::string(READ_RT).length()))
 	{
-		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getRTConfig();
+		operation = globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandReadConfig().getRTConfig();
 	}
-	else if(std::string::npos != topic.find(WRITE, topic.length() - std::string(WRITE).length(), std::string(WRITE).length()))
+	else if(std::string::npos != topic.find(WRITE,
+			topic.length() - std::string(WRITE).length(),
+			std::string(WRITE).length()))
 	{
-		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getNonRTConfig();
+		operation = globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandWriteConfig().getNonRTConfig();
 	}
-	else if(std::string::npos != topic.find(WRITE_RT, topic.length() - std::string(WRITE_RT).length(), std::string(WRITE_RT).length()))
+	else if(std::string::npos != topic.find(WRITE_RT,
+			topic.length() - std::string(WRITE_RT).length(),
+			std::string(WRITE_RT).length()))
 	{
-		operation = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getRTConfig();
+		operation = globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandWriteConfig().getRTConfig();
 	}
 	else
 	{
@@ -665,6 +693,59 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 	}
 
 	return bRet;
+}
+
+/**
+ * get request priority from global configuration depending on the operation priority
+ * @param a_OpsInfo		:[in] global config for which to retrieve operation priority
+ * @return [long]		:[out] request priority to be sent to stack.(lower is the value higher is the priority)
+ */
+long onDemandHandler::getReqPriority(const globalConfig::COperation a_Ops)
+{
+	long iReqPriority = 0;
+
+	// get the request priority based on operation priority
+	switch (a_Ops.getOperationPriority())
+	{
+		case 1:
+		{
+			iReqPriority = 6000;
+		}
+		break;
+		case 2:
+		{
+			iReqPriority = 5000;
+		}
+		break;
+		case 3:
+		{
+			iReqPriority = 4000;
+		}
+		break;
+		case 4:
+		{
+			iReqPriority = 3000;
+		}
+		break;
+		case 5:
+		{
+			iReqPriority = 2000;
+		}
+		break;
+		case 6:
+		{
+			iReqPriority = 1000;
+		}
+		break;
+		default:
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid operation priority received..setting it to 6000 default"));
+			iReqPriority = 6000;
+		}
+		break;
+	}
+
+	return iReqPriority;
 }
 
 /**
