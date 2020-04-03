@@ -135,7 +135,7 @@ extern Mutex_H LivSerSesslist_Mutex;
 uint32_t baud;
 
 /*To check blocking serial read*/
-int8_t checkforblockingread(void);
+int checkforblockingread(void);
 
 #endif
 
@@ -805,7 +805,7 @@ uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBus
  * @return uint8_t [out] respective error codes
  *
  */
-int8_t checkforblockingread(void)
+int checkforblockingread(void)
 {
 	fd_set rset;
 	struct timeval tv;
@@ -845,6 +845,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 	int totalRead = 0;
 	//int numToRead = sizeof(ServerReplyBuff);
 	uint16_t numToRead = 0;
+	int iBlockingReadResult = 0;
 
 	if(NULL == pstMBusRequesPacket)
 	{
@@ -911,7 +912,8 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		}
 
 		while(numToRead > 0){
-			if(checkforblockingread() > 0)
+			iBlockingReadResult = checkforblockingread();
+			if(iBlockingReadResult > 0)
 			{
 				bytes = read(fd, &ServerReplyBuff[totalRead], numToRead);
 				totalRead += bytes;
@@ -933,7 +935,8 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 					}
 				}
 			}
-			else{
+			else
+			{
 				break;
 			}
 		}
@@ -944,7 +947,15 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		}
 		else // totalRead = 0, means request timed out or recv failed
 		{
-			u8ReturnType = STACK_ERROR_RECV_FAILED;
+			// If blocking result = 0, it means timeout has occurred
+			if (0 == iBlockingReadResult)
+			{
+				u8ReturnType = STACK_ERROR_RECV_TIMEOUT;
+			}
+			else
+			{
+				u8ReturnType = STACK_ERROR_RECV_FAILED;
+			}
 		}
 	}
 
@@ -964,7 +975,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
  * @return int [out] respective error codes
  *
  */
-MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uint8_t  parity, uint8_t stop_bit)
+MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, eParity  parity, uint8_t stop_bit)
 {
 	struct termios tios;
 	speed_t speed;
@@ -1151,7 +1162,7 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 
       PARODD       Use odd parity instead of even */
 
-	if (parity == NO_PARITY) {
+	if (parity == eNone) {
 
 		/* None */
 
@@ -1161,7 +1172,7 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
 
 		tios.c_cflag |= CSTOPB; //< When parity is none, add a stop bit at the place of parity to make 11 characters i.e. two stop bits
 
-	} else if (parity == EVEN_PARITY) {
+	} else if (parity == eEven) {
 
 		/* Even */
 
@@ -1245,7 +1256,7 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, uin
        IUCLC        Map uppercase to lowercase
        IMAXBEL      Echo BEL on input line too long
 	 */
-	if (parity == NO_PARITY) {
+	if (parity == eNone) {
 		/* None */
 		tios.c_iflag &= ~INPCK;
 	} else {
