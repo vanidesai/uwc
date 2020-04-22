@@ -32,13 +32,73 @@ void EISMsgbusHandler_ut::TearDown() {
 }
 
 // Topic is other that "pub" and "sub"
-TEST_F(EISMsgbusHandler_ut, prepareCommonContext_InvTopic) {
+TEST_F(EISMsgbusHandler_ut, prepareCommonContext_InvTopicType) {
 
 	bool bRetVal = true;
 
 	bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext("other");
 	EXPECT_EQ(false, bRetVal);
 }
+
+#if 0 // In progress
+TEST_F(EISMsgbusHandler_ut, prepareCommonContext_pub)
+{
+
+	bool bRetVal = false;
+
+	const char* env_pubTopics = std::getenv("PubTopics");
+	if (env_pubTopics != NULL)
+	{
+		bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext("sub");
+		EXPECT_EQ(true, bRetVal);
+	}
+	else
+	{
+		cout<<endl<<"#############ERROR###################"<<endl;
+		cout<<"Error in getenv(PubTopics).  Skippping this test case.";
+		cout<<endl<<"#############ERROR###################"<<endl;
+	}
+
+}
+
+TEST_F(EISMsgbusHandler_ut, prepareCommonContext_pub_Twice)
+{
+
+	bool bRetVal = false;
+
+	CEISMsgbusHandler::Instance().cleanup();
+	cout<<endl<<"[UT Debut]>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>cleanup()"<<endl;
+
+	const char* env_pubTopics = std::getenv("PubTopics");
+
+	cout<<endl<<"[UT Debut]>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>getenv()"<<endl;
+
+	if (env_pubTopics != NULL)
+	{
+		bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext("sub");
+
+		cout<<endl<<"[UT Debut]>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>prepareCommonContext()"<<endl;
+
+		EXPECT_EQ(true, bRetVal);
+	}
+	else
+	{
+		cout<<endl<<"#############ERROR###################"<<endl;
+		cout<<"Error in getenv(PubTopics).  Skippping this test case.";
+		cout<<endl<<"#############ERROR###################"<<endl;
+	}
+
+}
+
+TEST_F(EISMsgbusHandler_ut, prepareCommonContext_sub)
+{
+
+	bool bRetVal = true;
+
+	bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext("sub");
+	EXPECT_EQ(true, bRetVal);
+}
+#endif
 
 TEST_F(EISMsgbusHandler_ut, getCTX_ValidTopic) {
 
@@ -139,6 +199,22 @@ TEST_F(EISMsgbusHandler_ut, removeSubCTX_SuccRemoves) {
 	}
 }
 
+TEST_F(EISMsgbusHandler_ut, removeSubCTX_)
+{
+
+	bool retVal = false;
+
+	stZmqSubContext subContext;
+	string topic = "InvalidTopic"; //topic doesn't exist
+
+
+	stZmqContext msgbusContext;
+	CEISMsgbusHandler::Instance().removeSubCTX(topic, msgbusContext);
+
+	retVal = CEISMsgbusHandler::Instance().getSubCTX(topic, subContext);
+	EXPECT_EQ(false, retVal);
+}
+
 TEST_F(EISMsgbusHandler_ut, 11_manatory_param) {
 
 	stZmqPubContext pubContext;
@@ -174,7 +250,7 @@ TEST_F(EISMsgbusHandler_ut, 13_manatory_param) {
 }
 
 
-TEST_F(EISMsgbusHandler_ut, RemoveCtxt) {
+TEST_F(EISMsgbusHandler_ut, RemoveCtxt_CtxtNULL) {
 
 	bool retVal = true;
 	stZmqContext context;
@@ -195,4 +271,20 @@ TEST_F(EISMsgbusHandler_ut, RemoveCtxt) {
 
 	EXPECT_EQ(false, retVal);
 }
+
+//TEST_F(EISMsgbusHandler_ut, RemoveCtxt_CtxtValid) {
+//
+//	bool retVal = true;
+//	stZmqContext context;
+//	string topic = "MQTT_Export_WrReq_RT";
+//
+//	if( true == CEISMsgbusHandler::Instance().getCTX(topic, context) )
+//	{
+//		CEISMsgbusHandler::Instance().removeCTX(topic);
+//		retVal = CEISMsgbusHandler::Instance().getCTX(topic, context);
+//	}
+//
+//	EXPECT_EQ(false, retVal);
+//
+//}
 

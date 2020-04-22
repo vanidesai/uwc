@@ -121,9 +121,7 @@ TEST_F(ZmqHandler_ut, updateReqData_test)
 {
 	MbusAPI_t reqData;
 	bool result = common_Handler::updateReqData(25, reqData);
-	cout<<"###################################################################"<<endl;
-	cout<<result<<endl;
-	cout<<"###################################################################"<<endl;
+	EXPECT_EQ(1, result);
 }
 
 TEST_F(ZmqHandler_ut, removeReqData_test)
@@ -192,8 +190,6 @@ TEST_F(ZmqHandler_ut, getCTX4)
 	{
 		//zmq_handler::stZmqContext &busCTX = zmqhandler.getCTX("PL1_flowmeter2_write");
 		zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("MQTT-Export/Modbus-TCP-Master_WriteRequest");
-
-
 
 	}
 	catch(std::exception &e)
@@ -516,6 +512,16 @@ TEST_F(ZmqHandler_ut, swap_Word_byte_false)
 	}
 }
 //#endif
+TEST_F(ZmqHandler_ut, isNumber_number)
+{
+	bool result = network_info::isNumber("123");
+	EXPECT_EQ(1, result);
+}
 
+TEST_F(ZmqHandler_ut, isNumber_notNumber)
+{
+	bool result = network_info::isNumber("Test");
+	EXPECT_EQ(0, result);
+}
 
 

@@ -28,9 +28,6 @@ void CDataPoint_ut::TearDown()
 
 TEST_F(CDataPoint_ut, width_manatory_param)
 {
- //   int counter=0;
-
-
  	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
 	for( auto it : baseNode)
 	{
@@ -51,14 +48,12 @@ TEST_F(CDataPoint_ut, width_manatory_param)
 				m_Address = CDataPoint_obj.getAddress();
 				//EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
      			EXPECT_EQ(1, m_Address.m_iWidth);
-//				EXPECT_EQ(network_info::eEndPointType::eCoil, m_Address.m_eType);
+				//EXPECT_EQ(network_info::eEndPointType::eCoil, m_Address.m_eType);
 
 				}
 				catch(YAML::Exception &e)
 				{
-					//BOOST_LOG_SEV(lg, error) << __func__ << " " << e.what();
 					EXPECT_EQ("key not found", e.what());
-
 				}
 
 			}
@@ -72,21 +67,14 @@ TEST_F(CDataPoint_ut, width_manatory_param)
 
 TEST_F(CDataPoint_ut, eType_coil)
 {
-	//   int counter=0;
-
-
 	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
 	for( auto it : baseNode)
 	{
 		if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
 		{
 			const YAML::Node& points =  it.second;
-
-			/*int i = 0;
-			int Add_expected[] = {1, 2};*/
 			for (auto it1 : points)
 			{
-				//if(counter==0){
 				try
 				{
 
@@ -95,8 +83,6 @@ TEST_F(CDataPoint_ut, eType_coil)
 					m_Address = CDataPoint_obj.getAddress();
 					if(m_Address.m_eType == network_info::eEndPointType::eCoil)
 					{
-						//		    	EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
-						//				EXPECT_EQ(1, m_Address.m_iWidth);
 						EXPECT_EQ(network_info::eEndPointType::eCoil, m_Address.m_eType);
 					}
 				}
@@ -116,8 +102,6 @@ TEST_F(CDataPoint_ut, eType_coil)
 
 TEST_F(CDataPoint_ut, eType_Holiding_register)
 {
-	//   int counter=0;
-
 
 	baseNode = CommonUtils::loadYamlFile("iou_datapoints.yml");
 	for( auto it : baseNode)
@@ -125,22 +109,15 @@ TEST_F(CDataPoint_ut, eType_Holiding_register)
 		if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
 		{
 			const YAML::Node& points =  it.second;
-
-			/*int i = 0;
-			int Add_expected[] = {1, 2};*/
 			for (auto it1 : points)
 			{
-				//if(counter==0){
 				try
 				{
-
 					CDataPoint_obj.build(it1, CDataPoint_obj);
 					id=CDataPoint_obj.getID();
 					m_Address = CDataPoint_obj.getAddress();
 					if(m_Address.m_eType == network_info::eEndPointType::eHolding_Register)
 					{
-						//		    	EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
-						//				EXPECT_EQ(1, m_Address.m_iWidth);
 						EXPECT_EQ(network_info::eEndPointType::eHolding_Register, m_Address.m_eType);
 					}
 
@@ -153,16 +130,10 @@ TEST_F(CDataPoint_ut, eType_Holiding_register)
 				}
 			}
 
-
-
 		}
 	}
 
 }
-
-
-
-
 
 
 TEST_F(CDataPoint_ut, eType_Discrete_Input)

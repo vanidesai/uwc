@@ -32,7 +32,6 @@ void PublishJson_ut::TearDown()
 //#if 0
 /*** Test:PublishJson_ut::publishJson_functioncall() **/
 /*
-
 TEST_F(PublishJson_ut, with_all_parameters)
 {
 
@@ -77,11 +76,7 @@ TEST_F(PublishJson_ut, with_all_parameters)
 
 
 }
-
-
- */
-
-
+*/
 
 //#if 1
 TEST_F(PublishJson_ut, publishJson_functioncall)
@@ -99,22 +94,16 @@ TEST_F(PublishJson_ut, publishJson_functioncall)
 }
 
 /*** Test:PublishJson_ut::publishJson_sub() checks behaviour of function for sub topic***/
-/*
+#if 0 //In progress
 TEST_F(PublishJson_ut, publishJson_sub)
 {
 	try
 	{
-
-		//		setenv("WRITE_RESPONSE_TOPIC", "PL_0", 1);
-
-		//std::string topic = std::getenv("PL0_flowmeter1_write");
-		//std::string topic = std::getenv("MQTT-Export/Modbus-TCP-Master_ReadRequest");
 		std::string topic = "MQTT-Export/Modbus-TCP-Master_ReadRequest";
 
-		//std::string topic = std::getenv("PL0_flowmeter1");
 		if(getenv("SubTopics") != NULL)
 		{
-			bool bRes = zmqhandler.prepareCommonContext("sub");
+			bool bRes = zmq_handler::prepareCommonContext("sub");
 		}
 		bool bRes = zmq_handler::prepareCommonContext("sub");
 
@@ -130,7 +119,28 @@ TEST_F(PublishJson_ut, publishJson_sub)
 		EXPECT_EQ("map::at", (string)e.what());
 	}
 }
-*/
+
+TEST_F(PublishJson_ut, prepareCommonCTX_pub)
+{
+	try
+	{
+		std::string topic = "TCP1_RdResp";
+
+		bool bRes = zmq_handler::prepareCommonContext("pub");
+
+		zmq_handler::stZmqContext MsgbusCtx = zmq_handler::getCTX(topic);
+		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(topic);
+
+		uint8_t valv = PublishJsonHandler::instance().publishJson(msg, MsgbusCtx.m_pContext, pubCtx.m_pContext, "MQTT-Export/Modbus-TCP-Master_ReadRequest");
+
+	}
+	catch(std::exception &e)
+	{
+
+		EXPECT_EQ("map::at", (string)e.what());
+	}
+}
+#endif
 
 /***Test:PublishJson_ut::publishJson_NULL_msgCTX() Gives exception when msgCTX is NULL ***/
 
@@ -180,7 +190,7 @@ TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 /* Valid arguments */
 
 
-
+#if 0 //In progress
 TEST_F(PublishJson_ut, publishJson_valid_arguments)
 {
 
@@ -215,7 +225,7 @@ TEST_F(PublishJson_ut, publishJson_valid_arguments)
 		EXPECT_EQ("map::at",(string)e.what());
 	}
 }
-
+#endif
 
 /*** Test:PublishJson_ut::publishJson_valid_arguments and pub topic***/
 /* Null msg */
@@ -248,9 +258,6 @@ TEST_F(PublishJson_ut, publishJson_null_msg)
 		EXPECT_EQ("map::at", (string)e.what());
 	}
 }
-
-
-
 
 
 /***Test:PublishJson_ut::publishJson_pub() checks for functionality with NULL argument***/

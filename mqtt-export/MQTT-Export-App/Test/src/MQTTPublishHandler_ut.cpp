@@ -51,7 +51,6 @@ TEST_F(MQTTPublishHandler_ut, publish_NotConnected)
 
 	CMQTTPublishHandler CMQTTPublishHandler_obj("PubID", "CliId", 0);
 
-
 	bool retVal = CMQTTPublishHandler_obj.publish(
 			Message,
 			PubTpoic,
@@ -79,6 +78,34 @@ TEST_F(MQTTPublishHandler_ut, publish_MsgEmpty)
 			Message,
 			PubTpoic,
 			tsMsgRcvd);
+
+	EXPECT_EQ(false, retVal);
+}
+
+TEST_F(MQTTPublishHandler_ut, publish_Called_moreThan1)
+{
+	string PubTpoic = "";
+
+
+	struct timespec tsMsgRcvd;
+	timespec_get(&tsMsgRcvd, TIME_UTC);
+	string Message = "";
+
+	mqtt::const_message_ptr msg;
+
+
+	CMQTTPublishHandler CMQTTPublishHandler_obj("PubID", "CliId", 0);
+
+
+	bool retVal = CMQTTPublishHandler_obj.publish(
+			Message,
+			PubTpoic,
+			tsMsgRcvd);
+
+	retVal = CMQTTPublishHandler_obj.publish(
+				Message,
+				PubTpoic,
+				tsMsgRcvd);
 
 	EXPECT_EQ(false, retVal);
 }

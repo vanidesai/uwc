@@ -25,13 +25,9 @@ void CConfigManager_ut::TearDown()
 	// TearDown code
 }
 
-
-
 #if 1
 
 /**********CConfigManager_ut::getInstance() should return Instance of class type CfgManager *******/
-
-
 
 TEST_F(CConfigManager_ut , test)
 {
@@ -46,12 +42,8 @@ TEST_F(CConfigManager_ut , test)
 
 TEST_F(CConfigManager_ut, getInstance)
 {
-
 	CfgManager::Instance();
 	EXPECT_EQ(typeid(CfgManager), typeid(CfgManager::Instance()));
-	//EXPECT_EQ("PL0", CWellSiteInfo_obj.getID());
-
-
 }
 
 
@@ -59,9 +51,7 @@ TEST_F(CConfigManager_ut, getInstance)
 
 TEST_F(CConfigManager_ut, IsClientCreated)
 {
-
 	EXPECT_TRUE(CfgManager::Instance().IsClientCreated());
-
 }
 
 
@@ -69,9 +59,7 @@ TEST_F(CConfigManager_ut, IsClientCreated)
 TEST_F(CConfigManager_ut, display_sched_attr_test)
 {
 	struct sched_param param;
-
 	globalConfig::display_sched_attr(2, param);
-
 }
 
 
@@ -99,8 +87,6 @@ TEST_F(CConfigManager_ut, set_thread_param_true)
 	globalConfig::set_thread_sched_param(a_OpsInfo, 1, a_eSched, a_bIsOperation);
 }
 
-
-
 TEST_F(CConfigManager_ut, set_thread_param_false)
 {
 	globalConfig::COperation a_OpsInfo;
@@ -114,17 +100,4 @@ TEST_F(CConfigManager_ut, setDefaultconfig_polling)
 	globalConfig::eOperationType a_eOpType;
 	globalConfig::setDefaultConfig(a_eOpType);
 }
-/*
-TEST_F(CConfigManager_ut, loadGlobalConfig_test)
-{
-	bool bRetVal = true;
-	bool isPollingExist = true;
-	bool isOdReadExist = true;
-	bool isOdWriteExist = true;
-	bool result = globalConfig::loadGlobalConfigurations();
-	cout<<"#############################################################"<<endl;
-	cout<<result<<endl;
-	cout<<"#############################################################"<<endl;
-}*/
-
 #endif

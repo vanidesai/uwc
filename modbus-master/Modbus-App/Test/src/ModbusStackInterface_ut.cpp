@@ -353,7 +353,7 @@ TEST_F(ModbusStackInterface_ut, WriteSingleCoil)
 {
 
 	uint8_t temp = 0;
-	pstMbusApiPram->m_pu8Data = &temp;
+	//pstMbusApiPram->m_pu8Data = &temp;
 	pstMbusApiPram->m_u16StartAddr = 0;
 
 	Modbus_Write_Single_Coil(u16StartCoil,
@@ -381,7 +381,7 @@ TEST_F(ModbusStackInterface_ut, WriteSingleReg)
 {
 
 	uint8_t temp = 0;
-	pstMbusApiPram->m_pu8Data = &temp;
+	//pstMbusApiPram->m_pu8Data = &temp;
 	pstMbusApiPram->m_u16StartAddr = 0;
 
 

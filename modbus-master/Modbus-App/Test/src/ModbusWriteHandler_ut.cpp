@@ -44,10 +44,6 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 	//	writeReq.m_strMsg = msg;
 	writeReq.m_strMsg = msg;
 
-	cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
-	cout<<msg<<endl;
-	cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
-
 /*
 
 	stMbusApiPram.m_lPriority = 1;
@@ -74,8 +70,6 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 	stMbusApiPram.m_stOnDemandReqData.m_strVersion ="2.1";
 	stMbusApiPram.m_stOnDemandReqData.m_strWellhead = "test";
 
-
-
 	root = cJSON_Parse(writeReq.m_strMsg.c_str());
 
 
@@ -94,14 +88,10 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 
 	try
 	{
-
 		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, isWrite, &ptrAppCallback);
-
 		EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
 		//EXPECT_EQ(MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER, eFunRetType);
 		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
-
-
 	}
 	catch( exception &e)
 	{
@@ -120,7 +110,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 
 	bool isWrite = true;
 	stMbusApiPram.m_lPriority = 1;
-	stMbusApiPram.m_pu8Data = NULL;
+	stMbusApiPram.m_pu8Data[5];
 	stMbusApiPram.m_u16ByteCount = 2;
 	stMbusApiPram.m_u16Port = 1234;
 	stMbusApiPram.m_u16Quantity = 4;
@@ -344,7 +334,8 @@ TEST_F(ModbusWriteHandler_ut, hex_to_bin)
 	stMbusApiPram.m_u32mseTimeout = 45;
 	stMbusApiPram.m_u8DevId = 5;
 	stMbusApiPram.m_u8IpAddr[4];
-	stMbusApiPram.m_pu8Data = new uint8_t[stMbusApiPram.m_u16ByteCount]();
+	//stMbusApiPram.m_pu8Data = new uint8_t[stMbusApiPram.m_u16ByteCount]();
+	stMbusApiPram.m_pu8Data[5];
 
 	try
 	{
@@ -357,6 +348,38 @@ TEST_F(ModbusWriteHandler_ut, hex_to_bin)
 	}
 
 }
+
+
+TEST_F(ModbusWriteHandler_ut, hex_to_bin_test)
+{
+
+	stMbusApiPram.m_lPriority = 1;
+	//stMbusApiPram.m_pu8Data = NULL;
+	stMbusApiPram.m_u16ByteCount = 2;
+	stMbusApiPram.m_u16Port = 1234;
+	stMbusApiPram.m_u16Quantity = 4;
+	stMbusApiPram.m_u16StartAddr = 56436524;
+	stMbusApiPram.m_u16TxId = 23;
+	stMbusApiPram.m_u32mseTimeout = 45;
+	stMbusApiPram.m_u8DevId = 5;
+	stMbusApiPram.m_u8IpAddr[4];
+	//stMbusApiPram.m_pu8Data = new uint8_t[stMbusApiPram.m_u16ByteCount]();
+	stMbusApiPram.m_pu8Data[5];
+
+	try
+	{
+		int result = hex2bin("input", stMbusApiPram.m_u16ByteCount, stMbusApiPram.m_pu8Data);
+		EXPECT_EQ(-1, result);
+
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_NE("", (string)e.what());
+	}
+
+}
+
+
 
 
 TEST_F(ModbusWriteHandler_ut, char_2_int)
@@ -373,16 +396,12 @@ TEST_F(ModbusWriteHandler_ut, char_2_int)
 	}
 }
 
-// NEED TO CHECK THE TEST
-
-
 TEST_F(ModbusWriteHandler_ut, Validate_Json)
 {
 	writeReq.m_strTopic = topic;
 	writeReq.m_strMsg = msg;
 
 	cJSON *root = cJSON_Parse(writeReq.m_strMsg.c_str());
-
 	cJSON *cmd=cJSON_GetObjectItem(root,"command");
 	cJSON *wellhead=cJSON_GetObjectItem(root,"wellhead");
 	cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
@@ -394,16 +413,44 @@ TEST_F(ModbusWriteHandler_ut, Validate_Json)
 
 	strSourceTopic = sourcetopic->valuestring;
 
-	//eFunRetType = modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).jsonParserForOnDemandRequest(writeReq, stMbusApiPram, m_u8FunCode);
 	try
 	{
 		bool Value = onDemandHandler::Instance().validateInputJson(strSourceTopic, strWellhead, strCommand);
+		EXPECT_EQ(0, Value);
 	}
 	catch(std::exception &e)
 	{
-		std::cout<<"##################################################################"<<endl;
-		cout<<e.what()<<endl;
-		std::cout<<"##################################################################"<<endl;
+		EXPECT_EQ(" ", (string)e.what());
+
+	}
+
+}
+
+TEST_F(ModbusWriteHandler_ut, Validate_Json_catch)
+{
+	writeReq.m_strTopic = topic;
+	writeReq.m_strMsg = msg;
+
+	cJSON *root = cJSON_Parse(writeReq.m_strMsg.c_str());
+	cJSON *cmd=cJSON_GetObjectItem(root,"command");
+	cJSON *wellhead=cJSON_GetObjectItem(root," ");
+	cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
+
+
+	strCommand = cmd->valuestring;
+	//strWellhead = wellhead->valuestring;
+	strWellhead = "PL1";
+
+	strSourceTopic = sourcetopic->valuestring;
+
+	try
+	{
+		bool Value = onDemandHandler::Instance().validateInputJson(strSourceTopic, strWellhead, strCommand);
+		EXPECT_EQ(0, Value);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ", (string)e.what());
 
 	}
 
@@ -608,7 +655,8 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_read)
 	msg_envelope_t *msg = NULL;
 
 	stMbusApiPram.m_lPriority = 1;
-	stMbusApiPram.m_pu8Data = NULL;
+	//stMbusApiPram.m_pu8Data = NULL;
+	stMbusApiPram.m_pu8Data[5];
 	stMbusApiPram.m_u16ByteCount = 2;
 	stMbusApiPram.m_u16Port = 1234;
 	stMbusApiPram.m_u16Quantity = 4;
@@ -632,12 +680,12 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_read)
 	reqData.m_strWellhead = "test";
 	MbusAPI_t stMbusApiPram = {};
 
-
 	try
 	{
 
-		common_Handler::insertReqData(stMbusApiPram.m_u16TxId, stMbusApiPram);
+		bool output = common_Handler::insertReqData(stMbusApiPram.m_u16TxId, stMbusApiPram);
 		onDemandHandler::Instance().createErrorResponse(eFunRetType, u8FunCode, stMbusApiPram.m_u16TxId, true, isWrite);
+		EXPECT_EQ(1, output);
 	}
 	catch(std::exception &e)
 	{
@@ -664,7 +712,7 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_write)
 
 	try
 	{
-		onDemandHandler::Instance().createErrorResponse(eFunRetType, m_u8FunCode, stMbusApiPram.m_u16TxId, reqData.m_isRT, isWrite);
+		onDemandHandler::Instance().createErrorResponse(eFunRetType, m_u8FunCode, stMbusApiPram.m_u16TxId, true , isWrite);
 	}
 	catch(std::exception &e)
 	{
@@ -673,12 +721,11 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_write)
 
 }
 
-
-/*
-TEST_F(ModbusWriteHandler_ut, callBack_OnDemand_test)
+TEST_F(ModbusWriteHandler_ut, create_error_response_nonRT)
 {
-	//void** ptrAppCallback = NULL;
-	void** ptrAppCallback;
+
+	msg_envelope_t *msg = NULL;
+	bool isWrite = true;
 	stOnDemandRequest reqData;
 	reqData.m_isByteSwap = true;
 	reqData.m_isWordSwap = false;
@@ -689,24 +736,107 @@ TEST_F(ModbusWriteHandler_ut, callBack_OnDemand_test)
 	reqData.m_strTopic = "kzdjfhdszh";
 	reqData.m_strVersion = "2.1";
 	reqData.m_strWellhead = "test";
-	 bool isRTFlag = true;
-	 bool isWriteFlag = false;
-	 MbusAPI_t stMbusApiPram;
-	 stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = true;
-	 stMbusApiPram.m_stOnDemandReqData.m_isRT = true;
-	 stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = true;
-	 stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_nsec = 21132323;
-	 stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_sec = 1;
-	 stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = "455";
-	 stMbusApiPram.m_stOnDemandReqData.m_strEisTime = "2020-03-31 12:34:56";
-	 stMbusApiPram.m_stOnDemandReqData.m_strMetric = "Test";
-	 stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = "2020-03-13 12:34:56";
-	 stMbusApiPram.m_stOnDemandReqData.m_strTopic = "UnitTest";
-	 stMbusApiPram.m_stOnDemandReqData.m_strVersion ="2.1";
-	 stMbusApiPram.m_stOnDemandReqData.m_strWellhead = "test";
 
-	 onDemandHandler::Instance().setCallbackforOnDemand(&ptrAppCallback, isRTFlag, isWriteFlag, stMbusApiPram);
-}*/
+	try
+	{
+		onDemandHandler::Instance().createErrorResponse(eFunRetType, m_u8FunCode, stMbusApiPram.m_u16TxId, false , isWrite);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("Request not found in map", (string)e.what());
+	}
 
+}
+
+TEST_F(ModbusWriteHandler_ut, create_error_response)
+{
+
+	msg_envelope_t *msg = NULL;
+	bool isWrite ;
+	bool isRT;
+	stOnDemandRequest reqData;
+	reqData.m_isByteSwap = true;
+	reqData.m_isWordSwap = false;
+	reqData.m_obtReqRcvdTS.tv_nsec = 21132323;
+	reqData.m_obtReqRcvdTS.tv_sec = 1;
+	reqData.m_strAppSeq = "455";
+	reqData.m_strMetric = "Test";
+	reqData.m_strTopic = "kzdjfhdszh";
+	reqData.m_strVersion = "2.1";
+	reqData.m_strWellhead = "test";
+
+	try
+	{
+		onDemandHandler::Instance().createErrorResponse(eFunRetType, m_u8FunCode, stMbusApiPram.m_u16TxId, isRT , isWrite);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ("Request not found in map", (string)e.what());
+	}
+
+}
+
+
+TEST_F(ModbusWriteHandler_ut, OnDemandInfoHandler_test)
+{
+	stRequest stRequestData;
+	eMbusStackErrorCode eMbusStackErrorCode_variable;
+	try
+	{
+		eMbusStackErrorCode_variable = onDemandHandler::Instance().onDemandInfoHandler(stRequestData);
+
+		EXPECT_EQ(14, eMbusStackErrorCode_variable);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ", e.what());
+	}
+
+}
+/*
+
+
+TEST_F(ModbusWriteHandler_ut, ReqPriority_test)
+{
+	const globalConfig::COperation a_Ops;
+	a_Ops.m_operationPriority = 4000;
+	long variable = onDemandHandler::Instance().getReqPriority(a_Ops);
+	cout<<"#############################################################################"<<endl;
+	cout<<variable<<endl;
+	cout<<"#############################################################################"<<endl;
+
+}
+*/
+
+
+TEST_F(ModbusWriteHandler_ut, callBack_OnDemand_1stScenario)
+{
+	//void** ptrAppCallback = NULL;
+	void *tt = NULL;
+	void **ptrAppCallback = &tt;
+	//void** ptrAppCallback;
+
+	bool isRTFlag = true;
+	bool isWriteFlag = true;
+	MbusAPI_t stMbusApiPram = {};
+
+	onDemandHandler::Instance().setCallbackforOnDemand(&ptrAppCallback, isRTFlag, isWriteFlag, stMbusApiPram);
+
+}
+
+TEST_F(ModbusWriteHandler_ut, callBack_OnDemand_2ndScenario)
+{
+	//void** ptrAppCallback = NULL;
+	void *tt = NULL;
+	void **ptrAppCallback = &tt;
+	//void** ptrAppCallback;
+
+	bool isRTFlag = false;
+	bool isWriteFlag = true;
+	MbusAPI_t stMbusApiPram = {};
+
+	onDemandHandler::Instance().setCallbackforOnDemand(&ptrAppCallback, isRTFlag, isWriteFlag, stMbusApiPram);
+
+}
 
 

@@ -35,11 +35,24 @@ TEST_F(Common_ut, readEnvVariable_ReadSuccess)
 
 }
 
+TEST_F(Common_ut, readEnvVariable_NULLArg)
+{
+	bool bRetVal = true;
+
+	std::string envVar = "";
+	bRetVal = CCommon::getInstance().readEnvVariable(NULL, envVar);
+
+	EXPECT_EQ(false, bRetVal);
+
+}
+
 TEST_F(Common_ut, readEnvVariable_ReadUnSuccess)
 {
 
+	bool bRetVal = true;
+
 	std::string envVar = "";
-	bool bRetVal = CCommon::getInstance().readEnvVariable("NotDefined", envVar);
+	bRetVal = CCommon::getInstance().readEnvVariable("NotDefined", envVar);
 
 	EXPECT_EQ(false, bRetVal);
 

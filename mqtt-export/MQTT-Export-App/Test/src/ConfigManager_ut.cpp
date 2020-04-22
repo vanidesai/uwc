@@ -22,12 +22,23 @@ void ConfigManager_ut::TearDown()
 }
 
 
-/*enum eOperationType
+// Thread priority = -1
+TEST_F(ConfigManager_ut, set_thread_sched_param_ThreadPriorityMin1)
 {
-	POLLING,       //!< POLLING
-	ON_DEMAND_READ,//!< ON_DEMAND_READ
-	ON_DEMAND_WRITE//!< ON_DEMAND_WRITE
-};*/
+
+	globalConfig::COperation operation;
+
+
+	globalConfig::set_thread_sched_param(operation,
+											-1,
+											0,
+											true);
+
+	//To verify the result, check log.
+
+}
+
+
 TEST_F(ConfigManager_ut, setDefaultConfig_OpTypePOLLING)
 {
 	globalConfig::setDefaultConfig(globalConfig::POLLING);

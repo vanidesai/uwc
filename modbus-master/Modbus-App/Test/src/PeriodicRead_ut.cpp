@@ -216,6 +216,50 @@ TEST_F(PeriodicRead_ut, handleResponse_dataSizeLessThanNumOfBytes) {
 #endif
 #endif
 
+#if 0 //in progress
+TEST_F(PeriodicRead_ut, initiateMessages_false)
+{
+	zmq_handler::stZmqContext a_BusContext;
+	uint32_t a_uiRef = 52;
+	uint8_t a_uiFuncCode = 1;
+	uint32_t U32_code;
+	zmq_handler::stZmqPubContext a_objPubContext = zmq_handler::getPubCTX("TCP1_RdResp");
+	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
+	CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj};
+	try
+	{
+		CRequestInitiator::instance().initiateMessages(a_uiRef, CTimeRecord_obj, false);
+		EXPECT_EQ(1, 1);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ", (string)e.what());
+	}
+
+}
+
+TEST_F(PeriodicRead_ut, initiateMessages_true)
+{
+	zmq_handler::stZmqContext a_BusContext;
+	uint32_t a_uiRef = 52;
+	uint8_t a_uiFuncCode = 1;
+	uint32_t U32_code;
+	zmq_handler::stZmqPubContext a_objPubContext = zmq_handler::getPubCTX("TCP1_RdResp");
+	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
+	CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj};
+	try
+	{
+		CRequestInitiator::instance().initiateMessages(a_uiRef, CTimeRecord_obj, true);
+		EXPECT_EQ(1, 1);
+	}
+	catch(std::exception &e)
+	{
+		EXPECT_EQ(" ", (string)e.what());
+
+	}
+
+}
+#endif
 
 TEST_F(PeriodicRead_ut, insertTxIDReqData_test)
 {
@@ -409,7 +453,7 @@ TEST_F(PeriodicRead_ut, isTxIDPresent_return) {
 // This test should not be commented
 TEST_F(PeriodicRead_ut, timer_Start)
 {
-	long interval = 1000000;
+	long interval = 1000;
 	PeriodicTimer::timer_start(interval);
 
 }
@@ -473,19 +517,14 @@ TEST_F(PeriodicRead_ut, checkTimer_return)
 	try
 	{
 		zmq_handler::stZmqContext a_BusContext;
-
 		uint8_t a_uiFuncCode = 1;
 		uint32_t U32_code;
-
 		bool g_stopTimer;
 
 		zmq_handler::stZmqContext a_objBusContext = zmq_handler::getCTX("TCP1_RdResp");
 		zmq_handler::stZmqPubContext a_objPubContext = zmq_handler::getPubCTX("TCP1_RdResp");
-		//uint8_t a_uiFuncCode;
 		CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
 		CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj};
-
-
 		CRefDataForPolling a_stRdPrdObj{CUniqueDataPoint_obj, a_objBusContext, a_objPubContext, a_uiFuncCode};
 		stException_t m_stException = {};
 		m_stException.m_u8ExcCode = 100;
@@ -493,21 +532,11 @@ TEST_F(PeriodicRead_ut, checkTimer_return)
 		uint32_t uiRef = 2;
 		sem_t semaphoreWriteReq = CRequestInitiator::instance().getSemaphoreReqProcess();
 		sem_post(&CRequestInitiator::instance().getSemaphoreReqProcess());
-		//CRequestInitiator::instance().initiateRequests(2);
-		//std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef, true);
-		//CRequestInitiator::instance().initiateRequest(a_vReqData, true);
+
 		CRefDataForPolling *CRefDataForPolling_pt = &a_stRdPrdObj;
 		CTimeMapper::instance().insert(1, a_stRdPrdObj);
 		CTimeMapper::instance().checkTimer(10000);
-		//CTimeMapper::instance().insert(1, a_stRdPrdObj);
-		//CTimeMapper::instance().insert(1, a_stRdPrdObj);
-		CTimeMapper::instance().checkTimer(10000);
 		CPeriodicReponseProcessor::Instance().postDummyBADResponse(a_stRdPrdObj, m_stException);
-		//EXPECT_EQ(1,1);
-		cout<<"*******************************************************************************************"<<endl;
-		cout<<g_stopTimer<<endl;
-		cout<<"*******************************************************************************************"<<endl;
-
 		EXPECT_EQ(0, g_stopTimer);
 
 	}
@@ -535,13 +564,10 @@ TEST_F(PeriodicRead_ut, get_Timer_freq)
 #if 1
 TEST_F(PeriodicRead_ut, timer_Thread)
 {
-    bool g_stopTimer;
-    PeriodicTimer::timer_start(1000);
+    bool g_stopTimer = false;
+    //PeriodicTimer::timer_start(1000);
 	PeriodicTimer::timerThread(1000);
-	cout<<"##################################"<<endl;
-	cout<<g_stopTimer<<endl;
-	cout<<"##################################"<<endl;
-
+	EXPECT_EQ(0, g_stopTimer);
 
 }
 #endif
@@ -802,57 +828,6 @@ TEST_F(PeriodicRead_ut, Awaitresp)
 }
 */
 
-/*  Should check this test case for isIsAwaitResp() and setIsAwaitResp() functions
-
-TEST_F(PeriodicRead_ut, AwaitRes)
-{
-	stException_t m_stException = {};
-	m_stException.m_u8ExcCode = 100;
-	m_stException.m_u8ExcStatus = 100;
-	stStackResponse res;
-	//CRefDataForPolling objReqData ;
-
-	try
-	{
-		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(res.u16TransacID);
-		// Response is received. Reset response awaited status
-		objReqData.getDataPoint().isIsAwaitResp();
-
-
-	}
-	catch(std::exception &e)
-	{
-		cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
-		cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
-		cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
-		cout<<"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"<<endl;
-
-	}
-}
-
-
-TEST_F(PeriodicRead_ut, set_Await)
-{
-	//stStackResponse& a_stResp;
-	stStackResponse res;
-	//CPeriodicReponseProcessor CPeriodicReponseProcessor_obj;
-	try
-	{
-		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(res.u16TransacID);
-		// Response is received. Reset response awaited status
-		objReqData.getDataPoint().setIsAwaitResp(true);
-
-		//CPeriodicReponseProcessor_obj.postResponseJSON(a_stResp, objReqData);
-	}
-	catch(std::exception &e)
-	{
-		cout<<"#################################################################################"<<endl;
-		cout<<e.what()<<endl;
-		cout<<"#################################################################################"<<endl;
-		EXPECT_EQ("map::at", (string)e.what());
-
-	}
-}*/
 
 #endif
 
