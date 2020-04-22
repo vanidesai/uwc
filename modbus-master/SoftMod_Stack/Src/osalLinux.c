@@ -44,73 +44,14 @@ void OSAL_Free(void *pvPointer)
 {
     /// Check for NULL pointer free
     if(NULL == pvPointer)
+    {
         return;
+    }
 
     free(pvPointer);
 	pvPointer = NULL;
 
 }
-
-#ifdef REALTIME_THREAD_PRIORITY
-/**
- * Convert char data to int
- * @param buf :[in] char data to convert to int
- * @return int
- */
-int ConvertCharToInt(const char *buf)
-{
-
-	if(buf == NULL)
-	{
-		return -1;
-	}
-	errno = 0; // reset error number
-	char *endptr;
-
-	int val = strtol(buf, &endptr, 10);
-
-	if ((errno == ERANGE) || (endptr == buf) || (*endptr && *endptr != '\n'))
-	{
-		val = -1;
-	}
-	return val;
-}
-
-/**
- *
- * DESCRIPTION
- * Get current thread priority and policy from environment variables
- *
- * @param policy [in] Pointer to the memory for policy.
- * @param priority [in] Pointer to the memory for priority.
- */
-void Get_Thread_Params(int *policy, int *priority)
-{
-	if(policy == NULL || priority == NULL)
-	{
-		return;
-	}
-    const char *pcThreadPriority = getenv("THREAD_PRIORITY");
-	if(pcThreadPriority != NULL) {
-		*policy = ConvertCharToInt(pcThreadPriority);
-
-		if(*policy < 0 || *policy > 2) {
-			*policy = SCHED_RR;
-		}
-    }
-
-    const char *pcThreadPolicy = getenv("THREAD_POLICY");
-	/*Processes scheduled under one of the real-time policies (SCHED_FIFO,
-	       SCHED_RR) have a sched_priority value in the range 1 (low) to 99
-	       (high)*/
-    if(pcThreadPolicy != NULL) {
-    	*policy = ConvertCharToInt(pcThreadPolicy);
-		if(*priority < 1 || *priority > 99) {
-			*priority = 50;//medium priority
-		}
-    }
-}
-#endif
 
 /**
  *
@@ -126,30 +67,26 @@ void Get_Thread_Params(int *policy, int *priority)
 Thread_H Osal_Thread_Create(thread_Create_t *pThreadParam)
 {
     pthread_attr_t attr;
-#ifdef REALTIME_THREAD_PRIORITY
-    struct sched_param param;
-#endif
     int retcode;
-#ifdef REALTIME_THREAD_PRIORITY
-    int policy = 0, priority = 0;
-    Get_Thread_Params(&policy, &priority);
-#endif
+
+    // null check
+    if(NULL == pThreadParam)
+    {
+    	printf("NULL pointer received in Osal_Thread_Create\n");
+    	return -1;
+    }
     /// Set up thread attributes
     pthread_attr_init(&attr);
-#ifdef REALTIME_THREAD_PRIORITY
-    pthread_attr_getschedparam (&attr, &param);
 
-    /* safe to get existing scheduling param */
-    pthread_attr_setschedpolicy(&attr, policy);
-
-    /* set the priority; others are unchanged */
-    param.sched_priority = priority;
-
-    /* setting the new scheduling param */
-    pthread_attr_setschedparam (&attr, &param);
-#endif
-
-    pthread_attr_setstacksize(&attr, pThreadParam->dwStackSize);
+    // set stack size for thread
+    if(pThreadParam->dwStackSize > 0)
+    {
+    	retcode = pthread_attr_setstacksize(&attr, pThreadParam->dwStackSize);
+    	if (retcode != 0)
+    	{
+    		perror("pthread_attr_setstacksize failed :: ");
+    	}
+    }
 
     /// Start the thread
     retcode = pthread_create(pThreadParam->lpThreadId, &attr, pThreadParam->lpStartAddress,
@@ -164,7 +101,8 @@ Thread_H Osal_Thread_Create(thread_Create_t *pThreadParam)
     }
     else
     {
-    	return 0;
+    	perror("pthread_create failed::");
+    	return -1;
     }
 }
 
@@ -186,62 +124,14 @@ bool Osal_Thread_Terminate(Thread_H pThreadTerminate)
 
     /// Wait for thread to stop and reclaim thread resources
     if (0 == pthread_join(pThreadTerminate, NULL ) )
-        return 1;
+    {
+        return true;
+    }
     else
-        return 0;
+    {
+    	return false;
+    }
 }
-
-/**
- *
- * DESCRIPTION
- * The OSAL Thread Terminate API will
- * terminate Thread for various OS.
- *
- * @param pThreadTerminate Pointer to structure holding
- *                  Thread Termination parameters.
- * @return True/False
- *
- */
-bool OSAL_Set_Thread_Priority(Thread_H pvThreadHandle, uint8_t u8Priority)
-{
-    struct sched_param param;
-
-    param.sched_priority = 255 - u8Priority;
-    return(pthread_setschedparam( pvThreadHandle, 0, &param ));
-}
-
-
-/**
- *
- * DESCRIPTION
- * Resumes a suspended thread.
- *
- * @param hThread [in] Handle to the suspended thread.
- *
- * @return uint32_t Status Value.
- *
- */
-uint32_t OSAL_ResumeThread(Thread_H hThread)
-{
-
-	return 0;
-}
-
-/**
- *
- * DESCRIPTION
- * Suspends an active thread.
- *
- * @param hThread [in] Handle to the thread that needs to be suspended.
- *
- * @return uint32_t Status Value.
- *
- */
-uint32_t OSAL_SuspendThread(Thread_H hThread)
-{
-	return 0;
-}
-
 
 /**
  *
@@ -268,10 +158,15 @@ bool OSAL_Post_Message(Post_Thread_Msg_t *pstPostThreadMsg)
 	iStatus = msgsnd( pstPostThreadMsg->idThread, &stMsgData, MsgSize, 0);
 
 	if(iStatus == 0)
+	{
 		return true;
+	}
 	else
+	{
+		// addressed review comment
+		perror("Error in msgsnd:: ");
 		return false;
-
+	}
 }
 
 
@@ -295,8 +190,22 @@ bool OSAL_Get_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
 	MsgSize = sizeof(Linux_Msg_t) - sizeof(long);
 
 	/// Wait Till Message received or Error other than Signal interrupt
-	while( (i32RetVal = msgrcv(msqid, pstQueueMsg, MsgSize, MAX_RECV_PRIORITY, 0)) == -1 && errno == EINTR )
-		continue;
+	do
+	{
+		i32RetVal = msgrcv(msqid, pstQueueMsg, MsgSize, MAX_RECV_PRIORITY, 0);
+		if(i32RetVal < 0 && errno == EINTR)
+		{
+			// addressed review comment
+			perror("msgrcv error :; ");
+			continue;
+		}
+		else
+		{
+			// success
+			break;
+		}
+
+	}while(i32RetVal > 0);
 
 	/// Returns Number of Bytes received or Error received
 	return( i32RetVal);
@@ -322,8 +231,12 @@ int32_t OSAL_Get_NonBlocking_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
 
     /// Wait Till Message received or Error other than Signal interrupt
     i32RetVal = msgrcv(msqid, pstQueueMsg, MsgSize, MAX_RECV_PRIORITY, MSG_NOERROR | IPC_NOWAIT);
-    if(errno == ENOMSG && (-1 == i32RetVal))
+    if(errno == ENOMSG && (-1 == i32RetVal) && EINTR == errno)
+    {
+    	// addressed review comment
+    	perror("failed to recv msg from queue ::");
     	i32RetVal = -1;
+    }
 
     /// Returns Number of Bytes received or Error received
 	return( i32RetVal);
@@ -346,6 +259,12 @@ int32_t OSAL_Init_Message_Queue()
 
     msqid = msgget(IPC_PRIVATE, (IPC_CREAT | IPC_EXCL | 0666));
 
+    if(msqid < 0)
+    {
+    	perror("failed to create message queue:: ");
+    	return -1;
+    }
+
     return msqid;
 }
 
@@ -361,8 +280,15 @@ int32_t OSAL_Init_Message_Queue()
  */
 bool OSAL_Delete_Message_Queue(int MsgQId)
 {
-	return(msgctl(MsgQId, IPC_RMID, NULL));
+	int iStatus = 0;
+	iStatus = msgctl(MsgQId, IPC_RMID, NULL);
 
+    if(iStatus < 0)
+    {
+    	perror("failed to delete message queue:: ");
+    	return false;
+    }
+    return true;
 }
 
 /**
@@ -383,6 +309,7 @@ Mutex_H Osal_Mutex(void)
 
 	if (NULL == pstTpmPtr)
 	{
+		printf("failed to create mutex..\n");
 		return NULL;
 	}
 
@@ -390,7 +317,7 @@ Mutex_H Osal_Mutex(void)
 	if(EAGAIN == iRetVal || ENOMEM == iRetVal || EPERM == iRetVal)
 	{
 		/// destroy the mutex
-		printf("mutex creation failed !!\n");
+		perror("mutex creation failed :: ");
 		OSAL_Free(pstTpmPtr);
 		return NULL;
 	}
@@ -401,7 +328,7 @@ Mutex_H Osal_Mutex(void)
 	else
 	{
 		// other cases free up the memory
-		printf("mutex creation failed !!\n");
+		perror("mutex creation failed:: ");
 		OSAL_Free(pstTpmPtr);
 		return NULL;
 	}
@@ -417,16 +344,26 @@ Mutex_H Osal_Mutex(void)
  * @return int32_t returns 0 If the function succeeds, the return value is nonzero.
  *
  */
-int32_t Osal_Wait_Mutex(Mutex_H pMtxHandle, int32_t i32Time)
+int32_t Osal_Wait_Mutex(Mutex_H pMtxHandle)
 {
 	if (NULL == pMtxHandle)
 	{
-		return WAIT_TIMEOUT;
+		// error
+		printf("Invalid mutex handle received while acquiring the mutex\n");
+		return -1;
 	}
-	else if( !(pthread_mutex_lock(pMtxHandle)) )
-    	return WAIT_OBJECT_0;
+	else if(!(pthread_mutex_lock(pMtxHandle)))
+	{
+		// success
+    	return 0;
+	}
     else
-    	return WAIT_TIMEOUT;
+    {
+    	// return pthread error code
+    	// addressed review comment
+    	perror("Failed to lock mutex, error ::");
+    	return errno;
+    }
 }
 
 /**
@@ -438,12 +375,24 @@ int32_t Osal_Wait_Mutex(Mutex_H pMtxHandle, int32_t i32Time)
  */
 int32_t Osal_Release_Mutex(Mutex_H pMtxHandle)
 {
-	if(NULL != pMtxHandle)
+	if(NULL == pMtxHandle)
 	{
-		return(pthread_mutex_unlock(pMtxHandle));
+		// error
+		printf("Invalid mutex handle received while releasing the mutex\n");
+		return -1;
+	}
+	else if(!(pthread_mutex_unlock(pMtxHandle)))
+	{
+		// success
+    	return 0;
 	}
 	else
-		return -1;
+	{
+    	// return pthread error code
+    	// addressed review comment
+    	perror("Failed to unlock mutex, error ::");
+    	return errno;
+	}
 }
 
 /**
@@ -459,17 +408,25 @@ int32_t Osal_Release_Mutex(Mutex_H pMtxHandle)
  */
 int32_t Osal_Close_Mutex( Mutex_H pMtxHandle)
 {
-   if ( NULL == pMtxHandle )
-      return 0;
-
-   if ( pthread_mutex_destroy( pMtxHandle ) == 0 )
+   if (NULL == pMtxHandle)
    {
-	   OSAL_Free(pMtxHandle);
-       return 1;
+      return -1;
+   }
+
+   if (pthread_mutex_destroy(pMtxHandle) == 0)
+   {
+	   if(!pMtxHandle)
+	   {
+		   OSAL_Free(pMtxHandle);
+	   }
+       return 0;
    }
    else
    {
-       return 0;
+		// return pthread error code
+		// addressed review comment
+		perror("Failed to destroy mutex, error ::");
+		return errno;
    }
 }
 

@@ -27,24 +27,22 @@ endif
 
 -include ../makefile.defs
 
-TARGET := libModbusMasterStack.so
-
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: $(TARGET)
+all: libModbusMasterStack.so
 
 # Tool invocations
-$(TARGET): $(OBJS) $(USER_OBJS)
+libModbusMasterStack.so: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L../$(PROJECT_DIR)/lib -fPIC -pthread -z noexecstack -z relro -z now -shared -o $(TARGET) $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -std=c11 -L../$(PROJECT_DIR)/lib -fPIC -pthread -z noexecstack -z relro -z now -shared -o "libModbusMasterStack.so" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(LIBRARIES)$(OBJS)$(C_DEPS) $(TARGET)
+	-$(RM) $(LIBRARIES)$(OBJS)$(C_DEPS) libModbusMasterStack.so
 	-@echo ' '
 
 .PHONY: all clean dependents

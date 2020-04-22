@@ -14,11 +14,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include <netinet/tcp.h>
 #include <fcntl.h>
 #include <safe_lib.h>
 #include <errno.h>
 #include <stddef.h>
+#include <sys/time.h>
+#include <time.h>
+#include <sys/select.h>
 
 #include "SessionControl.h"
 #include "osalLinux.h"
@@ -28,6 +30,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <netinet/tcp.h>
 #else
 #include <termios.h>
 #include <signal.h>
@@ -37,10 +40,6 @@
 #define PKT_EXP_LEN 2
 #define EXP_VAL 0x80
 #define EXP_POS 1
-
-extern int m_epollFd;
-struct sockaddr_in m_serverAddr;
-struct epoll_event *m_events;
 
 /*CRC calculation is for Modbus RTU stack */
 #ifndef MODBUS_STACK_TCPIP_ENABLED
@@ -121,13 +120,11 @@ static uint16_t crc16(uint8_t *buffer, uint16_t buffer_length)
 }
 #endif //#ifndef MODBUS_STACK_TCPIP_ENABLED
 
-long g_lResponseTimeout = 0;
-
-// variable to store interframe gap delay
-long g_lInterframeDelay = 0;
-
 // variable to store Standard interframe gap delay
 long standardInterframeDelay = 0;
+
+// global variable to store stack configurations
+extern stDevConfig_t g_stModbusDevConfig;
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 int fd;
@@ -166,6 +163,43 @@ void (*ReadDeviceIdentification_CallbackFunction)(uint8_t, uint8_t*, uint16_t,ui
 		stException_t*,
 		stRdDevIdResp_t*);
 #endif
+
+/**
+ *
+ * Description
+ * This function adds a sleep for given microseconds.
+ *
+ * @param lMilliseconds [in] This function sleeps for milliseconds
+ *
+ * @return uint8_t [out] 0 for Success, non-zero for Error
+ *
+ */
+int sleep_micros(long lMicroseconds)
+{
+	struct timespec ts;
+	int rc = clock_gettime(CLOCK_MONOTONIC, &ts);
+	if(0 != rc)
+	{
+		perror("Stack fatal error: Sleep function: clock_gettime failed: ");
+		return -1;
+	}
+	unsigned long next_tick = (ts.tv_sec * 1000000000L + ts.tv_nsec) + lMicroseconds*1000;
+	ts.tv_sec = next_tick / 1000000000L;
+	ts.tv_nsec = next_tick % 1000000000L;
+	do
+	{
+		rc = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL);
+	} while(EINTR == rc);
+
+	if(0 == rc)
+	{
+		return 0;
+	}
+
+	printf("Stack: Error in sleep function: %d\n", rc);
+	return -1;
+}
+
 
 /**
  *
@@ -227,8 +261,7 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 
 			stMbusAppCallbackParams.m_lPriority = pstMBusRequesPacket->m_lPriority;
 
-			stMbusAppCallbackParams.m_u16TransactionID = pstMBusRequesPacket->m_u16TransactionID;
-
+			stMbusAppCallbackParams.m_u16TransactionID = pstMBusRequesPacket->m_u16AppTxID;
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 			stMbusAppCallbackParams.m_u8UnitID = pstMBusRequesPacket->m_u8UnitID;
 
@@ -773,7 +806,7 @@ uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBus
 	u8FunctionCode = ServerReplyBuff[u16BuffInex++];
 
 	// Init resp received timestamp
-	timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsRespRcvd), TIME_UTC);
+	//timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsRespRcvd), TIME_UTC);
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	if((pstMBusRequesPacket->m_u16TransactionID != u16TransactionID) ||
@@ -811,7 +844,7 @@ int checkforblockingread(void)
 	struct timeval tv;
 	//wait upto 1 seconds
 	tv.tv_sec = 0;
-	tv.tv_usec = g_lResponseTimeout;
+	tv.tv_usec = g_stModbusDevConfig.m_lResponseTimeout;
 	FD_ZERO(&rset);
 
 	// If fd is not set correctly.
@@ -866,8 +899,10 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		tcflush(fd, TCIOFLUSH);
 
 		// Multiple Slave issue: Adding Frame delay between two packets 
-		usleep(g_lInterframeDelay);
-		usleep(standardInterframeDelay);
+		//usleep(g_lInterframeDelay);
+		//usleep(standardInterframeDelay);
+		sleep_micros(g_stModbusDevConfig.m_lInterframedelay);
+		sleep_micros(standardInterframeDelay);
 
 		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
 		if(bytes <= 0)
@@ -886,11 +921,13 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		//< Please remove below commented framing delay when nonblocking call is used.
 		/*if(baud > 19200)
 		{
-			usleep(1750);
+			//usleep(1750);
+			sleep_micros(1750);
 		}
 		else
 		{
-			usleep(3700);
+			//usleep(3700);
+			sleep_micros(3700);
 		}*/
 
 		bytes = 0;
@@ -1195,8 +1232,7 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
 	}
 
 	//Setting Hardware Flow
-	tios.c_cflag &= ~CRTSCTS;
-	//tios.c_cflag |= CRTSCTS;
+	//tios.c_cflag &= ~CRTSCTS;
 
 
 	/* Read the man page of termios if you need more information. */
@@ -1334,6 +1370,29 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
  * Description
+ * Close the socket connection and reset the structure
+ *
+ * @param stIPConnect [in] pointer to struct of type IP_Connect_t
+ *
+ * @return void [out] none
+ *
+ */
+void closeConnection(IP_Connect_t *a_pstIPConnect)
+{
+	if(NULL != a_pstIPConnect)
+	{
+		// Close socket
+		close(a_pstIPConnect->m_sockfd);
+		a_pstIPConnect->m_sockfd = 0;
+		a_pstIPConnect->m_retryCount = 0;
+		a_pstIPConnect->m_lastConnectStatus = SOCK_CONNECT_FAILED;
+		a_pstIPConnect->m_bIsAddedToEPoll = false;
+		a_pstIPConnect->m_iRcvConRef = -1;
+	}
+}
+
+/**
+ * Description
  * Set socket failure state
  *
  * @param stIPConnect [in] pointer to struct of type IP_Connect_t
@@ -1341,14 +1400,12 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
  * @return void [out] none
  *
  */
-void Mark_Sock_Fail(IP_Connect_t *stIPConnect) {
-	if(NULL != stIPConnect)
+void Mark_Sock_Fail(IP_Connect_t *a_pstIPConnect)
+{
+	if(NULL != a_pstIPConnect)
 	{
-		close(stIPConnect->m_sockfd);
-		stIPConnect->m_sockfd = 0;
-		stIPConnect->m_retryCount = 0;
-		stIPConnect->m_lastConnectStatus = SOCK_CONNECT_FAILED;
-		stIPConnect->m_bIsAddedToEPoll = false;
+		removeEPollRef(a_pstIPConnect->m_iRcvConRef);
+		closeConnection(a_pstIPConnect);
 	}
 }
 
@@ -1406,10 +1463,16 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 
 			a_pstIPConnect->m_sockfd = sockfd;
 			{
-				int i = 1;
-				setsockopt(sockfd, SOL_TCP, TCP_NODELAY, (void*)&i, sizeof(i));
-				//int rc = setsockopt(sockfd, SOL_TCP, TCP_NODELAY, (void*)&i, sizeof(i));
-				//printf("\nsetsocketopt on socket %d for TCP_NODELAY, status %d, error %d", sockfd, rc, errno);
+				int iEnable = 1;
+				if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &iEnable, sizeof(int)) < 0)
+				{
+					printf("setsockopt(TCP_NODELAY) failed ::%d\n", errno);
+				}
+
+				if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &iEnable, sizeof(int)) < 0)
+				{
+					printf("setsockopt(SO_REUSEADDR) failed ::%d\n", errno);
+				}
 			}
 		}
 		sockfd = a_pstIPConnect->m_sockfd;
@@ -1485,7 +1548,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			struct timeval tv;
 			fd_set myset;
 			tv.tv_sec = 0;
-			tv.tv_usec = g_lResponseTimeout;
+			tv.tv_usec = g_stModbusDevConfig.m_lResponseTimeout;
 			FD_ZERO(&myset);
 			FD_SET(sockfd, &myset);
 			int r1 = select(sockfd+1, NULL, &myset, NULL, &tv);
@@ -1515,14 +1578,12 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			}
 		}
 
-		if((false == a_pstIPConnect->m_bIsAddedToEPoll) && (0 != a_pstIPConnect->m_sockfd))
+		if((false == a_pstIPConnect->m_bIsAddedToEPoll) && (0 != a_pstIPConnect->m_sockfd)
+				&& (-1 != a_pstIPConnect->m_sockfd))
 		{
-			struct epoll_event m_event;
-			m_event.events = EPOLLIN;
-			m_event.data.fd = sockfd;
-			if (epoll_ctl(m_epollFd, EPOLL_CTL_ADD, sockfd, &m_event)) {
+			if(0 > addtoEPollList(a_pstIPConnect))
+			{
 				u8ReturnType = STACK_ERROR_SOCKET_LISTEN_FAILED;
-				fprintf(stderr, "Failed to add file descriptor to epoll\n");
 				Mark_Sock_Fail(a_pstIPConnect);
 				break;
 			}
@@ -1532,12 +1593,10 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 
 		/// forcefully sleep for 50ms to complete previous send request
 		/// This is to match the speed between master and slave
-		usleep(g_lInterframeDelay);
+		//usleep(g_lInterframeDelay);
+		sleep_micros(g_stModbusDevConfig.m_lInterframedelay);
 
 		int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
-
-		// Init req sent timestamp
-		timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsReqSent), TIME_UTC);
 
 		/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
 		if(res < 0)
@@ -1548,6 +1607,16 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			break;
 		}
 		a_pstIPConnect->m_lastConnectStatus = SOCK_CONNECT_SUCCESS;
+
+		//// Init req sent timestamp
+		timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsReqSent), TIME_UTC);
+		if(0 != addReqToList(pstMBusRequesPacket))
+		{
+			printf("Unable to add request for timeout tracking. marking it as failed.\n");
+			u8ReturnType = STACK_ERROR_FAILED_Q_SENT_REQ;
+			break;
+		}
+
 	} while(0);
 
 	pstMBusRequesPacket->m_u8CommandStatus = u8ReturnType;

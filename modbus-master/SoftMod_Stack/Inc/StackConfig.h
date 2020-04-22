@@ -34,6 +34,8 @@
 	#define MODBUS_TCP_PORT 	502
 	#define MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC 10
 	#define MAXIMUM_TCP_CONNECTION 	32
+	#define ADDITIONAL_RECORDS_TIMEOUT_TRACKER 100
+	#define REQ_ARRAY_MULTIPLIER 100
 #else
 	#define TCP_MODBUS_ADU_LENGTH 256
 	#define MODBUS_DATA_LENGTH (256)
@@ -134,6 +136,7 @@ typedef enum
 	RESP_ERROR,
 	RESP_SENT_TO_APP,
 	IdleState,
+	RESERVED,
 }eTransactionState;
 
 typedef enum
@@ -155,8 +158,8 @@ typedef struct IP_Connect
 	struct sockaddr_in m_servAddr;
 	int32_t m_sockfd;
 	eSockConnect_enum m_lastConnectStatus;
-	uint32_t m_timeOut;
 	bool m_bIsAddedToEPoll;
+	int m_iRcvConRef;
 }IP_Connect_t;
 
 /**
@@ -173,10 +176,10 @@ typedef struct _stMbusPacketVariables
 {
 	/** Holds the received transaction ID*/
 	uint16_t m_u16TransactionID;
+	uint16_t m_u16AppTxID;
 	/** Holds the unit id  */
 	uint8_t  m_u8UnitID;
-	uint32_t m_u32MsTimeout;
-	eTransactionState m_state;
+	_Atomic eTransactionState m_state;
 	uint8_t  m_u8ProcessReturn;
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	/** Holds Ip address of salve/server device */
@@ -204,18 +207,12 @@ typedef struct _stMbusPacketVariables
 	void *pFunc;
 	/** Holds the Msg Priority  */
 	long m_lPriority;
-	/** Holds the Mse Timeout  */
-	uint32_t m_u32mseTimeout;
-	unsigned long m_ulReqProcess;
-	unsigned long m_ulReqSentTimeByStack;
-	unsigned long m_ulRespProcess;
-	unsigned long m_ulRespRcvdTimebyStack;
-	unsigned long m_ulRespSentTimebyStack;
-	struct timespec m_ts;
 
-	bool m_bIsAvailable;
+	//bool m_bIsAvailable;
 	unsigned int m_ulMyId;
+	int m_iTimeOutIndex;
 	stTimeStamps m_objTimeStamps;
+	unsigned char m_u8RawResp[MODBUS_DATA_LENGTH];
 }stMbusPacketVariables_t;
 
 struct stReqManager {
@@ -231,9 +228,8 @@ typedef enum ThreadScheduler
 	UNKNOWN
 }eThreadScheduler;
 
-void initReqManager();
-stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq,
-		const struct timespec tsReqRcvd);
+bool initReqManager();
+stMbusPacketVariables_t* emplaceNewRequest(const struct timespec tsReqRcvd);
 void freeReqNode(stMbusPacketVariables_t* a_pobjReq);
 
 // Function to set thread parameters
@@ -241,12 +237,44 @@ void set_thread_sched_param();
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 
-struct stReqList {
+struct stTimeOutTrackerNode {
 	stMbusPacketVariables_t *m_pstStart;
 	stMbusPacketVariables_t *m_pstLast;
-	Mutex_H m_mutexReqList;
-	Thread_H m_threadIdReqTimeout;
+	int m_iIsLocked;
 };
+
+struct stTimeOutTracker {
+	struct stTimeOutTrackerNode *m_pstArray;
+	int m_iSize;
+
+	_Atomic int m_iCounter;
+	int32_t m_iTimeoutActionQ;
+	sem_t m_semTimeout;
+
+	Thread_H m_threadIdTimeoutTimer;
+	Thread_H m_threadTimeoutAction;
+};
+
+/**
+ *
+ * Description
+ * Timeout is implemented in the form of counter.
+ * This function returns current counter.
+ *
+ * @param thread argument - none
+ * @return return timer tracker count on success& -1 in case of error
+ */
+int getTimeoutTrackerCount();
+
+/**
+ *
+ * Description
+ * Remove request from list with locks
+ *
+ * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
+ * @return void [out] none
+ */
+void releaseFromTracker(stMbusPacketVariables_t *pstMBusRequesPacket);
 
 struct stResProcessData {
 	sem_t m_semaphoreResp;
@@ -255,7 +283,28 @@ struct stResProcessData {
 	Thread_H m_threadIdRespToApp;
 };
 
-int initReqListData();
+/**
+ *
+ * Description
+ * Stops listening on a socket with epoll.
+ * Resets associated data structures.
+ * This function acquires lock for epoll data structure.
+ *
+ * @param Reference to epoll data structure
+ * @return None
+ */
+void removeEPollRef(int a_iIndex);
+
+/**
+ * Description
+ * Set socket failure state
+ *
+ * @param stIPConnect [in] pointer to struct of type IP_Connect_t
+ *
+ * @return void [out] return status based on condition
+ *
+ */
+int addtoEPollList(IP_Connect_t *a_pstIPConnect);
 
 /**
  @struct IP_address
@@ -326,16 +375,43 @@ typedef enum
 	MBUS_INDEX_10
 }eMbusIndex_enum;
 
-/// Application callback handler
+/**
+ *
+ * Description
+ * Application callback handler
+ *
+ * @param pstMBusRequesPacket [in] Request packet
+ * @param eMbusStackErr       [in] Stack error codes
+ *
+ */
 void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,
 		eStackErrorCode eMbusStackErr);
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+
+/**
+ * Description
+ * Send modbus packet on network
+ *
+ * @param pstMBusRequesPacket [in] pointer to request packet struct of type stMbusPacketVariables_t
+ * @param a_pstIPConnect [in] pointer to socket struct of type IP_Connect_t
+ *
+ * @return uint8_t [out] respective error codes
+ *
+ */
 uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
 		IP_Connect_t *m_pstIPConnect);
 #else
-/// Function to send packet on network
-uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
+/**
+ * Description
+ * Send modbus packet on network
+ *
+ * @param pstMBusRequesPacket [in] pointer to request packet struct of type stMbusPacketVariables_t
+ * @param a_pstIPConnect [in] pointer to socket struct of type IP_Connect_t
+ *
+ * @return uint8_t [out] respective error codes
+ *
+ */uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
 		int32_t *pi32sockfd);
 #endif
 #endif /* STACKCONFIG_H_ */

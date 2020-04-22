@@ -17,10 +17,6 @@
 #include <netinet/in.h>
 #include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
 
-/// Session control thread function
-void* SessionControlThread(void* threadArg);
-void* EpollRecvThread();
-
 /**
  enum eClientSessionStatus
  @brief
@@ -79,37 +75,161 @@ typedef struct EpollTcpRecv
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 typedef struct TcpRecvData
 {
-	uint8_t m_u8IpAddr[4];
-	uint16_t m_u16Port;
-	int m_clientFD;
+	IP_Connect_t *m_pstConRef;
 	int m_len;
 	int m_bytesRead;
 	int m_bytesToBeRead;
-	unsigned char m_readBuffer[256];
+	unsigned char m_readBuffer[MODBUS_DATA_LENGTH];
 }stTcpRecvData_t;
-
-struct stHandleRespData {
-	sem_t m_semaphoreHandleResp;
-
-	int32_t m_i32HandleRespMsgQueId;
-	Thread_H m_threadIdHandleResp;
-};
 
 typedef struct mesg_data
 {
 	long mesg_type;
 	/// data buffer
-	unsigned char m_readBuffer[256];
+	unsigned char m_readBuffer[MODBUS_DATA_LENGTH];
 }mesg_data_t;
 
-int initHandleResponseContext();
+//// Function declarations
 
-void removeReqFromListWithLock(stMbusPacketVariables_t *pstMBusRequesPacket);
+/**
+ *
+ * Description
+ * Initialize request list data
+ *
+ * @param none
+ * @return int [out] 0 (if success)
+ * 					-1 (if failure)
+ */
+int initTCPRespStructs();
+
+/**
+ *
+ * Description
+ * De-initialize data structures related to TCP response processing.
+ *
+ * @param none
+ * @return Nothing
+ */
+void deinitTCPRespStructs();
+
+/**
+ *
+ * Description
+ * Initializes data structures needed for epoll operation for receiving TCP data
+ *
+ * @param None
+ * @return true/false based on status
+ */
+bool initEPollData();
+
+/**
+ *
+ * Description
+ * Add request to list
+ *
+ * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
+ * @return int 0 for success, -1 for error
+ */
+int addReqToList(stMbusPacketVariables_t *pstMBusRequesPacket);
+
+//void removeReqFromListWithLock(stMbusPacketVariables_t *pstMBusRequesPacket);
+
+/**
+ *
+ * Description
+ * Add msg to response queue
+ *
+ * @param a_pstReq [in] pointer to struct of type stMbusPacketVariables_t
+ * @return void [out] none
+ */
 void addToRespQ(stMbusPacketVariables_t *a_pstReq);
+
+/**
+ *
+ * Description
+ * Add response to handle in a queue
+ *
+ * @param a_u8UnitID [in] uint8_t unit id from modbus header
+ * @param a_u16TransactionID  [in] uint16_t transction id from modbus header
+ * @return void [out] none
+ */
 void addToHandleRespQ(stTcpRecvData_t *a_pstReq);
-stMbusPacketVariables_t* searchReqList(uint8_t a_u8UnitID, uint16_t a_u16TransactionID);
+
+
+//stMbusPacketVariables_t* searchReqList(uint8_t a_u8UnitID, uint16_t a_u16TransactionID);
+/**
+ *
+ * Description
+ * get time stamp in nano-seconds
+ *
+ * @param - none
+ * @return unsigned long [out] time in nano-seconds
+ */
 unsigned long get_nanos(void);
+
+/**
+ * Description
+ * Close the socket connection and reset the structure
+ *
+ * @param stIPConnect [in] pointer to struct of type IP_Connect_t
+ *
+ * @return void [out] none
+ *
+ */
+void closeConnection(IP_Connect_t *a_pstIPConnect);
+
+/**
+ * Description
+ * Set socket failure state
+ *
+ * @param stIPConnect [in] pointer to struct of type IP_Connect_t
+ *
+ * @return void [out] none
+ *
+ */
 void Mark_Sock_Fail(IP_Connect_t *stIPConnect);
+
+/**
+ *
+ * Description
+ * TCP and callback thread function
+ *
+ * @param threadArg [in] thread argument
+ * @return void pointer
+ *
+ */
+void* ServerSessTcpAndCbThread(void* threadArg);
+
 #endif
+
+/**
+ *
+ * Description
+ * Session control thread function
+ *
+ * @param threadArg [in] thread argument
+ * @return void 	[out] nothing
+ */
+void* SessionControlThread(void* threadArg);
+
+/**
+ *
+ * Description
+ * thread to start polling on sockets o receive data
+ *
+ * @param - none
+ * @return void [out] none
+ */
+void* EpollRecvThread();
+
+/**
+ * Description
+ * Function to decode received modbus data
+ *
+ * @param ServerReplyBuff [in] Input buffer
+ * @param pstMBusRequesPacket [in] Request packet
+ * @return uint8_t [out] respective error codes
+ *
+ */
 uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBusRequesPacket);
 #endif /* INC_SESSIONCONTROL_H_ */

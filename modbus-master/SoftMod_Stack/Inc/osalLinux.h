@@ -83,7 +83,7 @@ bool Osal_Thread_Terminate(Thread_H pThreadTerminate);
 /// The OSAL Mutex create API will generate Mutex
 Mutex_H Osal_Mutex(void);
 /// The OSAL API Releases the Mutex acquired by process
-int32_t Osal_Wait_Mutex(Mutex_H pMtxHandle, int32_t i32Time);
+int32_t Osal_Wait_Mutex(Mutex_H pMtxHandle);
 /// The OSAL API Releases the Mutex acquired by process
 int32_t Osal_Release_Mutex(Mutex_H pMtxHandle);
 

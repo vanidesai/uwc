@@ -9,25 +9,20 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#include <stddef.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <safe_lib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
-
+#include <stdatomic.h>
 #include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
-
+#include <time.h>
 #include "SessionControl.h"
 
 //#define MODBUS_STACK_TCPIP_ENABLED
-int m_clientFd = 0, m_epollFd = 0;
-struct epoll_event m_event, *m_events = NULL;
-struct sockaddr_in m_clientAddr;
-
 struct stReqManager g_objReqManager;
+
+// global variable to store stack configurations
+extern stDevConfig_t g_stModbusDevConfig;
 
 #define MODBUS_HEADER_LENGTH 6 //no. of bytes till length paramater in header
 //array of accepted clients
@@ -41,7 +36,6 @@ extern int fd;
 
 int32_t i32MsgQueIdSC = 0;
 extern bool g_bThreadExit;
-extern long g_lResponseTimeout;
 
 #define READ_SIZE 1024
 #define MAXEVENTS 100
@@ -50,45 +44,113 @@ extern long g_lResponseTimeout;
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 extern Mutex_H LivSerSesslist_Mutex;
-stTcpRecvData_t m_clientAccepted[MAX_DEVICE_PER_SITE];
+stTcpRecvData_t m_clientAccepted[MAX_DEVICE_PER_SITE] = {{0}};
+int m_epollFd = 0;
+struct epoll_event *m_events = NULL;
+Thread_H EpollRecv_ThreadId = 0;
+Mutex_H EPollMutex;
 stLiveSerSessionList_t *pstSesCtlThdLstHead = NULL;
-extern stDevConfig_t ModbusMasterConfig;
-extern void* ServerSessTcpAndCbThread(void* threadArg);
-extern Mutex_H LivSerSesslist_Mutex;
+struct stTimeOutTracker g_oTimeOutTracker = {0};
+
+struct stIntDataForQ
+{
+	long m_lType;       /* message type, must be > 0 */
+	unsigned short m_iID;
+};
 #endif
 
 /**
  *
  * Description
- * Initiate request manager
+ * Looks for an availale node in request array.
+ * It reserves the available node for using this node.
  *
  * @param - none
  * @returns none
  *
  */
-void initReqManager()
+long getAvailableReqNode()
 {
-	//printf("initReqManager start\n");
+	//Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray);
+
+	// addressed review comment
+	if(0 != Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray))
+	{
+		// fail to lock mutex
+		return -1;
+	}
+	long index = -1;
+	for (long iLoop = 0; iLoop < MAX_REQUESTS; iLoop++)
+	{
+		eTransactionState expected = IdleState;
+		stMbusPacketVariables_t* ptr = &g_objReqManager.m_objReqArray[iLoop];
+		if(true ==
+			atomic_compare_exchange_strong(&ptr->m_state, &expected, RESERVED))
+		{
+			index = iLoop;
+			break;
+		}
+	}
+	Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
+	return index;
+}
+
+/**
+ *
+ * Description
+ * Resets the request node to default values.
+ *
+ * @param - node to reset
+ * @returns none
+ *
+ */
+void resetReqNode(stMbusPacketVariables_t* a_pObjReqNode)
+{
+	if(NULL != a_pObjReqNode)
+	{
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+		a_pObjReqNode->__next = NULL;
+		a_pObjReqNode->__prev = NULL;
+#endif
+		// Init timestamps to 0
+		a_pObjReqNode->m_objTimeStamps.tsReqRcvd = (struct timespec){0};
+		a_pObjReqNode->m_objTimeStamps.tsReqSent = (struct timespec){0};
+		a_pObjReqNode->m_objTimeStamps.tsRespRcvd = (struct timespec){0};
+		a_pObjReqNode->m_objTimeStamps.tsRespSent = (struct timespec){0};
+
+		a_pObjReqNode->m_iTimeOutIndex = -1;
+		a_pObjReqNode->m_state = IdleState;
+	}
+	else
+	{
+		printf("Null pointer to reset\n");
+	}
+}
+
+/**
+ *
+ * Description
+ * Initiate request manager and data structures within it.
+ *
+ * @param - none
+ * @returns true/false
+ *
+ */
+bool initReqManager()
+{
 	unsigned int iCount = 0;
 	for (; iCount < MAX_REQUESTS; iCount++)
 	{
 		g_objReqManager.m_objReqArray[iCount].m_ulMyId = iCount;
-		g_objReqManager.m_objReqArray[iCount].m_bIsAvailable = true;
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-		g_objReqManager.m_objReqArray[iCount].__next = NULL;
-		g_objReqManager.m_objReqArray[iCount].__prev = NULL;
-#endif
-		g_objReqManager.m_objReqArray[iCount].m_state = IdleState;
-
-		// Init timestamps to 0
-		g_objReqManager.m_objReqArray[iCount].m_objTimeStamps.tsReqRcvd = (struct timespec){0};
-		g_objReqManager.m_objReqArray[iCount].m_objTimeStamps.tsReqSent = (struct timespec){0};
-		g_objReqManager.m_objReqArray[iCount].m_objTimeStamps.tsRespRcvd = (struct timespec){0};
-		g_objReqManager.m_objReqArray[iCount].m_objTimeStamps.tsRespSent = (struct timespec){0};
+		resetReqNode(&(g_objReqManager.m_objReqArray[iCount]));
 	}
-	//printReqListNoLock("initReqManager");
+
 	g_objReqManager.m_mutexReqArray = Osal_Mutex();
-	//printf("initReqManager end\n");
+	if(NULL == g_objReqManager.m_mutexReqArray )
+	{
+		return false;
+	}
+	return true;
 }
 
 /**
@@ -96,38 +158,25 @@ void initReqManager()
  * Description
  * emplace new request in request queue
  *
- * @param - a_pObjTempReq
  * @param - tsReqRcvd - request received time-stamp
  * @returns pointer to stMbusPacketVariables_t
  *
  */
-stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempReq,
-		const struct timespec tsReqRcvd)
+stMbusPacketVariables_t* emplaceNewRequest(const struct timespec tsReqRcvd)
 {
-	if(NULL == a_pObjTempReq)
-	{
-		return NULL;
-	}
-	////printf("getNodeForNewRequest: start\n");
 	stMbusPacketVariables_t* ptr = NULL;
-	long iCount = 0;
-	Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
-	for (; iCount < MAX_REQUESTS; iCount++)
+	long iCount = getAvailableReqNode();
+	if ((iCount >= 0) && (iCount < MAX_REQUESTS))
 	{
-		if(true == g_objReqManager.m_objReqArray[iCount].m_bIsAvailable)
+		eTransactionState expected = RESERVED;
+		ptr = &g_objReqManager.m_objReqArray[iCount];
+		if(true ==
+				atomic_compare_exchange_strong(&ptr->m_state, &expected, REQ_RCVD_FROM_APP))
 		{
-			ptr = &g_objReqManager.m_objReqArray[iCount];
-
-			// Init the object from temp object
-			memcpy_s(ptr, sizeof(stMbusPacketVariables_t),
-						a_pObjTempReq, sizeof(stMbusPacketVariables_t));
-
-			ptr->m_bIsAvailable = false;
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 			ptr->__next = NULL;
 			ptr->__prev = NULL;
 #endif
-			ptr->m_state = REQ_RCVD_FROM_APP;
 			ptr->m_ulMyId = iCount;
 
 			// copy the req recvd timestamp
@@ -139,17 +188,9 @@ stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempRe
 			ptr->m_objTimeStamps.tsRespRcvd = (struct timespec){0};
 			ptr->m_objTimeStamps.tsRespSent = (struct timespec){0};
 
-			//printf("getNodeForNewRequest: %u, time: %lu\n", ptr->m_ulMyId, get_nanos());
-			break;
+			ptr->m_iTimeOutIndex = -1;
 		}
 	}
-	//printReqListNoLock("getNodeForNewRequest");
-	Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
-	if(NULL == ptr)
-	{
-		//printf("getNodeForNewRequest: No empty node !\n");
-	}
-	//printf("getNodeForNewRequest: end\n");
 	return ptr;
 }
 
@@ -164,25 +205,11 @@ stMbusPacketVariables_t* emplaceNewRequest(stMbusPacketVariables_t* a_pObjTempRe
  */
 void freeReqNode(stMbusPacketVariables_t* a_pobjReq)
 {
-	Osal_Wait_Mutex(g_objReqManager.m_mutexReqArray, 0);
-	if(NULL != a_pobjReq)
-	{
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-		a_pobjReq->__next = NULL;
-		a_pobjReq->__prev = NULL;
+	//removeReqFromListWithLock(a_pobjReq);
+	releaseFromTracker(a_pobjReq);
 #endif
-		a_pobjReq->m_state = IdleState;
-		a_pobjReq->m_bIsAvailable = true;
-
-		// Init timestamps to 0
-		a_pobjReq->m_objTimeStamps.tsReqRcvd = (struct timespec){0};
-		a_pobjReq->m_objTimeStamps.tsReqSent = (struct timespec){0};
-		a_pobjReq->m_objTimeStamps.tsRespRcvd = (struct timespec){0};
-		a_pobjReq->m_objTimeStamps.tsRespSent = (struct timespec){0};
-		//printf("freeReqNode after: %u, time: %lu\n", a_pobjReq->m_ulMyId, get_nanos());
-	}
-	//printReqListNoLock("freeReqNode");
-	Osal_Release_Mutex(g_objReqManager.m_mutexReqArray);
+	resetReqNode(a_pobjReq);
 }
 
 /**
@@ -220,7 +247,14 @@ void* SessionControlThread(void* threadArg)
 			u8NewDevEntryFalg = 0;
 			pstMBusReqPact = stScMsgQue.wParam;
 			pstMBusReqPact->m_lPriority = stScMsgQue.mtype;
-			Osal_Wait_Mutex (LivSerSesslist_Mutex,0);
+			//Osal_Wait_Mutex (LivSerSesslist_Mutex);
+
+			// addressed review comment
+			if(0 != Osal_Wait_Mutex(LivSerSesslist_Mutex))
+			{
+				// fail to lock mutex
+				continue;
+			}
 			pstLivSerSesslist = pstSesCtlThdLstHead;
 			if(NULL == pstLivSerSesslist)
 			{
@@ -229,7 +263,14 @@ void* SessionControlThread(void* threadArg)
 				{
 					ApplicationCallBackHandler(pstMBusReqPact,
 							STACK_ERROR_MALLOC_FAILED);
-					Osal_Release_Mutex (LivSerSesslist_Mutex);
+
+					// addressed review comment
+					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
+					{
+						// fail to unlock mutex
+						continue;
+					}
+
 					freeReqNode(pstMBusReqPact);
 					continue;
 				}
@@ -269,7 +310,13 @@ void* SessionControlThread(void* threadArg)
 					if(NULL == pstTempLivSerSesslist->m_pNextElm )
 					{
 						ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_MALLOC_FAILED);
-						Osal_Release_Mutex (LivSerSesslist_Mutex);
+						//Osal_Release_Mutex (LivSerSesslist_Mutex);
+						// addressed review comment
+						if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
+						{
+							// fail to unlock mutex
+							continue;
+						}
 						freeReqNode(pstMBusReqPact);
 						continue;
 					}
@@ -285,6 +332,21 @@ void* SessionControlThread(void* threadArg)
 				memcpy_s(pstLivSerSesslist->m_u8IpAddr,sizeof(pstLivSerSesslist->m_u8IpAddr),
 										pstMBusReqPact->m_u8IpAddr,sizeof(pstMBusReqPact->m_u8IpAddr));
 				pstLivSerSesslist->MsgQId = OSAL_Init_Message_Queue();
+
+				if(-1 == pstLivSerSesslist->MsgQId)
+				{
+					printf("failed to create msg queue\n");
+					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_CREATE);
+
+					// addressed review comment
+					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
+					{
+						// fail to unlock mutex
+						continue;
+					}
+					freeReqNode(pstMBusReqPact);
+					continue;
+				}
 				pstLivSerSesslist->m_i32sockfd = 0;
 
 				pstLivSerSesslist->m_u16Port = pstMBusReqPact->u16Port;
@@ -296,7 +358,13 @@ void* SessionControlThread(void* threadArg)
 				if(!OSAL_Post_Message(&stPostThreadMsg))
 				{
 					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_SEND);
-					Osal_Release_Mutex (LivSerSesslist_Mutex);
+					//Osal_Release_Mutex (LivSerSesslist_Mutex);
+					// addressed review comment
+					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
+					{
+						// fail to unlock mutex
+						continue;
+					}
 					freeReqNode(pstMBusReqPact);
 					continue;
 				}
@@ -307,10 +375,16 @@ void* SessionControlThread(void* threadArg)
 				stThreadParam.lpThreadId = &pstLivSerSesslist->m_ThreadId;
 
 				pstLivSerSesslist->m_ThreadId = Osal_Thread_Create(&stThreadParam);
-				if(0 == pstLivSerSesslist->m_ThreadId)
+				if(-1 == pstLivSerSesslist->m_ThreadId)
 				{
 					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_THREAD_CREATE);
-					Osal_Release_Mutex (LivSerSesslist_Mutex);
+					//Osal_Release_Mutex (LivSerSesslist_Mutex);
+					// addressed review comment
+					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
+					{
+						// fail to unlock mutex
+						continue;
+					}
 					freeReqNode(pstMBusReqPact);
 					continue;
 				}
@@ -325,12 +399,24 @@ void* SessionControlThread(void* threadArg)
 				if(!OSAL_Post_Message(&stPostThreadMsg))
 				{
 					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_SEND);
-					Osal_Release_Mutex (LivSerSesslist_Mutex);
+					//Osal_Release_Mutex (LivSerSesslist_Mutex);
+					// addressed review comment
+					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
+					{
+						// fail to unlock mutex
+						continue;
+					}
 					freeReqNode(pstMBusReqPact);
 					continue;
 				}
 			}
-			Osal_Release_Mutex (LivSerSesslist_Mutex);
+			//Osal_Release_Mutex (LivSerSesslist_Mutex);
+			// addressed review comment
+			if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
+			{
+				// fail to unlock mutex
+				continue;
+			}
 		}
 		else
 		{
@@ -357,12 +443,18 @@ void* SessionControlThread(void* threadArg)
  * @param socketID [in] socket id
  * @return int 	[out] client index from list
  */
-int getClientIdFromList(int socketID) {
+int getClientIdFromList(int socketID)
+{
 	int socketIndex = -1;
 
-	for(int i = 0; i < 256; i++) {
-		if(m_clientAccepted[i].m_clientFD == socketID) {
-			return i;
+	for(int i = 0; i < MAX_DEVICE_PER_SITE; i++)
+	{
+		if(NULL != m_clientAccepted[i].m_pstConRef)
+		{
+			if(m_clientAccepted[i].m_pstConRef->m_sockfd == socketID)
+			{
+				return i;
+			}
 		}
 	}
 
@@ -377,14 +469,243 @@ int getClientIdFromList(int socketID) {
  * @param clientAccepted [in] pointer to stTcpRecvData_t holding socket's data received information
  * @return void	[out] none
  */
-void resetClientStruct(stTcpRecvData_t* clientAccepted) {
-
+void resetEPollClientDataStruct(stTcpRecvData_t* clientAccepted)
+{
+	if(NULL != clientAccepted)
+	{
 	clientAccepted->m_bytesRead = 0;
 	clientAccepted->m_bytesToBeRead = 0;
 	clientAccepted->m_len = 0;
 	memset(&clientAccepted->m_readBuffer, 0,
 			sizeof(clientAccepted->m_readBuffer));
+	}
+}
 
+/**
+ *
+ * Description
+ * Initializes data structures needed for epoll operation for receiving TCP data
+ *
+ * @param None
+ * @return true/false based on status
+ */
+bool initEPollData()
+{
+	for(int i = 0; i < MAX_DEVICE_PER_SITE; i++)
+	{
+		resetEPollClientDataStruct(&m_clientAccepted[i]);
+	}
+
+	//init epoll
+	m_epollFd = epoll_create1(0);
+	if (m_epollFd == -1) {
+		perror("Failed to create epoll file descriptor :: \n");
+		return false;
+	}
+
+	thread_Create_t stEpollRecvThreadParam = { 0 };
+	stEpollRecvThreadParam.dwStackSize = 0;
+	stEpollRecvThreadParam.lpStartAddress = EpollRecvThread;
+	stEpollRecvThreadParam.lpThreadId = &EpollRecv_ThreadId;
+
+	EpollRecv_ThreadId = Osal_Thread_Create(&stEpollRecvThreadParam);
+	if(-1 == EpollRecv_ThreadId)
+	{
+		return false;
+	}
+	EPollMutex = Osal_Mutex();
+	if(NULL == EPollMutex)
+	{
+		return false;
+	}
+}
+
+/**
+ *
+ * Description
+ * De-initializes data structures related to epoll operation for receiving TCP data
+ *
+ * @param None
+ * @return None
+ */
+void deinitEPollData()
+{
+	Osal_Thread_Terminate(EpollRecv_ThreadId);
+
+	for(int i = 0; i < MAX_DEVICE_PER_SITE; i++)
+	{
+		resetEPollClientDataStruct(&m_clientAccepted[i]);
+		m_clientAccepted[i].m_pstConRef = NULL;
+	}
+
+	Osal_Close_Mutex(EPollMutex);
+}
+
+/**
+ *
+ * Description
+ * Stops listening on a socket with epoll.
+ * Resets associated data structures.
+ * The calling function should have the lock for epoll data structure.
+ *
+ * @param Reference to epoll data structure
+ * @return None
+ */
+void removeEPollRefNoLock(int a_iIndex)
+{
+	if((a_iIndex >= 0) && (a_iIndex < MAX_DEVICE_PER_SITE))
+	{
+		// Obtain lock
+		if(NULL != m_clientAccepted[a_iIndex].m_pstConRef)
+		{
+			// remove from epoll
+			struct epoll_event m_event;
+			m_event.events = EPOLLIN;
+			m_event.data.fd = m_clientAccepted[a_iIndex].m_pstConRef->m_sockfd;
+			if (epoll_ctl(m_epollFd, EPOLL_CTL_DEL, m_clientAccepted[a_iIndex].m_pstConRef->m_sockfd, &m_event))
+			{
+				perror("Failed to delete file descriptor from epoll:");
+			}
+			m_clientAccepted[a_iIndex].m_pstConRef = NULL;
+		}
+		resetEPollClientDataStruct(&m_clientAccepted[a_iIndex]);
+		m_clientAccepted[a_iIndex].m_pstConRef = NULL;
+	}
+}
+
+/**
+ *
+ * Description
+ * Stops listening on a socket with epoll.
+ * Resets associated data structures.
+ * This function acquires lock for epoll data structure.
+ *
+ * @param Reference to epoll data structure
+ * @return None
+ */
+void removeEPollRef(int a_iIndex)
+{
+	if((a_iIndex >= 0) && (a_iIndex < MAX_DEVICE_PER_SITE))
+	{
+		//Osal_Wait_Mutex(EPollMutex);
+		// addressed review comment
+		if(0 != Osal_Wait_Mutex(EPollMutex))
+		{
+			// fail to lock mutex
+			return;
+		}
+		removeEPollRefNoLock(a_iIndex);
+		//Osal_Release_Mutex(EPollMutex);
+		// addressed review comment
+		if(0 != Osal_Release_Mutex (EPollMutex))
+		{
+			// fail to unlock mutex
+			return;
+		}
+		//printf("Removing ref %d\n", a_iIndex);
+	}
+}
+
+/**
+ * Description
+ * Set socket failure state
+ *
+ * @param stIPConnect [in] pointer to struct of type IP_Connect_t
+ *
+ * @return void [out] none
+ *
+ */
+int addtoEPollList(IP_Connect_t *a_pstIPConnect)
+{
+	if(NULL != a_pstIPConnect)
+	{
+		int ret = -1;
+		//Osal_Wait_Mutex(EPollMutex);
+
+		// addressed review comment
+		if(0 != Osal_Wait_Mutex(EPollMutex))
+		{
+			// fail to lock mutex
+			return ret;
+		}
+		int index = -1;
+		for(int i = 0; i < MAX_DEVICE_PER_SITE; i++)
+		{
+			// Check if this connection ref is already in list
+			if(m_clientAccepted[i].m_pstConRef == a_pstIPConnect)
+			{
+				if(m_clientAccepted[i].m_pstConRef->m_sockfd == a_pstIPConnect->m_sockfd)
+				{
+					// Ref and socket are same. No action
+				}
+				else
+				{
+					// Sockets are not same. Remove earlier connection
+					removeEPollRefNoLock(i);
+				}
+				index = i;
+				break;
+			}
+			else if(m_clientAccepted[i].m_pstConRef == NULL)
+			{
+				// This is to find first empty node in array
+				if(-1 == index)
+				{
+					index = i;
+				}
+			}
+			else
+			{
+				// Node is not NULL
+				if(m_clientAccepted[i].m_pstConRef->m_sockfd == a_pstIPConnect->m_sockfd)
+				{
+					// Sockets are same but connection references are different.
+					// This should ideally not occur.
+					printf("Error: Socket for EPOLL-ADD is already used for some other connection");
+					removeEPollRefNoLock(i);
+					closeConnection(m_clientAccepted[i].m_pstConRef);
+					ret = -2;
+					break;
+				}
+			}
+		}
+
+		// This fd is not yet added to list
+		if (-1 != index)
+		{
+			resetEPollClientDataStruct(&m_clientAccepted[index]);
+			m_clientAccepted[index].m_pstConRef = NULL;
+			// add to epoll events
+			struct epoll_event m_event;
+			m_event.events = EPOLLIN;
+			m_event.data.fd = a_pstIPConnect->m_sockfd;
+			ret = 0;
+			if (epoll_ctl(m_epollFd, EPOLL_CTL_ADD, a_pstIPConnect->m_sockfd, &m_event))
+			{
+				if(EEXIST != errno)
+				{
+					perror("Failed to add file descriptor to epoll:");
+					ret = -1;
+				}
+			}
+			if(ret == 0)
+			{
+				// Set 2 way-references
+				m_clientAccepted[index].m_pstConRef = a_pstIPConnect;
+				a_pstIPConnect->m_iRcvConRef = index;
+				ret = index;
+				//printf("adding ref: %d", ret);
+			}
+		}
+		//Osal_Release_Mutex(EPollMutex);
+		if(0 != Osal_Release_Mutex (EPollMutex))
+		{
+			// fail to unlock mutex
+			return -1;
+		}
+		return ret;
+	}
+	return -1;
 }
 
 /**
@@ -413,7 +734,6 @@ struct timespec getEpochTime() {
  */
 void* EpollRecvThread()
 {
-
 	int event_count = 0;
 	size_t bytes_read = 0;
 	size_t bytes_to_read = 0;
@@ -422,62 +742,70 @@ void* EpollRecvThread()
 	set_thread_sched_param();
 
 	//allocate no of polling events
-	m_events = (struct epoll_event*) calloc(MAXEVENTS, sizeof(m_event));
+	m_events = (struct epoll_event*) calloc(MAXEVENTS, sizeof(struct epoll_event));
 
 	if(NULL == m_events)
 	{
 		return NULL;
 	}
 
-	int iClientCount = 0; //for array
-
 	while (true != g_bThreadExit)
 	{
 		event_count = 0;
 
 		event_count = epoll_wait(m_epollFd, m_events, MAXEVENTS, EPOLL_TIMEOUT);
-		for (int i = 0; i < event_count; i++) {
+		//Osal_Wait_Mutex(EPollMutex);
 
+		// addressed review comment
+		if(0 != Osal_Wait_Mutex(EPollMutex))
+		{
+			// fail to lock mutex
+			continue;
+		}
+
+		for (int i = 0; i < event_count; i++)
+		{
 			int clientID = getClientIdFromList(m_events[i].data.fd);
 
-			if (clientID == -1) {
-				//this is a new client socket - add it to the list
-				clientID = ++iClientCount;
-
-				//resetClientStruct(&m_clientAccepted[clientID]);
-				m_clientAccepted[clientID].m_bytesRead = 0;
-				m_clientAccepted[clientID].m_bytesToBeRead = 0;
-				m_clientAccepted[clientID].m_len = 0;
-				memset(&m_clientAccepted[clientID].m_readBuffer, 0,
-						sizeof(m_clientAccepted[clientID].m_readBuffer));
-
-				//set client id = received socket descriptor
-				m_clientAccepted[clientID].m_clientFD = m_events[i].data.fd;
+			if (clientID == -1)
+			{
+				continue;
+			}
+			if(NULL == m_clientAccepted[clientID].m_pstConRef)
+			{
+				continue;
 			}
 
 			//if there are still bytes remaining to be read for this socket, adjust read size accordingly
-			if (m_clientAccepted[clientID].m_bytesToBeRead > 0) {
+			if (m_clientAccepted[clientID].m_bytesToBeRead > 0)
+			{
 				bytes_to_read = m_clientAccepted[clientID].m_bytesToBeRead;
-			} else {
-				bytes_read = 0;
+			}
+			else
+			{
 				bytes_to_read = MODBUS_HEADER_LENGTH; //read only header till length
 			}
 
 			//receive data from socket
-			bytes_read = recv(m_clientAccepted[clientID].m_clientFD,
+			bytes_read = recv(m_clientAccepted[clientID].m_pstConRef->m_sockfd,
 					m_clientAccepted[clientID].m_readBuffer+m_clientAccepted[clientID].m_bytesRead, bytes_to_read, 0);
 
 
 			if (bytes_read == 0)
+			{
+				// No data received, check for new socket
 				continue;
+			}
 
 			//parse length if fd has 0 bytes read, otherwise rest packets are with actual data and not header
-			if (m_clientAccepted[clientID].m_bytesRead == 0) {
+			if (m_clientAccepted[clientID].m_bytesRead == 0)
+			{
 				m_clientAccepted[clientID].m_len = (m_clientAccepted[clientID].m_readBuffer[4] << 8
 						| m_clientAccepted[clientID].m_readBuffer[5]);
 			}
 
-			if (bytes_to_read == bytes_read) {
+			if (bytes_to_read == bytes_read)
+			{
 				m_clientAccepted[clientID].m_bytesRead += bytes_read;
 
 				m_clientAccepted[clientID].m_bytesToBeRead =
@@ -486,31 +814,34 @@ void* EpollRecvThread()
 			}
 
 			//add one more recv to read response completely
-			if (m_clientAccepted[clientID].m_bytesToBeRead > 0) {
-
-				while (m_clientAccepted[clientID].m_bytesToBeRead != 0) {
-
-					//check if we have data on socket
-					int bytesPresentOnSocket = 0;
-					if(-1 == ioctl(m_clientAccepted[clientID].m_clientFD, FIONREAD,
-							&bytesPresentOnSocket))
+			if (m_clientAccepted[clientID].m_bytesToBeRead > 0)
+			{
+				while (m_clientAccepted[clientID].m_bytesToBeRead != 0)
 					{
-						printf("Error in ioctl\n");
-						//NO action
-						//continue;
-					}
-
-					if (bytesPresentOnSocket > 0) {
-						bytes_to_read =
-								m_clientAccepted[clientID].m_bytesToBeRead;
+					bytes_to_read = m_clientAccepted[clientID].m_bytesToBeRead;
 
 						//receive data from socket
-						bytes_read = recv(m_clientAccepted[clientID].m_clientFD,
+					bytes_read = recv(m_clientAccepted[clientID].m_pstConRef->m_sockfd,
 								m_clientAccepted[clientID].m_readBuffer+m_clientAccepted[clientID].m_bytesRead,
 								bytes_to_read, 0);
 
+					if(bytes_read < 0)
+					{
+						//recv failed with error
+						perror("Recv() failed : ");
+						//Close the connection and mark socket invalid
+						removeEPollRefNoLock(clientID);
+						closeConnection(m_clientAccepted[clientID].m_pstConRef);
+
+						break;
+					}
+					else
+					{
 						if (bytes_read == 0)
-							continue;
+						{
+							// there is no data read. Let's check new thing
+							break;
+						}
 
 						m_clientAccepted[clientID].m_bytesRead += bytes_read;
 
@@ -522,14 +853,16 @@ void* EpollRecvThread()
 				//should have read response completely
 
 				if ((m_clientAccepted[clientID].m_len + MODBUS_HEADER_LENGTH)
-						== m_clientAccepted[clientID].m_bytesRead) {
-
+						== m_clientAccepted[clientID].m_bytesRead)
+				{
 					addToHandleRespQ(&m_clientAccepted[clientID]);
 
 					//clear socket struct for next iteration
-					resetClientStruct(&m_clientAccepted[clientID]);
+					resetEPollClientDataStruct(&m_clientAccepted[clientID]);
 
-				} else {
+				}
+				else
+				{
 					//this case should never happen ideally
 					//continue to read for the same socket & epolling
 					continue;
@@ -537,13 +870,12 @@ void* EpollRecvThread()
 
 			}
 		}//for loop for sockets ends
-
-		/// check for thread exit
-		if(g_bThreadExit)
+		//Osal_Release_Mutex(EPollMutex);
+		if(0 != Osal_Release_Mutex (EPollMutex))
 		{
-			break;
+			// fail to unlock mutex
+			continue;
 		}
-
 	} //while ends
 
 	//close client socket or push all the client sockets in a vector and close all
@@ -599,8 +931,6 @@ void* SessionControlThread(void* threadArg)
 #endif
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-struct stHandleRespData g_stHandleResp;
-struct stReqList g_stReqList;
 struct stResProcessData g_stRespProcess;
 
 /**
@@ -625,18 +955,17 @@ unsigned long get_nanos(void) {
  * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
  * @return void [out] none
  */
-void removeReqFromListNoLock(stMbusPacketVariables_t *pstMBusRequesPacket)
+void releaseFromTrackerNode(stMbusPacketVariables_t *a_pstNodeToRemove,
+		struct stTimeOutTrackerNode *a_pstTracker)
 {
-	if(NULL == pstMBusRequesPacket)
+	if((NULL == a_pstNodeToRemove) || (NULL == a_pstTracker))
 	{
 		return;
 	}
 
-	// Get a lock to list
-	//Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
 	{
-		stMbusPacketVariables_t *pstPrev = pstMBusRequesPacket->__prev;
-		stMbusPacketVariables_t *pstNext = pstMBusRequesPacket->__next;
+		stMbusPacketVariables_t *pstPrev = a_pstNodeToRemove->__prev;
+		stMbusPacketVariables_t *pstNext = a_pstNodeToRemove->__next;
 
 		if(NULL != pstPrev)
 		{
@@ -646,20 +975,20 @@ void removeReqFromListNoLock(stMbusPacketVariables_t *pstMBusRequesPacket)
 		{
 			pstNext->__prev = pstPrev;
 		}
-		if(pstMBusRequesPacket == g_stReqList.m_pstStart)
+		if(a_pstNodeToRemove == a_pstTracker->m_pstStart)
 		{
-			g_stReqList.m_pstStart = pstNext;
+			a_pstTracker->m_pstStart = pstNext;
 		}
-		if(pstMBusRequesPacket == g_stReqList.m_pstLast)
+		if(a_pstNodeToRemove == a_pstTracker->m_pstLast)
 		{
-			g_stReqList.m_pstLast = pstPrev;
+			a_pstTracker->m_pstLast = pstPrev;
 		}
 
-		pstMBusRequesPacket->__prev = NULL;
-		pstMBusRequesPacket->__next = NULL;
+		a_pstNodeToRemove->__prev = NULL;
+		a_pstNodeToRemove->__next = NULL;
 	}
-	//Osal_Release_Mutex(g_stReqList.m_mutexReqList);
 }
+
 
 /**
  *
@@ -669,17 +998,38 @@ void removeReqFromListNoLock(stMbusPacketVariables_t *pstMBusRequesPacket)
  * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
  * @return void [out] none
  */
-void removeReqFromListWithLock(stMbusPacketVariables_t *pstMBusRequesPacket)
+void releaseFromTracker(stMbusPacketVariables_t *pstMBusRequesPacket)
 {
 	if(NULL == pstMBusRequesPacket)
 	{
 		return;
 	}
+	// Timeout index is out of bounds
+	if((pstMBusRequesPacket->m_iTimeOutIndex < 0) ||
+			(pstMBusRequesPacket->m_iTimeOutIndex > g_oTimeOutTracker.m_iSize))
+	{
+		return;
+	}
+	struct stTimeOutTrackerNode *pstTemp = &g_oTimeOutTracker.m_pstArray[pstMBusRequesPacket->m_iTimeOutIndex];
+	if(NULL == pstTemp)
+	{
+		printf("Error: Null timeout tracker node\n");
+		return;
+	}
 
-	// Get a lock to list
-	Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
-	removeReqFromListNoLock(pstMBusRequesPacket);
-	Osal_Release_Mutex(g_stReqList.m_mutexReqList);
+	// Obtain the lock
+	int expected = 0;
+	do
+	{
+		expected = 0;
+	} while(!atomic_compare_exchange_weak(&(pstTemp->m_iIsLocked), &expected, 1));
+
+	// Lock is obtained
+
+	releaseFromTrackerNode(pstMBusRequesPacket, pstTemp);
+	pstMBusRequesPacket->m_iTimeOutIndex = -1;
+	// Done. Release the lock
+	pstTemp->m_iIsLocked = 0;
 }
 
 /**
@@ -695,7 +1045,6 @@ void addToRespQ(stMbusPacketVariables_t *a_pstReq)
 	if(NULL != a_pstReq)
 	{
 		Post_Thread_Msg_t stPostThreadMsg = { 0 };
-		a_pstReq->m_ulRespRcvdTimebyStack = get_nanos();
 		// Add to queue
 		stPostThreadMsg.idThread = g_stRespProcess.m_i32RespMsgQueId;
 		stPostThreadMsg.wParam = NULL;
@@ -713,64 +1062,6 @@ void addToRespQ(stMbusPacketVariables_t *a_pstReq)
 			sem_post(&g_stRespProcess.m_semaphoreResp);
 		}
 	}
-}
-
-/**
- *
- * Description
- * Request time out thread function
- *
- * @param threadArg [in] void pointer
- * @return void [out] none
- */
-void* resquestTimeOutThreadFunction(void* threadArg)
-{
-	stMbusPacketVariables_t *pstTemp = NULL;
-	stMbusPacketVariables_t *pstCur = NULL;
-
-	// set thread priority
-	set_thread_sched_param();
-
-	while(false == g_bThreadExit)
-	{
-		//unsigned long tm1, tm2;
-		//tm1 = get_nanos();
-		//printf("\n");
-		// Get a lock to list
-		Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
-		pstTemp = g_stReqList.m_pstStart;
-		while(NULL != pstTemp)
-		{
-			pstCur = pstTemp;
-			pstTemp = pstTemp->__next;
-
-			if(REQ_SENT_ON_NETWORK == pstCur->m_state)
-			{
-				--pstCur->m_u32MsTimeout;
-				if(pstCur->m_u32MsTimeout == 0)
-				{
-					removeReqFromListNoLock(pstCur);
-					pstCur->m_state = RESP_TIMEDOUT;
-					pstCur->m_u8ProcessReturn = STACK_ERROR_RECV_TIMEOUT;
-					pstCur->m_stMbusRxData.m_u8Length = 0;
-					addToRespQ(pstCur);
-					pstCur->m_ulRespProcess = get_nanos();
-				}
-			}
-		}
-		Osal_Release_Mutex(g_stReqList.m_mutexReqList);
-		//tm2 = get_nanos();
-		// Sleep for 1 msec
-		usleep(1000);
-
-		/// check for thread exit
-		if(g_bThreadExit)
-		{
-			break;
-		}
-	}
-
-	return NULL;
 }
 
 /**
@@ -806,7 +1097,11 @@ void* postResponseToApp(void* threadArg)
 			pstMBusRequesPacket = stScMsgQue.lParam;
 			if(NULL != pstMBusRequesPacket)
 			{
-				pstMBusRequesPacket->m_ulRespSentTimebyStack = get_nanos();
+				if(pstMBusRequesPacket->m_state == RESP_RCVD_FROM_NETWORK)
+				{
+					pstMBusRequesPacket->m_u8ProcessReturn = DecodeRxPacket(pstMBusRequesPacket->m_u8RawResp, pstMBusRequesPacket);
+				}
+				//pstMBusRequesPacket->m_ulRespSentTimebyStack = get_nanos();
 				ApplicationCallBackHandler(pstMBusRequesPacket, pstMBusRequesPacket->m_u8ProcessReturn);
 				//OSAL_Free(pstMBusRequesPacket);
 				freeReqNode(pstMBusRequesPacket);
@@ -825,35 +1120,292 @@ void* postResponseToApp(void* threadArg)
 /**
  *
  * Description
+ * Timeout is implemented in the form of counter.
+ * This function returns current counter.
+ *
+ * @param thread argument - none
+ * @return none
+ */
+int getTimeoutTrackerCount()
+{
+	return g_oTimeOutTracker.m_iCounter;
+}
+
+/**
+ *
+ * Description
+ * Thead function: Implements a timer to measure timeout for
+ * initiated requests.
+ *
+ * @param thread argument - none
+ * @return none
+ */
+void* timeoutTimerThread(void* threadArg)
+{
+	// set thread priority
+	set_thread_sched_param();
+	printf("In timeoutTimerThread\n");
+	g_oTimeOutTracker.m_iCounter = 0;
+
+	struct timespec ts;
+	int rc = clock_getres(CLOCK_MONOTONIC, &ts);
+	if(0 != rc)
+	{
+		perror("Unable to get clock resolution: ");
+	}
+	else
+	{
+		printf("Monotonic Clock resolution: %10ld.%09ld\n", (long) ts.tv_sec, ts.tv_nsec);
+	}
+
+	rc = clock_gettime(CLOCK_MONOTONIC, &ts);
+	if(0 != rc)
+	{
+		perror("Stack fatal error: Response timeout: clock_gettime failed: ");
+		return NULL;
+	}
+	while(false == g_bThreadExit)
+	{
+		unsigned long next_tick = (ts.tv_sec * 1000000000L + ts.tv_nsec) + 1*1000*1000;
+		ts.tv_sec = next_tick / 1000000000L;
+		ts.tv_nsec = next_tick % 1000000000L;
+		do
+		{
+			rc = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL);
+		} while(EINTR == rc);
+
+		if(0 == rc)
+		{
+			g_oTimeOutTracker.m_iCounter = (g_oTimeOutTracker.m_iCounter + 1) % g_oTimeOutTracker.m_iSize;
+
+			struct stIntDataForQ objSt;
+			objSt.m_iID = g_oTimeOutTracker.m_iCounter;
+			objSt.m_lType = 1;
+
+			if(-1 != msgsnd(g_oTimeOutTracker.m_iTimeoutActionQ, &objSt, sizeof(objSt) - sizeof(long), 0))
+			{
+				sem_post(&g_oTimeOutTracker.m_semTimeout);
+				//printf("to post %d - ", g_oTimeOutTracker.m_iCounter);
+			}
+			else
+			{
+				perror("Unable to post timeout timer action:");
+			}
+		}
+		else
+		{
+			printf("Stack: Error in Response timeout function: %d\n", rc);
+		}
+	}
+
+	return NULL;
+}
+
+/**
+ *
+ * Description
+ * Thead function: Identifies timed out requests and 
+ * initiates a response accordingly.
+ *
+ * @param thread argument - none
+ * @return none
+ */
+void* timeoutActionThread(void* threadArg)
+{
+	printf("in timeoutActionThread thread\n");
+
+	// set thread priority
+	set_thread_sched_param();
+
+	const int iArrayToTimeoutDiff = g_oTimeOutTracker.m_iSize - g_stModbusDevConfig.m_lResponseTimeout/1000;
+	const size_t MsgSize = sizeof(struct stIntDataForQ) - sizeof(long);
+
+	while(false == g_bThreadExit)
+	{
+		if((sem_wait(&g_oTimeOutTracker.m_semTimeout)) == -1 && errno == EINTR)
+		{
+			// Continue if interrupted by handler
+			continue;
+		}
+		struct stIntDataForQ objSt = {0};
+		int i32RetVal = msgrcv(g_oTimeOutTracker.m_iTimeoutActionQ, &objSt, MsgSize, 0, MSG_NOERROR | IPC_NOWAIT);
+		//if(errno == ENOMSG && (-1 == i32RetVal))
+		if(i32RetVal <= 0)
+		{
+			//i32RetVal = -1;
+			perror("Unable to get data from timeout q");
+			continue;
+		}
+
+		// get list corresponding to the index
+		//printf("q index: %d\n", objSt.m_iID);
+		// This is the current index
+		// Find timed out index using following formula
+		// timedOutIndex = [current index + (timeout-array-size - timeout)] % timeout-array-size
+		int iTimedOutIndex = (objSt.m_iID + iArrayToTimeoutDiff) % g_oTimeOutTracker.m_iSize;
+
+		// identify index into q
+		if(iTimedOutIndex > g_oTimeOutTracker.m_iSize)
+		{
+			printf("Error: Timed out Index is greater than array size\n");
+			continue;
+		}
+		int expected = 0;
+		struct stTimeOutTrackerNode *pstTemp = &g_oTimeOutTracker.m_pstArray[iTimedOutIndex];
+		if(NULL == pstTemp)
+		{
+			printf("Error: Null timeout tracker node\n");
+			continue;
+		}
+
+		do
+		{
+			expected = 0;
+		} while(!atomic_compare_exchange_weak(&(pstTemp->m_iIsLocked), &expected, 1));
+
+		// Lock is obtained
+		stMbusPacketVariables_t *pstNextNode = pstTemp->m_pstStart;
+		while(NULL != pstNextNode)
+		{
+			stMbusPacketVariables_t *pstCur = pstNextNode;
+			pstNextNode = pstNextNode->__next;
+			eTransactionState expected = REQ_SENT_ON_NETWORK;
+			if(true ==
+					atomic_compare_exchange_strong(&pstCur->m_state, &expected, RESP_TIMEDOUT))
+			{
+				/*printf("Cur cnt:%d, Timedout cnt:%d, Node for timeout is found: %d, TxID: %d, %lu\n",
+	                        objSt.m_iID, iTimedOutIndex,
+	                        pstCur->m_iTimeOutIndex, pstCur->m_u16TransactionID,
+	                        get_nanos());
+				 */
+				pstCur->m_u8ProcessReturn = STACK_ERROR_RECV_TIMEOUT;
+				pstCur->m_stMbusRxData.m_u8Length = 0;
+				// Init resp received timestamp
+				timespec_get(&(pstCur->m_objTimeStamps.tsRespRcvd), TIME_UTC);
+				addToRespQ(pstCur);
+			}
+		}
+		// Done. Release the lock
+		pstTemp->m_iIsLocked = 0;
+	}
+	return NULL;
+}
+
+/**
+ *
+ * Description
+ * Initialize timeout tracker data structure and threads
+ *
+ * @param none
+ * @return int [out] 0 (if success)
+ * 					-1 (if failure)
+ */
+int initTimeoutTrackerArray()
+{
+	g_oTimeOutTracker.m_iTimeoutActionQ = OSAL_Init_Message_Queue();
+	if(-1 == g_oTimeOutTracker.m_iTimeoutActionQ)
+	{
+		return -1;
+	}
+
+	if(-1 == sem_init(&g_oTimeOutTracker.m_semTimeout, 0, 0 /* Initial value of zero*/))
+	{
+		perror("Timeout tracker: semaphore creaton error: ");
+		return -1;
+	}
+
+	// determine size of timeout tracker array
+	g_oTimeOutTracker.m_iSize = g_stModbusDevConfig.m_lResponseTimeout/1000 + ADDITIONAL_RECORDS_TIMEOUT_TRACKER;
+	if(g_oTimeOutTracker.m_iSize % REQ_ARRAY_MULTIPLIER)
+	{
+		g_oTimeOutTracker.m_iSize =
+				g_oTimeOutTracker.m_iSize + (REQ_ARRAY_MULTIPLIER - g_oTimeOutTracker.m_iSize % REQ_ARRAY_MULTIPLIER);
+	}
+	printf("Timeout tracker array size: %d\n", g_oTimeOutTracker.m_iSize);
+
+	if(g_oTimeOutTracker.m_iSize > 0)
+	{
+		g_oTimeOutTracker.m_pstArray =
+			(struct stTimeOutTrackerNode*)calloc(g_oTimeOutTracker.m_iSize, sizeof(struct stTimeOutTrackerNode));
+	}
+
+	if(NULL == g_oTimeOutTracker.m_pstArray)
+	{
+		printf("Unable to allocate memory for timeout tracker of size: %d\n", g_oTimeOutTracker.m_iSize);
+		return -1;
+	}
+
+	int iCount = 0;
+	for(; iCount < g_oTimeOutTracker.m_iSize; ++iCount)
+	{
+		g_oTimeOutTracker.m_pstArray[iCount].m_pstStart = NULL;
+		g_oTimeOutTracker.m_pstArray[iCount].m_pstLast = NULL;
+		g_oTimeOutTracker.m_pstArray[iCount].m_iIsLocked = 0;
+	}
+
+	// Initiate timeout timer thread
+	{
+		thread_Create_t stThreadParam = { 0 };
+		stThreadParam.dwStackSize = 0;
+		stThreadParam.lpStartAddress = timeoutTimerThread;
+		stThreadParam.lpParameter = NULL;
+		stThreadParam.lpThreadId = &g_oTimeOutTracker.m_threadIdTimeoutTimer;
+
+		g_oTimeOutTracker.m_threadIdTimeoutTimer = Osal_Thread_Create(&stThreadParam);
+
+		if(-1 == g_oTimeOutTracker.m_threadIdTimeoutTimer)
+		{
+			return -1;
+		}
+	}
+
+	// Initiate timeout action thread
+	{
+		thread_Create_t stThreadParam = { 0 };
+		stThreadParam.dwStackSize = 0;
+		stThreadParam.lpStartAddress = timeoutActionThread;
+		stThreadParam.lpParameter = NULL;
+		stThreadParam.lpThreadId = &g_oTimeOutTracker.m_threadTimeoutAction;
+
+		g_oTimeOutTracker.m_threadTimeoutAction = Osal_Thread_Create(&stThreadParam);
+
+		if(-1 == g_oTimeOutTracker.m_threadTimeoutAction)
+		{
+			return -1;
+		}
+	}
+	printf("Timeout tracker is configured\n");
+	return 0;
+}
+
+/**
+ *
+ * Description
  * Initialize request list data
  *
  * @param none
  * @return int [out] 0 (if success)
  * 					-1 (if failure)
  */
-int initReqListData()
+int initTCPRespStructs()
 {
-	g_stReqList.m_mutexReqList = Osal_Mutex();
-	g_stReqList.m_pstStart = NULL;
-	g_stReqList.m_pstLast = NULL;
-
 	g_stRespProcess.m_i32RespMsgQueId = OSAL_Init_Message_Queue();
+
+	if(-1 == g_stRespProcess.m_i32RespMsgQueId)
+	{
+		 return -1;
+	}
 
 	if(-1 == sem_init(&g_stRespProcess.m_semaphoreResp, 0, 0 /* Initial value of zero*/))
 	{
-	   //printf("initReqListData::Could not create unnamed semaphore\n");
+	   //printf("initTCPRespStructs::Could not create unnamed semaphore\n");
 	   return -1;
 	}
 
-	// Initiate request thread
+	if(0 > initTimeoutTrackerArray())
 	{
-		thread_Create_t stThreadParam = { 0 };
-		stThreadParam.dwStackSize = 0;
-		stThreadParam.lpStartAddress = resquestTimeOutThreadFunction;
-		stThreadParam.lpParameter = &g_stRespProcess.m_i32RespMsgQueId;
-		stThreadParam.lpThreadId = &g_stReqList.m_threadIdReqTimeout;
-
-		g_stReqList.m_threadIdReqTimeout = Osal_Thread_Create(&stThreadParam);
+		printf("Timeout tracker array init failed\n");
+		return -1;
 	}
 
 	// Initiate response thread
@@ -865,8 +1417,71 @@ int initReqListData()
 		stThreadParam1.lpThreadId = &g_stRespProcess.m_threadIdRespToApp;
 
 		g_stRespProcess.m_threadIdRespToApp = Osal_Thread_Create(&stThreadParam1);
+
+		if(-1 == g_stRespProcess.m_threadIdRespToApp)
+		{
+			// error
+			return -1;
+		}
 	}
+
+	initEPollData();
 	return 0;
+}
+
+/**
+ *
+ * Description
+ * De-initialize timeout tracker data structure and threads
+ *
+ * @param none
+ * @return none
+ */
+void deinitTimeoutTrackerArray()
+{
+	Osal_Thread_Terminate(g_oTimeOutTracker.m_threadIdTimeoutTimer);
+	Osal_Thread_Terminate(g_oTimeOutTracker.m_threadTimeoutAction);
+	sem_destroy(&g_oTimeOutTracker.m_semTimeout);
+	if(g_oTimeOutTracker.m_iTimeoutActionQ)
+	{
+		OSAL_Delete_Message_Queue(g_stRespProcess.m_i32RespMsgQueId);
+	}
+
+	if(NULL != g_oTimeOutTracker.m_pstArray)
+	{
+		free(g_oTimeOutTracker.m_pstArray);
+	}
+	g_oTimeOutTracker.m_iSize = 0;
+}
+
+/**
+ *
+ * Description
+ * De-initialize data structures related to TCP response processing.
+ *
+ * @param none
+ * @return int [out] 0 (if success)
+ * 					-1 (if failure)
+ */
+void deinitTCPRespStructs()
+{
+	// 3 steps:
+	// Deinit response timeout mechanism
+	// Deinit epoll mechanism
+	// Deinit thread which posts responses to app
+	deinitTimeoutTrackerArray();
+
+	deinitEPollData();
+
+	// De-Initiate response thread
+	{
+		Osal_Thread_Terminate(g_stRespProcess.m_threadIdRespToApp);
+		sem_destroy(&g_stRespProcess.m_semaphoreResp);
+		if(g_stRespProcess.m_i32RespMsgQueId)
+		{
+			OSAL_Delete_Message_Queue(g_stRespProcess.m_i32RespMsgQueId);
+		}
+	}
 }
 
 /**
@@ -875,57 +1490,88 @@ int initReqListData()
  * Add request to list
  *
  * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
- * @return void [out] none
+ * @return int 0 for success, -1 for error
  */
-void addReqToList(stMbusPacketVariables_t *pstMBusRequesPacket)
+int addReqToList(stMbusPacketVariables_t *pstMBusRequesPacket)
 {
 	if(NULL == pstMBusRequesPacket)
 	{
-		return;
+		return -1;
 	}
 	pstMBusRequesPacket->__next = NULL;
+	int iTimeoutTracker = getTimeoutTrackerCount();
 
-	// Get a lock to list
-	Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
-	pstMBusRequesPacket->__prev = g_stReqList.m_pstLast;
-	if(NULL == g_stReqList.m_pstStart)
+	if((0 > iTimeoutTracker)
+		|| (iTimeoutTracker > g_oTimeOutTracker.m_iSize))
 	{
-		g_stReqList.m_pstStart = pstMBusRequesPacket;
-		g_stReqList.m_pstLast = pstMBusRequesPacket;
+		printf("Error:addReqToList: %d index is greater than size %d",
+				iTimeoutTracker,
+				g_oTimeOutTracker.m_iSize);
+
+		return -1;
+	}
+
+	struct stTimeOutTrackerNode *pstTemp = &g_oTimeOutTracker.m_pstArray[iTimeoutTracker];
+	if(NULL == pstTemp)
+	{
+		printf("Error: Null timeout tracker node\n");
+		return -1;
+	}
+
+	// Obtain the lock
+	int expected = 0;
+	do
+	{
+		expected = 0;
+	} while(!atomic_compare_exchange_weak(&(pstTemp->m_iIsLocked), &expected, 1));
+
+	// Lock is obtained
+	pstMBusRequesPacket->__prev = pstTemp->m_pstLast;
+	if(NULL == pstTemp->m_pstStart)
+	{
+		pstTemp->m_pstStart = pstMBusRequesPacket;
+		pstTemp->m_pstLast = pstMBusRequesPacket;
 	}
 	else
 	{
-		g_stReqList.m_pstLast->__next = pstMBusRequesPacket;
-		g_stReqList.m_pstLast = pstMBusRequesPacket;
+		pstTemp->m_pstLast->__next = pstMBusRequesPacket;
+		pstTemp->m_pstLast = pstMBusRequesPacket;
 	}
-	Osal_Release_Mutex(g_stReqList.m_mutexReqList);
+	pstMBusRequesPacket->m_iTimeOutIndex = iTimeoutTracker;
+	// Done. Release the lock
+	pstTemp->m_iIsLocked = 0;
+
+	return 0;
 }
 
 /**
  *
  * Description
- * Search request with specific unit id and transaction id in request list
+ * Search request with specific unit id and transaction id in request list and mark as response is received
  *
  * @param a_u8UnitID [in] uint8_t
  * @param a_u16TransactionID  [in] uint16_t
  * @return stMbusPacketVariables_t [out] pointer to struct of type stMbusPacketVariables_t
  */
-stMbusPacketVariables_t* searchReqList(uint8_t a_u8UnitID, uint16_t a_u16TransactionID)
+stMbusPacketVariables_t* markRespRcvd(uint8_t a_u8UnitID, uint16_t a_u16TransactionID)
 {
+	//return NULL;
 	stMbusPacketVariables_t *pstTemp = NULL;
 	// Get a lock to list
-	Osal_Wait_Mutex(g_stReqList.m_mutexReqList, 0);
-	pstTemp = g_stReqList.m_pstStart;
-	while(NULL != pstTemp)
+	if(a_u16TransactionID < MAX_REQUESTS)
 	{
-		if(a_u8UnitID == pstTemp->m_u8UnitID && a_u16TransactionID == pstTemp->m_u16TransactionID)
+		eTransactionState expected = REQ_SENT_ON_NETWORK;
+		stMbusPacketVariables_t *pstTemp1 = &g_objReqManager.m_objReqArray[a_u16TransactionID];
+		if(a_u8UnitID == pstTemp1->m_u8UnitID && a_u16TransactionID == pstTemp1->m_u16TransactionID)
 		{
-			// Request found
-			break;
+			if(true ==
+					atomic_compare_exchange_strong(&pstTemp1->m_state, &expected, RESP_RCVD_FROM_NETWORK))
+			{
+				pstTemp = pstTemp1;//&g_objReqManager.m_objReqArray[a_u16TransactionID];
+			}
 		}
-		pstTemp = pstTemp->__next;
 	}
-	Osal_Release_Mutex(g_stReqList.m_mutexReqList);
+
 	return pstTemp;
 }
 
@@ -943,7 +1589,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 
 	Linux_Msg_t stScMsgQue = { 0 };
 	uint8_t u8ReturnType = 0;
-	stLiveSerSessionList_t *pstLivSerSesslist = NULL;
+	//stLiveSerSessionList_t *pstLivSerSesslist = NULL;
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	int32_t i32MsgQueIdSSTC = 0;
 	int32_t i32RetVal = 0;
@@ -953,7 +1599,6 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 	stIPConnect.m_bIsAddedToEPoll = false;
 	stIPConnect.m_sockfd = 0;
 	stIPConnect.m_retryCount = 0;
-	stIPConnect.m_timeOut = 200;
 	stIPConnect.m_lastConnectStatus = SOCK_NOT_CONNECTED;
 
 	i32MsgQueIdSSTC = *((int32_t *)threadArg);
@@ -970,29 +1615,20 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 
 		if(i32RetVal > 0)
 		{
-			pstLivSerSesslist = stScMsgQue.wParam;
+			//pstLivSerSesslist = stScMsgQue.wParam;
 			pstMBusRequesPacket = stScMsgQue.lParam;
 			if(NULL != pstMBusRequesPacket)
 			{
-				if(NULL != pstLivSerSesslist)
+				u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &stIPConnect);
+				pstMBusRequesPacket->m_u8ProcessReturn = u8ReturnType;
+				if(STACK_NO_ERROR == u8ReturnType)
 				{
-					pstMBusRequesPacket->m_u32MsTimeout = g_lResponseTimeout/1000; /// convert to millisecond
-					addReqToList(pstMBusRequesPacket);
-					pstMBusRequesPacket->m_ulReqSentTimeByStack = get_nanos();
-					u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &stIPConnect);
-					pstMBusRequesPacket->m_ulReqProcess = get_nanos();
-					pstMBusRequesPacket->m_u8ProcessReturn = u8ReturnType;
-					if(STACK_NO_ERROR == u8ReturnType)
-					{
-						pstMBusRequesPacket->m_state = REQ_SENT_ON_NETWORK;
-					}
-					else
-					{
-						pstMBusRequesPacket->m_state = REQ_PROCESS_ERROR;
-						removeReqFromListWithLock(pstMBusRequesPacket);
-						addToRespQ(pstMBusRequesPacket);
-					}
-
+					pstMBusRequesPacket->m_state = REQ_SENT_ON_NETWORK;
+				}
+				else
+				{
+					pstMBusRequesPacket->m_state = REQ_PROCESS_ERROR;
+					addToRespQ(pstMBusRequesPacket);
 				}
 			}
 		}
@@ -1024,150 +1660,33 @@ void addToHandleRespQ(stTcpRecvData_t *a_pstReq)
 {
 	if(NULL != a_pstReq)
 	{
-		mesg_data_t stLocalData;
-		size_t MsgSize = 0;
-		memcpy_s(stLocalData.m_readBuffer,sizeof(stLocalData.m_readBuffer),
-				a_pstReq->m_readBuffer,sizeof(a_pstReq->m_readBuffer));
+		// TCP IP message format
+		// 2 bytes = TxID, 2 bytes = Protocol ID, 2 bytes = length, 1 byte = unit id
+		// Holds the unit id
+		uint8_t  u8UnitID = a_pstReq->m_readBuffer[6];
 
-		stLocalData.mesg_type = 1;
-		MsgSize = sizeof(stLocalData) - sizeof(long);
-		int32_t iStatus = msgsnd(g_stHandleResp.m_i32HandleRespMsgQueId, &stLocalData, MsgSize, 0);
+		// Get TxID
+		uByteOrder_t ustByteOrder = {0};
+		ustByteOrder.u16Word = 0;
+		ustByteOrder.TwoByte.u8ByteTwo = a_pstReq->m_readBuffer[0];
+		ustByteOrder.TwoByte.u8ByteOne = a_pstReq->m_readBuffer[1];
 
-		if(iStatus == 0)
+		stMbusPacketVariables_t *pstMBusRequesPacket = markRespRcvd(u8UnitID, ustByteOrder.u16Word);
+		if(NULL != pstMBusRequesPacket)
 		{
-			// Signal response timeout thread
-			sem_post(&g_stHandleResp.m_semaphoreHandleResp);
+			memcpy_s(pstMBusRequesPacket->m_u8RawResp, sizeof(pstMBusRequesPacket->m_u8RawResp),
+							a_pstReq->m_readBuffer,sizeof(a_pstReq->m_readBuffer));
+			// Init resp received timestamp
+			timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsRespRcvd), TIME_UTC);
+			addToRespQ(pstMBusRequesPacket);
 		}
 		else
 		{
-			static int count = 0;
-			printf("Post failed error = %d,%d count = %d\n", iStatus, errno, count++);
+			//printf("addToHandleRespQ: not found: %d %d\n", u8UnitID, u16TransactionID);
 		}
 	}
+
 	return;
-}
-
-/**
- *
- * Description
- * Handle client reponse thread function
- *
- * @param threadArg [in] thread argument
- * @return void pointer
- *
- */
-void* handleClientReponseThreadFunction(void* threadArg)
-{
-
-	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
-
-	// set thread priority
-	set_thread_sched_param();
-
-	// TCP IP message format
-	// 2 bytes = TxID, 2 bytes = Protocol ID, 2 bytes = length, 1 byte = unit id
-	// Get TxID and unit-id from response
-	uByteOrder_t ustByteOrder = {0};
-
-	// Holds the received transaction ID
-	uint16_t u16TransactionID = 0;
-
-	// Holds the unit id
-	uint8_t  u8UnitID = 0;
-
-	mesg_data_t *pstLocalData;
-	mesg_data_t stLocalData;
-	int32_t i32RetVal = 0;
-	while(false == g_bThreadExit)
-	{
-		//sem_wait(&g_stHandleResp.m_semaphoreHandleResp);
-		if((sem_wait(&g_stHandleResp.m_semaphoreHandleResp)) == -1 && errno == EINTR)
-		{
-			// Continue if interrupted by handler
-			continue;
-		}
-		memset(&stLocalData,00,sizeof(stLocalData));
-		i32RetVal = 0;
-
-		size_t MsgSize = 0;
-
-		MsgSize = sizeof(stLocalData) - sizeof(long);
-
-		i32RetVal = msgrcv(g_stHandleResp.m_i32HandleRespMsgQueId, &stLocalData, MsgSize, 0, MSG_NOERROR | IPC_NOWAIT);
-		if(errno == ENOMSG && (-1 == i32RetVal))
-		   	i32RetVal = -1;
-
-		if(i32RetVal > 0)
-		{
-			///pstRecvData = stScMsgQue.lParam;
-			pstLocalData = &stLocalData;
-			if(NULL != pstLocalData)
-			{
-				// Transaction ID
-				ustByteOrder.u16Word = 0;
-				ustByteOrder.TwoByte.u8ByteTwo = pstLocalData->m_readBuffer[0];
-				ustByteOrder.TwoByte.u8ByteOne = pstLocalData->m_readBuffer[1];
-				u16TransactionID = ustByteOrder.u16Word;
-
-				// Get unit id
-				u8UnitID = pstLocalData->m_readBuffer[6];
-
-				pstMBusRequesPacket = searchReqList(u8UnitID, u16TransactionID);
-				if(NULL != pstMBusRequesPacket)
-				{
-					pstMBusRequesPacket->m_state = RESP_RCVD_FROM_NETWORK;
-					removeReqFromListWithLock(pstMBusRequesPacket);
-					pstMBusRequesPacket->m_u8ProcessReturn = DecodeRxPacket(pstLocalData->m_readBuffer, pstMBusRequesPacket);
-					addToRespQ(pstMBusRequesPacket);
-					pstMBusRequesPacket->m_ulRespProcess = get_nanos();
-				}
-				else
-				{
-					//printf("handleClientReponseThreadFunction: not found: %d %d\n", u8UnitID, u16TransactionID);
-				}
-			}
-		}
-		/// check for thread exit
-		if(g_bThreadExit)
-		{
-			break;
-		}
-	}
-
-	return NULL;
-}
-
-/**
- *
- * Description
- * Initiate handle response context
- *
- * @param none
- * @return int [out] -1 (if failure)
- * 					  0 (if success)
- *
- */
-int initHandleResponseContext()
-{
-	g_stHandleResp.m_i32HandleRespMsgQueId = OSAL_Init_Message_Queue();
-
-	if(-1 == sem_init(&g_stHandleResp.m_semaphoreHandleResp, 0, 0 /* Initial value of zero*/))
-	{
-	   //printf("initHandleResponseContext::Could not create unnamed semaphore\n");
-	   return -1;
-	}
-
-	// Initiate response thread
-	{
-		thread_Create_t stThreadParam1 = { 0 };
-		stThreadParam1.dwStackSize = 0;
-		stThreadParam1.lpStartAddress = handleClientReponseThreadFunction;
-		stThreadParam1.lpParameter = &g_stHandleResp.m_i32HandleRespMsgQueId;
-		stThreadParam1.lpThreadId = &g_stHandleResp.m_threadIdHandleResp;
-
-		g_stHandleResp.m_threadIdHandleResp = Osal_Thread_Create(&stThreadParam1);
-	}
-	return 0;
 }
 #endif
 
