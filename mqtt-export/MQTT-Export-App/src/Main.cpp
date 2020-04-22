@@ -12,9 +12,7 @@
 #include <thread>
 #include <vector>
 #include <iterator>
-//#include <assert.h>
 #include <semaphore.h>
-//#include <csignal>
 
 #include "Common.hpp"
 #include "QueueMgr.hpp"
@@ -33,7 +31,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.2.8"
+#define APP_VERSION "0.0.3.6"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -
@@ -66,7 +64,15 @@ bool addSrTopic(string &json, string& topic)
 			return false;
 		}
 
-		cJSON_AddStringToObject(root, "sourcetopic", topic.c_str());
+		if(NULL == cJSON_AddStringToObject(root, "sourcetopic", topic.c_str()))
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not add sourcetopic in message"));
+			if(root != NULL)
+			{
+				cJSON_Delete(root);
+			}
+			return false;
+		}
 
 		json.clear();
 		char *psNewJson = cJSON_Print(root);
@@ -286,6 +292,13 @@ void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext,
 	globalConfig::display_thread_sched_attr(topic + " listenOnEIS");
 	int qos = operation.getQos();
 
+	if(context.m_pContext == NULL || subContext.m_pContext == NULL)
+	{
+		std::cout << "Cannot start listening on EIS for topic : " << topic << endl;
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Cannot start listening on EIS for topic : " + topic));
+		return;
+	}
+
 	void *msgbus_ctx = context.m_pContext;
 	recv_ctx_t *sub_ctx = subContext.m_pContext;
 
@@ -351,15 +364,16 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
 
 	// Creating message to be published
 	msg_envelope_t *msg = msgbus_msg_envelope_new(CT_JSON);
+	if(msg == NULL)
+	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS("could not create new msg envelope"));
+		return retVal;
+	}
+
 	cJSON *root = NULL;
+
 	try
 	{
-		if(msg == NULL)
-		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("could not create new msg envelope"));
-			return retVal;
-		}
-
 		//parse from root element
 		root = cJSON_Parse(eisMsg.c_str());
 		if (NULL == root)
@@ -385,10 +399,12 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
 				temp.append(device->valuestring);
 				CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
 
-
 				msg_envelope_elem_body_t *value = msgbus_msg_envelope_new_string(
 						device->valuestring);
-				msgbus_msg_envelope_put(msg, device->string, value);
+				if(value != NULL)
+				{
+					msgbus_msg_envelope_put(msg, device->string, value);
+				}
 			}
 			else
 			{
@@ -448,10 +464,8 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
  * @return 	true : on success,
  * 			false : on error
  */
-bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool &isRealtime)
+void processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool &isRealtime)
 {
-	bool bRetVal = false;
-
 	try
 	{
 		//received msg from queue
@@ -462,7 +476,7 @@ bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 		if (rcvdTopic.empty()) //will not be the case ever
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("topic key not present in message: " + strMsg));
-			return false;
+			return;
 		}
 
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("Request received from MQTT for topic "
@@ -497,7 +511,7 @@ bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("EIS topic is not set to publish on EIS"
 					+ rcvdTopic));
-			return false;
+			return;
 		}
 		else
 		{
@@ -509,7 +523,7 @@ bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 			if(bRes == false)
 			{
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to add sourcetopic " + rcvdTopic + " in payload for EIS"));
-				return false;
+				return;
 			}
 
 			//get EIS msg bus context
@@ -517,7 +531,7 @@ bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 			if (!CEISMsgbusHandler::Instance().getCTX(eisTopic, context)) {
 				CLogger::getInstance().log(ERROR, LOGDETAILS("cannot find msgbus context for topic : "
 						+ eisTopic));
-				return false;
+				return;
 			}
 
 			//will give topic context
@@ -527,19 +541,17 @@ bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 			{
 				CLogger::getInstance().log(ERROR, LOGDETAILS("cannot find pub context for topic : "
 						+ eisTopic));
-				return false;
+				return;
 			}
 
 			if(publishEISMsg(strMsg, context, pubContext))
 			{
 				CLogger::getInstance().log(DEBUG, LOGDETAILS("Published EIS message : "	+ strMsg + " on topic :" + eisTopic));
-				bRetVal = true;
 				//std::cout << "Published EIS message : "	<< strMsg << " on topic :" << eisTopic << std::endl;
 			}
 			else
 			{
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to publish EIS message : "	+ strMsg + " on topic :" + eisTopic));
-				bRetVal = false;
 
 #ifdef PERFTESTING
 			CMQTTHandler::instance().incSubQTried();
@@ -550,13 +562,12 @@ bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 	catch(exception &ex)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
-		bRetVal = false;
 #ifdef PERFTESTING
 		CMQTTHandler::instance().incSubQSkipped();
 #endif
 	}
 
-	return bRetVal;
+	return;
 }
 
 /**
@@ -753,7 +764,7 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		/// register callback for dynamic ETCD change
+		///initialize CCommon class to get common variables
 		string AppName = CCommon::getInstance().getStrAppName();
 		if(AppName.empty())
 		{

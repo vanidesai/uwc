@@ -14,4 +14,4 @@ env
 ./MQTT_Export_test > /reports/mqtt-export/mqtt-export_test_status.log 2>&1
 
 # Run GCovr command
-gcovr  --html -e "../Test" -e "../include/log4cpp" -o /reports/mqtt-export/MQTT-Export_Report.html -r .. .
+gcovr  --html -e "../Test" -e "../include/log4cpp" --exclude-throw-branches -o /reports/mqtt-export/MQTT-Export_Report.html -r .. .

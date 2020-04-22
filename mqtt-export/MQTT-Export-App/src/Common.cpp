@@ -21,7 +21,11 @@
 CCommon::CCommon()
 {
 
-	readCommonEnvVariables();
+	if(false == readCommonEnvVariables())
+	{
+		std::cout << "Error while reading common environment variables, exiting application" << std::endl;
+		exit(-1);
+	}
 }
 
 /**
@@ -123,6 +127,7 @@ bool CCommon::readCommonEnvVariables()
 	catch(exception &ex)
 	{
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
+		return false;
 	}
 	return true;
 }
@@ -184,7 +189,15 @@ bool CCommon::addTimestampsToMsg(std::string &a_sMsg, string tsKey, string strTi
 			return false;
 		}
 
-		cJSON_AddStringToObject(root, tsKey.c_str(), strTimestamp.c_str());
+		if(NULL == cJSON_AddStringToObject(root, tsKey.c_str(), strTimestamp.c_str()))
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not add timestamp in message"));
+			if(root != NULL)
+			{
+				cJSON_Delete(root);
+			}
+			return false;
+		}
 
 		a_sMsg.clear();
 		char *psNewJson = cJSON_Print(root);

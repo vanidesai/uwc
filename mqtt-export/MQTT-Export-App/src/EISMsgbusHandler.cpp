@@ -255,7 +255,6 @@ bool CEISMsgbusHandler::getCTX(std::string a_sTopic, stZmqContext& msgbusContext
  */
 bool CEISMsgbusHandler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start: " + a_sTopic));
 	try
 	{
 		std::unique_lock<std::mutex> lck(__ctxMapLock);

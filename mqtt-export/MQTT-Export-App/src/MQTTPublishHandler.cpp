@@ -22,7 +22,6 @@ CMQTTPublishHandler::CMQTTPublishHandler(std::string strPlBusUrl, std::string st
 {
 	try
 	{
-		m_bIsFirst = true;
 		m_QOS = iQOS;
 		//connect options for sync publisher/client
 		syncConnOpts.set_keep_alive_interval(20);
@@ -30,6 +29,15 @@ CMQTTPublishHandler::CMQTTPublishHandler(std::string strPlBusUrl, std::string st
 		syncConnOpts.set_automatic_reconnect(1, 10);
 
 		publisher.set_callback(syncCallback);
+
+		if(connect())
+		{
+			m_bIsFirst = false;
+		}
+		else
+		{
+			m_bIsFirst = true;
+		}
 
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("MQTT initialized successfully"));
 	}
@@ -57,7 +65,7 @@ bool CMQTTPublishHandler::connect()
 	catch (const std::exception &e)
 	{
 		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
+		std::cout << __func__ << ":" << __LINE__ << " MQTT publisher failed to connect with MQTT broker: exception : " << e.what() << std::endl;
 
 		bFlag = false;
 	}
@@ -116,8 +124,26 @@ bool CMQTTPublishHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespe
 		timespec_get(&tsMsgPublish, TIME_UTC);
 		std::string strTsRcvd = std::to_string(get_nanos(a_tsMsgRcvd));
 		std::string strTsPublish = std::to_string(get_nanos(tsMsgPublish));
-		cJSON_AddStringToObject(root, "tsMsgReadyForPublish", strTsPublish.c_str());
-		cJSON_AddStringToObject(root, "tsMsgRcvdForProcessing", strTsRcvd.c_str());
+
+		if(NULL == cJSON_AddStringToObject(root, "tsMsgReadyForPublish", strTsPublish.c_str()))
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not add tsMsgReadyForPublish in message"));
+			if(root != NULL)
+			{
+				cJSON_Delete(root);
+			}
+			return false;
+		}
+
+		if(NULL == cJSON_AddStringToObject(root, "tsMsgRcvdForProcessing", strTsRcvd.c_str()))
+		{
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not add tsMsgRcvdForProcessing in message"));
+			if(root != NULL)
+			{
+				cJSON_Delete(root);
+			}
+			return false;
+		}
 
 		a_sMsg.clear();
 		char *psNewJson = cJSON_Print(root);
@@ -197,6 +223,9 @@ bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic, st
 			{
 				CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher is not connected with MQTT broker"));
 				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to publish msg on MQTT : " + a_sMsg));
+
+				m_bIsFirst = true;
+
 				return false;
 			}
 		}
