@@ -14,27 +14,29 @@
 ## Directory details
 The directory comprises of following:
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/modbus-master">modbus-master</a> :
-  This directory contains the modbus TCP1 and RTU1 containers sources and docker file for building the container. 
+  This directory contains the modbus TCP1 and RTU1 containers sources and docker file for building the container
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/mqtt-export">mqtt-export</a> :
-  This directory contains the mqtt-export container sources and docker file for building the container. 
+  This directory contains the mqtt-export container sources and docker file for building the container 
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/MQTT">MQTT</a> :
   This directory contains the mqtt container sources and docker file for building the container.
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Others">Others</a> :
-  This directory contains configurations for ETCD required during provisioning. 
+  This directory contains configurations for ETCD required during provisioning
 * <a href="https://github.impcloud.net/uwc/UWC-Core/blob/master/docker-compose.yml">docker-compose.yml</a> :
-  This file will deploy the modbus container with EIS in IPC with DEV mode.
+  This file will deploy the modbus container with EIS in IPC with DEV mode
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_DEV.yml">docker-compose_IPC_DEV.yml</a> :
-  This file is used to deploy UWC containers in IPC with DEV mode.
+  This file is used to deploy UWC containers in IPC with DEV mode
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_TCP_DEV.yml">docker-compose_TCP_DEV.yml</a> :
-  This file is used to deploy UWC containers in TCP with DEV mode.
+  This file is used to deploy UWC containers in TCP with DEV mode
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_TCP_PROD.yml">docker-compose_TCP_PROD.yml</a> :
   This file is used to deploy UWC containers in TCP with PROD mode.
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_unit_test.yml">docker-compose_unit_test.yml</a> :
   This file is used to run unit test cases
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Release">Release</a> :
-  This directory contains UWC bundle for deployement.
+  This directory contains UWC bundle for deployement
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/create_uwc_package.sh">create_uwc_package.sh</a> :
   This script will be used to create UWC package
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/uwc_common">uwc_common</a> :
+  This directory contains common dockefiles for UWC
 
 ## Install pre-requisites
 ```
