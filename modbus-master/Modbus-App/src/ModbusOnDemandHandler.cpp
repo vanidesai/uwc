@@ -201,12 +201,6 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 	if(NULL != root)
 		cJSON_Delete(root);
 
-	if(NULL != stMbusApiPram.m_pu8Data)
-	{
-		delete[] stMbusApiPram.m_pu8Data;
-		stMbusApiPram.m_pu8Data  = NULL;
-	}
-
 	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
 
 	return eFunRetType;
@@ -402,8 +396,6 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 	{
 		if(MBUS_STACK_NO_ERROR == eFunRetType)
 		{
-			stMbusApiPram.m_pu8Data = NULL;
-
 			cJSON *appseq = cJSON_GetObjectItem(root,"app_seq");
 			cJSON *cmd=cJSON_GetObjectItem(root,"command");
 			cJSON *value=cJSON_GetObjectItem(root,"value");
@@ -579,7 +571,7 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 			{
 				stMbusApiPram.m_u16ByteCount = MODBUS_SINGLE_REGISTER_LENGTH;
 			}
-			stMbusApiPram.m_pu8Data = new uint8_t[stMbusApiPram.m_u16ByteCount]();
+
 			if(NULL != stMbusApiPram.m_pu8Data)
 			{
 				if(WRITE_SINGLE_COIL == funcCode)

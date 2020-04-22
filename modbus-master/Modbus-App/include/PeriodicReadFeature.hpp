@@ -159,7 +159,7 @@ class CTimeMapper
 		return timeMapper;
 	}
 	void ioPeriodicReadTimer(int v);
-	void checkTimer(uint32_t a_uiInterval);
+	void checkTimer(uint32_t a_uiInterval, struct timespec& a_tsPollTime);
 	void initTimerFunction();
 
 	/**
@@ -184,6 +184,12 @@ class CTimeMapper
 	uint32_t getMinTimerFrequency();
 };
 
+struct StPollingInstance
+{
+	uint32_t m_uiPollInterval;
+	struct timespec m_tsPollTime;
+};
+
 class CRequestInitiator
 {
 private:
@@ -196,7 +202,8 @@ private:
 	void threadReqInit(bool isRTPoint, const globalConfig::COperation& a_refOps);
 	void threadCheckCutoffRespInit(bool isRTPoint, const globalConfig::COperation& a_refOps);
 
-	void initiateRequest(std::vector<CRefDataForPolling>&,
+	void initiateRequest(struct timespec &a_stPollTimestamp,
+			std::vector<CRefDataForPolling>&,
 			bool isRTRequest,
 			const long a_lPriority);
 
@@ -212,11 +219,11 @@ private:
 	bool sendRequest(CRefDataForPolling &a_stRdPrdObj, uint16_t &m_u16TxId,
 			bool isRTRequest, const long a_lPriority);
 
-	std::queue <uint32_t> m_qReqFreq, m_qRespFreq;
-	std::queue <uint32_t> m_qReqFreqRT, m_qRespFreqRT;
+	std::queue <struct StPollingInstance> m_qReqFreq, m_qRespFreq;
+	std::queue <struct StPollingInstance> m_qReqFreqRT, m_qRespFreqRT;
 	std::mutex m_mutexReqFreqQ, m_mutexRespFreqQ;
-	bool getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT, bool a_bIsReq);
-	bool pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq);
+	bool getFreqRefForPollCycle(struct StPollingInstance &a_stPollRef, bool a_bIsRT, bool a_bIsReq);
+	bool pushPollFreqToQueue(struct StPollingInstance &a_stPollRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq);
 
 public:
 	~CRequestInitiator();
@@ -228,7 +235,7 @@ public:
 		return self;
 	}
 
-	void initiateMessages(uint32_t a_uiRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq);
+	void initiateMessages(struct StPollingInstance &a_stPollRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq);
 
 	CRefDataForPolling& getTxIDReqData(unsigned short);
 
@@ -268,6 +275,7 @@ class CRefDataForPolling
 
 	std::atomic<bool> m_bIsLastRespAvailable;
 	stLastGoodResponse m_oLastGoodResponse;
+	struct timespec m_stPollTsForReq;
 	std::mutex m_mutexLastResp;
 
 	std::atomic<uint16_t> m_uReqTxID;
@@ -302,6 +310,9 @@ class CRefDataForPolling
 	void setReqTxID(uint16_t a_uTxID) { m_uReqTxID.store(a_uTxID); };
 
 	bool isLastRespAvailable() const {return m_bIsLastRespAvailable.load();};
+
+	struct timespec getTimestampOfPollReq() const { return m_stPollTsForReq;};
+	void setTimestampOfPollReq(struct timespec& a_tsPoll) { m_stPollTsForReq = a_tsPoll;};
 };
 
 /**

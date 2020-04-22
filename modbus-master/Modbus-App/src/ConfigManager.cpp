@@ -232,8 +232,8 @@ int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 	{
 		if(!(a_BaseNode[a_sKey])  || a_BaseNode[a_sKey].as<std::string>() == "")
 		{
-			CLogger::getInstance().log(WARN, LOGDETAILS(a_sKey + " is not present or empty !!"));
-			CLogger::getInstance().log(WARN, LOGDETAILS("setting it to default !!"));
+			CLogger::getInstance().log(ERROR, LOGDETAILS(a_sKey + " is not present or empty !!"));
+			CLogger::getInstance().log(ERROR, LOGDETAILS("setting it to default !!"));
 			iRet = -1;
 		}
 		else
@@ -319,7 +319,7 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		if(a_baseNode[ops]["operation_priority"].as<int>() <= 0 ||
 				a_baseNode[ops]["operation_priority"].as<int>() > 6)
 		{
-			CLogger::getInstance().log(WARN, LOGDETAILS(
+			CLogger::getInstance().log(ERROR, LOGDETAILS(
 					"operation_priority parameter is out of range (i.e. expected value must be between 1-6 inclusive ) setting it to default (i.e. 1)"));
 			a_refOpration.m_operationPriority = DEFAULT_OPERATION_PRIORITY;
 		}
@@ -340,7 +340,7 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		if(a_baseNode[ops]["retries"].as<int>() < 0 ||
 				a_baseNode[ops]["retries"].as<int>() > 4)
 		{
-			CLogger::getInstance().log(WARN, LOGDETAILS(
+			CLogger::getInstance().log(ERROR, LOGDETAILS(
 					"retries parameter is out of range (i.e. expected value must be between 0-4 inclusive) setting it to default (i.e. 0)"));
 			a_refOpration.m_retries = DEFAULT_RETRIES;
 		}
@@ -361,7 +361,7 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		if(a_baseNode[ops]["qos"].as<int>() < 0 ||
 				a_baseNode[ops]["qos"].as<int>() > 2)
 		{
-			CLogger::getInstance().log(WARN, LOGDETAILS(
+			CLogger::getInstance().log(ERROR, LOGDETAILS(
 					"qos parameter is out of range (i.e. expected value must be between 0-2 inclusive) setting it to default (i.e. 0)"));
 			a_refOpration.m_qos = DEFAULT_QOS;
 		}
@@ -491,6 +491,7 @@ bool globalConfig::loadGlobalConfigurations()
 	// check for errors
 	if(!isPollingExist)
 	{
+		CLogger::getInstance().log(ERROR,LOGDETAILS("Polling key is missing"));
 		CLogger::getInstance().log(INFO, LOGDETAILS("Setting default config for Polling >>>"));
 		cout << "Setting default config for Polling >>>\n";
 		bRetVal = false;
@@ -498,6 +499,7 @@ bool globalConfig::loadGlobalConfigurations()
 	}
 	if (!isOdReadExist)
 	{
+		CLogger::getInstance().log(ERROR,LOGDETAILS("on-demand-read key is missing"));
 		CLogger::getInstance().log(INFO, LOGDETAILS("Setting default config for On-Demand-Read >>>"));
 		cout << "Setting default config for On-Demand-Read >>>\n";
 		bRetVal = false;
@@ -505,6 +507,7 @@ bool globalConfig::loadGlobalConfigurations()
 	}
 	if (!isOdWriteExist)
 	{
+		CLogger::getInstance().log(ERROR,LOGDETAILS("on-demand-write key is missing"));
 		CLogger::getInstance().log(INFO, LOGDETAILS("Setting default config for On-Demand-Write >>>"));
 		cout << "Setting default config for On-Demand-Write >>>\n";
 		bRetVal = false;

@@ -73,8 +73,8 @@ private:
 	BOOLEAN checkForRetry(struct stStackResponse &a_stStackResNode, eMbusCallbackType operationCallbackType);
 	void getCallbackForRetry(void** callbackFunc, eMbusCallbackType operationCallbackType);
 
-	BOOLEAN prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp);
-	BOOLEAN postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData);
+	BOOLEAN prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp, struct timespec *a_pstTsPolling);
+	BOOLEAN postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData, struct timespec *a_pstTsPolling);
 	BOOLEAN postResponseJSON(stStackResponse& a_stResp);
 
 	BOOLEAN initSem();
@@ -92,11 +92,11 @@ public:
 						string strResponseTopic);
 	bool isInitialized() {return m_bIsInitialized;}
 	void initRespHandlerThreads();
-	BOOLEAN postDummyBADResponse(CRefDataForPolling& a_objReqData, const stException_t m_stException);
+	BOOLEAN postDummyBADResponse(CRefDataForPolling& a_objReqData, const stException_t m_stException, struct timespec *a_pstRefPollTime);
 	bool postLastResponseForCutoff(CRefDataForPolling& a_objReqData);
 };
 
-eMbusStackErrorCode SubscibeOrUnSubPeriodicRead(RestRdPeriodicTagPart_t &lRdPeridList);
+//eMbusStackErrorCode SubscibeOrUnSubPeriodicRead(RestRdPeriodicTagPart_t &lRdPeridList);
 
 
 #endif /* INCLUDE_INC_PERIODICREAD_HPP_ */

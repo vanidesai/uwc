@@ -26,11 +26,7 @@ extern "C" {
 
 #ifdef __linux
 
-typedef int             BOOL;
 typedef bool            BOOLEAN;
-typedef unsigned long   DWORD;
-typedef unsigned long   ULONG;
-typedef void            VOID;
 
 #define TRUE true
 #define FALSE false
@@ -39,75 +35,6 @@ typedef void            VOID;
 #define MODBUS_SINGLE_REGISTER_LENGTH (2)
 
 using namespace std;
-
-// This structure defines request data parameters for modbus
-typedef struct ReqData
-{
-	unsigned char  m_u8DataLen;
-	unsigned char  *m_pu8Data;
-}ReqData_t;
-
-// This structure defines request data parameters for modbus
-typedef struct RespData
-{
-	unsigned char m_u8DataLen;
-	unsigned char  *m_pu8Data;
-	stException_t  m_stExcStatus;
-}RespData_t;
-
-// This structure defines sub tag parameters for modbus request
-typedef struct SubTagPart
-{
-	unsigned char m_u8NodeId;
-	unsigned char  m_u8FunCode;
-	unsigned char  m_u8Operation;
-	unsigned short m_u16StartAddr;
-	unsigned short m_u16EndAddr;
-	unsigned short m_u16Quantity;
-	ReqData_t 	   m_stReqData;
-	RespData_t	   m_stRespData;
-	struct SubTagPart  *m_pstNextSubTag;
-}SubTagPart_t;
-
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-
-// This structure defines generic request parameters for modbus
-typedef struct RestMbusReqGeneric
-{
-	unsigned short m_u16ReffId;
-	unsigned char m_u8TagCount;
-	unsigned char m_u8IpAddr[4];
-	uint16_t		m_u16Port;
-	unsigned char m_u8DevId;
-	unsigned char m_u8NodeId;
-	unsigned char  m_u8FunCode;
-	unsigned char  m_u8Operation;
-	unsigned short m_u16StartAddr;
-	unsigned short m_u16EndAddr;
-	unsigned short m_u16Quantity;
-	ReqData_t 	   m_stReqData;
-	RespData_t	   m_stRespData;
-}RestMbusReqGeneric_t;
-
-#else
-// This structure defines generic request parameters for modbus RTU
-typedef struct RestMbusReqGeneric
-{
-	unsigned short m_u16ReffId;
-	unsigned char m_u8TagCount;
-	unsigned char address;
-	unsigned char m_u8DevId;
-	unsigned char m_u8NodeId;
-	unsigned char  m_u8FunCode;
-	unsigned char  m_u8Operation;
-	unsigned short m_u16StartAddr;
-	unsigned short m_u16EndAddr;
-	unsigned short m_u16Quantity;
-	ReqData_t 	   m_stReqData;
-	RespData_t	   m_stRespData;
-}RestMbusReqGeneric_t;
-
-#endif
 
 struct stOnDemandRequest
 {
@@ -135,36 +62,14 @@ typedef struct MbusAPI
 	unsigned short  m_u16Quantity;
 	unsigned short  m_u16StartAddr;
 	unsigned short  m_u16ByteCount;
-	unsigned char  *m_pu8Data;
+	unsigned char  m_pu8Data[260];
 	/** Holds the Msg Priority  */
 	long m_lPriority;
 	/** Holds the Mse Timeout  */
-	uint32_t m_u32mseTimeout;
+	//uint32_t m_u32mseTimeout;
 	int m_nRetry;
 	stOnDemandRequest m_stOnDemandReqData;
 }MbusAPI_t;
-
-// This structure defines request parameters for read periodic
-typedef struct RestRdPeriodicTagPart
-{
-    bool  IsSubscription;
-    bool  bIsRespAwaited;
-    unsigned char m_u8FrameReqType;
-    unsigned char 	m_u8IpAddr[4];
-    unsigned char 	m_u8UnitId;
-    unsigned char  	m_u8FunCode;
-    unsigned char  *m_pu8RespData;
-    unsigned short 	m_u16StartAddr;
-    unsigned short 	m_u16EndAddr;
-    unsigned short 	m_u16Quantity;
-    unsigned short 	m_u16ReqDataLen;
-    unsigned short 	m_u16RespDataLen;
-    unsigned short  m_u16TxId;
-    unsigned int   	m_u32Interval;
-    unsigned int	m_u32LocInterval;
-	unsigned char 	m_stMQTT_Topic[200];
-    stException_t m_stException;
-}RestRdPeriodicTagPart_t;
 
 // Function to get function code
 unsigned char GetFunctionCode(uint8_t u8ReadWrite,

@@ -19,10 +19,14 @@
 #include <chrono>
 #include <functional>
 #include <sys/timerfd.h>
+#include <poll.h>
 #include <unistd.h>
+#include <time.h>
 
 /// flag to check thread stop condition
 std::atomic<bool> g_stopThread;
+
+#define ERORR_MULTIPLIER 1000
 
 /// flag to check timer stop condition
 std::atomic<bool> g_stopTimer(false);
@@ -110,10 +114,11 @@ static unsigned long get_nanos(struct timespec ts) {
  * @param a_pMsg		:[in] pointer to message envelope to fill up
  * @param a_objReqData	:[in] request data
  * @param a_stResp		:[in] response data
+ * @param a_pstTsPolling:[in] polling timestamp, if any
  * @return 	true : on success,
  * 			false : on error
  */
-BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp)
+BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp, struct timespec *a_pstTsPolling = NULL)
 {
 	if((MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType) &&
 			NULL == a_objReqData)
@@ -129,6 +134,8 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 	{
 		MbusAPI_t stMbusApiPram = {};
 		std::string sTimestamp, sUsec, sTxID;
+		std::string sPolllingVal = "";
+		sPolllingVal.clear();
 		msg_envelope_elem_body_t* ptTopic = NULL;
 		msg_envelope_elem_body_t* ptWellhead = NULL;
 		msg_envelope_elem_body_t* ptMetric = NULL;
@@ -137,16 +144,27 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		
 		if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 		{
-			getTimeBasedParams(*a_objReqData, sTimestamp, sUsec, sTxID);
 
-			msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string(sTxID.c_str());
 			string sTopic = a_objReqData->getDataPoint().getID() + SEPARATOR_CHAR + PERIODIC_GENERIC_TOPIC;
 			ptTopic = msgbus_msg_envelope_new_string(sTopic.c_str());
 			ptWellhead = msgbus_msg_envelope_new_string(a_objReqData->getDataPoint().getWellSite().getID().c_str());
 			ptMetric = msgbus_msg_envelope_new_string(a_objReqData->getDataPoint().getDataPoint().getID().c_str());
 			ptRealTime =  msgbus_msg_envelope_new_string(std::to_string(a_objReqData->getDataPoint().getDataPoint().getPollingConfig().m_bIsRealTime).c_str());
 
-			msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
+			// Polling time is explicitly given, use that
+			if(NULL != a_pstTsPolling)
+			{
+				msg_envelope_elem_body_t* ptPollingTS = msgbus_msg_envelope_new_string( (to_string(get_nanos(*a_pstTsPolling))).c_str() );
+				msgbus_msg_envelope_put(msg, "tsPollingTime", ptPollingTS);
+			}
+			else
+			{
+				// Polling time is not given, use one from reference polling point
+				msg_envelope_elem_body_t* ptPollingTS = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_objReqData->getTimestampOfPollReq()))).c_str() );
+				msgbus_msg_envelope_put(msg, "tsPollingTime", ptPollingTS);
+			}
+
+			//msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
 
 			bIsByteSwap = a_objReqData->getDataPoint().getDataPoint().getAddress().m_bIsByteSwap;
 			bIsWordSwap = a_objReqData->getDataPoint().getDataPoint().getAddress().m_bIsWordSwap;
@@ -159,7 +177,6 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 				CLogger::getInstance().log(FATAL, LOGDETAILS("Could not get data in map for on-demand request"));
 				return FALSE;
 			}
-			common_Handler::getTimeParams(sTimestamp, sUsec);
 
 			/// application sequence
 			msg_envelope_elem_body_t* ptAppSeq = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strAppSeq.c_str());
@@ -188,8 +205,6 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		}
 
 		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
-		msg_envelope_elem_body_t* ptTimeStamp = msgbus_msg_envelope_new_string(sTimestamp.c_str());
-		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(sUsec.c_str());
 
 		// add timestamps from stack
 		msg_envelope_elem_body_t* ptStackTSReqRcvd = msgbus_msg_envelope_new_string( (to_string(get_nanos(a_stResp.m_objStackTimestamps.tsReqRcvd))).c_str() );
@@ -199,8 +214,6 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 		//msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(a_stResp.m_lPriority).c_str());
 
 		msgbus_msg_envelope_put(msg, "version", ptVersion);
-		msgbus_msg_envelope_put(msg, "timestamp", ptTimeStamp);
-		msgbus_msg_envelope_put(msg, "usec", ptUsec);
 		msgbus_msg_envelope_put(msg, "topic", ptTopic);
 		msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
 		msgbus_msg_envelope_put(msg, "metric", ptMetric);
@@ -229,8 +242,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 					sVal = common_Handler::swapConversion(vt, bIsByteSwap, bIsWordSwap);
 					if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 					{
-						// save last known response
-						(const_cast<CRefDataForPolling*>(a_objReqData))->saveGoodResponse(sVal, sUsec);
+						sPolllingVal  = sVal;
 					}
 
 					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(sVal.c_str());
@@ -241,7 +253,9 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 				else
 				{
 					msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
-					msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcCode))).c_str());
+
+					int iErrCode = a_stResp.m_stException.m_u8ExcStatus * ERORR_MULTIPLIER + a_stResp.m_stException.m_u8ExcCode;
+					msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(to_string(iErrCode).c_str());
 					msgbus_msg_envelope_put(msg, "status", ptStatus);
 					msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
 
@@ -268,9 +282,12 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 			else
 			{
 				msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
-				msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcStatus))).c_str());
+				int iErrCode = a_stResp.m_stException.m_u8ExcStatus * ERORR_MULTIPLIER + a_stResp.m_stException.m_u8ExcCode;
+									msg_envelope_elem_body_t* ptErrorDetails =
+											msgbus_msg_envelope_new_string(to_string(iErrCode).c_str());
 				msgbus_msg_envelope_put(msg, "status", ptStatus);
 				msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
+
 				// Use last known value for polling
 				if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 				{
@@ -300,11 +317,36 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 			else
 			{
 				ptStatus = msgbus_msg_envelope_new_string("Bad");
-				msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(((to_string(a_stResp.m_stException.m_u8ExcCode)) + ", " +  (to_string(a_stResp.m_stException.m_u8ExcStatus))).c_str());
+				int iErrCode = a_stResp.m_stException.m_u8ExcStatus * ERORR_MULTIPLIER + a_stResp.m_stException.m_u8ExcCode;
+				msg_envelope_elem_body_t* ptErrorDetails = msgbus_msg_envelope_new_string(to_string(iErrCode).c_str());
 				msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
 			}
 			msgbus_msg_envelope_put(msg, "status", ptStatus);
 		}
+
+		// Adding timestamp at last
+		if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
+		{
+			getTimeBasedParams(*a_objReqData, sTimestamp, sUsec, sTxID);
+
+			msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string(sTxID.c_str());
+			msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
+
+			if(false == sPolllingVal.empty())
+			{
+				// save last known response
+				(const_cast<CRefDataForPolling*>(a_objReqData))->saveGoodResponse(sPolllingVal, sUsec);
+			}
+		}
+		else
+		{
+			common_Handler::getTimeParams(sTimestamp, sUsec);
+		}
+
+		msg_envelope_elem_body_t* ptTimeStamp = msgbus_msg_envelope_new_string(sTimestamp.c_str());
+		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(sUsec.c_str());
+		msgbus_msg_envelope_put(msg, "timestamp", ptTimeStamp);
+		msgbus_msg_envelope_put(msg, "usec", ptUsec);
 	}
     catch(const std::exception& e)
 	{
@@ -319,10 +361,11 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
  * Post response json
  * @param a_stResp		:[in] response data
  * @param a_objReqData	:[in] request data
+ * @param a_pstTsPolling:[in] polling timestamp, if any
  * @return 	true : on success,
  * 			false : on error
  */
-BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData)
+BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData, struct timespec *a_pstTsPolling = NULL)
 {
 	if((MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 			&& NULL == a_objReqData)
@@ -333,7 +376,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 
 	try
 	{
-		if(FALSE == prepareResponseJson(&g_msg, a_objReqData, a_stResp))
+		if(FALSE == prepareResponseJson(&g_msg, a_objReqData, a_stResp, a_pstTsPolling))
 		{
 			CLogger::getInstance().log(INFO, LOGDETAILS( " Error in preparing response"));
 			return FALSE;
@@ -395,11 +438,12 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
  * Post dummy bad response
  * @param a_objReqData	:[in] request for which to send dummy response
  * @param m_stException	:[in] exception
+ * @param a_pstRefPollTime:[in] Polling timestamp for given request
  * @return 	true : on success,
  * 			false : on error
  */
 BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(CRefDataForPolling& a_objReqData,
-		const stException_t m_stException)
+		const stException_t m_stException, struct timespec *a_pstRefPollTime = NULL)
 {
 	try
 	{
@@ -417,7 +461,7 @@ BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(CRefDataForPolling& a_ob
 		//stResp.m_lPriority = a_objReqData.getDataPoint().getDataPoint().getPollingConfig().m_uiPollFreq;
 
 		// Post it
-		postResponseJSON(stResp, &a_objReqData);
+		postResponseJSON(stResp, &a_objReqData, a_pstRefPollTime);
 
 		// Response is posted. Mark the flag
 		a_objReqData.setResponsePosted(true);
@@ -1085,13 +1129,13 @@ bool CRequestInitiator::init()
 
 /**
  * Push polling frequency to queue
- * @param a_uiRef	:[in] frequency
+ * @param a_stPollRef: [in] polling timestamp and frequency
  * @param a_objTimeRecord :[in] reference of TimeRecord class
  * @param a_bIsReq: [in] bool variable to differentiate between request and response
  * @return 	true : on success,
  * 			false : on error
  */
-bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq)
+bool CRequestInitiator::pushPollFreqToQueue(struct StPollingInstance &a_stPollRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq)
 {
 	try
 	{
@@ -1102,7 +1146,7 @@ bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_ob
 			// Check for availability of RT list
 			if(true == a_objTimeRecord.isRTListAvailable())
 			{
-				m_qReqFreqRT.push(a_uiRef);
+				m_qReqFreqRT.push(a_stPollRef);
 				// Signal response process thread
 				sem_post(&semaphoreRTReqProcess);
 			}
@@ -1110,7 +1154,7 @@ bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_ob
 			// Check for availability of non-RT list
 			if(true == a_objTimeRecord.isNonRTListAvailable())
 			{
-				m_qReqFreq.push(a_uiRef);
+				m_qReqFreq.push(a_stPollRef);
 				// Signal response process thread
 				sem_post(&semaphoreReqProcess);
 			}
@@ -1122,7 +1166,7 @@ bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_ob
 			// Check for availability of RT list
 			if(true == a_objTimeRecord.isRTListAvailable())
 			{
-				m_qRespFreqRT.push(a_uiRef);
+				m_qRespFreqRT.push(a_stPollRef);
 				// Signal response process thread
 				sem_post(&semaphoreRTRespProcess);
 			}
@@ -1130,7 +1174,7 @@ bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_ob
 			// Check for availability of non-RT list
 			if(true == a_objTimeRecord.isNonRTListAvailable())
 			{
-				m_qRespFreq.push(a_uiRef);
+				m_qRespFreq.push(a_stPollRef);
 				// Signal response process thread
 				sem_post(&semaphoreRespProcess);
 			}
@@ -1148,13 +1192,13 @@ bool CRequestInitiator::pushPollFreqToQueue(uint32_t &a_uiRef, CTimeRecord &a_ob
 
 /**
  * Get polling frequency
- * @param a_uiRef	:[in] reference to store polling frequency
+ * @param a_stPollRef	:[in] reference to polling frequency and timestamp
  * @param a_bIsRT	:[in] bool variable to differentiate between RT/Non-RT
  * @param a_bIsReq	:[in] bool variable to differentiate between request and response
  * @return 	true : on success,
  * 			false : on error
  */
-bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT, bool a_bIsReq)
+bool CRequestInitiator::getFreqRefForPollCycle(struct StPollingInstance &a_stPollRef, bool a_bIsRT, bool a_bIsReq)
 {
 	try
 	{
@@ -1165,12 +1209,12 @@ bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT, 
 			std::lock_guard<std::mutex> lock(m_mutexReqFreqQ);
 			if(true == a_bIsRT)
 			{
-				a_uiRef = m_qReqFreqRT.front();
+				a_stPollRef = m_qReqFreqRT.front();
 				m_qReqFreqRT.pop();
 			}
 			else
 			{
-				a_uiRef = m_qReqFreq.front();
+				a_stPollRef = m_qReqFreq.front();
 				m_qReqFreq.pop();
 			}
 		}
@@ -1180,12 +1224,12 @@ bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT, 
 			std::lock_guard<std::mutex> lock(m_mutexRespFreqQ);
 			if(true == a_bIsRT)
 			{
-				a_uiRef = m_qRespFreqRT.front();
+				a_stPollRef = m_qRespFreqRT.front();
 				m_qRespFreqRT.pop();
 			}
 			else
 			{
-				a_uiRef = m_qRespFreq.front();
+				a_stPollRef = m_qRespFreq.front();
 				m_qRespFreq.pop();
 			}
 		}
@@ -1202,10 +1246,12 @@ bool CRequestInitiator::getFreqRefForPollCycle(uint32_t &a_uiRef, bool a_bIsRT, 
 
 /**
  * Initiate request to get processed
+ * @param a_stPollRef	:[in] Polling timestamp
  * @param a_vReqData	:[in] reference to store polling frequency
  * @param isRTRequest	:[in] boolean variable to distinguish between RT/Non-RT requests
+ * @param a_lPriority	:[in] priority assigned to message
  */
-void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqData,
+void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std::vector<CRefDataForPolling>& a_vReqData,
 		bool isRTRequest,
 		const long a_lPriority)
 {
@@ -1218,12 +1264,12 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
 			// waiting for response. Send BAD response
 			stException_t m_stException = {};
 			m_stException.m_u8ExcCode = 100;
-			m_stException.m_u8ExcStatus = 100;
+			m_stException.m_u8ExcStatus = 0;
 			uint16_t lastTxID = objReqData.getReqTxID();
 			CLogger::getInstance().log(INFO,
 					LOGDETAILS("Post dummy response as response not received for - Point: " + objReqData.getDataPoint().getID()
 						+ ", LastTxID: " + to_string(lastTxID)));
-			CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException);
+			CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException, &a_stPollTimestamp);
 
 			if(false == CRequestInitiator::instance().isTxIDPresent(lastTxID))
 			{
@@ -1240,6 +1286,8 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
 			objReqData.getDataPoint().setIsAwaitResp(true);
 			// Response is not posted. Mark the flag
 			objReqData.setResponsePosted(false);
+			// Sending the request. Set polling timestamp of request
+			objReqData.setTimestampOfPollReq(a_stPollTimestamp);
 
 			// generate the TX ID
 			uint16_t m_u16TxId = PublishJsonHandler::instance().getTxId();
@@ -1272,7 +1320,7 @@ void CRequestInitiator::initiateRequest(std::vector<CRefDataForPolling>& a_vReqD
 				objReqData.getDataPoint().setIsAwaitResp(false);
 				stException_t m_stException = {};
 				m_stException.m_u8ExcCode = 101;
-				m_stException.m_u8ExcStatus = 101;
+				m_stException.m_u8ExcStatus = 0;
 				CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException);
 
 				/// remove node from TxID map
@@ -1329,13 +1377,13 @@ void CRequestInitiator::threadReqInit(bool isRTPoint,
 					{
 						break;
 					}
-					uint32_t uiRef;
-					if(false == getFreqRefForPollCycle(uiRef, isRTPoint, true))
+					struct StPollingInstance stPollRef = {0};
+					if(false == getFreqRefForPollCycle(stPollRef, isRTPoint, true))
 					{
 						break;
 					}
-					std::vector<CRefDataForPolling>& vReqData = CTimeMapper::instance().getPolledPointList(uiRef, isRTPoint);
-					initiateRequest(vReqData, isRTPoint, (CTimeMapper::instance().getFreqIndex(uiRef) +
+					std::vector<CRefDataForPolling>& vReqData = CTimeMapper::instance().getPolledPointList(stPollRef.m_uiPollInterval, isRTPoint);
+					initiateRequest(stPollRef.m_tsPollTime, vReqData, isRTPoint, (CTimeMapper::instance().getFreqIndex(stPollRef.m_uiPollInterval) +
 							l_reqPriority + 1));
 				} while(0);
 
@@ -1391,13 +1439,13 @@ void CRequestInitiator::threadCheckCutoffRespInit(bool isRTPoint,
 				{
 					break;
 				}
-				uint32_t uiRef;
-				if(false == getFreqRefForPollCycle(uiRef, isRTPoint, false))
+				struct StPollingInstance stPollRef = {0};
+				if(false == getFreqRefForPollCycle(stPollRef, isRTPoint, false))
 				{
 					break;
 				}
 				std::vector<CRefDataForPolling>& vReqData =
-						CTimeMapper::instance().getPolledPointList(uiRef, isRTPoint);
+						CTimeMapper::instance().getPolledPointList(stPollRef.m_uiPollInterval, isRTPoint);
 
 				// Check if responses are sent
 				for(auto &objPolledPoint : vReqData)
@@ -1411,16 +1459,16 @@ void CRequestInitiator::threadCheckCutoffRespInit(bool isRTPoint,
 					{
 						// waiting for response. Send BAD response
 						stException_t m_stException = {0};
-						m_stException.m_u8ExcCode = 102;
-						m_stException.m_u8ExcStatus = 102;
+						m_stException.m_u8ExcCode = 103;
+						m_stException.m_u8ExcStatus = 0;
 						if(true == objPolledPoint.isLastRespAvailable())
 						{
 							// Last response is available. Use it.
 							CLogger::getInstance().log(DEBUG, LOGDETAILS(objPolledPoint.getDataPoint().getID()
 																+ ": Using last response"));
 
-							m_stException.m_u8ExcCode = 103;
-							m_stException.m_u8ExcStatus = 103;
+							/*m_stException.m_u8ExcCode = 103;
+							m_stException.m_u8ExcStatus = 0;*/
 						}
 						else
 						{
@@ -1444,11 +1492,11 @@ void CRequestInitiator::threadCheckCutoffRespInit(bool isRTPoint,
 
 /**
  * Initiate messages
- * @param a_uiRef	:[in] polling frequency
+ * @param a_stPollRef	:[in] polling time and polling frequency
  * @param a_objTimeRecord	:[in] reference of TimeRecord
  * @param a_bIsReq	:[in] bool variable to differentiate between request and response
  */
-void CRequestInitiator::initiateMessages(uint32_t a_uiRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq)
+void CRequestInitiator::initiateMessages(struct StPollingInstance &a_stPollRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq)
 {
 	try
 	{
@@ -1456,7 +1504,7 @@ void CRequestInitiator::initiateMessages(uint32_t a_uiRef, CTimeRecord &a_objTim
 		if(!stopPolling.load())
 #endif
 		{
-			pushPollFreqToQueue(a_uiRef, a_objTimeRecord, a_bIsReq);
+			pushPollFreqToQueue(a_stPollRef, a_objTimeRecord, a_bIsReq);
 		}
 	}
 	catch (exception &e)
@@ -1569,13 +1617,16 @@ void CTimeMapper::initTimerFunction()
 /**
  * Check timer
  */
-void CTimeMapper::checkTimer(uint32_t a_uiInterval)
+void CTimeMapper::checkTimer(uint32_t a_uiInterval, struct timespec& a_tsPollTime)
 {
     try
 	{
+    	struct StPollingInstance stPollRef;
+    	stPollRef.m_tsPollTime = a_tsPollTime;
     	std::lock_guard<std::mutex> lock(m_mapMutex);
 		for (auto &element : m_mapTimeRecord)
 		{
+			stPollRef.m_uiPollInterval = element.first;
 			CTimeRecord &a = element.second;
 			// First decrement timer counters
 			a.decrementTimerCounters(a_uiInterval);
@@ -1593,7 +1644,7 @@ void CTimeMapper::checkTimer(uint32_t a_uiInterval)
 				*/
 
 				//std::cout << "---------------------------------\n";
-				CRequestInitiator::instance().initiateMessages(element.first, a, false);
+				CRequestInitiator::instance().initiateMessages(stPollRef, a, false);
 			}
 
 			// Check interval timer counters
@@ -1610,7 +1661,7 @@ void CTimeMapper::checkTimer(uint32_t a_uiInterval)
 				*/
 				//std::cout << "******************************\n";
 				// Polling time: send requests
-				CRequestInitiator::instance().initiateMessages(element.first, a, true);
+				CRequestInitiator::instance().initiateMessages(stPollRef, a, true);
 			}
 		}
 	}
@@ -1721,7 +1772,8 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling &a_stRdPrdObj,
 		{
 			// In case of error, immediately retry in next iteration
 			//a_stRdPrdObj.bIsRespAwaited = false;
-			string l_stErrorString = "Request initiation error:: "+ to_string(u8ReturnType)+" " + "DeviceID ::" + to_string(stMbusApiPram.m_u16TxId);
+			string l_stErrorString = "Request initiation error:: "+ to_string(u8ReturnType)+" " + "Tx ID ::" + to_string(stMbusApiPram.m_u16TxId);
+			CLogger::getInstance().log(ERROR, LOGDETAILS(l_stErrorString));
 			bRet = false;
 		}
 	}
@@ -1973,10 +2025,6 @@ CTimeRecord::~CTimeRecord()
  */
 void PeriodicTimer::timerThread(uint32_t interval)
 {
-	struct itimerspec new_value;
-	int fd;
-	struct timespec now;
-
 	// set thread priority
 	globalConfig::set_thread_sched_param(
 			globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig(),
@@ -1986,57 +2034,60 @@ void PeriodicTimer::timerThread(uint32_t interval)
 
 	globalConfig::display_thread_sched_attr("timerThread param::");
 
+	// interval is in milliseconds
 	if(0 == interval)
 	{
 		interval = 1;
 	}
 
-	if (clock_gettime(CLOCK_MONOTONIC, &now) == -1)
+	struct timespec ts;
+	int rc = clock_getres(CLOCK_MONOTONIC, &ts);
+	if(0 != rc)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS("Unable to get current time: "
-				+ to_string(errno)));
-		return;
+		std::cout << "Error: clock_getres failed: " << errno << std::endl;
+		std::cout << "Continuing further\n";
+	}
+	else
+	{
+		std::cout << "Clock resolution: " << (long)ts.tv_sec << " seconds, " << (long)ts.tv_nsec << " nanoseconds \n";
 	}
 
-	/* Create a CLOCK_REALTIME absolute timer with initial
-       expiration and interval as specified in command line */
-	new_value.it_value.tv_sec = now.tv_sec + 1;
-	new_value.it_value.tv_nsec = 0;
-	new_value.it_interval.tv_sec = interval / 1000;
-	new_value.it_interval.tv_nsec = (interval % 1000) * 1000 * 1000;
+	uint32_t uiMsecInterval = interval;
 
-	fd = timerfd_create(CLOCK_MONOTONIC, 0);
-	if (fd < 0)
+	// for following calculation, convert interval to nanoseconds
+	interval = interval*1000*1000;
+	rc = clock_gettime(CLOCK_MONOTONIC, &ts);
+	if(0 != rc)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS("Timer could not be created: "
-				+ to_string(errno)));
+		std::cout << "Fatal error: polling timer: clock_gettime failed: " << errno << std::endl;
 		return;
 	}
-
-	if (timerfd_settime(fd, TFD_TIMER_ABSTIME, &new_value, NULL) < 0)
-		//if (timerfd_settime(fd, 0, &new_value, NULL) < 0)
-	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS("Timer timing could not be set: "
-				+ to_string(errno)));
-		close(fd);
-		return;
-	}
-
 	while(!g_stopTimer)
 	{
-		uint64_t uiTimerHitCount = 0;
-		ssize_t s = read(fd, &uiTimerHitCount, sizeof(uint64_t));
-		if (s != sizeof(uint64_t))
-		{
-			CLogger::getInstance().log(FATAL, LOGDETAILS("Failed to read timer status: "
-					+ to_string(errno)));
-			continue;
-		}
+		unsigned long next_tick = (ts.tv_sec * 1000000000L + ts.tv_nsec) + interval;
+		ts.tv_sec = next_tick / 1000000000L;
+		ts.tv_nsec = next_tick % 1000000000L;
 
-		//  address KW issue of range check. ...  ideal value expected is 1
-		if(uiTimerHitCount >=1 && uiTimerHitCount < 1000)
+		do
 		{
-			CTimeMapper::instance().checkTimer(interval * uiTimerHitCount);
+			rc = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL);
+		} while(EINTR == rc);
+
+		if(0 == rc)
+		{
+			struct timespec tsPoll = {0};
+			rc = clock_gettime(CLOCK_REALTIME, &tsPoll);
+			if(0 != rc)
+			{
+				std::cout << "Fatal error: polling timer: clock_gettime failed in polling: " << errno << std::endl;
+				//return;
+			}
+			/// call timer function
+			CTimeMapper::instance().checkTimer(uiMsecInterval, tsPoll);
+		}
+		else
+		{
+			CLogger::getInstance().log(FATAL, LOGDETAILS("Polling timer error:" + to_string(rc)));
 		}
 	}
 }

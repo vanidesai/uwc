@@ -177,7 +177,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
-					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case READ_INPUT_STATUS:
@@ -189,7 +188,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
-					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case READ_HOLDING_REG:
@@ -201,7 +199,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
-					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case READ_INPUT_REG:
@@ -213,7 +210,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
-					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case WRITE_SINGLE_COIL:
@@ -227,7 +223,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
-					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			}
 			break;
@@ -244,7 +239,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
-					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			}
 			break;
@@ -258,7 +252,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
-					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 			case WRITE_MULTIPLE_REG:
@@ -271,7 +264,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					pstMbusApiPram->m_u8IpAddr,
 					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
-					pstMbusApiPram->m_u32mseTimeout,
 					vpCallBackFun);
 			break;
 

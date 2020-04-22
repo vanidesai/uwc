@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.2.8"
+#define APP_VERSION "0.0.3.6"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -403,6 +403,42 @@ int main(int argc, char* argv[])
 
 		// Setup signal handlers
 
+		long iResponseTimeout, iInterframeDelay;
+		std::string sResponseTimeout, sInterframeDelay;
+		std::string::size_type sizeVar;   // alias of size_t
+		if(CommonUtils::readEnvVariable("RESPONSE_TIMEOUT_MS", sResponseTimeout))
+		{
+			iResponseTimeout = std::stol (sResponseTimeout, &sizeVar);
+		}
+		else
+		{
+			iResponseTimeout = 80; //Default response time
+		}
+
+		if(CommonUtils::readEnvVariable("INTERFRAME_DELAY_MS", sInterframeDelay))
+		{
+			iInterframeDelay = std::stol (sInterframeDelay, &sizeVar);
+		}
+		else
+		{
+			iInterframeDelay = 0; //Default interframe delay
+		}
+
+		stDevConfig_t stDevConf;
+		stDevConf.m_lInterframedelay = iInterframeDelay;
+		stDevConf.m_lResponseTimeout = iResponseTimeout;
+		if(STACK_NO_ERROR != AppMbusMaster_SetStackConfigParam(&stDevConf))
+		{
+			std::cout << "Error: Exiting. Failed to set stack  config parameters"<< std::endl;
+			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to set stack  config parameters"));
+			return -1;
+		}
+		else
+		{
+			std::cout << "Success :: modbus stack set config successful" << std::endl;
+			CLogger::getInstance().log(INFO, LOGDETAILS("modbus stack set config successful"));
+		}
+
 		uint8_t	u8ReturnType = AppMbusMaster_StackInit();
 		if(0 != u8ReturnType)
 		{
@@ -410,8 +446,13 @@ int main(int argc, char* argv[])
 			temp.append(to_string(u8ReturnType));
 			CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
 
-			std::cout << "Error: Exiting. Failed to initialize modbus stack:" << u8ReturnType << std::endl;
+			std::cout << "Error: Exiting. Failed to initialize modbus stack:" << (unsigned)u8ReturnType << std::endl;
 			exit(1);
+		}
+		else
+		{
+			std::cout << "\nSuccess :: modbus stack initialization successful" << std::endl;
+			CLogger::getInstance().log(INFO, LOGDETAILS("modbus stack initialization successful"));
 		}
 
 		// Initializing all the pub/sub topic base context for ZMQ
