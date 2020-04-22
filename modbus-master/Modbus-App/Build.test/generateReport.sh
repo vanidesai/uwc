@@ -14,4 +14,4 @@ env
 ./ModbusMaster_test > /reports/modbus-tcp-master/modbus-tcp-master_test_status.log 2>&1
 
 # Run GCovr command
-gcovr --html -e "../Test" -e "../include/log4cpp" -e ../../bin  -o /reports/modbus-tcp-master/ModbusTCP_report.html -r .. .
+gcovr --html -e "../Test" -e "../include/log4cpp" -e ../../bin --exclude-throw-branches -o /reports/modbus-tcp-master/ModbusTCP_report.html -r .. .

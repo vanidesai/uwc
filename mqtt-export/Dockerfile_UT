@@ -9,103 +9,31 @@
 #*********************************************************************************
 
 ARG EIS_VERSION
-FROM ia_eisbase:$EIS_VERSION as eisbase
-LABEL description="Modbus TCP Master Unit Testing container"
 ARG EIS_UID
-
-FROM ia_common:$EIS_VERSION as common
-
-# Build gtest lib
-FROM eisbase as gtest-lib
-
-RUN wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz \
-				&& tar xzf release-1.8.0.tar.gz \
-				&& cd googletest-release-1.8.0 \
-				&& mkdir build \
-				&& cd build \
-				&& cmake .. \
-				&& make -j \
-				&& cp -r ../googletest/include /usr/local/include \
-				&& cp -r ./googlemock/gtest/libgtest*.a /usr/local/lib/ \
-				&& cp -r ./googlemock/libgmock*.a /usr/local/lib/ \
-				&& pip install gcovr
-
-# Build Paho C Library
-FROM eisbase as build-pahoc
-RUN mkdir -p /usr/paho-c
-COPY MQTTAsync.c /
-RUN git clone --branch v1.3.1 https://github.com/eclipse/paho.mqtt.c.git \
-    &&  rm -rf paho.mqtt.c/src/MQTTAsync.c && cp /MQTTAsync.c paho.mqtt.c/src \
-    &&	cd paho.mqtt.c \
-    &&	mkdir build && cd build \
-    &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=ON \
-	-DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS=OFF .. \
-    &&	make -s \
-    &&	make install
-
-
-# Build Paho CPP Library
-FROM eisbase as build-pahocpp
-COPY --from=build-pahoc /usr/paho-c /usr/.
-RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
-    && cd paho.mqtt.cpp \
-    && mkdir build && cd build \
-    && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_MQTT_C_PATH=/usr/paho-c \
-	-DCMAKE_INSTALL_PREFIX=/usr/paho-cpp  -DPAHO_BUILD_SAMPLES:BOOL=OFF \
-	-DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON  .. \
-    && make -s \
-    && make install
-
-# Build log4cpp Library
-FROM eisbase as build-log4cpp
-
-RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
-    && tar -zxvf log4cpp-1.1.3.tar.gz \
-    && cd log4cpp && mkdir build \
-    && ./configure --enable-static=no --prefix=$PWD/build \
-    && make \
-    && make install
-
-# yaml build
-FROM eisbase as build-yaml
-
-RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
-    && cd yaml-cpp \
-    &&	mkdir build && cd build \
-    &&	cmake -DYAML_BUILD_SHARED_LIBS=ON ../ \
-    &&	make yaml-cpp \
-    &&	make install \
-    &&	mkdir -p /usr/yaml \
-    &&  mkdir -p /usr/yaml/lib \
-    &&  cp lib* /usr/yaml/lib \
-    &&  cp -r ../include /usr/yaml \
-    && cd ../../
+FROM uwc_test_common:$EIS_VERSION as uwc_test_common
+LABEL description="Modbus TCP Master Unit Testing container"
 
 # Build MQTT-Export application
-FROM eisbase as mqtt-export
+FROM ia_common:$EIS_VERSION as mqtt-export
 WORKDIR /
-RUN apt-get update && apt-get install -y gcovr
-COPY --from=common /usr/local/include /usr/local/include
-COPY --from=common /usr/local/lib /usr/local/lib
-COPY --from=common /usr/local/include/safe_* /usr/local/include/
 COPY MQTT-Export-App /MQTT-Export-App/. 
-COPY --from=build-pahoc /usr/paho-c/lib/lib* /MQTT-Export-App/lib/
-COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* /MQTT-Export-App/lib/
-COPY --from=build-pahocpp /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
-COPY --from=build-pahoc /usr/paho-c/include/MQTT* /MQTT-Export-App/include/
-COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
-COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
-COPY --from=gtest-lib /EIS/googletest-release-1.8.0/googletest/include/gtest /usr/local/include/gtest
-COPY --from=gtest-lib /EIS/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
-
-COPY --from=build-yaml /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
-COPY --from=build-yaml /usr/yaml/lib/* /usr/local/lib/
-
+COPY --from=uwc_test_common /usr/lib/libpaho* /MQTT-Export-App/lib/
+COPY --from=uwc_test_common /usr/paho-cpp/lib/lib* /MQTT-Export-App/lib/
+COPY --from=uwc_test_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
+COPY --from=uwc_test_common /usr/include/MQTT* /MQTT-Export-App/include/
+COPY --from=uwc_test_common /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
+COPY --from=uwc_test_common /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
+COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/googletest/include/gtest /usr/local/include/gtest
+COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
+COPY --from=uwc_test_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
+COPY --from=uwc_test_common /usr/yaml/lib/* /usr/local/lib/
 
 RUN cd /MQTT-Export-App/Build.test \
     &&	export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
     &&	make clean all -s
+
+RUN pip install gcovr
 
 WORKDIR /MQTT-Export-App/Build.test
 RUN chmod +x generateReport.sh

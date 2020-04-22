@@ -232,7 +232,7 @@ addUWCContainersInEIS()
     rm -rf UWC/ && mkdir UWC
     tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
     cd UWC
-    cp -r modbus-master/ MQTT/ mqtt-export/ ../
+    cp -r modbus-master/ MQTT/ uwc_common/ mqtt-export/ ../
     cp docker-compose.yml ../docker_setup/docker-compose.yml
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
@@ -249,6 +249,10 @@ addUWCContainersInEIS()
     echo "${INFO}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
     echo "${INFO}To execute unit test cases, run 06_UnitTestRun.sh script ${NC}"
     cd ${working_dir}/ && rm -rf UWC/
+
+    # set execute permissions to all shell scripts
+    find . -type f -iname "*.sh" -exec chmod +x {} \;
+
     return 0
 }
 

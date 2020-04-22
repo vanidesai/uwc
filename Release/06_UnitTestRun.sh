@@ -258,7 +258,7 @@ function cleanup()
 	cd $Current_Dir
 	rm -rf temp1
 	chown -R $SUDO_USER:$SUDO_USER ${eis_working_dir}/unit_test_reports
-	docker rm -f ia_etcd > /dev/null 2>&1
+	docker rm -f ia_etcd mqtt_test_container > /dev/null 2>&1
 }
 
 function runETCDContainer()
@@ -292,7 +292,7 @@ setDevMode "false"
 echo "Generating code coverage report..."
 echo "It may take few minutes ..."
 ### To sleep for 2 min: ##
-sleep 30s
+sleep 90s
 verifyContainer
 cleanup
 #stopContainers

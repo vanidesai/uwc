@@ -58,14 +58,28 @@ services:
     user: ${EIS_UID}
 
  # UWC containers
- # 1. modbus-tcp-master
- # 2. modbus-rtu-master
- # 3. mqtt_container
- # 4. mqtt-export
+ # 1. uwc_common
+ # 2. modbus-tcp-master
+ # 3. modbus-rtu-master
+ # 4. mqtt_container
+ # 5. mqtt-export
+
+  ## uwc_common image
+  uwc_common:
+    depends_on:
+      - ia_eisbase
+    build:
+      context: $PWD/../uwc_common
+      dockerfile: $PWD/../uwc_common/Dockerfile.common
+      args:
+          EIS_VERSION: ${EIS_VERSION}
+    read_only: true
+    image: ${DOCKER_REGISTRY}uwc_common:${EIS_VERSION}
 
   modbus-tcp-master:
     depends_on:
       - ia_eisbase
+      - uwc_common
     build:
       context: $PWD/../modbus-master/
       dockerfile: $PWD/../modbus-master/Dockerfile
@@ -89,8 +103,8 @@ services:
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 1
-      RESPONSE_TIMEOUT: 80
-      INTERFRAME_DELAY: 1
+      RESPONSE_TIMEOUT_MS: 80
+      INTERFRAME_DELAY_MS: 1
       CUTOFF_INTERVAL_PERCENTAGE: 90
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
@@ -133,6 +147,7 @@ services:
   modbus-rtu-master:
     depends_on:
       - ia_eisbase
+      - uwc_common
     build:
       context: $PWD/../modbus-master/
       dockerfile: $PWD/../modbus-master/Dockerfile_RTU
@@ -155,8 +170,8 @@ services:
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
-      RESPONSE_TIMEOUT: 80
-      INTERFRAME_DELAY: 1
+      RESPONSE_TIMEOUT_MS: 80
+      INTERFRAME_DELAY_MS: 1
       CUTOFF_INTERVAL_PERCENTAGE: 90
       SERIAL_PORT_RETRY_INTERVAL: 1
       BAUD_RATE: 9600
@@ -208,6 +223,7 @@ services:
   mqtt_container:
     depends_on:
       - ia_eisbase
+      - uwc_common
     build:
       context: $PWD/../MQTT/
       dockerfile: $PWD/../MQTT/Dockerfile

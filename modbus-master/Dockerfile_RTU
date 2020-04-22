@@ -9,67 +9,34 @@
 #*********************************************************************************
 
 ARG EIS_VERSION
-FROM ia_eisbase:$EIS_VERSION as eisbase
+FROM uwc_common:$EIS_VERSION as uwc_common
 LABEL description="Modbus RTU Master Application"
-ARG EIS_UID
-
-FROM ia_common:$EIS_VERSION as common
-
-# Build log4cpp Library
-FROM eisbase as build-log4cpp
-
-RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
-    && tar -zxvf log4cpp-1.1.3.tar.gz \
-    && cd log4cpp && mkdir build \
-    && ./configure --enable-static=no --prefix=$PWD/build \
-    && make \
-    && make install
-
-# yaml build
-FROM eisbase as build-yaml
-
-RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
-    && cd yaml-cpp \
-    &&	mkdir build && cd build \
-    &&	cmake -DYAML_BUILD_SHARED_LIBS=ON ../ \
-    &&	make yaml-cpp \
-    &&	mkdir -p /usr/yaml \
-    &&  mkdir -p /usr/yaml/lib \
-    &&  cp lib* /usr/yaml/lib \
-    &&  cp -r ../include /usr/yaml \
-    && cd ../../
 
 # Build Modbus Stack
-FROM eisbase as modbus-lib
-
+FROM ia_common:$EIS_VERSION as modbus-lib
 WORKDIR /
-
-COPY --from=common /usr/local/include/safe_* /usr/local/include/
-COPY --from=common /usr/local/lib/libsafestring.so /usr/local/lib/
 
 COPY SoftMod_Stack /SoftMod_Stack/.
 RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /SoftMod_Stack/Release/Src/subdir.mk 
-  
+
+# compile modbus stack 
 WORKDIR SoftMod_Stack
 RUN cd Release \
     && make clean all -s
 
 # Build Modbus application
-FROM eisbase as modbus-app
-
+FROM ia_common:$EIS_VERSION as modbus-app
 WORKDIR /
 
-COPY --from=common /usr/local/include /usr/local/include
-COPY --from=common /usr/local/lib /usr/local/lib
-
 # Copy built library from images
-COPY --from=build-yaml /usr/yaml /bin/yaml-cpp/.
+COPY --from=uwc_common /usr/yaml /bin/yaml-cpp/.
 
+# compile modbus app sources
 COPY Modbus-App /Modbus-App/. 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
 COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
-COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
-COPY --from=build-log4cpp /EIS/log4cpp/build/lib/lib* /Modbus-App/lib/
+COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
+COPY --from=uwc_common /EIS/log4cpp/build/lib/lib* /Modbus-App/lib/
 
 RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Release/src/subdir.mk 
 RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Release/src/utils/subdir.mk 
@@ -81,34 +48,31 @@ RUN cd /Modbus-App/Release \
     &&	make clean all -s
 
 # Build Modbus container service
-FROM eisbase as modbus-service
-
-COPY --from=common /usr/local/include /usr/local/include
-COPY --from=common /usr/local/lib /usr/local/lib
-
+FROM ia_common:$EIS_VERSION as modbus-service
 WORKDIR /
 
 ENV APP_WORK_DIR /opt/intel/app/
-RUN mkdir -p /opt/intel/app
-RUN mkdir -p /opt/intel/config
-RUN mkdir -p /opt/intel/eis/uwc_data
-
+RUN mkdir -p /opt/intel/app \
+	&& mkdir -p /opt/intel/config \
+	&& mkdir -p /opt/intel/eis/uwc_data
 WORKDIR ${APP_WORK_DIR}
 
+# copy required libs and includes
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so ${APP_WORK_DIR}
 COPY --from=modbus-app /Modbus-App/Release/ModbusMaster ${APP_WORK_DIR}
-COPY --from=build-yaml /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
-COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
+COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
+COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=modbus-app /Modbus-App/Config/log4cpp.properties /opt/intel/config
 
-RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config
-RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
-RUN chmod -R 770 ${APP_WORK_DIR}
+# set permissions to working dir for eisuser
+RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
+   && chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR} \
+   && chmod -R 770 ${APP_WORK_DIR}
 
 #set the environment variable
 ENV LD_LIBRARY_PATH ${APP_WORK_DIR}:/usr/local/lib
 
-ENV DOCKER_CONTENT_TRUST 1
+# healthcheck for docker bench security
 HEALTHCHECK CMD exit 0
 
 # Run Modbus container

@@ -40,14 +40,28 @@ services:
   #----End: EIS Base Images---- -- This Base images must be included for building any EIS servcies ----
 
  # UWC containers
- # 1. modbus-tcp-master-test
- # 2. modbus-rtu-master
- # 3. mqtt_container
- # 4. mqtt-export
+ # 1. uwc_common
+ # 2. modbus-tcp-master
+ # 3. modbus-rtu-master
+ # 4. mqtt_container
+ # 5. mqtt-export
+
+  ## uwc_common image
+  uwc_test_common:
+    depends_on:
+      - ia_eisbase
+    build:
+      context: $PWD/../uwc_common
+      dockerfile: $PWD/../uwc_common/Dockerfile.common.test
+      args:
+          EIS_VERSION: ${EIS_VERSION}
+    read_only: true
+    image: ${DOCKER_REGISTRY}uwc_test_common:${EIS_VERSION}
 
   modbus-tcp-master-test:
     depends_on:
       - ia_eisbase
+      - uwc_test_common
     build:
       context: $PWD/../modbus-master/
       dockerfile: $PWD/../modbus-master/Dockerfile_UT
@@ -70,8 +84,8 @@ services:
       Log4cppPropsFile: "/Modbus-App/Config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 1
-      RESPONSE_TIMEOUT: 80
-      INTERFRAME_DELAY: 1
+      RESPONSE_TIMEOUT_MS: 80
+      INTERFRAME_DELAY_MS: 1
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
@@ -108,6 +122,7 @@ services:
   modbus-rtu-test-master:
     depends_on:
       - ia_eisbase
+      - uwc_test_common
     build:
       context: $PWD/../modbus-master/
       dockerfile: $PWD/../modbus-master/Dockerfile_UT_RTU
@@ -129,8 +144,8 @@ services:
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/Modbus-App/Config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
-      RESPONSE_TIMEOUT: 80
-      INTERFRAME_DELAY: 1
+      RESPONSE_TIMEOUT_MS: 80
+      INTERFRAME_DELAY_MS: 1
       SERIAL_PORT_RETRY_INTERVAL: 1
       BAUD_RATE: 9600
       PARITY: "E"
@@ -176,6 +191,7 @@ services:
   mqtt_test_container:
     depends_on:
       - ia_eisbase
+      - uwc_test_common
     build:
       context: $PWD/../MQTT/
       dockerfile: $PWD/../MQTT/Dockerfile
@@ -194,6 +210,7 @@ services:
   mqtt-export-test:
     depends_on:
       - ia_eisbase
+      - uwc_test_common
     build:
       context: $PWD/../mqtt-export/
       dockerfile: $PWD/../mqtt-export/Dockerfile_UT
