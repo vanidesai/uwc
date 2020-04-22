@@ -209,6 +209,7 @@ int sleep_micros(long lMicroseconds)
  * @param pstMBusRequesPacket [in] Request packet
  * @param eMbusStackErr       [in] Stack error codes
  *
+ * returns nothing
  */
 void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eStackErrorCode eMbusStackErr)
 {
@@ -456,7 +457,7 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
  * @param u16BuffInex 	  [in] buffer index
  * @param pstMBusRequesPacket [in] Request packet
  *
- * @return uint8_t [out] respective error codes
+ * @return uint8_t [out] success or failure in integer format
  *
  */
 uint8_t DecodeRxMBusPDU(uint8_t *ServerReplyBuff,
@@ -764,7 +765,7 @@ uint8_t DecodeRxMBusPDU(uint8_t *ServerReplyBuff,
  *
  * @param ServerReplyBuff [in] Input buffer
  * @param pstMBusRequesPacket [in] Request packet
- * @return uint8_t [out] respective error codes
+ * @return uint8_t [out] success or failure in integer format
  *
  */
 uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBusRequesPacket)
@@ -835,7 +836,7 @@ uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBus
  *
  * @param None
  * @param None
- * @return uint8_t [out] respective error codes
+ * @return uint8_t [out] success or failure in integer format
  *
  */
 int checkforblockingread(void)
@@ -863,9 +864,9 @@ int checkforblockingread(void)
  * Function to send packet on network
  *
  * @param pstMBusRequesPacket [in] Request packet
- * @param pi32sockfd [in] socket fd
+ * @param sfd [in] socket fd
  *
- * @return uint8_t [out] respective error codes
+ * @return uint8_t [out] success or failure in integer format
  *
  */
 uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *sfd)
@@ -1009,7 +1010,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
  * @param parity [in] uint8_t parity
  * @param stop_bit [in] uint8_t stop bit
  *
- * @return int [out] respective error codes
+ * @return int [out] success or failure in integer format
  *
  */
 MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, eParity  parity, uint8_t stop_bit)
@@ -1372,7 +1373,7 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
  * Description
  * Close the socket connection and reset the structure
  *
- * @param stIPConnect [in] pointer to struct of type IP_Connect_t
+ * @param a_pstIPConnect [in] pointer to struct of type IP_Connect_t
  *
  * @return void [out] none
  *
@@ -1395,7 +1396,7 @@ void closeConnection(IP_Connect_t *a_pstIPConnect)
  * Description
  * Set socket failure state
  *
- * @param stIPConnect [in] pointer to struct of type IP_Connect_t
+ * @param a_pstIPConnect [in] pointer to struct of type IP_Connect_t
  *
  * @return void [out] none
  *
@@ -1416,7 +1417,7 @@ void Mark_Sock_Fail(IP_Connect_t *a_pstIPConnect)
  * @param pstMBusRequesPacket [in] pointer to request packet struct of type stMbusPacketVariables_t
  * @param a_pstIPConnect [in] pointer to socket struct of type IP_Connect_t
  *
- * @return uint8_t [out] respective error codes
+ * @return uint8_t [out] success or failure in integer format
  *
  */
 uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Connect_t *a_pstIPConnect)

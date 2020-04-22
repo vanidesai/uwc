@@ -66,7 +66,7 @@ struct stIntDataForQ
  * It reserves the available node for using this node.
  *
  * @param - none
- * @returns none
+ * @returns node index in long format or -1 in case of error
  *
  */
 long getAvailableReqNode()
@@ -100,7 +100,7 @@ long getAvailableReqNode()
  * Description
  * Resets the request node to default values.
  *
- * @param - node to reset
+ * @param a_pObjReqNode [in] node to reset
  * @returns none
  *
  */

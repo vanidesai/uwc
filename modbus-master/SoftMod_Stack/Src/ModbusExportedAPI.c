@@ -235,7 +235,7 @@ MODBUS_STACK_EXPORT void AppMbusMaster_StackDeInit(void)
  * @param u16Quantity 	[in] uint16_t received quantity for function code
  * @param u8ByteCount	[in] uint8_t byte count for quantity
  *
- * @return bool 		[out] True or false
+ * @return bool 		[out] True for success or false for error
  *
  */
 bool ValidateQuantity( uint8_t eFunCode,
@@ -997,6 +997,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
  * @param u16TransacID 		[in] transaction ID
  * @param u8UnitId 			[in] unit id
  * @param pu8SerIpAddr 		[in] server IP address
+ * @param u16Port			[in] uint16_t port number
+ * @param lPriority			[in] long priority
  * @param pFunCallBack 		[in] callback function pointer
  * @return uint8_t			[out] success or failure in integer format
  *
@@ -1106,6 +1108,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
  * @param u16TransacID 		[in] transaction ID
  * @param u8UnitId 			[in] unit id
  * @param pu8SerIpAddr 		[in] server IP address
+ * @param u16Port			[in] uint16_t port number
+ * @param lPriority			[in] long priority
  * @param pFunCallBack 		[in] callback function pointer
  * @return uint8_t			[out] success or failure in integer format
  *
@@ -1215,6 +1219,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
  * @param u16TransacID 		[in] transaction ID
  * @param u8UnitId 			[in] unit id
  * @param pu8SerIpAddr 		[in] server IP address
+ * @param u16Port			[in] uint16_t port number
+ * @param lPriority			[in] long priority
  * @param pFunCallBack 		[in] callback function pointer
  *
  * @return uint8_t			[out] success or failure in integer format
@@ -1340,6 +1346,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
  * @param u16TransacID 		[in] transaction ID
  * @param u8UnitId 			[in] unit id
  * @param pu8SerIpAddr 		[in] server IP address
+ * @param u16Port			[in] uint16_t port number
+ * @param lPriority			[in] long priority
  * @param pFunCallBack 		[in] callback function pointer
  *
  * @return uint8_t			[out] success or failure in integer format
@@ -1473,6 +1481,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
  * @param u16TransacID 		[in] transaction ID
  * @param u8UnitId 			[in] unit id
  * @param pu8SerIpAddr 		[in] server IP address
+ * @param u16Port			[in] uint16_t port number
+ * @param lPriority			[in] long priority
  * @param pFunCallBack 		[in] callback function pointer
  *
  * @return uint8_t			[out] success or failure in integer format
@@ -1638,6 +1648,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
  * @param u16TransacID 		[in] transaction ID
  * @param u8UnitId 			[in] unit id
  * @param pu8SerIpAddr 		[in] server IP address
+ * @param u16Port			[in] uint16_t port number
+ * @param lPriority			[in] long priority
  * @param pFunCallBack 		[in] callback function pointer
  *
  * @return uint8_t			[out] success or failure in integer format
@@ -1816,6 +1828,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
  * @param u16TransacID 		[in] transaction ID
  * @param u8UnitId 			[in] unit id
  * @param pu8SerIpAddr 		[in] server IP address
+ * @param u16Port			[in] uint16_t port number
+ * @param lPriority			[in] long priority
  * @param pFunCallBack 		[in] callback function pointer
  *
  * @return uint8_t			[out] success or failure in integer format
@@ -1994,6 +2008,8 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
  * @param u16TransacID 		[in] transaction ID
  * @param u8UnitId 			[in] unit id
  * @param pu8SerIpAddr 		[in] server IP address
+ * @param u16Port			[in] uint16_t port number
+ * @param lPriority			[in] long priority
  * @param pFunCallBack 		[in] callback function pointer
  *
  * @return uint8_t			[out] success or failure in integer format
