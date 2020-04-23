@@ -35,13 +35,9 @@ class CTimeRecord
 
 	// Interval
 	std::atomic<uint32_t> m_u32Interval; // in milliseconds
-	std::atomic<uint32_t> m_u32RemainingInterval; // in milliseconds
 	
 	// Cut-off interval
 	std::atomic<uint32_t> m_u32CutoffInterval; // in milliseconds
-	std::atomic<uint32_t> m_u32RemainingCutoffInterval; // in milliseconds
-	std::atomic<bool> m_bIsPollingNow; // Flag is true when polling counter is zero
-	std::atomic<bool> m_bIsCutoffNow; // Flag is true when cutoff counter is zero
 
 	std::vector<CRefDataForPolling> m_vPolledPoints;
 	std::vector<CRefDataForPolling> m_vPolledPointsRT;
@@ -57,59 +53,11 @@ class CTimeRecord
 	  m_bIsRTAvailable(a_oTimeRecord.m_bIsRTAvailable), m_bIsNonRTAvailable(a_oTimeRecord.m_bIsNonRTAvailable)
 	{
 		m_u32Interval.store(a_oTimeRecord.m_u32Interval);
-		m_u32RemainingInterval.store(a_oTimeRecord.m_u32Interval);
 
 		m_u32CutoffInterval.store(a_oTimeRecord.m_u32CutoffInterval);
-		m_u32RemainingCutoffInterval.store(a_oTimeRecord.m_u32RemainingCutoffInterval);
 	}
 	
 	~CTimeRecord();
-	void decrementTimerCounters(uint32_t a_uiMSec)
-	{
-		// Assign default values to flags
-		m_bIsPollingNow.store(false);
-		m_bIsCutoffNow.store(false);
-
-		// Decrement counters
-		m_u32RemainingInterval -= a_uiMSec;
-		m_u32RemainingCutoffInterval -= a_uiMSec;
-
-		// Check if cutoff timer is arrived
-		if (0 >= m_u32RemainingCutoffInterval)
-		{
-			// This is cutoff moment. Set the flag
-			m_bIsCutoffNow.store(true);
-			// For now, reload the cutoff timer counter with higher than polling frequency
-			// This will be reset with proper value once polling frequency is hit
-			m_u32RemainingCutoffInterval.store(m_u32Interval*2);
-		}
-		// Check if polling timer is arrived
-		if (0 >= m_u32RemainingInterval)
-		{
-			// This is polling moment. Set the flag
-			m_bIsPollingNow.store(true);
-			// Reload the timer counter
-			m_u32RemainingInterval.store(m_u32Interval);
-			// Load the cutoff counter bcoz polling frequency is hit !
-			m_u32RemainingCutoffInterval.store(m_u32CutoffInterval);
-		}
-	}
-	bool isCutoffNow()
-	{
-		return m_bIsCutoffNow.load();
-	}
-	bool isPollingNow()
-	{
-		return m_bIsPollingNow.load();
-	}
-	uint32_t getIntervalTimerCounter()
-	{
-		return m_u32RemainingInterval.load();
-	}
-	uint32_t getCutoffIntervalTimerCounter()
-	{
-		return m_u32RemainingCutoffInterval.load();
-	}
 
 	uint32_t getInterval()
 	{
@@ -137,6 +85,19 @@ class CTimeRecord
 	bool isNonRTListAvailable() { return m_bIsNonRTAvailable; };
 };
 
+struct StPollingTracker
+{
+	uint32_t m_uiPollInterval;
+	std::reference_wrapper<CTimeRecord> m_objTimeRecord;
+	bool m_bIsPolling;
+
+	//StPollingTracker() {;};
+	StPollingTracker(uint32_t a_uiPollInterval, std::reference_wrapper<CTimeRecord> a_objTimeRecord, bool a_bIsPolling)
+		: m_uiPollInterval{a_uiPollInterval}, m_objTimeRecord{a_objTimeRecord}, m_bIsPolling{a_bIsPolling}
+	{
+	}
+};
+
 class CTimeMapper
 {
 	private:
@@ -146,6 +107,8 @@ class CTimeMapper
 	std::map<uint32_t, CTimeRecord> m_mapTimeRecord;
 	std::mutex m_mapMutex;
 	
+	std::map<uint32_t, std::vector<struct StPollingTracker>> m_mapPollingTracker;
+
 	// Default constructor
 	CTimeMapper();
 	
@@ -159,7 +122,8 @@ class CTimeMapper
 		return timeMapper;
 	}
 	void ioPeriodicReadTimer(int v);
-	void checkTimer(uint32_t a_uiInterval, struct timespec& a_tsPollTime);
+	//void checkTimer(uint32_t a_uiInterval, struct timespec& a_tsPollTime);
+	void checkTimer(const uint32_t &a_uiMaxCounter, uint32_t a_uiInterval, struct timespec& a_tsPollTime);
 	void initTimerFunction();
 
 	/**
@@ -182,6 +146,10 @@ class CTimeMapper
 	bool insert(uint32_t a_uTime, CRefDataForPolling &a_oPoint);
 
 	uint32_t getMinTimerFrequency();
+
+	uint32_t preparePollingTracker();
+	bool getPollingTrackerList(uint32_t a_uiCounter, std::vector<StPollingTracker> &a_listPollInterval);
+	void addToPollingTracker(uint32_t a_uiCounter, CTimeRecord &a_objTimeRecord, bool a_bIsPolling);
 };
 
 struct StPollingInstance
@@ -280,6 +248,8 @@ class CRefDataForPolling
 
 	std::atomic<uint16_t> m_uReqTxID;
 
+	MbusAPI_t m_stMBusReq;
+
 	CRefDataForPolling& operator=(const CRefDataForPolling&) = delete;	// Copy assign
 
 	public:
@@ -313,6 +283,10 @@ class CRefDataForPolling
 
 	struct timespec getTimestampOfPollReq() const { return m_stPollTsForReq;};
 	void setTimestampOfPollReq(struct timespec& a_tsPoll) { m_stPollTsForReq = a_tsPoll;};
+
+	MbusAPI_t& getMBusReq() {return m_stMBusReq;};
+	struct timespec m_tsBefSend, m_tsAftSend;
+	struct timespec m_tsBefMap, m_tsAftMap;
 };
 
 /**

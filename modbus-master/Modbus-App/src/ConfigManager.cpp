@@ -15,8 +15,11 @@
 */
 CfgManager:: CfgManager()
 {
+	// this client is used to read environment variables mentioned in SubTopics/PubTopics given in
+	// docker-compose.yml file
 	env_config_client = env_config_new();
 
+	// based on DEV_MODE env variable this will create config_mgr_client instance
 	if(PublishJsonHandler::instance().isDevMode())
 	{
 		/// create client without certificates
@@ -410,7 +413,14 @@ void globalConfig::COperationInfo::buildOperationInfo(const YAML::Node& a_baseNo
 }
 
 
-/** Read global configurations from YAML file
+/** Read global configurations from YAML file (Global_Config.yml)
+ *  global configuration is available in common_config dir from docker volume
+ *
+ *  if any configuration is missing/invalid then following configuration will be used as a default one,
+	#	default_realtime: false
+	#	operation_priority: 1
+	#	retries: 0
+	#	qos: 0
  *
  * @return: true/false - based on success/failure
  */

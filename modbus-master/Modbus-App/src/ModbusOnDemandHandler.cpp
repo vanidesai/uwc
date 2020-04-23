@@ -29,10 +29,10 @@
 extern std::atomic<bool> g_stopThread;
 /// reference if to store request data
 
-// patterns to be used to find on-demand topic strings
-// topic syntax -
-// for non-RT topic for read - <topic_name>__RdReq
-// for RT topic read RT - <topic_name>__RdReq_RT
+/// patterns to be used to find on-demand topic strings
+/// topic syntax -
+/// for non-RT topic for read - <topic_name>__RdReq
+/// for RT topic read RT - <topic_name>__RdReq_RT
 #define READ	 	"_RdReq"
 #define READ_RT 	"_RdReq_RT"
 #define WRITE 		"_WrReq"
@@ -55,9 +55,9 @@ onDemandHandler::onDemandHandler() : m_bIsWriteInitialized(false)
 }
 
 /**
- * Validate input json
+ * Function to compare two strings.
  * @param stBaseString	:[in] original string from which comparison can be made
- * @param strToCompare	:[in] string value to compare
+ * @param strToCompare	:[in] string value to compare with base string
  * @return 	true : on success,
  * 			false : on error
  */
@@ -71,12 +71,12 @@ bool onDemandHandler::compareString(const std::string stBaseString, const std::s
 }
 
 /**
- * Create error response
- * @param ptMsg 	:[out] pointer to message envelope structure to fill up
- * @param errorCode	:[in] error code
- * @param u8FunCode	:[in] function code
- * @param strTopic	:[in] topic for which to create error response
- * @param txID		:[in] transaction id
+ * Function to generate error response if request json is invalid.
+ * @param errorCode	:[in] Error code for invalid json
+ * @param u8FunCode	:[in] Request function code
+ * @param txID		:[in] Transaction id of request.
+ * @param isRT		:[in] Flag to differentiate between RT/Non-RT requests.
+ * @param isWrite	:[in] Flag to differentiate between read and write for on-demand request
  */
 void onDemandHandler::createErrorResponse(eMbusStackErrorCode errorCode,
 		uint8_t  u8FunCode,
@@ -118,15 +118,16 @@ void onDemandHandler::createErrorResponse(eMbusStackErrorCode errorCode,
 		strResponseTopic = PublishJsonHandler::instance().getSReadResponseTopic();
 	}
 
-	// handle response
+	/// handle response function to send response on EIS.
 	CPeriodicReponseProcessor::Instance().handleResponse(&objCallback,
 															operationType,
 															strResponseTopic);
 }
 
 /**
- * Thread function for on-demand info handler
- * @return appropriate error code
+ * Handler function to start the processing of on-demand requests.
+ * @param stRequestData			:[in] Request structure containing topic and request message.
+ * @return 	eMbusStackErrorCode : Error code
  */
 eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestData)
 {
@@ -139,7 +140,7 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 
 	try
 	{
-		/// Enter TX Id
+		/// Transaction ID
 		stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
 #ifdef INSTRUMENTATION_LOG
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("On-demand request::" + stRequestData.m_strMsg));
@@ -159,6 +160,7 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 		stMbusApiPram.m_stOnDemandReqData.m_isRT = compareString(tempTopic, strToCompare);
 		bool isWrite = false;
 
+		/// Function called to parse request JSON and fill structure
 		eFunRetType = jsonParserForOnDemandRequest(root,
 				stMbusApiPram,
 				m_u8FunCode,
@@ -166,6 +168,7 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 				isWrite,
 				&ptrAppCallback);
 
+		/// inserting structure to map for retry and to create response JSON.
 		if(false == common_Handler::insertReqData(stMbusApiPram.m_u16TxId, stMbusApiPram))
 		{
 			CLogger::getInstance().log(WARN, LOGDETAILS("Failed to add MbusAPI_t data to map."));
@@ -184,6 +187,7 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 			if(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST != eFunRetType)
 			{
 				std::string strTopic = "";
+				/// error response if request JSON is invalid
 				createErrorResponse(eFunRetType,
 						m_u8FunCode,
 						stMbusApiPram.m_u16TxId,
@@ -207,9 +211,9 @@ eMbusStackErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestDat
 }
 
 /**
- * Convert char to int
- * @param input :[in] char to convert to int
- * @return converted integer
+ * Function to convert values from character to integer.
+ * @param input :[in] char to convert to integer
+ * @return int	:converted integer value
  */
 int char2int(char input)
 {
@@ -226,11 +230,11 @@ int char2int(char input)
 }
 
 /**
- * convert hex to binary
- * @param src	:[in] hex string to convert to binary
- * @param iOpLen:[in]iOpLen
- * @param target:[out] uint8_t
- * @return
+ * Function to convert hex value from string to uint8_t array
+ * @param src		:[in] hex string to convert to uint8_t
+ * @param iOpLen	:[in] length of the value
+ * @param target	:[out] to store converted value
+ * @return int		: -1 if error else position of output character
  */
 int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 {
@@ -282,10 +286,10 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 }
 
 /**
- * Validate input json
+ * Function to validate request JSON for wellhead & command
  * @param stSourcetopic	:[in] source topic
- * @param stWellhead	:[in] well head
- * @param stCommand		:[in] command
+ * @param stWellhead	:[in] wellhead name
+ * @param stCommand		:[in] command name
  * @return 	true : on success,
  * 			false : on error
  */
@@ -335,29 +339,30 @@ bool onDemandHandler::validateInputJson(std::string stSourcetopic, std::string s
 }
 
 /**
- * function to set callback for Read/Write for RT/Non-RT
+ * function to set callback for Read/Write for RT/Non-RT requests.
  * @param ptrAppCallback:[out] function pointer of callback function
- * @param isRTFlag	:[in] flag to decide RT/Non-RT request
+ * @param isRTFlag		:[in] flag to decide RT/Non-RT request
  * @param isWriteFlag	:[in] flag to decide read/write request
+ * @param stMbusApiPram	:[out] structure to fill retry value if timeout occurs.
  */
 void onDemandHandler::setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFlag, bool isWriteFlag, MbusAPI_t &stMbusApiPram)
 {
-	if(true == isRTFlag && true == isWriteFlag)
+	if(true == isRTFlag && true == isWriteFlag)	/// for RT Write request
 	{
 		**ptrAppCallback = (void*)OnDemandWriteRT_AppCallback;
 		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getRTConfig().getRetries();
 	}
-	else if(false == isRTFlag && true == isWriteFlag)
+	else if(false == isRTFlag && true == isWriteFlag)	/// for non-RT Write request
 	{
 		**ptrAppCallback = (void*)OnDemandWrite_AppCallback;
 		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getNonRTConfig().getRetries();
 	}
-	else if(true == isRTFlag && false == isWriteFlag)
+	else if(true == isRTFlag && false == isWriteFlag)	//// for RT read request
 	{
 		**ptrAppCallback = (void*)OnDemandReadRT_AppCallback;
 		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getRTConfig().getRetries();
 	}
-	else
+	else	/// For non-RT read request
 	{
 		**ptrAppCallback = (void*)OnDemandRead_AppCallback;
 		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getNonRTConfig().getRetries();
@@ -365,13 +370,13 @@ void onDemandHandler::setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFl
 }
 
 /**
- * json parser for on demand requests
- * @param root			:[in] json string
- * @param stMbusApiPram	:[in] modbus API param
- * @param funcCode		:[in] function code
- * @param txID			:[in] transaction id
- * @param isWrite		:[in] boolean variable to differentiate between read/write request
- * @param ptrAppCallback:[out] function pointer of callback function
+ * Function to parse request JSON and fill the structure.
+ * @param root			:[in] request message in JSON format
+ * @param stMbusApiPram	:[out] modbus API param structure to fill from request JSON
+ * @param funcCode		:[out] function code of the request
+ * @param txID			:[in] request transaction id
+ * @param isWrite		:[out] boolean variable to differentiate between read/write request
+ * @param ptrAppCallback:[out] function pointer to get callback function
  * @return appropriate error code
  */
 eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
@@ -407,6 +412,7 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 			cJSON *mqttTime=cJSON_GetObjectItem(root,"tsMsgRcvdFromMQTT");
 			cJSON *eisTime=cJSON_GetObjectItem(root,"tsMsgPublishOnEIS");
 
+			/// to check all the values are present in request JSON.
 			if(cmd && appseq && wellhead && version && timestamp && usec && sourcetopic && mqttTime && eisTime)
 			{
 				isValidJson = true;
@@ -529,6 +535,7 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 			}
 			network_info::eEndPointType eType = obj.getAddress().m_eType;
 
+			/// to find function code of received requestS
 			switch(eType)
 			{
 			case network_info::eEndPointType::eCoil:
@@ -645,7 +652,8 @@ eMbusStackErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
  * get operation info from global config depending on the topic name
  * @param topic			:[in] topic for which to retrieve operation info
  * @param operation		:[out] operation info
- * @return none
+ * @return 	true : on success,
+ * 			false : on error
  */
 bool onDemandHandler::getOperation(string topic, globalConfig::COperation& operation)
 {
@@ -741,7 +749,7 @@ long onDemandHandler::getReqPriority(const globalConfig::COperation a_Ops)
 }
 
 /**
- * Create write listener
+ * Function to start thread to listen on all subTopics for on-demand requests
  */
 void onDemandHandler::createOnDemandListener()
 {
@@ -769,8 +777,8 @@ void onDemandHandler::createOnDemandListener()
 }
 
 /**
- * Return single instance of this class
- * @return
+ * Function to get OnDemand Handler reference.
+ * @return Return reference of OnDemand Handler class
  */
 onDemandHandler& onDemandHandler::Instance()
 {
@@ -779,10 +787,11 @@ onDemandHandler& onDemandHandler::Instance()
 }
 
 /**
- * Process ZMQ message
+ * Function to serialize ZMQ message and send for processing.
  * @param msg	:	[in] actual message
  * @param stTopic:	[in] received topic
- * @param bIsWrite:	[in] flag to distinguish between read and write request
+ * @return[bool] true: on Success
+ * 				 false: On failure
  */
 bool onDemandHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
 {
@@ -838,8 +847,9 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
 } 
 
 /**
- * Subscribe to device listener
+ * Thread to listen for any on-demand request on ZMQ
  * @param stTopic	:[in] topic to subscribe
+ * @param a_refOps	:[in] global configuration value for QOS,retry, RT and operation priority.
  */
 void onDemandHandler::subscribeDeviceListener(const std::string stTopic,
 		const globalConfig::COperation a_refOps)
