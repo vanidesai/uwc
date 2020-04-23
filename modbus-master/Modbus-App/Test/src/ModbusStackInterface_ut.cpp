@@ -251,208 +251,93 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT_NULL)
 }
 
 
-#if 1
-
-TEST_F(ModbusStackInterface_ut, ReadCoil)
+TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_Readcoil)
 {
-
-	Modbus_Read_Coils(m_u16StartAddr,
-			m_u16Quantity,
-			m_u16TxId,
-			m_u8DevId,
-			pstMbusApiPram->m_u8IpAddr,
-			m_u16Port,
-			lPriority,
-			u32mseTimeout,
-			vpCallBackFun);
 
 	int retval = Modbus_Stack_API_Call(READ_COIL_STATUS,
 			pstMbusApiPram,
 			NULL);
 
-	//EXPECT_EQ(1, retval);
 	EXPECT_EQ(11, retval);
 }
 
-
-/***********************************ReadDiscreteInputs()*************************************/
-
-TEST_F(ModbusStackInterface_ut, ReadDiscreteInputs)
+TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadInStatus)
 {
-
-
-	Modbus_Read_Discrete_Inputs(u16StartDI,
-			u16NumOfDI,
-			u16TransacID,
-			u8UnitId,
-			pstMbusApiPram->m_u8IpAddr,
-			u16Port,
-			lPriority,
-			u32mseTimeout,
-			pFunCallBack);
 
 	uint8_t retval = Modbus_Stack_API_Call(READ_INPUT_STATUS,
 			pstMbusApiPram,
 			NULL);
 
-	//EXPECT_EQ(1, retval);
 	EXPECT_EQ(11, retval);
 }
 
 
-/***********************************ReadHoldingReg()*************************************/
-
-TEST_F(ModbusStackInterface_ut, ReadHoldingReg)
+TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadHoldReg)
 {
-
-	Modbus_Read_Holding_Registers(u16StartReg,
-			u16NumberOfRegisters,
-			u16TransacID,
-			u8UnitId,
-			pstMbusApiPram->m_u8IpAddr,
-			u16Port,
-			lPriority,
-			u32mseTimeout,
-			pFunCallBack);
 
 	uint8_t retval = Modbus_Stack_API_Call(READ_HOLDING_REG,
 			pstMbusApiPram,
 			NULL);
 
-	//EXPECT_EQ(1, retval);
 	EXPECT_EQ(11, retval);
 }
 
 
-/***********************************ReadInputReg()*************************************/
-
-TEST_F(ModbusStackInterface_ut, ReadInputReg)
+TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadInReg)
 {
-	Modbus_Read_Input_Registers(u16StartReg,
-			u16NumberOfRegisters,
-			u16TransacID,
-			u8UnitId,
-			pstMbusApiPram->m_u8IpAddr,
-			u16Port,
-			lPriority,
-			u32mseTimeout,
-			pFunCallBack);
 
 	uint8_t retval = Modbus_Stack_API_Call(READ_INPUT_REG,
 			pstMbusApiPram,
 			NULL);
 
-	//EXPECT_EQ(1, retval);
 	EXPECT_EQ(11, retval);
 }
 
 
-/***********************************WriteSingleCoil()*************************************/
-
-TEST_F(ModbusStackInterface_ut, WriteSingleCoil)
+TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteSingleCoils)
 {
 
 	uint8_t temp = 0;
-	//pstMbusApiPram->m_pu8Data = &temp;
-	pstMbusApiPram->m_u16StartAddr = 0;
-
-	Modbus_Write_Single_Coil(u16StartCoil,
-			*(uint16_t *)pstMbusApiPram->m_pu8Data,
-			u16TransacID,
-			u8UnitId,
-			pstMbusApiPram->m_u8IpAddr,
-			u16Port,
-			lPriority,
-			u32mseTimeout,
-			pFunCallBack);
 
 	uint8_t retval = Modbus_Stack_API_Call(WRITE_SINGLE_COIL,
 			pstMbusApiPram,
 			NULL);
 
-	//EXPECT_EQ(1, retval);
 	EXPECT_EQ(11, retval);
 }
 
 
-/***********************************WriteSingleReg()*************************************/
-/* Hangs */
-TEST_F(ModbusStackInterface_ut, WriteSingleReg)
+TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteSingleReg)
 {
 
 	uint8_t temp = 0;
-	//pstMbusApiPram->m_pu8Data = &temp;
-	pstMbusApiPram->m_u16StartAddr = 0;
-
-
-	Modbus_Write_Single_Register(u16StartReg,
-			*(uint16_t *)pstMbusApiPram->m_pu8Data,
-			u16TransacID,
-			u8UnitId,
-			pstMbusApiPram->m_u8IpAddr,
-			u16Port,
-			lPriority,
-			u32mseTimeout,
-			pFunCallBack);
-
 
 	uint8_t retval = Modbus_Stack_API_Call(WRITE_SINGLE_REG,
 			pstMbusApiPram,
 			NULL);
 
-	//EXPECT_EQ(1, retval);
 	EXPECT_EQ(11, retval);
 }
 
 
-/***********************************WriteMulCoil()*************************************/
-
-TEST_F(ModbusStackInterface_ut, WriteMulCoil)
+TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteMulCoils)
 {
-
-
-	Modbus_Write_Multiple_Coils(u16Startcoil,
-			u16NumOfCoil,
-			u16TransacID,
-			pu8OutputVal,
-			u8UnitId,
-			pstMbusApiPram->m_u8IpAddr,
-			u16Port,
-			lPriority,
-			u32mseTimeout,
-			pFunCallBack);
 
 	uint8_t retval = Modbus_Stack_API_Call(WRITE_MULTIPLE_COILS,
 			pstMbusApiPram,
 			NULL);
 
-	//EXPECT_EQ(1, retval);
 	EXPECT_EQ(11, retval);
 }
 
 
-
-/***********************************WriteMulReg()************************************/
-
-TEST_F(ModbusStackInterface_ut, WriteMulReg)
+TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteMulReg)
 {
-
-	Modbus_Write_Multiple_Register(u16StartReg,
-			u16NumOfReg,
-			u16TransacID,
-			pu8OutputVal,
-			u8UnitId,
-			pstMbusApiPram->m_u8IpAddr,
-			u16Port,
-			lPriority,
-			u32mseTimeout,
-			pFunCallBack);
 
 	uint8_t retval = Modbus_Stack_API_Call(WRITE_MULTIPLE_REG,
 			pstMbusApiPram,
 			NULL);
 
-	//EXPECT_EQ(1, retval);
 	EXPECT_EQ(11, retval);
 }
 
@@ -474,7 +359,3 @@ TEST_F(ModbusStackInterface_ut, Process_Req)
 	}
 }
 */
-
-
-/*******************************************************************************************/
-#endif

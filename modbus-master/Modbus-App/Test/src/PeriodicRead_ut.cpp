@@ -510,10 +510,11 @@ TC0015
 Test: Behaviour of checkTimer()
  */
 
-#if 1
+#if 0
 // Need to be checked once again this test should not be commented.
 TEST_F(PeriodicRead_ut, checkTimer_return)
 {
+
 	try
 	{
 		zmq_handler::stZmqContext a_BusContext;
@@ -534,9 +535,12 @@ TEST_F(PeriodicRead_ut, checkTimer_return)
 		sem_post(&CRequestInitiator::instance().getSemaphoreReqProcess());
 
 		CRefDataForPolling *CRefDataForPolling_pt = &a_stRdPrdObj;
+
 		CTimeMapper::instance().insert(1, a_stRdPrdObj);
-		CTimeMapper::instance().checkTimer(10000);
-		CPeriodicReponseProcessor::Instance().postDummyBADResponse(a_stRdPrdObj, m_stException);
+		CTimeMapper::instance().checkTimer(10000, tsPoll);
+		CPeriodicReponseProcessor::Instance().postDummyBADResponse(CRefDataForPolling_obj,
+				m_stException,
+				&tsPoll);
 		EXPECT_EQ(0, g_stopTimer);
 
 	}

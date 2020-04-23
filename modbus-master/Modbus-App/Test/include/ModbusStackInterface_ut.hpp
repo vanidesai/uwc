@@ -78,10 +78,6 @@ public:
 
 	uint8_t result;
 
-
-	RestMbusReqGeneric_t stMbusReqGen;
-	RestMbusReqGeneric_t *pstMbusReqGen = &stMbusReqGen;
-
 	stMbusAppCallbackParams_t stMbusAppCallbackParams;
 	stMbusAppCallbackParams_t *pstMbusAppCallbackParams = &stMbusAppCallbackParams;
 	stMbusAppCallbackParams_t *MbusAppCallbackParams = NULL;

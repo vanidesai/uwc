@@ -53,7 +53,6 @@ public:
 	uint8_t* target = NULL;
 	string tCommand;
 	string tValue = "0xFF00";
-	RestMbusReqGeneric_t *stModbusRxPacket;
 	unsigned char byte1;
 	int i = 0;
 	stRequest writeReq;

@@ -44,7 +44,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 	//	writeReq.m_strMsg = msg;
 	writeReq.m_strMsg = msg;
 
-/*
+	/*
 
 	stMbusApiPram.m_lPriority = 1;
 	stMbusApiPram.m_pu8Data = NULL;
@@ -109,16 +109,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 	void* ptrAppCallback = NULL;
 
 	bool isWrite = true;
-	stMbusApiPram.m_lPriority = 1;
-	stMbusApiPram.m_pu8Data[5];
-	stMbusApiPram.m_u16ByteCount = 2;
-	stMbusApiPram.m_u16Port = 1234;
-	stMbusApiPram.m_u16Quantity = 4;
-	stMbusApiPram.m_u16StartAddr = 56436524;
-	stMbusApiPram.m_u16TxId = 23;
-	stMbusApiPram.m_u32mseTimeout = 45;
-	stMbusApiPram.m_u8DevId = 5;
-	stMbusApiPram.m_u8IpAddr[4];
+
 
 	reqData.m_isByteSwap = true;
 	reqData.m_isWordSwap = false;
@@ -219,13 +210,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite)
 {
 
 	void* ptrAppCallback = NULL;
-	//RestMbusReqGeneric_t *pstModbusRxPacket = 0xFF00;
-	//RestMbusReqGeneric_t *pstModbusRxPacket = NULL;
-	RestMbusReqGeneric_t Rest_Modbus_obj;
-	RestMbusReqGeneric_t *pstModbusRxPacket = &Rest_Modbus_obj;
-	pstModbusRxPacket = new RestMbusReqGeneric_t();
-	pstModbusRxPacket->m_stReqData.m_pu8Data = NULL;
-	pstModbusRxPacket->m_u16ReffId = 1;
+	//	pstModbusRxPacket->m_u16ReffId = 1;
 
 	bool isWrite = false;
 
@@ -242,16 +227,11 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite)
 	cJSON *mqttTime=cJSON_GetObjectItem(root,"tsMsgRcvdFromMQTT");
 	cJSON *eisTime=cJSON_GetObjectItem(root,"tsMsgPublishOnEIS");
 
-	if(pstModbusRxPacket == NULL)
+
+	try
 	{
-		std::cout << __func__ << " pstModbusRxPacket == NULL" << std::endl;
-		EXPECT_EQ(true, false);
-	}
-	else
-		try
-	{
-			//EXPECT_EQ(typeid(MbusStackErrorCode), typeid(modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).jsonParserForOnDemandRequest( writeReq, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId)));
-			EXPECT_EQ(typeid(MbusStackErrorCode), typeid(onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, isWrite, &ptrAppCallback)));
+		//EXPECT_EQ(typeid(MbusStackErrorCode), typeid(modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).jsonParserForOnDemandRequest( writeReq, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId)));
+		EXPECT_EQ(typeid(MbusStackErrorCode), typeid(onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, isWrite, &ptrAppCallback)));
 
 	}
 	catch(std::exception &e)
@@ -260,11 +240,6 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite)
 		std::cout<<e.what()<<endl;
 		EXPECT_EQ("", e.what());
 	}
-
-	if(pstModbusRxPacket != NULL)
-		delete pstModbusRxPacket;
-
-
 }
 
 /**Test::ModbusWriteHandler_ut::createWriteListner_test()
@@ -304,7 +279,7 @@ TEST_F(ModbusWriteHandler_ut, subscribeDeviceListener)
 {
 
 	msg_envelope_t *msg = 0xFF00;
-	 globalConfig::COperation a_refOps;
+	globalConfig::COperation a_refOps;
 	try
 	{
 
@@ -331,7 +306,7 @@ TEST_F(ModbusWriteHandler_ut, hex_to_bin)
 	stMbusApiPram.m_u16Quantity = 4;
 	stMbusApiPram.m_u16StartAddr = 56436524;
 	stMbusApiPram.m_u16TxId = 23;
-	stMbusApiPram.m_u32mseTimeout = 45;
+//	stMbusApiPram.m_u32mseTimeout = 45;
 	stMbusApiPram.m_u8DevId = 5;
 	stMbusApiPram.m_u8IpAddr[4];
 	//stMbusApiPram.m_pu8Data = new uint8_t[stMbusApiPram.m_u16ByteCount]();
@@ -360,7 +335,7 @@ TEST_F(ModbusWriteHandler_ut, hex_to_bin_test)
 	stMbusApiPram.m_u16Quantity = 4;
 	stMbusApiPram.m_u16StartAddr = 56436524;
 	stMbusApiPram.m_u16TxId = 23;
-	stMbusApiPram.m_u32mseTimeout = 45;
+//	stMbusApiPram.m_u32mseTimeout = 45;
 	stMbusApiPram.m_u8DevId = 5;
 	stMbusApiPram.m_u8IpAddr[4];
 	//stMbusApiPram.m_pu8Data = new uint8_t[stMbusApiPram.m_u16ByteCount]();
@@ -662,7 +637,7 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_read)
 	stMbusApiPram.m_u16Quantity = 4;
 	stMbusApiPram.m_u16StartAddr = 56436524;
 	stMbusApiPram.m_u16TxId = 23;
-	stMbusApiPram.m_u32mseTimeout = 45;
+	//	stMbusApiPram.m_u32mseTimeout = 45;
 	stMbusApiPram.m_u8DevId = 5;
 	stMbusApiPram.m_u8IpAddr[4];
 
@@ -806,7 +781,7 @@ TEST_F(ModbusWriteHandler_ut, ReqPriority_test)
 	cout<<"#############################################################################"<<endl;
 
 }
-*/
+ */
 
 
 TEST_F(ModbusWriteHandler_ut, callBack_OnDemand_1stScenario)

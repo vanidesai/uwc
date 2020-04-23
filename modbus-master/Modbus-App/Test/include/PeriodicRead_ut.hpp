@@ -87,6 +87,8 @@ public:
 	stMbusAppCallbackParams_t *pstMbusAppCallbackParams = &MbusAppCallbackParams;
 	stMbusAppCallbackParams_t *stMbusAppCallbackParams = NULL;
 
+	struct timespec tsPoll = {0};
+
 };
 
 

@@ -157,7 +157,6 @@ TEST_F(CWellSiteDevInfo_ut, build_NoId)
 CWellSiteDevInfo::build should throw an exception.
 */
 
-#if 1 // To be updated later
 TEST_F(CWellSiteDevInfo_ut, build_WrongProtocol)
 {
 
@@ -184,7 +183,6 @@ TEST_F(CWellSiteDevInfo_ut, build_WrongProtocol)
 		}
 	}
 }
-#endif 0 // To be updated later
 
 /*
 Test: Behaviour of CWellSiteDevInfo::build when below is true in .yml file:
