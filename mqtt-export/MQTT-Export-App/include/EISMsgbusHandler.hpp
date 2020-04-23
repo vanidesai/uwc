@@ -52,31 +52,30 @@ public:
 
 	bool prepareCommonContext(std::string topicType);
 
-	/// function to get message bus context based on topic
+	// function to get message bus context based on topic
 	bool getCTX(std::string a_sTopic, stZmqContext& msgbusContext);
 
-	/// function to insert new entry in map
+	// function to insert new entry in map
 	bool insertCTX(std::string, stZmqContext );
 
-	/// function to remove entry from the map once reply is sent
+	// function to remove entry from the map once reply is sent
 	void removeCTX(std::string);
 
-	/// function to get message bus publish context based on topic
+	// function to get message bus publish context based on topic
 	bool getSubCTX(std::string a_sTopic, stZmqSubContext& subContext);
 
-	/// function to insert new entry in map
+	// function to insert new entry in map
 	bool insertSubCTX(std::string, stZmqSubContext );
 
-	/// function to remove entry from the map
+	// function to remove entry from the map
 	void removeSubCTX(std::string, stZmqContext& zmqCtx);
 
-	///////////////Sub topics/////////////////////////
 	bool getPubCTX(std::string a_sTopic, stZmqPubContext& pubContext);
 
-	/// function to insert new entry in map
+	// function to insert new entry in map
 	bool insertPubCTX(std::string, stZmqPubContext);
 
-	/// function to remove entry from the map
+	// function to remove entry from the map
 	void removePubCTX(std::string, stZmqContext& zmqCtx);
 
 	const std::vector<std::string>& getSubTopicList() const {

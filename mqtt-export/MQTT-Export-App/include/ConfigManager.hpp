@@ -11,9 +11,9 @@
 #ifndef INCLUDE_CONFIGMANAGER_HPP_
 #define INCLUDE_CONFIGMANAGER_HPP_
 
-#include<stdio.h>
+#include <stdio.h>
 #include <string.h>
-#include<unistd.h>
+#include <unistd.h>
 #include <eis/config_manager/env_config.h>
 #include <eis/config_manager/config_manager.h>
 #include <iostream>
@@ -30,34 +30,28 @@
 class CfgManager {
 public:
 
-    /** Returns the single instance of this class
-     *
-     * @param  : nothing
-     * @return : object of this class
+    /**
+     * Get the single instance of this class
+     * @param None
+     * @return reference of this class
      */
 	static CfgManager& Instance();
 
-
-    /** Returns the client status of creation
-     *
-     * @param : Nothing
-     * @return: true/false based on status
-     */
 	bool IsClientCreated();
 
-	/** Returns client from EIS Env library
-	 *
-	 * @param : Nothing
-	 * @return: Configuration object
+	/**
+	 * Return client from EIS Env library
+	 * @param None
+	 * @return Configuration object
 	 */
 	const config_mgr_t* getConfigClient() const {
 		return config_mgr_client;
 	}
 
-	/** Returns client from EIS Config library
-	 *
-	 * @param : Nothing
-	 * @return: ENV object
+	/**
+	 * Get client from EIS Config library
+	 * @param None
+	 * @return ENV client
 	 */
 	const env_config_t* getEnvClient() const {
 		return env_config_client;
@@ -65,13 +59,13 @@ public:
 
 private:
 
-	/// True for success and false for failure
+	// True for success and false for failure
 	bool isClientCreated;
 
-	/// Local object for EIS ENV Manager
+	// Local object for EIS ENV Manager
 	env_config_t* env_config_client;
 
-	/// Local object for EIS Config Manager
+	// Local object for EIS Config Manager
 	config_mgr_t* config_mgr_client;
 
     /** Constructor
@@ -157,10 +151,10 @@ public:
 
 	/** Populate COperation data structures
 	 *
-	 * @param : a_baseNode [in] : YAML node to read from
-	 * @param : a_refOpration [in] : data structure to be fill
-	 * @param : m_isRT [in] : RT/Noon-RT
-	 * @return: Nothing
+	 * @param a_baseNode :[in] YAML node to read from
+	 * @param a_refOpration :[in] data structure to be fill
+	 * @param m_isRT :[in]RT/Noon-RT
+	 * @return None
 	 */
 	static void build(const YAML::Node& a_baseNode,
 			COperation& a_refOpration,
@@ -168,6 +162,7 @@ public:
 
 	/**
 	 * Check if operation is real-time
+	 * @param None
 	 * @return true if operation is real-time
 	 * 			false if operation is not real-time
 	 */
@@ -178,6 +173,7 @@ public:
 
 	/**
 	 * Get operation thread priority
+	 * @param None
 	 * @return operation thread priority in int
 	 */
 	int getOperationPriority() const
@@ -187,6 +183,7 @@ public:
 
 	/**
 	 * Get QOS for operation
+	 * @param None
 	 * @return QOS for operation in int
 	 */
 	int getQos() const
@@ -196,6 +193,7 @@ public:
 
 	/**
 	 * Get operation retry count
+	 * @param None
 	 * @return operation retry count in int
 	 */
 	int getRetries() const
@@ -223,10 +221,10 @@ public:
 
 	/** Populate COperation data structures
 	 *
-	 * @param : a_baseNode [in] : YAML node to read from
-	 * @param : a_refOpInfo [in] : data structure to be fill
-	 * @param : a_eOpType [in]: 	operation type (POLLING,ON_DEMAND_READ,	ON_DEMAND_WRITE)
-	 * @return: Nothing
+	 * @param a_baseNode :[in] YAML node to read from
+	 * @param a_refOpInfo :[in] data structure to be fill
+	 * @param a_eOpType :[in] operation type (POLLING,ON_DEMAND_READ, ON_DEMAND_WRITE)
+	 * @return None
 	 */
 	static void buildOperationInfo(const YAML::Node& a_baseNode,
 			COperationInfo& a_refOpInfo,
@@ -234,6 +232,7 @@ public:
 
 	/**
 	 * Get default RT configuration for this operation
+	 * @param None
 	 * @return true if default RT
 	 * 			false if not
 	 */
@@ -244,6 +243,7 @@ public:
 
 	/**
 	 * Get non-RT configuration of this operation
+	 * @param None
 	 * @return reference of non-RT operation configuration
 	 */
 	COperation& getNonRTConfig()
@@ -253,6 +253,7 @@ public:
 
 	/**
 	 * Get RT configuration of this operation
+	 * @param None
 	 * @return reference of RT operation configuration
 	 */
 	COperation& getRTConfig()
@@ -279,12 +280,14 @@ class CGlobalConfig
 public:
 	/**
 	 * Get this instance of class
+	 * @param None
 	 * @return reference of this class instance
 	 */
 	static CGlobalConfig& getInstance();
 
 	/**
 	 * Get configuration of polling operation
+	 * @param None
 	 * @return reference to instance of polling operation class
 	 */
 	COperationInfo& getOpPollingOpConfig()
@@ -294,6 +297,7 @@ public:
 
 	/**
 	 * Get configuration of on-demand read operation
+	 * @param None
 	 * @return reference to instance of on-demand read operation class
 	 */
 	COperationInfo& getOpOnDemandReadConfig()
@@ -303,6 +307,7 @@ public:
 
 	/**
 	 * Get configuration of on-demand write operation
+	 * @param None
 	 * @return reference to instance of on-demand write operation class
 	 */
 	COperationInfo& getOpOnDemandWriteConfig()
@@ -327,6 +332,7 @@ class CPriorityMgr
 public:
 	/**
 	 * Get only this instance of class
+	 * @param None
 	 * @return this instance of class
 	 */
 	static CPriorityMgr& getInstance()
@@ -354,7 +360,7 @@ public:
 
 	/**
 	 * Get thread scheduling policy depending on operational-priority
-	 * @param opPriority : [in]operational priority
+	 * @param opPriority :[in] operational priority
 	 * @return thread scheduling policy
 	 */
 	globalConfig::eThreadScheduler getThreadScheduler(int opPriority)
@@ -370,35 +376,39 @@ public:
 	}
 };
 
-/** Read global configurations from YAML file and store it in data structures
- *
- * @return: true/false - based on success/failure
+/**
+ * Read global configurations from YAML file and store it in data structures
+ * @param None
+ * @return true/false based on success/failure
  */
 bool loadGlobalConfigurations();
 
 /** Function to validate key in YAML file
  *
- * @param : baseNode [in] : YAML node to read from
- * @param : a_sKey [in] : key to validate
- * @param : a_eDataType [in] : data type
- * @return: [int] : 0- success & -1 - if key is empty or absent & -2 if incorrect data type
+ * @param baseNode :[in] YAML node to read from
+ * @param a_sKey :[in] key to validate
+ * @param a_eDataType :[in] data type
+ * @return 0 if success, -1 if key is empty or absent, -2 if incorrect data type
  */
 int validateParam(const YAML::Node& a_BaseNode,
 		const std::string& a_sKey,
 		const enum eDataType a_eDT);
 
-/** Function to set default value
- ** @param : a_eOpType [in]: 	operation type (POLLING,ON_DEMAND_READ,	ON_DEMAND_WRITE)
- * @return: Nothing
+/**
+ * Function to set default value
+ * @param a_eOpType :[in] operation type (POLLING,ON_DEMAND_READ, ON_DEMAND_WRITE)
+ * @return None
  */
 void setDefaultConfig(const enum eOperationType a_eOpType);
 
-/** Function to set thread parameters
- ** @param : a_OpsInfo [in]: Operation class reference,
- ** @param : a_iPriority [in]: optional parameter for priority other than defined operation priority
- ** @param : a_eSched [in]: optional parameter for scheduler other than defined operation priority
- ** param : a_bIsOperation [in]: optional value. (if this flag is set then only a_iPriority & a_eSched will be used)
- * @return: Nothing
+/**
+ * Set thread policy and thread scheduler for current thread depending
+ * on the operation it is going to perform
+ * @param a_OpsInfo :[in] Operation class reference,
+ * @param a_iPriority :[in] optional parameter for priority other than defined operation priority
+ * @param a_eSched :[in] optional parameter for scheduler other than defined operation priority
+ * @param a_bIsOperation :[in] optional value. (if this flag is set then only a_iPriority & a_eSched will be used)
+ * @return None
  */
 void set_thread_sched_param(const COperation a_OpsInfo,
 		const int a_iPriority = 0,

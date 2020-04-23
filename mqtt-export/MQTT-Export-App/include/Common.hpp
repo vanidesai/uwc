@@ -19,7 +19,8 @@
 
 using namespace std;
 
-class CCommon {
+class CCommon
+{
 private:
 	// Private constructor so that no objects can be created.
 	CCommon();
@@ -46,7 +47,8 @@ public:
 
 	/**
 	 * Get read request topic
-	 * @return topic name in string
+	 * @param None
+	 * @return Topic name in string
 	 */
 	const std::string& getStrReadRequest() const {
 		return m_strReadRequest;
@@ -54,7 +56,8 @@ public:
 
 	/**
 	 * Set read request topic
-	 * @param strReadRequest
+	 * @param strReadRequest :[in] topic name to set for read request
+	 * @return None
 	 */
 	void setStrReadRequest(const std::string &strReadRequest) {
 		m_strReadRequest = strReadRequest;
@@ -62,6 +65,7 @@ public:
 
 	/**
 	 * Get write request topic
+	 * @param None
 	 * @return topic in string format
 	 */
 	const std::string& getStrWriteRequest() const {
@@ -70,7 +74,8 @@ public:
 
 	/**
 	 * Set write request topic
-	 * @param strWriteRequest
+	 * @param strWriteRequest :[in] topic name to set for write request
+	 * @return None
 	 */
 	void setStrWriteRequest(const std::string &strWriteRequest) {
 		m_strWriteRequest = strWriteRequest;
@@ -78,6 +83,7 @@ public:
 
 	/**
 	 * Get RT write request topic
+	 * @param None
 	 * @return RT write request topic in string
 	 */
 	const std::string& getStrRTWriteRequest() const {
@@ -86,7 +92,8 @@ public:
 
 	/**
 	 * Set RT write request topic
-	 * @param strWriteRequest
+	 * @param strWriteRequest :[in] RT topic name to set for RT write request
+	 * @return None
 	 */
 	void setStrRTWriteRequest(const std::string &strWriteRequest) {
 		m_strRTWriteRequest = strWriteRequest;
@@ -94,6 +101,7 @@ public:
 
 	/**
 	 * Get RT read request topic
+	 * @param None
 	 * @return RT read request topic in string
 	 */
 	const std::string& getStrRTReadRequest() const {
@@ -102,7 +110,8 @@ public:
 
 	/**
 	 * Set RT read request topic
-	 * @param strReadRequest
+	 * @param strReadRequest :[in] topic name to set for RT read request
+	 * @return None
 	 */
 	void setStrRTReadRequest(const std::string &strReadRequest) {
 		m_strRTReadRequest = strReadRequest;
@@ -110,7 +119,8 @@ public:
 
 	/**
 	 * Set application name
-	 * @param strAppName
+	 * @param strAppName :[in] Application name to set
+	 * @return None
 	 */
 	void setStrAppName(const std::string &strAppName) {
 		m_strAppName = strAppName;
@@ -118,6 +128,7 @@ public:
 
 	/**
 	 * Get application name
+	 * @param None
 	 * @return application name in string
 	 */
 	const std::string& getStrAppName() const {
@@ -127,6 +138,7 @@ public:
 	/**
 	 * Set MQTT Export URL to connect with MQTT broker
 	 * @param strMqttExportURL
+	 * @return None
 	 */
 	void setStrMqttExportURL(const std::string &strMqttExportURL) {
 		m_strMqttExportURL = strMqttExportURL;
@@ -134,6 +146,7 @@ public:
 
 	/**
 	 * Get MQTT-Export broker connection URL
+	 * @param None
 	 * @return connection URL in string
 	 */
 	const std::string& getStrMqttExportURL() const {
@@ -142,7 +155,8 @@ public:
 
 	/**
 	 * Get single instance of this class
-	 * @return
+	 * @param None
+	 * @return this instance of CCommon class
 	 */
 	static CCommon& getInstance() {
 		static CCommon _self;
@@ -151,6 +165,7 @@ public:
 
 	/**
 	 * Check if application set for dev mode or not
+	 * @param None
 	 * @return true if set to devMode
 	 * 			false if not set to devMode
 	 */
@@ -160,7 +175,8 @@ public:
 
 	/**
 	 * Set dev mode
-	 * @param devMode
+	 * @param devMode :[in] value to set for dev_mode
+	 * @return None
 	 */
 	void setDevMode(bool devMode) {
 		m_devMode = devMode;

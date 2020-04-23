@@ -14,8 +14,9 @@
 #include "MQTTSubscribeHandler.hpp"
 
 /**
- * constructor
+ * constructor Initializes MQTT subscriber
  * @param strPlBusUrl :[in] MQTT broker URL
+ * @return None
  */
 CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		subscriber(strPlBusUrl, SUBSCRIBERID), subConfigState(MQTT_SUSCRIBER_CONNECT_STATE)
@@ -44,8 +45,10 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 }
 
 /**
- * function to get single instance of this class
- * @return Handle to single instance of this class, exits in case of failure
+ * Maintain single instance of this class
+ * @param None
+ * @return Reference of this instance of this class, if successful;
+ * 			Application exits in case of failure
  */
 CMQTTHandler& CMQTTHandler::instance()
 {
@@ -88,6 +91,7 @@ void CMQTTHandler::printCounters()
 
 /**
  * Get MQTT subscriber current state
+ * @param None
  * @return subscriber current state
  */
 Mqtt_Sub_Config_state_t CMQTTHandler::getMQTTSubConfigState()
@@ -98,6 +102,7 @@ Mqtt_Sub_Config_state_t CMQTTHandler::getMQTTSubConfigState()
 /**
  * Set MQTT subscriber state to given
  * @param tempConfigState :[in] subscriber state to set
+ * @return None
  */
 void CMQTTHandler::setMQTTSubConfigState(Mqtt_Sub_Config_state_t tempConfigState)
 {
@@ -105,9 +110,8 @@ void CMQTTHandler::setMQTTSubConfigState(Mqtt_Sub_Config_state_t tempConfigState
 }
 
 /**
- * Subscribe with MQTT broker for topics
- * @return 	true : on success,
- * 			false : on error
+ * Subscribe with MQTT broker for topics for on-demand operations
+ * @return true/false based on success/failure
  */
 bool CMQTTHandler::subscribeToTopics()
 {
@@ -156,16 +160,13 @@ bool CMQTTHandler::subscribeToTopics()
 
 /**
  * Connect subscriber with MQTT broker
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CMQTTHandler::connectSubscriber()
 {
 	bool bFlag = true;
 	try
 	{
-		//std::lock_guard<std::mutex> lock(g_mqttSubMutexLock);
-
 		subscriber.connect(conopts, nullptr, listener);
 
 		// Wait for 2 seconds to get connected
@@ -190,8 +191,9 @@ bool CMQTTHandler::connectSubscriber()
 
 /**
 * parse message to check if topic is of read or write
-* @param json	:[in] message from which to check read/write operation
-* @return bool
+* @param topic	:[in] message from which to check read/write operation
+* @param isWrite :[out] is it write operation or read (= ~write)
+* @return true/false based on success/failure
 */
 bool CMQTTHandler::getOperation(string &topic, bool &isWrite)
 {
@@ -214,9 +216,9 @@ bool CMQTTHandler::getOperation(string &topic, bool &isWrite)
 }
 
 /**
-* fill the default realtime from global config
-* @param isWrite	:[in] opearation type
-* @return realtime value
+* Fill the default real-time from global config
+* @param isWrite :[in] operation type
+* @return real-time value
 */
 bool CMQTTHandler::fillDefaultRealtime(const bool isWrite)
 {
@@ -236,8 +238,10 @@ bool CMQTTHandler::fillDefaultRealtime(const bool isWrite)
 
 /**
 * parse message to retrieve QOS and topic names
-* @param json	:[in] message from which to retrieve real-time
-* @return bool
+* @param json :[in] message from which to retrieve real-time
+* @param isRealtime :[in] is it a message for real-time operation
+* @param isWrite :[in] is it a message for write or read (= ~write) operation
+* @return true/false based on success/failure
 */
 bool CMQTTHandler::parseMQTTMsg(const char *json, bool &isRealtime, const bool isWrite)
 {
@@ -306,8 +310,7 @@ bool CMQTTHandler::parseMQTTMsg(const char *json, bool &isRealtime, const bool i
 /**
  * Push message in message queue to send on EIS
  * @param msg :[in] reference of message to push in queue
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg)
 {
@@ -384,6 +387,8 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg)
 
 /**
  * Clean up, destroy semaphores, disables callback, disconnect from MQTT broker
+ * @param None
+ * @return None
  */
 void CMQTTHandler::cleanup()
 {

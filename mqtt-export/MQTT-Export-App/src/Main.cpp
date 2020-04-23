@@ -8,11 +8,11 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
-#include <iostream>
-#include <thread>
-#include <vector>
-#include <iterator>
-#include <semaphore.h>
+//#include <iostream>
+//#include <thread>
+//#include <vector>
+//#include <iterator>
+//#include <semaphore.h>
 
 #include "Common.hpp"
 #include "QueueMgr.hpp"
@@ -31,7 +31,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.3.6"
+#define APP_VERSION "0.0.3.7"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -
@@ -43,12 +43,12 @@ std::atomic<bool> g_shouldStop(false);
 #define READ_RESPONSE_RT		"_RdResp_RT"
 #define WRITE_RESPONSE 			"_WrResp"
 #define WRITE_RESPONSE_RT		"_WrResp_RT"
+
 /**
- * add sourcetopic key in payload to publish on EIS
+ * Add sourcetopic key in message payload to publish on EIS
  * @param json	:[in] json string in which to add topic name
  * @param topic	:[in] topic name to add
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool addSrTopic(string &json, string& topic)
 {
@@ -105,10 +105,9 @@ bool addSrTopic(string &json, string& topic)
 }
 
 /**
- * parse message to retrieve QOS and topic names
+ * Parse message to retrieve topic name
  * @param json	:[in] message from which to retrieve QOS and topic name
- * @param qos	:[out] QOS
- * @return parsed topic name from message
+ * @return Topic name from message
  */
 std::string parse_msg(const char *json)
 {
@@ -160,10 +159,10 @@ std::string parse_msg(const char *json)
 }
 
 /**
- * Process ZMQ message
- * @param msg	:	[in] actual message
- * returns true on success
- * 			false on failure
+ * Process message received from EIS and send for publishing on MQTT
+ * @param msg	:[in] actual message
+ * @param mqttPublisher :[in] mqtt publisher instance from which to publish this message
+ * returns true/false based on success/failure
  */
 bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 {
@@ -235,9 +234,9 @@ bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 }
 
 /**
- * get operation info from global config depending on the topic name
- * @param topic			:[in] topic for which to retrieve operation info
- * @param operation		:[out] operation info
+ * Get operation info from global config depending on the topic name
+ * @param topic	:[in] topic for which to retrieve operation info
+ * @param operation	:[out] operation info
  * @return none
  */
 void getOperation(string topic, globalConfig::COperation& operation)
@@ -282,9 +281,11 @@ void getOperation(string topic, globalConfig::COperation& operation)
 
 /**
  * Thread function to listen on EIS and send data to MQTT
- * @param topic 	:[in] topic to listen onto
- * @param context	:[in] msg bus context
- * @param subContext:[in] sub context
+ * @param topic :[in] topic to listen onto
+ * @param context :[in] msg bus context
+ * @param subContext :[in] sub context
+ * @param operation :[in] operation type this thread needs to perform
+ * @return None
  */
 void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext, globalConfig::COperation operation)
 {
@@ -327,7 +328,7 @@ void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext,
 				continue;
 			}
 			
-			/// process ZMQ message and publish to MQTT
+			// process ZMQ message and publish to MQTT
 			processMsg(msg, mqttPublisher);
 
 		}
@@ -345,11 +346,10 @@ void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext,
 
 /**
  * publish message to EIS
- * @param eisMsg 	:[in] message to publish on EIS
- * @param context	:[in] msg bus context
- * @param pubContext:[in] pub context
- * @return 	true : on success,
- * 			false : on error
+ * @param eisMsg :[in] message to publish on EIS
+ * @param context :[in] msg bus context
+ * @param pubContext :[in] pub context
+ * @return true/false based on success/failure
  */
 bool publishEISMsg(string eisMsg, stZmqContext &context,
 		stZmqPubContext &pubContext)
@@ -458,11 +458,11 @@ bool publishEISMsg(string eisMsg, stZmqContext &context,
 }
 
 /**
- * @param recvdMsg 	:[in] message to publish on EIS
- * @param isWrite	:[in] is write request or read
- * @param isRealtime:[in] is real-time request or non-real-time
- * @return 	true : on success,
- * 			false : on error
+ * Process message received from MQTT and send it on EIS
+ * @param recvdMsg :[in] message to publish on EIS
+ * @param isWrite :[in] is write request or read
+ * @param isRealtime :[in] is real-time request or non-real-time
+ * @return true/false based on success/failure
  */
 void processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool &isRealtime)
 {
@@ -571,9 +571,11 @@ void processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 }
 
 /**
- * set thread priority for threads which send msgs from MQTT-Export to EIS
- * @param isRealtime
- * @param isRead
+ * Set thread priority for threads that send messages from MQTT-Export to EIS
+ * depending on read and real-time parameters
+ * @param isRealtime :[in] is operation real-time or not
+ * @param isRead :[in] is it read or write operation
+ * @return None
  */
 void set_thread_priority_for_eis(bool& isRealtime, bool& isRead)
 {
@@ -616,6 +618,7 @@ void set_thread_priority_for_eis(bool& isRealtime, bool& isRead)
 /**
  * Thread function to read requests from queue filled up by MQTT and send data to EIS
  * @param qMgr 	:[in] pointer to respective queue manager
+ * @return None
  */
 void postMsgsToEIS(QMgr::CQueueMgr& qMgr)
 {
@@ -648,13 +651,16 @@ void postMsgsToEIS(QMgr::CQueueMgr& qMgr)
 }
 
 /**
- * start listening to EIS and publishing msgs to MQTT
+ * Get EIS topic list, get corresponding message bus and topic contexts.
+ * Spawn threads to listen to EIS messages, receive messages from EIS and publish them to MQTT
+ * @param None
+ * @return None
  */
-void postMsgstoMQTT() {
+void postMsgstoMQTT()
+{
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Initializing threads to start listening on EIS topics..."));
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Entered"));
-
-	/// get sub topic list
+	// get sub topic list
 	vector<string> vFullTopics = CEISMsgbusHandler::Instance().getSubTopicList();
 
 	for (auto &topic : vFullTopics)
@@ -696,8 +702,8 @@ void postMsgstoMQTT() {
 
 /**
  * Create EIS msg bus context and topic context for publisher and subscriber both
- * @return 	true : on success,
- * 			false : on error
+ * @param None
+ * @return true/false based on success/failure
  */
 bool initEISContext()
 {
@@ -752,10 +758,9 @@ bool initEISContext()
 
 /**
  * Main function of application
- * @param argc :[in]
- * @param argv :[in]
- * @return 	0 : on success,
- * 			-1 : on error
+ * @param argc :[in] number of input parameters
+ * @param argv :[in] input parameters
+ * @return 	0/-1 based on success/failure
  */
 int main(int argc, char *argv[])
 {
@@ -764,7 +769,7 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		///initialize CCommon class to get common variables
+		//initialize CCommon class to get common variables
 		string AppName = CCommon::getInstance().getStrAppName();
 		if(AppName.empty())
 		{

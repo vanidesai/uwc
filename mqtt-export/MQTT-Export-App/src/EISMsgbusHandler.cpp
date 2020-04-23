@@ -28,10 +28,9 @@ std::mutex __PubctxMapLock;
 std::mutex __SubctxMapLock;
 
 /**
- * Prepares EIS contexts for msg bus and topics
+ * Prepare EIS contexts for msg bus and topics
  * @param topicType :[in] topic type sub/pub or create context
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 {
@@ -47,7 +46,7 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 	}
 	if(CfgManager::Instance().IsClientCreated())
 	{
-		std::vector<std::string> Topics;// = CfgManager::Instance().getEnvConfig().get_topics_from_env(topicType);
+		std::vector<std::string> Topics;
 
 		char** data = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
 
@@ -168,7 +167,7 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 					{
 						std::cout << "Topic for ZMQ subscribe is :: "<< subTopic <<  endl;
 
-						/// add topic in list
+						// add topic in list
 						CEISMsgbusHandler::Instance().insertSubTopicInList(subTopic);
 
 						// method to store msgbus_ctx as per the topic
@@ -226,11 +225,10 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 }
 
 /**
- * Retrieves message bus context for a given topic
+ * Retrieve message bus context for a given topic
  * @param a_sTopic 		:[in] topic name to get context
  * @param msgbusContext :[out] message bus context
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CEISMsgbusHandler::getCTX(std::string a_sTopic, stZmqContext& msgbusContext)
 {
@@ -247,11 +245,10 @@ bool CEISMsgbusHandler::getCTX(std::string a_sTopic, stZmqContext& msgbusContext
 }
 
 /**
- * Inserts message bus context in map with topic as key
+ * Insert message bus context in map with topic as key
  * @param a_sTopic 	:[in] topic name to insert msg bus context
  * @param ctxRef 	:[out] context reference
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CEISMsgbusHandler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 {
@@ -259,7 +256,7 @@ bool CEISMsgbusHandler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 	{
 		std::unique_lock<std::mutex> lck(__ctxMapLock);
 
-		/// insert the data in map
+		// insert the data in map
 		g_mapContextMap.insert(std::pair <std::string, stZmqContext> (a_sTopic, ctxRef));
 		CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
 	}
@@ -275,8 +272,9 @@ bool CEISMsgbusHandler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 }
 
 /**
- * Removes message bus context if any error occurs while creating pub/sub topic context
+ * Remove message bus context if any error occurs while creating pub/sub topic context
  * @param a_sTopic :[in] topic name for which msg bus context is to be removed
+ * @return None
  */
 void CEISMsgbusHandler::removeCTX(std::string a_sTopic)
 {
@@ -304,11 +302,10 @@ void CEISMsgbusHandler::removeCTX(std::string a_sTopic)
 }
 
 /**
- * Retrieves sub topic context for the given topic
+ * Retrieve sub topic context for the given topic
  * @param a_sTopic 		:[in] topic name to get sub context
  * @param subContext 	:[out] sub context
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CEISMsgbusHandler::getSubCTX(std::string a_sTopic, stZmqSubContext& subContext)
 {
@@ -325,11 +322,10 @@ bool CEISMsgbusHandler::getSubCTX(std::string a_sTopic, stZmqSubContext& subCont
 }
 
 /**
- * Inserts a sub context in a map with topic name as key
+ * Insert a sub context in a map with topic name as key
  * @param a_sTopic 	:[in] topic name to insert sub context
  * @param ctxRef	:[in] context reference
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CEISMsgbusHandler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRef)
 {
@@ -338,7 +334,7 @@ bool CEISMsgbusHandler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRe
 	{
 		std::unique_lock<std::mutex> lck(__SubctxMapLock);
 
-		/// insert the data
+		// insert the data
 		g_mapSubContextMap.insert(std::pair <std::string, stZmqSubContext> (a_sTopic, ctxRef));
 	}
 	catch (exception &e)
@@ -352,9 +348,10 @@ bool CEISMsgbusHandler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRe
 }
 
 /**
- * Removes sub context for given topic from map
+ * Remove sub context for given topic from map
  * @param a_sTopic	:[in] topic name to remove sub context
  * @param zmqCtx	:[in] sub context to remove
+ * @return None
  */
 void CEISMsgbusHandler::removeSubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 {
@@ -379,14 +376,11 @@ void CEISMsgbusHandler::removeSubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 	}
 }
 
-//////////////////sub topics//////////////////
-
 /**
- * Retrieves pub context for a given topic from map
+ * Retrieve pub context for a given topic from map
  * @param a_sTopic 		:[in] topic name to get pub context
  * @param pubContext	:[out] pub context
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CEISMsgbusHandler::getPubCTX(std::string a_sTopic, stZmqPubContext& pubContext)
 {
@@ -402,11 +396,10 @@ bool CEISMsgbusHandler::getPubCTX(std::string a_sTopic, stZmqPubContext& pubCont
 }
 
 /**
- * Inserts pub context in a map with topic name as key
+ * Insert pub context in a map with topic name as key
  * @param a_sTopic	:[in] topic name to insert pub context
  * @param ctxRef	:[in] pub context to insert
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CEISMsgbusHandler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRef)
 {
@@ -432,6 +425,7 @@ bool CEISMsgbusHandler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRe
  * Removes pub context from map with given topic
  * @param a_sTopic	:[in] topic name to remove pub context
  * @param zmqCtx	:[in] pub context
+ * @return None
  */
 void CEISMsgbusHandler::removePubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 {
@@ -456,10 +450,9 @@ void CEISMsgbusHandler::removePubCTX(std::string a_sTopic, stZmqContext& zmqCtx)
 	}
 
 }
-/////////////////////////////////////////////
 
 /**
- * Constructor
+ * Default constructor
  */
 CEISMsgbusHandler::CEISMsgbusHandler()
 {
@@ -468,6 +461,8 @@ CEISMsgbusHandler::CEISMsgbusHandler()
 
 /**
  * Destroys all the message bus and topic contexts from map
+ * @param None
+ * @return None
  */
 void CEISMsgbusHandler::cleanup()
 {
@@ -519,9 +514,9 @@ void CEISMsgbusHandler::cleanup()
 }
 
 /**
- * Destructor
+ * Default destructor
  */
 CEISMsgbusHandler::~CEISMsgbusHandler()
 {
-	// TODO Auto-generated destructor stub
+
 }

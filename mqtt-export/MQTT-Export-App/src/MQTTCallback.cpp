@@ -11,8 +11,9 @@
 #include "MQTTSubscribeHandler.hpp"
 
 /**
- * Callback function gets called when subscriber is disconnected from MQTT broker
+ * This is a callback function which gets called when subscriber is disconnected from MQTT broker
  * @param cause :[in] cause of connection lost
+ * @return None
  */
 void CMQTTCallback::connection_lost(const std::string& cause)
 {
@@ -32,8 +33,9 @@ void CMQTTCallback::connection_lost(const std::string& cause)
 }
 
 /**
- * Callback function gets called when subscriber is connected with MQTT broker
+ * This is a callback function which gets called when subscriber is connected with MQTT broker
  * @param cause :[in]
+ * @return None
  */
 void CMQTTCallback::connected(const std::string& cause)
 {
@@ -49,8 +51,9 @@ void CMQTTCallback::connected(const std::string& cause)
 }
 
 /**
- * Callback function gets called when a message is arrived on subscriber
+ * This is a callback function which gets called when a message is arrived on subscriber
  * @param msg :[in] pointer to message arriving at subscriber
+ * @return None
  */
 void CMQTTCallback::message_arrived(mqtt::const_message_ptr msg)
 {
@@ -63,8 +66,9 @@ void CMQTTCallback::message_arrived(mqtt::const_message_ptr msg)
 }
 
 /**
- * Callback function gets called when subscriber fails to send/receive
+ * This is a callback function which gets called when subscriber fails to send/receive
  * @param tok :[in] failed message token
+ * @return None
  */
 void CMQTTActionListener::on_failure(const mqtt::token& tok)
 {
@@ -77,8 +81,9 @@ void CMQTTActionListener::on_failure(const mqtt::token& tok)
 }
 
 /**
- * Callback function gets called when subscriber succeeds in send/receive
+ * This is a callback function which gets called when subscriber succeeds in send/receive
  * @param tok :[in] message token
+ * @return None
  */
 void CMQTTActionListener::on_success(const mqtt::token& tok)
 {
@@ -88,8 +93,9 @@ void CMQTTActionListener::on_success(const mqtt::token& tok)
 }
 
 /**
- * Callback function gets called when publisher is disconnected from MQTT broker
+ * This is a callback function which gets called when publisher is disconnected from MQTT broker
  * @param cause :[in] cause of connection lost
+ * @return None
  */
 void CSyncCallback::connection_lost(const std::string& cause)
 {
@@ -106,8 +112,9 @@ void CSyncCallback::connection_lost(const std::string& cause)
 }
 
 /**
- * Callback function gets called when publisher is connected with MQTT broker
+ * This is a callback function which gets called when publisher is connected with MQTT broker
  * @param cause :[in]
+ * @return None
  */
 void CSyncCallback::connected(const std::string& cause)
 {
@@ -118,8 +125,9 @@ void CSyncCallback::connected(const std::string& cause)
 }
 
 /**
- * Callback function gets called when publisher publishes message successfully
+ * This is a callback function which gets called when publisher publishes message successfully
  * @param tok :[in] message token
+ * @return None
  */
 void CSyncCallback::delivery_complete(mqtt::delivery_token_ptr tok)
 {

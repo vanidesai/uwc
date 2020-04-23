@@ -8,7 +8,7 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include <vector>
+//#include <vector>
 #include "cjson/cJSON.h"
 #include "Common.hpp"
 #include "QueueMgr.hpp"
@@ -23,7 +23,8 @@ CQueueMgr ng_qRead(true, false);
 CQueueMgr ng_qWrite(false, false);
 
 /**
- * Returns reference of on-demand read operation instance
+ * Get reference of on-demand read operation instance
+ * @param None
  * @return reference of on-demand read operation instance
  */
 CQueueMgr& QMgr::getRead()
@@ -32,7 +33,8 @@ CQueueMgr& QMgr::getRead()
 }
 
 /**
- * Returns reference of on-demand write operation instance
+ * Get reference of on-demand write operation instance
+ * @param None
  * @return reference of on-demand write operation instance
  */
 CQueueMgr& QMgr::getWrite()
@@ -41,7 +43,8 @@ CQueueMgr& QMgr::getWrite()
 }
 
 /**
- * Returns reference of on-demand real-time read operation instance
+ * Get reference of on-demand real-time read operation instance
+ * @param None
  * @return reference of on-demand real-time read operation instance
  */
 CQueueMgr& QMgr::getRTRead()
@@ -50,7 +53,8 @@ CQueueMgr& QMgr::getRTRead()
 }
 
 /**
- * Returns reference of on-demand real-time write operation instance
+ * Get reference of on-demand real-time write operation instance
+ * @param None
  * @return reference of on-demand real-time write operation instance
  */
 CQueueMgr& QMgr::getRTWrite()
@@ -61,8 +65,7 @@ CQueueMgr& QMgr::getRTWrite()
 /**
  * Retrieve non-RT read message from message queue to publish on EIS
  * @param msg :[in] reference to message to retrieve from queue
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool QMgr::CQueueMgr::getSubMsgFromQ(mqtt::const_message_ptr &msg)
 {
@@ -87,6 +90,8 @@ bool QMgr::CQueueMgr::getSubMsgFromQ(mqtt::const_message_ptr &msg)
 
 /**
  * Clean up, destroy semaphores, disables callback, disconnect from MQTT broker
+ * @param None
+ * @return None
  */
 void QMgr::CQueueMgr::cleanup()
 {
@@ -96,10 +101,11 @@ void QMgr::CQueueMgr::cleanup()
 
 /**
  * Constructor of queue manager
- * @param isRead 	:[in] set if operational instance is for read operation
+ * @param isRead :[in] set if operational instance is for read operation
  * 					or write (toggle between read and write)
  * @param isRealTime :[in] set if operational instance is for real-time operation
  * 					or non-RT (toggle between RT and non-RT)
+ * @return None
  */
 QMgr::CQueueMgr::CQueueMgr(bool isRead, bool isRealTime)
 {
@@ -119,8 +125,8 @@ QMgr::CQueueMgr::~CQueueMgr()
 
 /**
  * Initialize semaphores
- * @return 	true : on success,
- * 			false : on error
+ * @param None
+ * @return true on success; application exits if fails to initialize semaphore
  */
 bool QMgr::CQueueMgr::initSem()
 {
@@ -139,9 +145,8 @@ bool QMgr::CQueueMgr::initSem()
 
 /**
  * Push message in operational queue
- * @param msg
- * @return 	true if success
- * 			false if failure
+ * @param msg :[in] MQTT message to push in message queue
+ * @return true/false based on success/failure
  */
 bool QMgr::CQueueMgr::pushMsg(mqtt::const_message_ptr &msg)
 {
@@ -165,8 +170,7 @@ bool QMgr::CQueueMgr::pushMsg(mqtt::const_message_ptr &msg)
 /**
  * Checks if a new message has arrived and retrieves the message
  * @param msg :[out] reference to new message
- * @return	true if a new message has arrived
- * 			false if error
+ * @return	true/false based on success/failure
  */
 bool QMgr::CQueueMgr::isMsgArrived(mqtt::const_message_ptr& msg)
 {

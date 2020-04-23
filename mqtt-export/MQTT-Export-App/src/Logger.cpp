@@ -11,7 +11,9 @@
 #include "Logger.hpp"
 
 /**
- * Constructor
+ * Constructor Initializes logger reading properties from .properties file
+ * @param None
+ * @return None
  */
 CLogger::CLogger()
 {
@@ -32,7 +34,7 @@ CLogger::CLogger()
 }
 
 /**
- * Destructor
+ * Destructor remove all the appenders and shut down logger
  */
 CLogger::~CLogger()
 {
@@ -43,6 +45,7 @@ CLogger::~CLogger()
 /**
  * Write statement with info level
  * @param msg :[in] statement to log
+ * @return None
  */
 void CLogger::LogInfo(std::string msg)
 {
@@ -52,6 +55,7 @@ void CLogger::LogInfo(std::string msg)
 /**
  * Write statement with debug level
  * @param msg :[in] statement to log
+ * @return None
  */
 void CLogger::LogDebug(std::string msg)
 {
@@ -61,6 +65,7 @@ void CLogger::LogDebug(std::string msg)
 /**
  * Write statement with warn level
  * @param msg :[in] statement to log
+ * @return None
  */
 void CLogger::LogWarn(std::string msg)
 {
@@ -70,6 +75,7 @@ void CLogger::LogWarn(std::string msg)
 /**
  * Write statement with error level
  * @param msg :[in] statement to log
+ * @return None
  */
 void CLogger::LogError(std::string msg)
 {
@@ -79,6 +85,7 @@ void CLogger::LogError(std::string msg)
 /**
  * Write statement with fatal level
  * @param msg :[in] statement to log
+ * @return None
  */
 void CLogger::LogFatal(std::string msg)
 {
@@ -89,6 +96,7 @@ void CLogger::LogFatal(std::string msg)
  * Write statements in log file with given log level
  * @param lvl :[in] log level
  * @param msg :[in] statement to log
+ * @return None
  */
 void CLogger::log(LogLevel lvl, std::string msg)
 {

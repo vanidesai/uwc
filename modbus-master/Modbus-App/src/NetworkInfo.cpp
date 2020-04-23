@@ -96,10 +96,11 @@ namespace
 }
 
 /**
- * Add data point
- * @param a_oDataPoint :[in] data point to add
+ * Add data point in m_DataPointList
+ * @param a_oDataPoint :[in] data point values to be add
+ * if DataPoint id is same in one file then it will be ignored
  * @return 	0 : on success,
- * 			-1 : on error
+ * 			-1 : on error (if point id is duplicate in datapoints file then this point will be ignored)
  */
 int network_info::CDeviceInfo::addDataPoint(CDataPoint a_oDataPoint)
 {
@@ -132,8 +133,10 @@ int network_info::CDeviceInfo::addDataPoint(CDataPoint a_oDataPoint)
  * Add device
  * @param a_oDevice :[in] device to add
  * @return 	0 : on success,
- * 			-1 : on error
- * 			-2 : if device does not match
+ * 			-1 : on error - This error will be returned if device ID is common in one site and
+ * 			 this device will be ignored
+ * 			-2 : if device type does not match with network type.
+ * 			E.g. RTU devices will be ignored in TCP container and vice versa
  */
 int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 {
@@ -171,9 +174,9 @@ int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 }
 
 /**
- * build well site info
- * @param a_oData 		:[in] data
- * @param a_oWellSite	:[in] well site
+ * build well site info to add all devices in data structures from YAML files
+ * @param a_oData 		:[in] a_oData : YAML data node to read from
+ * @param a_oWellSite	:[in] Data structures to store device information
  */
 void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo &a_oWellSite)
 {
@@ -250,13 +253,15 @@ bool network_info::validateIpAddress(const string &ipAddress)
 {
     struct sockaddr_in sa;
     int result = inet_pton(AF_INET, ipAddress.c_str(), &(sa.sin_addr));
-    return result != 0;
+    return result;
 }
 
 /**
- * build well site device info
- * @param a_oData			:[in] data
- * @param a_oWellSiteDevInfo:[in] well site
+ * build well site device info to store device specific parameters mentioned in YAML file
+ * SAMPLE YML to read is PL0, PL1,..etc..
+ * E.g protocol, ipaddress, port, unitid, slaveid
+ * @param a_oData			:[in] YAML data node to read from
+ * @param a_oWellSiteDevInfo:[in] Data structure to be updated
  */
 void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteDevInfo &a_oWellSiteDevInfo)
 {
@@ -389,9 +394,10 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 }
 
 /**
- * build well site device info
- * @param a_oData			:[in] data
- * @param a_oCDeviceInfo:[in] well site device info
+ * This function is used to read data points YML files and store it in CDeviceInfo data struct
+ * All the datapoints.yml file data will be stored in data structures
+ * @param a_oData			:[in] YAML data node to read from
+ * @param a_oCDeviceInfo:[in] Data structure to be updated
  */
 void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_oCDeviceInfo )
 {
@@ -468,7 +474,7 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 
 /**
  * Get well site list
- * @return well site map
+ * @return global well site map (e.g. ("PL0", CWellSiteInfo))
  */
 const std::map<std::string, CWellSiteInfo>& network_info::getWellSiteList()
 {
@@ -488,8 +494,8 @@ const std::map<std::string, CUniqueDataPoint>& network_info::getUniquePointList(
 
 /**
  * Get point type
- * @param a_type	:[in] point type
- * @return point type
+ * @param a_type	:[in] point type as string from YAML file
+ * @return point point type enum based on string
  */
 eEndPointType network_info::CDataPoint::getPointType(const std::string& a_type)
 {
@@ -541,9 +547,10 @@ bool network_info:: isNumber(string s)
 }
 
 /**
- * Build data points info
- * @param a_oData		:[in] data point
- * @param a_oCDataPoint	:[in] data points info
+ * This function is used to store each point information in CDataPoint class
+ * Point information will be read from datapoints.yml file
+ * @param a_oData		:[in] YAML node to read from
+ * @param a_oCDataPoint	:[in] data structure to store read values
  */
 void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint)
 {
@@ -656,8 +663,10 @@ void printWellSite(CWellSiteInfo a_oWellSite)
 }
 
 /**
- * Build network info
- * @param a_bIsTCP	:[in] is network info for TCP
+ * Build network info based on network type
+ * if network type is TCP then this function will read all TCP devices and store it
+ * in associated data structures and vice versa for RTU
+ * @param a_bIsTCP	:[in] In case of TCP container this flag will be set to true and false in case of RTU
  */
 void network_info::buildNetworkInfo(bool a_bIsTCP)
 {
@@ -814,7 +823,7 @@ CUniqueDataPoint::CUniqueDataPoint(const CUniqueDataPoint &a_objPt) :
 }
 
 /**
- * Check if response should await
+ * Check if response is received or not for specific point
  * @return 	true : on success,
  * 			false : on error
  */
@@ -823,8 +832,8 @@ bool CUniqueDataPoint::isIsAwaitResp() const {
 }
 
 /**
- * Set if response should await
- * @param isAwaitResp	:[out] is response await true
+ * Set the response status for point
+ * @param isAwaitResp	:[out] true/false based on response received or not
  */
 void CUniqueDataPoint::setIsAwaitResp(bool isAwaitResp) const {
 	m_bIsAwaitResp.store(isAwaitResp);

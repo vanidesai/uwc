@@ -10,12 +10,16 @@
 
 #include "MQTTPublishHandler.hpp"
 #include "cjson/cJSON.h"
-#include <semaphore.h>
+//#include <semaphore.h>
 #include "Common.hpp"
 #include "ConfigManager.hpp"
+
 /**
- * constructor
+ * Constructor Initializes MQTT publisher
  * @param strPlBusUrl :[in] MQTT broker URL
+ * @param strClientID :[in] client ID with which to subscribe (this is topic name)
+ * @param iQOS :[in] QOS value with which publisher will publish messages
+ * @return None
  */
 CMQTTPublishHandler::CMQTTPublishHandler(std::string strPlBusUrl, std::string strClientID, int iQOS):
 		publisher(strPlBusUrl, strClientID), ConfigState(MQTT_PUBLISHER_CONNECT_STATE)
@@ -50,8 +54,8 @@ CMQTTPublishHandler::CMQTTPublishHandler(std::string strPlBusUrl, std::string st
 
 /**
  * MQTT publisher connects with MQTT broker
- * @return 	true : on success,
- * 			false : on error
+ * @param None
+ * @return true/false based on success/failure
  */
 bool CMQTTPublishHandler::connect()
 {
@@ -74,6 +78,7 @@ bool CMQTTPublishHandler::connect()
 
 /**
  * Get publisher current state
+ * @param None
  * @return publisher state
  */
 Mqtt_Config_state_t CMQTTPublishHandler::getMQTTConfigState()
@@ -84,6 +89,7 @@ Mqtt_Config_state_t CMQTTPublishHandler::getMQTTConfigState()
 /**
  * Set publisher state to given
  * @param tempConfigState :[in] publisher state to set
+ * @return None
  */
 void CMQTTPublishHandler::setMQTTConfigState(Mqtt_Config_state_t tempConfigState)
 {
@@ -101,11 +107,10 @@ static unsigned long get_nanos(struct timespec ts)
 }
 
 /**
- * Add current time stamp in message payload
- * @param a_sMsg 		:[in] message in which to add time
- * @param a_tsMsgRcvd	:[in] time stamp in nano seconds
- * @return 	true : on success,
- * 			false : on error
+ * Add current time stamp in message
+ * @param a_sMsg :[in] message in which to add time
+ * @param a_tsMsgRcvd :[in] time stamp in nano seconds
+ * @return true/false based on success/failure
  */
 bool CMQTTPublishHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsMsgRcvd)
 {
@@ -178,11 +183,10 @@ bool CMQTTPublishHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespe
 
 /**
  * Publish message on MQTT broker
- * @param a_sMsg 	:[in] message to publish
- * @param a_sTopic	:[in] topic on which to publish message
+ * @param a_sMsg :[in] message to publish
+ * @param a_sTopic :[in] topic on which to publish message
  * @param a_tsMsgRcvd :[in] time stamp to add while publishing
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic, struct timespec a_tsMsgRcvd)
 {
@@ -288,6 +292,8 @@ void CMQTTPublishHandler::printCounters()
 
 /**
  * Clean up, destroy semaphores, disables callback, disconnect from MQTT broker
+ * @param None
+ * @return None
  */
 void CMQTTPublishHandler::cleanup()
 {
@@ -306,5 +312,3 @@ void CMQTTPublishHandler::cleanup()
 CMQTTPublishHandler::~CMQTTPublishHandler()
 {
 }
-
-/////////////////////////////////////////////

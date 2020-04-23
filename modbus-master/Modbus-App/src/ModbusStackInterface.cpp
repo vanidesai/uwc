@@ -23,15 +23,9 @@ extern "C" {
 std::mutex g_RWCommonCallbackMutex;
 
 /**
- *
- * DESCRIPTION
- * Function is used as application layer callback for on-demand read
- * for read/write coils,input register
- *
- * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
- * @uTxID :[in] response sequence number
- * @return void nothing
- *
+ * Function is used as application layer callback for on-demand read response from stack.
+ * @param pstMbusAppCallbackParams :[in] pointer to structure containing response from stack
+ * @uTxID :[in] response Transaction ID
  */
 void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
@@ -42,7 +36,7 @@ void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParam
 		return;
 	}
 
-	// handle response
+	/// handle response to process response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 															MBUS_CALLBACK_ONDEMAND_READ,
 															PublishJsonHandler::instance().getSReadResponseTopic());
@@ -51,15 +45,9 @@ void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParam
 }
 
 /**
- *
- * DESCRIPTION
- * Function is used as application layer callback for realtime on-demand read
- * for read/write coils,input register
- *
+ * Function is used as application layer callback for on-demand readRT response from stack.
  * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
- * @uTxID :[in] response sequence number
- * @return void nothing
- *
+ * @uTxID :[in] response Transaction ID
  */
 void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
@@ -70,7 +58,7 @@ void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPar
 		return;
 	}
 
-	// handle response
+	/// handle response to process response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 															MBUS_CALLBACK_ONDEMAND_READ_RT,
 															PublishJsonHandler::instance().getSReadResponseTopicRT());
@@ -79,14 +67,9 @@ void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPar
 }
 
 /**
- *
- * DESCRIPTION
- * Function is used as application layer callback for on-demand write
- * for read/write coils,input register
- *
+ * Function is used as application layer callback for on-demand write response from stack.
  * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
- * @uTxID :[in] response sequence number
- * @return void nothing
+ * @uTxID :[in] response transaction ID
  *
  */
 void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
@@ -98,7 +81,7 @@ void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPara
 		return;
 	}
 
-	// handle response
+	/// handle response to process response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 														MBUS_CALLBACK_ONDEMAND_WRITE,
 														PublishJsonHandler::instance().getSWriteResponseTopic());
@@ -107,15 +90,9 @@ void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPara
 }
 
 /**
- *
- * DESCRIPTION
- * Function is used as application layer callback for realtime on-demand write
- * for read/write coils,input register
- *
+ * Function is used as application layer callback for on-demand WriteRT response from stack.
  * @param pstMbusAppCallbackParams :[in] pointer to struct containing response from stack
- * @uTxID :[in] response sequence number
- * @return void nothing
- *
+ * @uTxID :[in] response transaction ID
  */
 void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
@@ -126,7 +103,7 @@ void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPa
 		return;
 	}
 
-	// handle response
+	/// handle response to process response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 														MBUS_CALLBACK_ONDEMAND_WRITE_RT,
 														PublishJsonHandler::instance().getSWriteResponseTopicRT());
@@ -135,37 +112,20 @@ void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPa
 }
 
 /**
- * Description
- * function to call Modbus stack APIs
- *
- * @param u8FunCode 		[in] function code
+ * Function to call modbus stack APIs depending updon function code
+ * @param u8FunCode 		[in] function code of request
  * @param pstMbusApiPram 	[in] Input request packet
  * @param vpCallBackFun		[in] callback function pointer
- *
- * @return uint8_t			[out] return 0 on success
- *
+ * @return uint8_t			[out] return 0 on success else error code
  */
 uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram,
 					void* vpCallBackFun)
 {
-	string temp; //temporary string for logging
+	string temp; /// temporary string for logging
 	uint8_t u8ReturnType = MBUS_JSON_APP_ERROR_NULL_POINTER;
 
 	if(pstMbusApiPram != NULL)
 	{
-		temp = "Request Init Time: ";
-		temp.append(to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()));
-		temp.append(", TxID: ");
-		temp.append(to_string(pstMbusApiPram->m_u16TxId));
-		temp.append(", Function Code: ");
-		temp.append(to_string((unsigned)u8FunCode));
-		temp.append(", DevID: ");
-		temp.append(to_string((unsigned)pstMbusApiPram->m_u8DevId));
-		temp.append(", PointAddr: ");
-		temp.append(to_string(pstMbusApiPram->m_u16StartAddr));
-
-		CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
-
 		switch ((eModbusFuncCode_enum)u8FunCode)
 		{
 			case READ_COIL_STATUS:
