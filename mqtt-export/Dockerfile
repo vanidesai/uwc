@@ -60,7 +60,6 @@ RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
 
 #set the environment variable
 ENV LD_LIBRARY_PATH ${APP_WORK_DIR}:/usr/local/lib
-HEALTHCHECK CMD exit 0
 
 # Run the container
 CMD ./MQTT_Export
