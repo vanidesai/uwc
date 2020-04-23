@@ -156,7 +156,7 @@ bool initReqManager()
 /**
  *
  * Description
- * emplace new request in request queue
+ * Sets data structure to process new request
  *
  * @param - tsReqRcvd - request received time-stamp
  * @returns pointer to stMbusPacketVariables_t
@@ -165,6 +165,7 @@ bool initReqManager()
 stMbusPacketVariables_t* emplaceNewRequest(const struct timespec tsReqRcvd)
 {
 	stMbusPacketVariables_t* ptr = NULL;
+	// Get index of available request node in request array
 	long iCount = getAvailableReqNode();
 	if ((iCount >= 0) && (iCount < MAX_REQUESTS))
 	{
@@ -197,18 +198,21 @@ stMbusPacketVariables_t* emplaceNewRequest(const struct timespec tsReqRcvd)
 /**
  *
  * Description
- * emplace new request in request queue
+ * Free request node and index to queue to mark as available
  *
- * @param - a_pObjTempReq
- * @returns pointer to stMbusPacketVariables_t
+ * @param - request node to mark as free
+ * @returns none
  *
  */
 void freeReqNode(stMbusPacketVariables_t* a_pobjReq)
 {
+	// 1. remove the node from timeout tracker in case of TCP
+	// 2. reset the request node elements
+	// 3. mark the index as available
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-	//removeReqFromListWithLock(a_pobjReq);
 	releaseFromTracker(a_pobjReq);
 #endif
+	// reset the structure
 	resetReqNode(a_pobjReq);
 }
 
@@ -247,7 +251,6 @@ void* SessionControlThread(void* threadArg)
 			u8NewDevEntryFalg = 0;
 			pstMBusReqPact = stScMsgQue.wParam;
 			pstMBusReqPact->m_lPriority = stScMsgQue.mtype;
-			//Osal_Wait_Mutex (LivSerSesslist_Mutex);
 
 			// addressed review comment
 			if(0 != Osal_Wait_Mutex(LivSerSesslist_Mutex))
@@ -268,7 +271,8 @@ void* SessionControlThread(void* threadArg)
 					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
 					{
 						// fail to unlock mutex
-						continue;
+						// Wait for next request
+						//continue;
 					}
 
 					freeReqNode(pstMBusReqPact);
@@ -310,12 +314,12 @@ void* SessionControlThread(void* threadArg)
 					if(NULL == pstTempLivSerSesslist->m_pNextElm )
 					{
 						ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_MALLOC_FAILED);
-						//Osal_Release_Mutex (LivSerSesslist_Mutex);
 						// addressed review comment
 						if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
 						{
 							// fail to unlock mutex
-							continue;
+							// Wait for next request
+							//continue;
 						}
 						freeReqNode(pstMBusReqPact);
 						continue;
@@ -342,7 +346,8 @@ void* SessionControlThread(void* threadArg)
 					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
 					{
 						// fail to unlock mutex
-						continue;
+						// Wait for next request
+						///continue;
 					}
 					freeReqNode(pstMBusReqPact);
 					continue;
@@ -358,12 +363,12 @@ void* SessionControlThread(void* threadArg)
 				if(!OSAL_Post_Message(&stPostThreadMsg))
 				{
 					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_SEND);
-					//Osal_Release_Mutex (LivSerSesslist_Mutex);
 					// addressed review comment
 					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
 					{
 						// fail to unlock mutex
-						continue;
+						// Wait for next request
+						//continue;
 					}
 					freeReqNode(pstMBusReqPact);
 					continue;
@@ -378,12 +383,12 @@ void* SessionControlThread(void* threadArg)
 				if(-1 == pstLivSerSesslist->m_ThreadId)
 				{
 					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_THREAD_CREATE);
-					//Osal_Release_Mutex (LivSerSesslist_Mutex);
 					// addressed review comment
 					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
 					{
 						// fail to unlock mutex
-						continue;
+						// Wait for next request
+						//continue;
 					}
 					freeReqNode(pstMBusReqPact);
 					continue;
@@ -399,18 +404,17 @@ void* SessionControlThread(void* threadArg)
 				if(!OSAL_Post_Message(&stPostThreadMsg))
 				{
 					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_SEND);
-					//Osal_Release_Mutex (LivSerSesslist_Mutex);
 					// addressed review comment
 					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
 					{
 						// fail to unlock mutex
-						continue;
+						// Wait for next request
+						//continue;
 					}
 					freeReqNode(pstMBusReqPact);
 					continue;
 				}
 			}
-			//Osal_Release_Mutex (LivSerSesslist_Mutex);
 			// addressed review comment
 			if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
 			{
@@ -518,6 +522,8 @@ bool initEPollData()
 	{
 		return false;
 	}
+
+	return true;
 }
 
 /**
@@ -595,7 +601,6 @@ void removeEPollRef(int a_iIndex)
 			return;
 		}
 		removeEPollRefNoLock(a_iIndex);
-		//Osal_Release_Mutex(EPollMutex);
 		// addressed review comment
 		if(0 != Osal_Release_Mutex (EPollMutex))
 		{
@@ -697,7 +702,6 @@ int addtoEPollList(IP_Connect_t *a_pstIPConnect)
 				//printf("adding ref: %d", ret);
 			}
 		}
-		//Osal_Release_Mutex(EPollMutex);
 		if(0 != Osal_Release_Mutex (EPollMutex))
 		{
 			// fail to unlock mutex
@@ -754,7 +758,6 @@ void* EpollRecvThread()
 		event_count = 0;
 
 		event_count = epoll_wait(m_epollFd, m_events, MAXEVENTS, EPOLL_TIMEOUT);
-		//Osal_Wait_Mutex(EPollMutex);
 
 		// addressed review comment
 		if(0 != Osal_Wait_Mutex(EPollMutex))
@@ -870,7 +873,6 @@ void* EpollRecvThread()
 
 			}
 		}//for loop for sockets ends
-		//Osal_Release_Mutex(EPollMutex);
 		if(0 != Osal_Release_Mutex (EPollMutex))
 		{
 			// fail to unlock mutex
@@ -950,9 +952,10 @@ unsigned long get_nanos(void) {
 /**
  *
  * Description
- * Remove request from list with no locks
+ * Remove request from timeout tracker node. Assumed is calling function has acquired lock.
  *
  * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
+ * @param reference to timeout tracker list from which node needs to be removed
  * @return void [out] none
  */
 void releaseFromTrackerNode(stMbusPacketVariables_t *a_pstNodeToRemove,
@@ -993,7 +996,8 @@ void releaseFromTrackerNode(stMbusPacketVariables_t *a_pstNodeToRemove,
 /**
  *
  * Description
- * Remove request from list with locks
+ * Remove the request from timeout tracker.
+ * Identifies tracker node from the tracker list and then removes the node from that tracker
  *
  * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
  * @return void [out] none
@@ -1067,7 +1071,7 @@ void addToRespQ(stMbusPacketVariables_t *a_pstReq)
 /**
  *
  * Description
- * Post response to application
+ * Thread which posts response to application. It listens on a queue to receive data to post
  *
  * @param threadArg [in] void pointer
  * @return void [out] none
@@ -1083,7 +1087,6 @@ void* postResponseToApp(void* threadArg)
 
 	while(false == g_bThreadExit)
 	{
-		//sem_wait(&g_stRespProcess.m_semaphoreResp);
 		if((sem_wait(&g_stRespProcess.m_semaphoreResp)) == -1 && errno == EINTR)
 		{
 			// Continue if interrupted by handler
@@ -1101,9 +1104,7 @@ void* postResponseToApp(void* threadArg)
 				{
 					pstMBusRequesPacket->m_u8ProcessReturn = DecodeRxPacket(pstMBusRequesPacket->m_u8RawResp, pstMBusRequesPacket);
 				}
-				//pstMBusRequesPacket->m_ulRespSentTimebyStack = get_nanos();
 				ApplicationCallBackHandler(pstMBusRequesPacket, pstMBusRequesPacket->m_u8ProcessReturn);
-				//OSAL_Free(pstMBusRequesPacket);
 				freeReqNode(pstMBusRequesPacket);
 			}
 		}
@@ -1123,8 +1124,8 @@ void* postResponseToApp(void* threadArg)
  * Timeout is implemented in the form of counter.
  * This function returns current counter.
  *
- * @param thread argument - none
- * @return none
+ * @param none
+ * @return returns the counter
  */
 int getTimeoutTrackerCount()
 {
@@ -1134,7 +1135,7 @@ int getTimeoutTrackerCount()
 /**
  *
  * Description
- * Thead function: Implements a timer to measure timeout for
+ * Thread function: Implements a timer to measure timeout for
  * initiated requests.
  *
  * @param thread argument - none
@@ -1144,7 +1145,6 @@ void* timeoutTimerThread(void* threadArg)
 {
 	// set thread priority
 	set_thread_sched_param();
-	printf("In timeoutTimerThread\n");
 	g_oTimeOutTracker.m_iCounter = 0;
 
 	struct timespec ts;
@@ -1185,7 +1185,6 @@ void* timeoutTimerThread(void* threadArg)
 			if(-1 != msgsnd(g_oTimeOutTracker.m_iTimeoutActionQ, &objSt, sizeof(objSt) - sizeof(long), 0))
 			{
 				sem_post(&g_oTimeOutTracker.m_semTimeout);
-				//printf("to post %d - ", g_oTimeOutTracker.m_iCounter);
 			}
 			else
 			{
@@ -1204,7 +1203,7 @@ void* timeoutTimerThread(void* threadArg)
 /**
  *
  * Description
- * Thead function: Identifies timed out requests and 
+ * Thread function: Identifies timed out requests and
  * initiates a response accordingly.
  *
  * @param thread argument - none
@@ -1229,7 +1228,6 @@ void* timeoutActionThread(void* threadArg)
 		}
 		struct stIntDataForQ objSt = {0};
 		int i32RetVal = msgrcv(g_oTimeOutTracker.m_iTimeoutActionQ, &objSt, MsgSize, 0, MSG_NOERROR | IPC_NOWAIT);
-		//if(errno == ENOMSG && (-1 == i32RetVal))
 		if(i32RetVal <= 0)
 		{
 			//i32RetVal = -1;
@@ -1238,7 +1236,7 @@ void* timeoutActionThread(void* threadArg)
 		}
 
 		// get list corresponding to the index
-		//printf("q index: %d\n", objSt.m_iID);
+
 		// This is the current index
 		// Find timed out index using following formula
 		// timedOutIndex = [current index + (timeout-array-size - timeout)] % timeout-array-size
@@ -1258,6 +1256,7 @@ void* timeoutActionThread(void* threadArg)
 			continue;
 		}
 
+		// Obtain the lock
 		do
 		{
 			expected = 0;
@@ -1270,14 +1269,10 @@ void* timeoutActionThread(void* threadArg)
 			stMbusPacketVariables_t *pstCur = pstNextNode;
 			pstNextNode = pstNextNode->__next;
 			eTransactionState expected = REQ_SENT_ON_NETWORK;
+			// Change the state of request node
 			if(true ==
 					atomic_compare_exchange_strong(&pstCur->m_state, &expected, RESP_TIMEDOUT))
 			{
-				/*printf("Cur cnt:%d, Timedout cnt:%d, Node for timeout is found: %d, TxID: %d, %lu\n",
-	                        objSt.m_iID, iTimedOutIndex,
-	                        pstCur->m_iTimeOutIndex, pstCur->m_u16TransactionID,
-	                        get_nanos());
-				 */
 				pstCur->m_u8ProcessReturn = STACK_ERROR_RECV_TIMEOUT;
 				pstCur->m_stMbusRxData.m_u8Length = 0;
 				// Init resp received timestamp
@@ -1310,7 +1305,7 @@ int initTimeoutTrackerArray()
 
 	if(-1 == sem_init(&g_oTimeOutTracker.m_semTimeout, 0, 0 /* Initial value of zero*/))
 	{
-		perror("Timeout tracker: semaphore creaton error: ");
+		perror("Timeout tracker: semaphore creation error: ");
 		return -1;
 	}
 
@@ -1335,6 +1330,7 @@ int initTimeoutTrackerArray()
 		return -1;
 	}
 
+	// Resets the timeout tracker lists
 	int iCount = 0;
 	for(; iCount < g_oTimeOutTracker.m_iSize; ++iCount)
 	{
@@ -1343,7 +1339,7 @@ int initTimeoutTrackerArray()
 		g_oTimeOutTracker.m_pstArray[iCount].m_iIsLocked = 0;
 	}
 
-	// Initiate timeout timer thread
+	// Initiate timeout timer thread. This thread measures timeout tracker counter
 	{
 		thread_Create_t stThreadParam = { 0 };
 		stThreadParam.dwStackSize = 0;
@@ -1487,7 +1483,7 @@ void deinitTCPRespStructs()
 /**
  *
  * Description
- * Add request to list
+ * Add request to list for tracking timeout
  *
  * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
  * @return int 0 for success, -1 for error
@@ -1652,8 +1648,7 @@ void* ServerSessTcpAndCbThread(void* threadArg)
  * Description
  * Add response to handle in a queue
  *
- * @param a_u8UnitID [in] uint8_t unit id from modbus header
- * @param a_u16TransactionID  [in] uint16_t transction id from modbus header
+ * @param a_pstReq [in] response data received from network
  * @return void [out] none
  */
 void addToHandleRespQ(stTcpRecvData_t *a_pstReq)
@@ -1691,8 +1686,18 @@ void addToHandleRespQ(stTcpRecvData_t *a_pstReq)
 #endif
 
 // Function to set thread parameters
+/**
+ *
+ * Description
+ * This function sets thread parameters. All threads call this function.
+ * At present, all stack threads are configured with same parameters.
+ *
+ * @param none
+ * @return void [out] none
+ */
 void set_thread_sched_param()
 {
+	// Set thread priority and scheduler
 	int iThreadPriority = 0;
 	eThreadScheduler threadPolicy;
 

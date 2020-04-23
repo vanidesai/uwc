@@ -19,18 +19,19 @@
  * DESCRIPTION
  * The OSAL API will allocate memory from the heap.
  *
- * @param i32MemorySize [in] Memory size to be allocated.
+ * @param a_i32MemorySize [in] Memory size to be allocated.
  * @return Success: Pointer to the allocated memory.
  *         Failed : NULL pointer.
  *
  */
-void *OSAL_Malloc(int32_t i32MemorySize)
+void *OSAL_Malloc(int32_t a_i32MemorySize)
 {
-    void *Allocated_Location;
-    /// Allocate memory of requested size
-	Allocated_Location = malloc(i32MemorySize);
+    void *pvData = NULL;
 
-	return Allocated_Location;
+    /// Allocate memory of requested size
+    pvData = malloc(a_i32MemorySize);
+
+	return pvData;
 }
 
 /**

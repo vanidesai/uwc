@@ -18,11 +18,6 @@
 #include <errno.h>
 #include "API.h"
 
-#define WAIT_OBJECT_0 0
-#define WAIT_OBJECT_1 1
-#define WAIT_OBJECT_2 2
-#define WAIT_TIMEOUT -1
-#define INFINITE      0xFFFFFFFF  // Infinite timeout
 #define MAX_RECV_PRIORITY -100000
 
 typedef pthread_t  Thread_H;

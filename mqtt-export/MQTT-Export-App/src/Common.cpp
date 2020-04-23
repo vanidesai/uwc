@@ -9,14 +9,13 @@
 ************************************************************************************/
 
 #include "ConfigManager.hpp"
-#include <algorithm>
-
-#include <pthread.h>
-#include <sched.h>
 #include "Common.hpp"
 
 /**
- * Constructor
+ * Constructor initializes CCommon instance and retrieves common environment variables
+ * @param None
+ * @return None if successful;
+ * 			In case of error or exception, application exits
  */
 CCommon::CCommon()
 {
@@ -29,19 +28,20 @@ CCommon::CCommon()
 }
 
 /**
- * This function is used to read environment variable
- * @param pEnvVarName :[in] environment variable to be read
+ * Retrieve value of a given environment variable
+ * @param pEnvVarName :[in] environment variable name to be read
  * @param storeVal :[out] variable to store env variable value
- * @return 	true : on success,
- * 			false : on error
+ * @return true/false based on success/failure
  */
 bool CCommon::readEnvVariable(const char *pEnvVarName, string &storeVal)
 {
 	if(NULL == pEnvVarName)
 	{
+		CLogger::getInstance().log(ERROR, LOGDETAILS("Environment variable to read is NULL"));
 		return false;
 	}
 	bool bRetVal = false;
+
 	char *cEvar = getenv(pEnvVarName);
 	if (NULL != cEvar)
 	{
@@ -60,9 +60,9 @@ bool CCommon::readEnvVariable(const char *pEnvVarName, string &storeVal)
 }
 
 /**
- * This function is used to read common environment variables
- * @return 	true : on success,
- * 			false : on error
+ * Retrieve and store all common environment variables in CCommon instance.
+ * @param None
+ * @return true/false based on success/failure
  */
 bool CCommon::readCommonEnvVariables()
 {
@@ -118,7 +118,7 @@ bool CCommon::readCommonEnvVariables()
 		}
 		else
 		{
-			/// default set to false
+			// default set to false
 			CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid value for DEV_MODE env variable"));
 			CLogger::getInstance().log(INFO, LOGDETAILS("Set the dev mode to default (i.e. true)"));
 			cout << "DEV_MODE is set to default false\n";
@@ -137,11 +137,10 @@ bool CCommon::readCommonEnvVariables()
  */
 CCommon::~CCommon()
 {
-	// TODO Auto-generated destructor stub
 }
 
-/*
- * Gets current time in nano seconds
+/**
+ * Get current time in nano seconds
  * @param ts :[in] structure of current time
  * @return current time in nano seconds
 */
@@ -152,7 +151,8 @@ unsigned long get_nanos(struct timespec ts)
 
 /**
  * Get current epoch time in string
- * @param strCurTime
+ * @param strCurTime :[out] set current epoch time in string format
+ * @return None
  */
 void CCommon::getCurrentTimestampsInString(std::string &strCurTime)
 {
@@ -172,9 +172,9 @@ void CCommon::getCurrentTimestampsInString(std::string &strCurTime)
 /**
  * Add current time stamp in message payload
  * @param a_sMsg 		:[in] message in which to add time
- * @param a_tsMsgRcvd	:[in] time stamp in nano seconds
- * @return 	true : on success,
- * 			false : on error
+ * @param tsKey			:[in] key name against which to add time stamp
+ * @param strTimestamp	:[in] time stamp in string format
+ * @return true/false based on success/failure
  */
 bool CCommon::addTimestampsToMsg(std::string &a_sMsg, string tsKey, string strTimestamp)
 {

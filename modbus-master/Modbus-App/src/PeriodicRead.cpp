@@ -78,11 +78,12 @@ using namespace std;
 timer_t gTimerid;
 
 /**
- * Get time based parameters
+ * Get time based parameters like usec, timestamp, transaction id, etc. based on current time
  * @param a_objReqData	:[in] request data
  * @param a_sTimeStamp	:[out] time stamp
  * @param a_sUsec		:[out] usec
  * @param a_sTxID		:[out] transaction id
+ * @return none
  */
 void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_sTimeStamp, std::string &a_sUsec, std::string &a_sTxID)
 {
@@ -101,7 +102,7 @@ void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_s
 }
 
 /**
- * get time in nano-seconds
+ * Gets timestmp in nano-seconds from give timepsec structure
  * @param ts	:[in] time to convert to nano-seconds
  * @return	time in nano-seconds
  */
@@ -110,7 +111,7 @@ static unsigned long get_nanos(struct timespec ts) {
 }
 
 /**
- * Prepare response json
+ * Prepare response json using EIS APIs
  * @param a_pMsg		:[in] pointer to message envelope to fill up
  * @param a_objReqData	:[in] request data
  * @param a_stResp		:[in] response data
@@ -358,7 +359,7 @@ BOOLEAN CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, 
 }
 
 /**
- * Post response json
+ * Prepare and post response json to ZMQ
  * @param a_stResp		:[in] response data
  * @param a_objReqData	:[in] request data
  * @param a_pstTsPolling:[in] polling timestamp, if any
@@ -383,8 +384,6 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 		}
 		else
 		{
-			common_Handler::removeReqData(a_stResp.u16TransacID);	/// removing request structure from map
-
 			if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 			{
 				if(true == PublishJsonHandler::instance().publishJson(g_msg, a_objReqData->getBusContext().m_pContext,
@@ -396,6 +395,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 			}
 			else
 			{
+				common_Handler::removeReqData(a_stResp.u16TransacID);	/// removing request structure from map
 				zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(a_stResp.m_strResponseTopic);
 				zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(a_stResp.m_strResponseTopic);
 
@@ -435,7 +435,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, c
 }
 
 /**
- * Post dummy bad response
+ * Post dummy bad response as actual response is not received
  * @param a_objReqData	:[in] request for which to send dummy response
  * @param m_stException	:[in] exception
  * @param a_pstRefPollTime:[in] Polling timestamp for given request
@@ -476,7 +476,7 @@ BOOLEAN CPeriodicReponseProcessor::postDummyBADResponse(CRefDataForPolling& a_ob
 }
 
 /**
- * Post response json
+ * Post response json to ZMQ using ggiven response data
  * @param a_stResp	:[in] response data
  * @return 	true : on success,
  * 			false : on error
@@ -516,7 +516,7 @@ BOOLEAN CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 }
 
 /**
- * Initialize semaphore
+ * Initialize semaphore for all RT and Non-RT operations for response processing
  * @return 	true : on success,
  * 			false : on error
  */
@@ -538,7 +538,10 @@ bool CPeriodicReponseProcessor::initSem()
 }
 
 /**
- * Response process threads
+ * Response process thread
+ * @param operationCallbackType	:[in] operation type, polling, on-demand, RT/Non_RT
+ * @param a_refSem: [in] semaphore applicable for given operation type for listening on response data from a queue
+ * @param a_refOps: [in] global config reference for given operation
  * @return appropriate error code
  */
 eMbusStackErrorCode CPeriodicReponseProcessor::respProcessThreads(eMbusCallbackType operationCallbackType,
@@ -644,6 +647,7 @@ eMbusStackErrorCode CPeriodicReponseProcessor::respProcessThreads(eMbusCallbackT
 /**
  * Push response to queue
  * @param stStackResNode :[in] response node
+ * @param operationCallbackType: [in] operation type (polling/on-demand/RT/Non-RT) defines queue to be used
  * @return 	true : on success,
  * 			false : on error
  */
@@ -710,24 +714,61 @@ bool CPeriodicReponseProcessor::pushToQueue(struct stStackResponse &stStackResNo
 	return false;
 }
 
+/**
+ * In case of response timeout reply, checks if retry is applicable.
+ * Retries the request, if applicable
+ * @param stStackResNode :[in] response node
+ * @param operationCallbackType: [in] operation type (polling/on-demand/RT/Non-RT) defines queue to be used
+ * @return 	true : if no retry is applicable
+ * 			false : in case of error or retry is done
+ */
 BOOLEAN CPeriodicReponseProcessor::checkForRetry(struct stStackResponse &a_stStackResNode, eMbusCallbackType operationCallbackType)
 {
 	bool retValue = false;
 	try
 	{
-		MbusAPI_t reqData;
+		MbusAPI_t *pReqData = NULL;
+		MbusAPI_t tempData;
 		eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
 		if(a_stStackResNode.m_stException.m_u8ExcCode == STACK_ERROR_RECV_TIMEOUT &&
 				a_stStackResNode.m_stException.m_u8ExcStatus == 2)
 		{
-			common_Handler::getReqData(a_stStackResNode.u16TransacID, reqData);
+			if((MBUS_CALLBACK_POLLING == operationCallbackType) ||
+					(MBUS_CALLBACK_POLLING_RT == operationCallbackType))
+			{
+				bool bIsPresent = CRequestInitiator::instance().isTxIDPresent(a_stStackResNode.u16TransacID);
+				if(true == bIsPresent)
+				{
+					CRefDataForPolling &oRef =
+							CRequestInitiator::instance().getTxIDReqData(a_stStackResNode.u16TransacID);
+					MbusAPI_t &refReq = oRef.getMBusReq();
+					pReqData = &refReq;
+				}
+			}
+			else
+			{
+				if(true == common_Handler::getReqData(a_stStackResNode.u16TransacID, tempData))
+				{
+					pReqData = &tempData;
+				}
+			}
+
+			if(NULL == pReqData)
+			{
+				return false;
+			}
+			MbusAPI_t &reqData = *pReqData;
 			if(reqData.m_nRetry > 0)
 			{
 				CLogger::getInstance().log(INFO, LOGDETAILS("Retry called for transaction id:: "+to_string(reqData.m_u16TxId)));
 				/// decrement retry value by 1
 				reqData.m_nRetry--;
-				/// updating structure in map with decremented retry value
-				common_Handler::updateReqData(a_stStackResNode.u16TransacID, reqData);
+				if((MBUS_CALLBACK_POLLING != operationCallbackType) &&
+									(MBUS_CALLBACK_POLLING_RT != operationCallbackType))
+				{
+					/// updating structure in map with decremented retry value
+					common_Handler::updateReqData(a_stStackResNode.u16TransacID, reqData);
+				}
 
 				void* ptrAppCallback = NULL;
 				getCallbackForRetry(&ptrAppCallback, operationCallbackType);
@@ -760,8 +801,9 @@ BOOLEAN CPeriodicReponseProcessor::checkForRetry(struct stStackResponse &a_stSta
 }
 
 /**
- * Get data to process
- * @param a_stStackResNode :[in] response node
+ * Get response data to process from queue
+ * @param a_stStackResNode :[out] response node
+ * @param operationCallbackType: [in] operation type (polling/on-demand/RT/Non-RT) defines queue to be used
  * @return 	true : on success,
  * 			false : on error
  */
@@ -865,9 +907,11 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 }
 
 /**
- * Handle response
+ * Receives raw response data and pushes to queue for processing
  * @param pstMbusAppCallbackParams :[in] response received from stack
- * @param respType :[in] To identify polling or on-demand response
+ * @param operationCallbackType :[in] Operation type - polling/on-demand/RT/Non-RT
+ * @param strResponseTopic: [in] ZMQ topic to be used. Defined by calling callback function
+ * @return none
  */
 void CPeriodicReponseProcessor::handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams,
 												//eMbusResponseType respType,
@@ -926,8 +970,9 @@ void CPeriodicReponseProcessor::handleResponse(stMbusAppCallbackParams_t *pstMbu
 }
 
 /**
- * function to receive RP-A call back
+ * Function to receive read callback for Non-RT polling
  * @param pstMbusAppCallbackParams :[in] parameters received from stack
+ * @param uTxID: [in] transaction id for matching request and response
  * @return appropriate error code
  */
 eMbusStackErrorCode readPeriodicCallBack(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
@@ -946,8 +991,9 @@ eMbusStackErrorCode readPeriodicCallBack(stMbusAppCallbackParams_t *pstMbusAppCa
 }
 
 /**
- * function to receive RP-A call back for RT requests
+ * Function to receive read callback for RT polling
  * @param pstMbusAppCallbackParams :[in] parameters received from stack
+ * @param uTxID: [in] transaction id for matching request and response
  * @return appropriate error code
  */
 eMbusStackErrorCode readPeriodicRTCallBack(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
@@ -965,6 +1011,12 @@ eMbusStackErrorCode readPeriodicRTCallBack(stMbusAppCallbackParams_t *pstMbusApp
 	return MBUS_STACK_NO_ERROR;
 }
 
+/**
+ * Function to idnetify callback function based on operation typefor calling stack APIs
+ * @param callbackFunc :[out] callback function to be used for calling stack APIs
+ * @param operationCallbackType: [in] operation type for which callbak funtion needs to be identified
+ * @return none
+ */
 void CPeriodicReponseProcessor::getCallbackForRetry(void**callbackFunc, eMbusCallbackType operationCallbackType)
 {
 	switch(operationCallbackType)
@@ -1005,7 +1057,11 @@ void CPeriodicReponseProcessor::getCallbackForRetry(void**callbackFunc, eMbusCal
 }
 
 /**
- * Constructor
+ * Constructor: Creates instance of CPeriodicReponseProcessor to process responses
+ * received from network. This is a singleton class. This instance initiates semaphores
+ * which are used to signal different threads on receiving responses.
+ * @param None
+ * @return none
  */
 CPeriodicReponseProcessor::CPeriodicReponseProcessor() : m_bIsInitialized(false)
 {
@@ -1023,8 +1079,8 @@ CPeriodicReponseProcessor::CPeriodicReponseProcessor() : m_bIsInitialized(false)
 }
 
 /**
- * Return single instance of this class
- * @return
+ * This is a singleton class. Returns singleton instance of response processor.
+ * @return singleton instance
  */
 CPeriodicReponseProcessor& CPeriodicReponseProcessor::Instance()
 {
@@ -1033,7 +1089,11 @@ CPeriodicReponseProcessor& CPeriodicReponseProcessor::Instance()
 }
 
 /**
- * Initialize response handler threads
+ * Initiates number of threads to process responses from network for various operations.
+ * It passes parameters based on operation type to thread init function.
+ * Operations: Polling, Polling-RT, On-demand-read, On-demand-read-RT, On-demand-write, On-demand-write-RT
+ * @param None
+ * @return none
  */
 void CPeriodicReponseProcessor::initRespHandlerThreads()
 {
@@ -1042,10 +1102,7 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 	{
 		if(false == bSpawned)
 		{
-			// Spawn 5 thread to process responses
-			//for (int i = 0; i < 5; i++)
 			{
-				//std::thread{std::bind(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this))}.detach();
 				std::thread(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this),
 						MBUS_CALLBACK_POLLING, std::ref(semPollingRespProcess),std::ref(globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig())).detach();
 				std::thread(&CPeriodicReponseProcessor::respProcessThreads, std::ref(*this),
@@ -1074,6 +1131,14 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
  * Initiate request initiator
  * @return 	true : on success,
  * 			false : on error
+ */
+/**
+ * This is a singleton class. Used to send periodic requests and check if
+ * response is received at given cutoff time.
+ * Initiates number of threads, semaphores to requests and cutoff processing.
+ * Separate threads are created each for RT and Non-RT.
+ * @param None
+ * @return true on successful init
  */
 bool CRequestInitiator::init()
 {
@@ -1128,7 +1193,9 @@ bool CRequestInitiator::init()
 }
 
 /**
- * Push polling frequency to queue
+ * Request initiation is done by different threads. Polling interval is passed to these threads.
+ * For polling operation, based on polling interval, the points are fetched.
+ * This function enqueues the polling interval and different threads are signaled.
  * @param a_stPollRef: [in] polling timestamp and frequency
  * @param a_objTimeRecord :[in] reference of TimeRecord class
  * @param a_bIsReq: [in] bool variable to differentiate between request and response
@@ -1191,8 +1258,9 @@ bool CRequestInitiator::pushPollFreqToQueue(struct StPollingInstance &a_stPollRe
 }
 
 /**
- * Get polling frequency
- * @param a_stPollRef	:[in] reference to polling frequency and timestamp
+ * Retrieve polling interval from queue for initiating requests for polling and cutoff.
+ * Depending RT/Non-RT, polling/cutoff - different threads, semaphores ae used.
+ * @param a_stPollRef :[out] reference to polling interval to be used for polling
  * @param a_bIsRT	:[in] bool variable to differentiate between RT/Non-RT
  * @param a_bIsReq	:[in] bool variable to differentiate between request and response
  * @return 	true : on success,
@@ -1245,11 +1313,12 @@ bool CRequestInitiator::getFreqRefForPollCycle(struct StPollingInstance &a_stPol
 }
 
 /**
- * Initiate request to get processed
- * @param a_stPollRef	:[in] Polling timestamp
- * @param a_vReqData	:[in] reference to store polling frequency
+ * Initiate request for polling
+ * @param a_stPollTimestamp:[in] timestamp at which polling interval triggered
+ * @param a_vReqData	:[in] List of points to be polled
  * @param isRTRequest	:[in] boolean variable to distinguish between RT/Non-RT requests
- * @param a_lPriority	:[in] priority assigned to message
+ * @param a_lPriority	:[in] priority assigned to message when sending a request
+ * @return none
  */
 void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std::vector<CRefDataForPolling>& a_vReqData,
 		bool isRTRequest,
@@ -1257,7 +1326,6 @@ void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std:
 {
 	for(auto &objReqData: a_vReqData)
 	{
-		//CRefDataForPolling& objReqData = a_oReqData;
 		// Check if a response is already awaited
 		if(true == objReqData.getDataPoint().isIsAwaitResp())
 		{
@@ -1299,6 +1367,7 @@ void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std:
 				LOGDETAILS("Trying to send request for - Point: " + objReqData.getDataPoint().getID()
 					+ ", with TxID: " + to_string(m_u16TxId)));
 			// The entry is found in map
+
 			// Send a request
 			if (true == sendRequest(objReqData, m_u16TxId, isRTRequest, a_lPriority))
 			{
@@ -1334,8 +1403,11 @@ void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std:
 }
 
 /**
- * Thread function to initiate requests
+ * Thread function to initiate requests for polling.
+ * It listens on a semaphore to retrieve polling interval to be used to send requests.
  * @param isRTPoint	:[in] bool variable to differentiate between RT/Non-RT
+ * @param a_refOps  :[in] reference to global configuration given operation type
+ * @return none
  */
 void CRequestInitiator::threadReqInit(bool isRTPoint,
 		const globalConfig::COperation& a_refOps)
@@ -1398,6 +1470,13 @@ void CRequestInitiator::threadReqInit(bool isRTPoint,
 /**
  * Thread function to send pending responses
  * @param isRTPoint	:[in] bool variable to differentiate between RT/Non-RT
+ */
+/**
+ * Thread function to check cutoff time for sent requests and send error response.
+ * It listens on a semaphore to retrieve polling interval to be used to check for cutoff.
+ * @param isRTPoint	:[in] bool variable to differentiate between RT/Non-RT
+ * @param a_refOps  :[in] reference to global configuration given operation type
+ * @return none
  */
 void CRequestInitiator::threadCheckCutoffRespInit(bool isRTPoint,
 		const globalConfig::COperation& a_refOps)
@@ -1491,10 +1570,11 @@ void CRequestInitiator::threadCheckCutoffRespInit(bool isRTPoint,
 }
 
 /**
- * Initiate messages
+ * Adds polling interval to queue for triggering request initiation for polling
  * @param a_stPollRef	:[in] polling time and polling frequency
  * @param a_objTimeRecord	:[in] reference of TimeRecord
- * @param a_bIsReq	:[in] bool variable to differentiate between request and response
+ * @param a_bIsReq	:[in] bool variable to differentiate between request and cutoff
+ * @return none
  */
 void CRequestInitiator::initiateMessages(struct StPollingInstance &a_stPollRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq)
 {
@@ -1514,14 +1594,25 @@ void CRequestInitiator::initiateMessages(struct StPollingInstance &a_stPollRef, 
 }
 
 /**
- * Destructor
+ * Destructor: Clears all data structures
+ * @param none
+ * @return none
  */
 CRequestInitiator::~CRequestInitiator()
 {
+	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+	m_mapTxIDReqData.clear();
+	sem_destroy(&semaphoreReqProcess);
+	sem_destroy(&semaphoreRespProcess);
+	sem_destroy(&semaphoreRTReqProcess);
+	sem_destroy(&semaphoreRTRespProcess);
 }
 
 /**
- * Constructor
+ * Constructor: This is a singleton class used to send requests for polling.
+ * Constructor initiates the data.
+ * @param: none
+ * @return none
  */
 CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
 {
@@ -1543,7 +1634,7 @@ CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
  */
 CRefDataForPolling& CRequestInitiator::getTxIDReqData(unsigned short tokenId)
 {
-	/// Ensure that only on thread can execute at a time
+	/// Ensure that only one thread can execute at a time
 	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
 
 	// return the request ID
@@ -1551,7 +1642,7 @@ CRefDataForPolling& CRequestInitiator::getTxIDReqData(unsigned short tokenId)
 }
 
 /**
- * Check if a give txid is presnet in txid map
+ * Check if a given txid is present in txid map
  * @param tokenId	:[in] check request for request with token
  * @return true: present, false: absent
  */
@@ -1570,9 +1661,10 @@ bool CRequestInitiator::isTxIDPresent(unsigned short tokenId)
 }
 
 /**
- * insert new entry in map
+ * Insert new TxID and point refernece entry in map
  * @param token 		:[in] token
  * @param objRefData	:[in] reference to polling data
+ * @return none
  */
 void CRequestInitiator::insertTxIDReqData(unsigned short token, CRefDataForPolling &objRefData)
 {
@@ -1585,8 +1677,9 @@ void CRequestInitiator::insertTxIDReqData(unsigned short token, CRefDataForPolli
 }
 
 /**
- * Remove entry from the map once reply is sent
+ * Removes entry from the map once data is posted on ZMQ for polling.
  * @param tokenId :[in] remove entry with given token id
+ * @return none
  */
 void CRequestInitiator::removeTxIDReqData(unsigned short tokenId)
 {
@@ -1596,74 +1689,96 @@ void CRequestInitiator::removeTxIDReqData(unsigned short tokenId)
 }
 
 /**
- * Constructor
+ * Constructor: This is a singleton class. Used to keep records of all
+ * CTimeRecord objects and polling time of those intervals
+ * @param none
+ * @return none
  */
 CTimeMapper::CTimeMapper()
 {
 }
 
 /**
- * Initiate timer function
+ * This singleton class initiates CRequestInitiator object for sending requests
+ * @param none
+ * @return none
  */
 void CTimeMapper::initTimerFunction()
 {
-	//m_thread =
-	//std::thread(&CTimeMapper::ioPeriodicReadTimer, this, 5).detach();
 	// Init CRequestInitiator
 	CRequestInitiator::instance();
-	//std::cout << "\nCreated periodic read timer thread\n";
 }
 
 /**
- * Check timer
+ * This function checks if for given timer-counter, is there any polling activity or
+ * cutoff check needed. If yes, the function accordingly initiates a process to signal respective threads
+ * If a polling has to be triggered for certain interval, the function sets next applicable trigger point
+ * in terms of future counter-timer value.
+ * @param a_uiMaxCounter:[in] Maximum counter used for timer tracking
+ * @param a_uiCounter:[in] current counter value
+ * @param a_tsPollTime:[in] current polling timestamp
+ * @return none
  */
-void CTimeMapper::checkTimer(uint32_t a_uiInterval, struct timespec& a_tsPollTime)
+void CTimeMapper::checkTimer(const uint32_t &a_uiMaxCounter, uint32_t a_uiCounter, struct timespec& a_tsPollTime)
 {
     try
 	{
-    	struct StPollingInstance stPollRef;
-    	stPollRef.m_tsPollTime = a_tsPollTime;
-    	std::lock_guard<std::mutex> lock(m_mapMutex);
-		for (auto &element : m_mapTimeRecord)
-		{
-			stPollRef.m_uiPollInterval = element.first;
-			CTimeRecord &a = element.second;
-			// First decrement timer counters
-			a.decrementTimerCounters(a_uiInterval);
-			// Now check cutoff timer interval
-			if(true == a.isCutoffNow())
-			{
-				/*const auto p1 = std::chrono::system_clock::now();
+    	std::vector<StPollingTracker> listPollTracker;
+    	if(true == getPollingTrackerList(a_uiCounter, listPollTracker))
+    	{
+    		std::vector<std::reference_wrapper<CTimeRecord>> listPolledTimeRecords;
+    		listPolledTimeRecords.clear();
+    		struct StPollingInstance stPollRef;
+    		stPollRef.m_tsPollTime = a_tsPollTime;
+    		// list found for counter
+    		for(auto &pollInterval: listPollTracker)
+    		{
+    			CTimeRecord &a = pollInterval.m_objTimeRecord.get();
+				stPollRef.m_uiPollInterval = a.getInterval();
+				if(true == pollInterval.m_bIsPolling)
+				{
+					CRequestInitiator::instance().initiateMessages(stPollRef, a, true);
+					listPolledTimeRecords.push_back(a);
+				}
+				else
+				{
+					CRequestInitiator::instance().initiateMessages(stPollRef, a, false);
+				}
+    		}
 
-				unsigned long long int u64{
-						(unsigned long long int)(std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count())
-					};
+    		// set future ccounter-timer value for polled intervals
+    		for(auto &elememt: listPolledTimeRecords)
+    		{
+    			CTimeRecord &a = elememt.get();
+				// If it is polling interval, calculate next polling and cutoff intervals
+				uint32_t uiNextPolling = (a_uiCounter + a.getInterval());
+				uint32_t uiNextCutoff = (a_uiCounter + a.getCutoffInterval());
+				if((a_uiCounter == a_uiMaxCounter)
+						&& (a_uiMaxCounter == a.getInterval()))
+				{
+					uiNextPolling = a_uiMaxCounter;
+				}
+				if(uiNextPolling > a_uiMaxCounter)
+				{
+					uiNextPolling = uiNextPolling % a_uiMaxCounter;
+				}
+				if(uiNextCutoff > a_uiMaxCounter)
+				{
+					uiNextCutoff = uiNextCutoff % a_uiMaxCounter;
+				}
+				// set next polling interval
+				addToPollingTracker(uiNextPolling, a, true);
+				// set next cutoff interval
+				addToPollingTracker(uiNextCutoff, a, false);
+    		}
 
-				std::cout << u64
-						<< ": cutoff is hit for:" << a.getInterval() << std::endl;
-				*/
-
-				//std::cout << "---------------------------------\n";
-				CRequestInitiator::instance().initiateMessages(stPollRef, a, false);
-			}
-
-			// Check interval timer counters
-			if(true == a.isPollingNow())
-			{
-				/*const auto p1 = std::chrono::system_clock::now();
-
-				unsigned long long int u64{
-						(unsigned long long int)(std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count())
-					};
-
-				std::cout << u64
-						<< ": interval is hit for:" << a.getInterval() << std::endl;
-				*/
-				//std::cout << "******************************\n";
-				// Polling time: send requests
-				CRequestInitiator::instance().initiateMessages(stPollRef, a, true);
-			}
-		}
+    		listPolledTimeRecords.clear();
+    	}
+    	else
+    	{
+    		/// No polling is needed for counter
+    		//std::cout << "No polling for: " << a_uiCounter << std::endl;
+    	}
 	}
 	catch (exception &e)
 	{
@@ -1672,9 +1787,12 @@ void CTimeMapper::checkTimer(uint32_t a_uiInterval, struct timespec& a_tsPollTim
 }
 
 /**
- * Send request
+ * Initializes data structure to send request for polling.
+ * Adds a point in a map for request-response matching in future.
  * @param a_stRdPrdObj	:[in] request to send
  * @param m_u16TxId	:	[in] TxID
+ * @param isRTRequest: [in] RT/Non-Rt
+ * @param a_lPriority: [in] priority to be used for sending request
  * @return 	true : on success,
  * 			false : on error
  */
@@ -1683,84 +1801,39 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling &a_stRdPrdObj,
 		bool isRTRequest,
 		const long a_lPriority)
 {
-	MbusAPI_t stMbusApiPram = {};
 	uint8_t u8ReturnType = MBUS_STACK_NO_ERROR;
 	bool bRet = false;
 	void* ptrCallbackFunc = NULL;
 
 	try
 	{
-		stMbusApiPram.m_u16StartAddr = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iAddress;
-		stMbusApiPram.m_u16Quantity = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
-		stMbusApiPram.m_u16ByteCount = a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_iWidth;
+		MbusAPI_t& stMbusApiPram = a_stRdPrdObj.getMBusReq();
 
 		// set the priority
 		stMbusApiPram.m_lPriority = a_lPriority;
-
-		// Coil and discrete input are single bytes. All others are 2 byte registers
-		if((network_info::eEndPointType::eCoil != a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_eType) &&
-		(network_info::eEndPointType::eDiscrete_Input != a_stRdPrdObj.getDataPoint().getDataPoint().getAddress().m_eType))
-		{
-			// as default value for register is 2 bytes
-			stMbusApiPram.m_u16ByteCount = stMbusApiPram.m_u16Quantity *2;
-		}
 
 		/*Enter TX Id*/
 		//stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
 		stMbusApiPram.m_u16TxId = m_u16TxId;
 
+		if(true == isRTRequest)
+		{
+			stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig().getRetries();
+			ptrCallbackFunc = (void*)readPeriodicRTCallBack;
+		}
+		else
+		{
+			stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig().getRetries();
+			ptrCallbackFunc = (void*)readPeriodicCallBack;
+		}
+
 #ifdef UNIT_TEST
 		stMbusApiPram.m_u16TxId = 5;
 #endif
-		//a_stRdPrdObj.m_u16TxId = stMbusApiPram.m_u16TxId;
-
 		CRequestInitiator::instance().insertTxIDReqData(stMbusApiPram.m_u16TxId, a_stRdPrdObj);
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-		// fill the unit ID
-		stMbusApiPram.m_u8DevId = a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stTCP.m_uiUnitID;
-		std::string sIPAddr{a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stTCP.m_sIPAddress};
-
-		CommonUtils::ConvertIPStringToCharArray(sIPAddr,stMbusApiPram.m_u8IpAddr);
-
-		/// fill tcp port
-		stMbusApiPram.m_u16Port = a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stTCP.m_ui16PortNumber;
-
-		if(true == isRTRequest)
-		{
-			stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig().getRetries();
-			ptrCallbackFunc = (void*)readPeriodicRTCallBack;
-		}
-		else
-		{
-			stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig().getRetries();
-			ptrCallbackFunc = (void*)readPeriodicCallBack;
-		}
-
-		if(false == common_Handler::insertReqData(stMbusApiPram.m_u16TxId, stMbusApiPram))
-		{
-			CLogger::getInstance().log(WARN, LOGDETAILS("Failed to add MbusAPI_t data to map."));
-		}
-
 		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.getFunctionCode(), &stMbusApiPram, ptrCallbackFunc);
-
 #else
-		stMbusApiPram.m_u8DevId = a_stRdPrdObj.getDataPoint().getWellSiteDev().getAddressInfo().m_stRTU.m_uiSlaveId;
-
-		if(true == isRTRequest)
-		{
-			stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig().getRetries();
-			ptrCallbackFunc = (void*)readPeriodicRTCallBack;
-		}
-		else
-		{
-			stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig().getRetries();
-			ptrCallbackFunc = (void*)readPeriodicCallBack;
-		}
-
-		if(false == common_Handler::insertReqData(stMbusApiPram.m_u16TxId, stMbusApiPram))
-		{
-			CLogger::getInstance().log(WARN, LOGDETAILS("Failed to add MbusAPI_t data to map."));
-		}
 		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.getFunctionCode(), &stMbusApiPram, ptrCallbackFunc);
 #endif
 
@@ -1786,13 +1859,12 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling &a_stRdPrdObj,
 }
 
 /**
- * TimeRecord Constructor
+ * TimeRecord Constructor. Used to keep a list of points eligible for one polling interval
  * @param a_u32Interval	:[in] data point polling frequency
  * @param a_oPoint	:[in] reference of RefDataForPolling class
  */
 CTimeRecord::CTimeRecord(uint32_t a_u32Interval, CRefDataForPolling &a_oPoint)
-	: m_u32Interval(a_u32Interval), m_u32RemainingInterval(a_u32Interval),
-	  m_u32CutoffInterval(a_u32Interval), m_u32RemainingCutoffInterval(a_u32Interval*2),
+	: m_u32Interval(a_u32Interval), m_u32CutoffInterval(a_u32Interval),
 	  m_bIsRTAvailable(false), m_bIsNonRTAvailable(false)
 {
 	std::cout << PublishJsonHandler::instance().getCutoffIntervalPercentage() << ": value of cutoff %\n";
@@ -1808,8 +1880,8 @@ CTimeRecord::CTimeRecord(uint32_t a_u32Interval, CRefDataForPolling &a_oPoint)
 }
 
 /**
- * Insert time
- * @param a_uTime	:[in] time
+ * Insert a point to be polled into appropriate TimeRecord object
+ * @param a_uTime	:[in] polling interval
  * @param a_oPointD	:[in] point for which to add time
  * @return 	true : on success,
  * 			false : on error
@@ -1853,7 +1925,8 @@ bool CTimeMapper::insert(uint32_t a_uTime, CRefDataForPolling &a_oPointD)
 }
 
 /**
- * Destructor
+ * Destructor: Deinit data, i.e. TimeRecord map
+ *
  */
 CTimeMapper::~CTimeMapper()
 {
@@ -1870,7 +1943,7 @@ CTimeMapper::~CTimeMapper()
 }
 
 /**
- * Find GCD of given numbers
+ * Finds GCD of 2 given numbers. This is used to find smallest timer tick for polling
  * @param num1
  * @param num2
  * @return 	number : GCD of two numbers
@@ -1887,7 +1960,7 @@ uint32_t CTimeMapper::gcd(uint32_t num1, uint32_t num2)
 }
 
 /**
- * get freq index as per frequency
+ * Get index of given polling interval in TimeRecord map
  * @param a_uFreq: [in]: frequency to find index
  * @return 	uint32_t : [out] returns actual index at given frequency
  */
@@ -1908,15 +1981,12 @@ uint32_t CTimeMapper::getFreqIndex(const uint32_t a_uFreq)
 
 /**
  * Gets minimum time frequency that can be used based on current records
- * @param
+ * for timer tick for polling.
+ * @param none
  * @return 	number : minimum polling frequency in milliseconds
  */
 uint32_t CTimeMapper::getMinTimerFrequency()
 {
-	// This function tries to find GCD (greatest common divisor) of all frequencies
-	// This gcd is used as a timer frequency
-	// E.g. for frequencies 250, 500, 1000 - gcd is 250
-	// for frequencies 250, 400, 500 - gcd is 50
 	uint32_t ulMinFreq = 1;
 	try
 	{
@@ -1959,7 +2029,7 @@ uint32_t CTimeMapper::getMinTimerFrequency()
 }
 
 /**
- * Add time record
+ * Add the point under RT or Non-RT polling list depending on polling type
  * @param a_oPoint
  * @return 	true : on success,
  * 			false : on error
@@ -2001,7 +2071,7 @@ bool CTimeRecord::add(CRefDataForPolling &a_oPoint)
 }
 
 /**
- * Destructor
+ * Destructor; Clears lists for RT and Non-RT
  */
 CTimeRecord::~CTimeRecord()
 {
@@ -2019,9 +2089,112 @@ CTimeRecord::~CTimeRecord()
 }
 
 /**
- *Function to get timer callback
- *@param : [in] interval in milliseconds
- *@return : Nothing
+ * Prepares time tracker data for polling operation.
+ * Sets first timer-counter value for given polling intervals.
+ * @param none
+ * @return 	Maximum polling interval
+ */
+uint32_t CTimeMapper::preparePollingTracker()
+{
+	// This function prepares a tracker list for polling and returns maximum polling interval.
+	uint32_t ulMaxPollInterval = 0;
+	try
+	{
+		std::lock_guard<std::mutex> lock(m_mapMutex);
+		for(auto &it: m_mapTimeRecord)
+		{
+			ulMaxPollInterval = it.first;
+
+			// set polling interval
+			addToPollingTracker(ulMaxPollInterval, it.second, true);
+		}
+	}
+	catch (exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+	}
+	CLogger::getInstance().log(DEBUG, LOGDETAILS("Maximum poll interval: " + to_string(ulMaxPollInterval)));
+	return ulMaxPollInterval;
+}
+
+/**
+ * Compares 2 polling intervals. Used to sort the list to ensure lower polling interval
+ * occurs first.
+ * @param i1: [in] argument 1: Polling interval 1
+ * @param i2: [in] argument 2: Polling interval 2
+ * @return 	true if 1st argument is smaller that 2nd argument
+ */
+bool compareInterval(StPollingTracker i1, StPollingTracker i2)
+{
+    return (i1.m_uiPollInterval < i2.m_uiPollInterval);
+}
+
+/**
+ * Adds given reference data of polling interval to the tracker for timer-counter
+ * @param a_uiCounter: Timer-counter against which data needs to be added
+ * @param a_objTimeRecord: Reference of TimeRecord object corresponding to teh polling interval
+ * @param a_bIsPolling: True: Polling interval, False: Cutoff Interval
+ * @return 	none
+ */
+void CTimeMapper::addToPollingTracker(uint32_t a_uiCounter, CTimeRecord &a_objTimeRecord, bool a_bIsPolling)
+{
+	// This function adds given reference data to polling interval to the tracker
+	try
+	{
+		struct StPollingTracker stTemp{a_objTimeRecord.getInterval(), a_objTimeRecord, a_bIsPolling};
+		auto itr = m_mapPollingTracker.find(a_uiCounter);
+		if(itr == m_mapPollingTracker.end())
+		{
+			std::vector<StPollingTracker> listTemp;
+			listTemp.push_back(stTemp);
+			m_mapPollingTracker.insert(
+				std::pair<uint32_t, std::vector<StPollingTracker>> (a_uiCounter, listTemp));
+		}
+		else
+		{
+			auto &list = itr->second;
+			list.push_back(stTemp);
+			std::sort(list.begin(), list.end(), compareInterval);
+		}
+	}
+	catch (exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+	}
+	return ;
+}
+
+/**
+ * Exracts list of polling intervals corresponding to given timer-counter
+ * @param a_uiCounter: Timer-counter for which data needs to be extracted
+ * @param a_listPollInterval: Out parrameter: List of polling intervals
+ * @return 	true: if data is available
+ * 			false: no data is available
+ */
+bool CTimeMapper::getPollingTrackerList(uint32_t a_uiCounter, std::vector<StPollingTracker> &a_listPollInterval)
+{
+	try
+	{
+		auto itr = m_mapPollingTracker.find(a_uiCounter);
+		if(itr != m_mapPollingTracker.end())
+		{
+			a_listPollInterval = itr->second;
+			itr->second.clear();
+			//m_mapPollingTracker.erase(itr);
+			return true;
+		}
+	}
+	catch (exception &e)
+	{
+		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+	}
+	return false;
+}
+
+/**
+ * Function to track timer-counter for polling operations
+ * @param : [in] interval in milliseconds: Minimum timer tick value
+ * @return : none
  */
 void PeriodicTimer::timerThread(uint32_t interval)
 {
@@ -2033,6 +2206,10 @@ void PeriodicTimer::timerThread(uint32_t interval)
 			true);
 
 	globalConfig::display_thread_sched_attr("timerThread param::");
+
+	const uint32_t uiMaxCounter = CTimeMapper::instance().preparePollingTracker();
+	uint32_t uiCurCounter = 0;
+	std::cout << "Maximum counter = " << uiMaxCounter << std::endl;
 
 	// interval is in milliseconds
 	if(0 == interval)
@@ -2082,8 +2259,15 @@ void PeriodicTimer::timerThread(uint32_t interval)
 				std::cout << "Fatal error: polling timer: clock_gettime failed in polling: " << errno << std::endl;
 				//return;
 			}
+			uiCurCounter = uiCurCounter + uiMsecInterval;
 			/// call timer function
-			CTimeMapper::instance().checkTimer(uiMsecInterval, tsPoll);
+			CTimeMapper::instance().checkTimer(uiMaxCounter, uiCurCounter, tsPoll);
+
+			// reset the counter
+			if(uiCurCounter == uiMaxCounter)
+			{
+				uiCurCounter = 0;
+			}
 		}
 		else
 		{
@@ -2092,8 +2276,9 @@ void PeriodicTimer::timerThread(uint32_t interval)
 	}
 }
 
+
 /**
- * Function to start Linux timer
+ * Function to initiate thread for timer operation
  * @param [in] : interval in milliseconds
  * @return : nothing
  */
@@ -2104,7 +2289,7 @@ void PeriodicTimer::timer_start(uint32_t interval)
 }
 
 /**
- * Function to stop Linux timer
+ * Function to stop timer
  * @param : Nothing
  * @return : Nothing
  */
@@ -2121,13 +2306,14 @@ CRefDataForPolling::CRefDataForPolling(const CRefDataForPolling &a_refPolling) :
 		m_objDataPoint{a_refPolling.m_objDataPoint}, m_objBusContext{a_refPolling.m_objBusContext}
 		, m_objPubContext{a_refPolling.m_objPubContext}, m_uiFuncCode{a_refPolling.m_uiFuncCode}
 		, m_bIsRespPosted{false}, m_bIsLastRespAvailable{false}
+		, m_stPollTsForReq{a_refPolling.m_stPollTsForReq}, m_stMBusReq{a_refPolling.m_stMBusReq}
 {
 	m_oLastGoodResponse.m_sValue = "";
 	m_oLastGoodResponse.m_sLastUsec = "";
 }
 
 /**
- * Constructor
+ * Constructor: It constructs data which is used for polling. This is one time activity.
  * @param CUniqueDataPoint	:[in] reference CUniqueDataPoint object
  * @param stZmqContext		:[in] reference to ZMQ bus context
  * @param stZmqPubContext	:[in] reference to pub topic context
@@ -2135,14 +2321,42 @@ CRefDataForPolling::CRefDataForPolling(const CRefDataForPolling &a_refPolling) :
  */
 CRefDataForPolling::CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, struct stZmqContext& a_objBusContext, struct stZmqPubContext& a_objPubContext, uint8_t a_uiFuncCode) :
 				m_objDataPoint{a_objDataPoint}, m_objBusContext{a_objBusContext}, m_objPubContext{a_objPubContext}, m_uiFuncCode{a_uiFuncCode}
-				, m_bIsRespPosted{false}, m_bIsLastRespAvailable{false}
+				, m_bIsRespPosted{false}, m_bIsLastRespAvailable{false}, m_stPollTsForReq{0}, m_stMBusReq{0}
 {
 	m_oLastGoodResponse.m_sValue = "";
 	m_oLastGoodResponse.m_sLastUsec = "";
+
+	// Pre-Build parameters of request structure for later use
+	m_stMBusReq.m_u16StartAddr = m_objDataPoint.getDataPoint().getAddress().m_iAddress;
+	m_stMBusReq.m_u16Quantity = m_objDataPoint.getDataPoint().getAddress().m_iWidth;
+	m_stMBusReq.m_u16ByteCount = m_objDataPoint.getDataPoint().getAddress().m_iWidth;
+
+	// Coil and discrete input are single bytes. All others are 2 byte registers
+	if((network_info::eEndPointType::eCoil != m_objDataPoint.getDataPoint().getAddress().m_eType) &&
+	(network_info::eEndPointType::eDiscrete_Input != m_objDataPoint.getDataPoint().getAddress().m_eType))
+	{
+		// as default value for register is 2 bytes
+		m_stMBusReq.m_u16ByteCount = m_stMBusReq.m_u16Quantity * 2;
+	}
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+	// fill the unit ID
+	m_stMBusReq.m_u8DevId = m_objDataPoint.getWellSiteDev().getAddressInfo().m_stTCP.m_uiUnitID;
+	std::string sIPAddr{m_objDataPoint.getWellSiteDev().getAddressInfo().m_stTCP.m_sIPAddress};
+
+	CommonUtils::ConvertIPStringToCharArray(sIPAddr,m_stMBusReq.m_u8IpAddr);
+
+	/// fill tcp port
+	m_stMBusReq.m_u16Port = m_objDataPoint.getWellSiteDev().getAddressInfo().m_stTCP.m_ui16PortNumber;
+
+#else
+	m_stMBusReq.m_u8DevId = m_objDataPoint.getWellSiteDev().getAddressInfo().m_stRTU.m_uiSlaveId;
+#endif
+
 }
 
 /**
- * Saves last known good response data
+ * Saves last known good polling response data for given point
  * @param a_sValue	:[in] data value
  * @param a_sUsec	:[in] associated timestamp
  * @return 	true : on success,
@@ -2158,7 +2372,7 @@ bool CRefDataForPolling::saveGoodResponse(const std::string& a_sValue, const std
 }
 
 /**
- * Get last response
+ * Get last saved good response (if any) for given polling point
  * @param nothing
  * @return 	stLastGoodResponse : Last known good response
  */

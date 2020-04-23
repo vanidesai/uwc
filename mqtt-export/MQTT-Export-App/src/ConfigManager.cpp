@@ -12,7 +12,9 @@
 
 using namespace std;
 
-/** Constructor
+/** Constructor Initialized CfgManager instance depending on the value of DEV_MODE
+ * @param None
+ * @return None if successful, else application exits in case if config manager fails to initialize
 */
 CfgManager:: CfgManager()
 {
@@ -20,12 +22,12 @@ CfgManager:: CfgManager()
 
 	if(CCommon::getInstance().isDevMode())
 	{
-		/// create client without certificates
+		// create client without certificates
 		config_mgr_client = config_mgr_new((char *)"etcd", (char *)"", (char *)"", (char *)"");
 	}
 	else
 	{
-		/// create client with certificates
+		// create client with certificates
 		string sCert = "/run/secrets/etcd_" + CCommon::getInstance().getStrAppName() + "_cert";
 		string sKey = "/run/secrets/etcd_" + CCommon::getInstance().getStrAppName() + "_key";
 		config_mgr_client = config_mgr_new((char *)"etcd", (char *)sCert.c_str(),
@@ -42,10 +44,10 @@ CfgManager:: CfgManager()
 	}
 }
 
-/** Returns the single instance of this class
- *
+/**
+ * Maintains single instance of CfgManager class
  * @param  : nothing
- * @return : object of this class
+ * @return : this instance of CfgManager class
  */
 CfgManager& CfgManager::Instance()
 {
@@ -53,10 +55,10 @@ CfgManager& CfgManager::Instance()
 	return _self;
 }
 
-/** Returns the client status of creation
- *
- * @param : Nothing
- * @return: true/false based on status
+/**
+ * Check if config manager client is created or not
+ * @param None
+ * @return true/false - based on success/failure
  */
 bool CfgManager::IsClientCreated()
 {
@@ -65,10 +67,10 @@ bool CfgManager::IsClientCreated()
 	return isClientCreated;
 }
 
-/** Returns the single instance of this class
- *
+/**
+ * Maintains single instance of CGlobalConfig class
  * @param  : nothing
- * @return : Object of this class
+ * @return : CGlobalConfig of this class
  */
 globalConfig::CGlobalConfig& globalConfig::CGlobalConfig::getInstance()
 {
@@ -76,7 +78,11 @@ globalConfig::CGlobalConfig& globalConfig::CGlobalConfig::getInstance()
 	return _self;
 }
 
-// default constructor to initialize default values
+/**
+ * Constructor Initializes default values of operation instance
+ * @param None
+ * @return None
+ */
 globalConfig::COperation::COperation()
 {
 	m_isRT = false;
@@ -85,7 +91,11 @@ globalConfig::COperation::COperation()
 	m_retries = 0;
 }
 
-// default constructor to initialize default values
+/**
+ * Constructor Initializes default values of OperationInfo instance
+ * @param None
+ * @return None
+ */
 globalConfig::COperationInfo::COperationInfo()
 {
 	m_opType = UNKNOWN_OPERATION;
@@ -96,6 +106,7 @@ globalConfig::COperationInfo::COperationInfo()
  * Display scheduler attributes
  * @param policy : [in] scheduler policy
  * @param param : [in] param to display thread priority
+ * @return None
  */
 void globalConfig::display_sched_attr(int policy, struct sched_param& param)
 {
@@ -123,6 +134,7 @@ void globalConfig::display_sched_attr(int policy, struct sched_param& param)
 /**
  * Display thread attributes
  * @param a_sMsg : [in] string msg
+ * @return None
  */
 void globalConfig::display_thread_sched_attr(const std::string a_sMsg)
 {
@@ -141,7 +153,9 @@ void globalConfig::display_thread_sched_attr(const std::string a_sMsg)
 }
 
 /**
- * Constructor - fill up values in map with priority values
+ * Constructor Fills up values in map with priority values
+ * @param None
+ * @return None
  */
 globalConfig::CPriorityMgr::CPriorityMgr()
 {
@@ -154,12 +168,14 @@ globalConfig::CPriorityMgr::CPriorityMgr()
 	m_opPriorityThreadInfo.insert(std::make_pair(1, std::make_pair(5, RR)));
 }
 
-/** Function to set thread parameters
- ** @param : a_OpsInfo [in]: Operation class reference,
- ** @param : a_iPriority [in]: optional parameter for priority other than defined operation priority
- ** @param : a_eSched [in]: optional parameter for scheduler other than defined operation priority
- ** param : a_bIsOperation [in]: optional value. (if this flag is set then only a_iPriority & a_eSched will be used)
- * @return: Nothing
+/**
+ * Set thread policy and thread scheduler for current thread depending
+ * on the operation it is going to perform
+ * @param a_OpsInfo :[in] Operation class reference,
+ * @param a_iPriority :[in] optional parameter for priority other than defined operation priority
+ * @param a_eSched :[in] optional parameter for scheduler other than defined operation priority
+ * @param a_bIsOperation :[in] optional value. (if this flag is set then only a_iPriority & a_eSched will be used)
+ * @return None
  */
 void globalConfig::set_thread_sched_param(const COperation a_OpsInfo,
 		const int a_iPriority,
@@ -209,25 +225,26 @@ void globalConfig::set_thread_sched_param(const COperation a_OpsInfo,
 	//end of set priority for current thread
 }
 
-/** Function to set default value based on operation type
- ** @param : a_eOpType [in]: 	operation type (POLLING,ON_DEMAND_READ,	ON_DEMAND_WRITE)
- * @return: Nothing
+/**
+ * Set default value in COperationInfo instance depending on the operation type
+ * @param a_eOpType :[in] operation type (POLLING,ON_DEMAND_READ, ON_DEMAND_WRITE)
+ * @return None
  */
 void globalConfig::setDefaultConfig(const enum eOperationType a_eOpType)
 {
-	/// set to default value based on operation type
+	// set to default value based on operation type
 	YAML::Node defaultNode;
 	COperationInfo::buildOperationInfo(defaultNode,
 			globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig(),
 			a_eOpType);
 }
 
-/** Function to validate key in YAML file
- *
- * @param : baseNode [in] : YAML node to read from
- * @param : a_sKey [in] : key to validate
- * @param : a_eDataType [in] : data type
- * @return: [int] : 0- success & -1 - if key is empty or absent & -2 if incorrect data type
+/**
+ * Validate given key in YAML file
+ * @param baseNode [in] : YAML node to read from
+ * @param a_sKey [in] : key to validate
+ * @param a_eDataType [in] : data type
+ * @return 0 if success, -1 if key is empty or absent, -2 if incorrect data type
  */
 int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 		const std::string& a_sKey,
@@ -288,12 +305,13 @@ int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 	}
 	return iRet;
 }
-/** Populate COperation data structures
- *
- * @param : a_baseNode [in] : YAML node to read from
- * @param : a_refOpration [in] : data structure to be fill
- * @param : m_isRT [in] : RT/Noon-RT
- * @return: Nothing
+
+/**
+ * Populate COperation data structures
+ * @param a_baseNode :[in] YAML node to read from
+ * @param a_refOpration :[in] data structure to be fill
+ * @param m_isRT :[in] RT/Non-RT
+ * @return None
  */
 void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		COperation& a_refOpration,
@@ -314,7 +332,7 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		ops = "realtime";
 	}
 
-	/// validate priority
+	// validate priority
 	if (validateParam(a_baseNode[ops], "operation_priority", DT_INTEGER) != 0)
 	{
 		// default value
@@ -383,18 +401,18 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 	CLogger::getInstance().log(INFO, LOGDETAILS("retries :: " + to_string(a_refOpration.getRetries())));
 }
 
-/** Populate COperation data structures
- *
- * @param : a_baseNode [in] : YAML node to read from
- * @param : a_refOpInfo [in] : data structure to be fill
- * @param : a_eOpType [in]: 	operation type (POLLING,ON_DEMAND_READ,	ON_DEMAND_WRITE)
- * @return: Nothing
+/**
+ * Populate COperation data structures
+ * @param a_baseNode :[in] YAML node to read from
+ * @param a_refOpInfo :[in] data structure to be fill
+ * @param a_eOpType :[in] operation type (POLLING,ON_DEMAND_READ, ON_DEMAND_WRITE)
+ * @return None
  */
 void globalConfig::COperationInfo::buildOperationInfo(const YAML::Node& a_baseNode,
 		COperationInfo& a_refOpInfo,
 		const eOperationType a_eOpType)
 {
-	/// fill out operationType and default real-time
+	// fill out operationType and default real-time
 	a_refOpInfo.m_opType = a_eOpType;
 	if (validateParam(a_baseNode, "default_realtime", DT_BOOL) != 0)
 	{
@@ -408,16 +426,17 @@ void globalConfig::COperationInfo::buildOperationInfo(const YAML::Node& a_baseNo
 	CLogger::getInstance().log(INFO, LOGDETAILS(" default RT :: " + to_string(a_refOpInfo.m_defaultIsRT)));
 
 	COperation Obj;
-	/// realtime
+	// realtime
 	Obj.build(a_baseNode, a_refOpInfo.getRTConfig(), true);
 
-	/// non-realtime
+	// non-realtime
 	Obj.build(a_baseNode, a_refOpInfo.getNonRTConfig(), false);
 }
 
 
-/** Read global configurations from YAML file
- *
+/**
+ * Read global configurations from YAML file
+ * @param None
  * @return: true/false - based on success/failure
  */
 bool globalConfig::loadGlobalConfigurations()
