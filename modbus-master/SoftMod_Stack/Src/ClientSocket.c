@@ -979,6 +979,9 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 			}
 		}
 
+		// Timestamp for resp received
+		timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsRespRcvd), TIME_UTC);
+
 		if(totalRead > 0)
 		{
 			u8ReturnType = DecodeRxPacket(ServerReplyBuff,pstMBusRequesPacket);
@@ -1008,12 +1011,11 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
  * @param portName [in] uint8_t serial port number
  * @param baudrate [in] uint32_t baud rate
  * @param parity [in] uint8_t parity
- * @param stop_bit [in] uint8_t stop bit
  *
  * @return int [out] success or failure in integer format
  *
  */
-MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, eParity  parity, uint8_t stop_bit)
+MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, eParity  parity)
 {
 	struct termios tios;
 	speed_t speed;

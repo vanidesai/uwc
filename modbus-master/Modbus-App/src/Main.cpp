@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.3.6"
+#define APP_VERSION "0.0.3.7"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -319,12 +319,11 @@ int main(int argc, char* argv[])
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 
-		string sPortName, sBaudrate, sParity, sStopBit;
+		string sPortName, sBaudrate, sParity;
 		eParity parity;
 		if (!((CommonUtils::readEnvVariable("PORT_NAME", sPortName)) &&
 				(CommonUtils::readEnvVariable("BAUD_RATE", sBaudrate)) &&
-				(CommonUtils::readEnvVariable("PARITY", sParity)) &&
-				(CommonUtils::readEnvVariable("STOPBIT", sStopBit))))
+				(CommonUtils::readEnvVariable("PARITY", sParity))))
 		{
 			CLogger::getInstance().log(ERROR, LOGDETAILS("Required environment variables are not found for RTU"));
 			std::cout << "Required environment variables are not found for RTU" << endl;
@@ -352,13 +351,12 @@ int main(int argc, char* argv[])
 		cout<<"Baud rate = "<< stoi(sBaudrate)<< endl;
 		cout<<"Port Name = "<< sPortName<< endl;
 		cout<<"Parity = "<< sParity << endl;
-		cout<<"StopBit = "<< stoi(sStopBit)<< endl;
 		cout << "********************************************************************"<<endl;
 
 		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus RTU container is running with below configuration.."));
 
 		CLogger::getInstance().log(INFO, LOGDETAILS("Baud rate = " + sBaudrate + " \n" +
-				"Port Name = " + sPortName + " \n" + "Parity = " + sParity + " \n" + "Stop Bit =" + sStopBit));
+				"Port Name = " + sPortName + " \n" + "Parity = " + sParity + " \n"));
 
 		int fd;
 		long l_serialPortOpenDelay;
@@ -376,8 +374,7 @@ int main(int argc, char* argv[])
 		do{
 			fd = initSerialPort((uint8_t*)(sPortName.c_str()),
 					stoi(sBaudrate),
-					parity,
-					stoi(sStopBit));
+					parity);
 			if(fd < 0)
 			{
 				cout << "Failed to initialize serial port for RTU."<<endl;

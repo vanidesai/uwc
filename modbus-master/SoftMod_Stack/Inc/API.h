@@ -69,7 +69,7 @@ typedef enum StackErrorCode
 	STACK_ERROR_MUTEX_CREATE,
 	STACK_ERROR_STACK_IS_NOT_INITIALIZED,
 	STACK_ERROR_STACK_IS_ALREADY_INITIALIZED,
-	STACK_ERROR_NULL_POINTER=16
+	STACK_ERROR_NULL_POINTER=21
 }eStackErrorCode;
 
 /**
@@ -421,7 +421,7 @@ typedef struct _stMbusAppCallbackParams
 
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
-MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, eParity  parity, uint8_t stop_bit);
+MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, eParity  parity);
 #endif
 
 
