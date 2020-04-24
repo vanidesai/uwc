@@ -2207,10 +2207,16 @@ void PeriodicTimer::timerThread(uint32_t interval)
 
 	globalConfig::display_thread_sched_attr("timerThread param::");
 
-	const uint32_t uiMaxCounter = CTimeMapper::instance().preparePollingTracker();
+	uint32_t uiMaxCounter = CTimeMapper::instance().preparePollingTracker();
 	uint32_t uiCurCounter = 0;
 	std::cout << "Maximum counter = " << uiMaxCounter << std::endl;
 
+	// checking ounter value
+	if(0 == uiMaxCounter)
+	{
+		uiMaxCounter = 1;
+		std::cout << "Maximum counter was 0. Now set as = " << uiMaxCounter << std::endl;
+	}
 	// interval is in milliseconds
 	if(0 == interval)
 	{

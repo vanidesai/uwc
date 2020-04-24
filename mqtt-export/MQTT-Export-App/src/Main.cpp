@@ -304,7 +304,7 @@ void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext,
 	recv_ctx_t *sub_ctx = subContext.m_pContext;
 
 	//consider topic name as distinguishing factor for publisher
-	CMQTTPublishHandler mqttPublisher(CCommon::getInstance().getStrMqttExportURL().c_str(), topic.c_str(), qos);
+	CMQTTPublishHandler mqttPublisher(CCommon::getInstance().getStrMqttExportURL().c_str(), topic, qos);
 
 	CLogger::getInstance().log(INFO, LOGDETAILS("ZMQ listening for topic : " + topic));
 

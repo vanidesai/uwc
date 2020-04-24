@@ -285,8 +285,6 @@ class CRefDataForPolling
 	void setTimestampOfPollReq(struct timespec& a_tsPoll) { m_stPollTsForReq = a_tsPoll;};
 
 	MbusAPI_t& getMBusReq() {return m_stMBusReq;};
-	struct timespec m_tsBefSend, m_tsAftSend;
-	struct timespec m_tsBefMap, m_tsAftMap;
 };
 
 /**
