@@ -14,7 +14,6 @@
 #include <typeinfo>
 
 
-#if 1
 extern void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_sTimeStamp, std::string &a_sUsec, std::string &a_sTxID);
 
 
@@ -40,7 +39,7 @@ extern eMbusStackErrorCode readPeriodicCallBack(stMbusAppCallbackParams_t *pstMb
 
 /***Test:PeriodicRead_ut::handleResponse_NULLArgument_Exception()
   Execution should not hang when NULL pointer is passed as an argument.*/
-
+#if 0 //ALL
 TEST_F(PeriodicRead_ut, handleResponse_NULLArguments) {
 
 	pstException->m_u8ExcCode = 0;
@@ -214,7 +213,6 @@ TEST_F(PeriodicRead_ut, handleResponse_dataSizeLessThanNumOfBytes) {
 
 }
 #endif
-#endif
 
 #if 0 //in progress
 TEST_F(PeriodicRead_ut, initiateMessages_false)
@@ -301,7 +299,6 @@ TEST_F(PeriodicRead_ut, isInitialized_RetTrue) {
 	 */
 
 }
-#if 1
 
 /******************************PeriodicRead::InitRespHandlerThreads****************************************
 TC007
@@ -831,7 +828,4 @@ TEST_F(PeriodicRead_ut, Awaitresp)
 
 }
 */
-
-
-#endif
-
+#endif //ALL
