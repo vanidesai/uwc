@@ -18,15 +18,10 @@
 #include <time.h>
 #include "SessionControl.h"
 
-//#define MODBUS_STACK_TCPIP_ENABLED
 struct stReqManager g_objReqManager;
 
 // global variable to store stack configurations
 extern stDevConfig_t g_stModbusDevConfig;
-
-#define MODBUS_HEADER_LENGTH 6 //no. of bytes till length paramater in header
-//array of accepted clients
-#define MAX_DEVICE_PER_SITE 300
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 
@@ -36,11 +31,6 @@ extern int fd;
 
 int32_t i32MsgQueIdSC = 0;
 extern bool g_bThreadExit;
-
-#define READ_SIZE 1024
-#define MAXEVENTS 100
-#define EPOLL_TIMEOUT 1000
-#define MAXQUEUE 5
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 extern Mutex_H LivSerSesslist_Mutex;

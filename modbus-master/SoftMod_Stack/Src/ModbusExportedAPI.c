@@ -14,8 +14,6 @@
 #include <unistd.h>
 #include <time.h>
 
-#define MAX_ENV_VAR_LEN 5000
-
 Thread_H SessionControl_ThreadId = 0;
 extern int32_t i32MsgQueIdSC;
 bool g_bThreadExit = false;

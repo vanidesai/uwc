@@ -33,13 +33,7 @@ typedef long            	ilong32_t;  /* singed long declarations */
 typedef unsigned long   	ulong32_t;  /* unsinged long declarations */
 #endif
 
-
-#define MODBUS_EXCEPTION 1
-#define MODBUS_STACK_ERROR 2
 #define MODBUS_DATA_LENGTH (260)
-
-#define DEFAULT_RESPONSE_TIMEOUT_MS 80
-#define DEFAULT_INTERFRAME_DELAY_MS 0
 
 /**
  @enum MODBUS_ERROR_CODE
@@ -69,7 +63,7 @@ typedef enum StackErrorCode
 	STACK_ERROR_MUTEX_CREATE,
 	STACK_ERROR_STACK_IS_NOT_INITIALIZED,
 	STACK_ERROR_STACK_IS_ALREADY_INITIALIZED,
-	STACK_ERROR_NULL_POINTER=21
+	STACK_ERROR_MAX=21
 }eStackErrorCode;
 
 /**

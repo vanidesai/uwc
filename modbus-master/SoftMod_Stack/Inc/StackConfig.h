@@ -19,77 +19,111 @@
 #include <netinet/in.h>
 #include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
 
-//#define MODBUS_STACK_TCPIP_ENABLED
-#define MAX_REQUESTS 5000
-
-#define THREAD_PRIORITY 30
-#define THREAD_SCHEDULER SCHED_RR
-
 #define handle_error_en(en, msg) do { errno = en; perror(msg); } while (0)
 
+// TCP specific macros
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+	// TCP packet length
+	// This is as the modbus standard
 	#define TCP_MODBUS_ADU_LENGTH 260
-	#define MODBUS_DATA_LENGTH (260)
-	#define SESSION_TIMEOUT_IN_SEC 10
-	#define MODBUS_TCP_PORT 	502
-	#define MODBUS_MASTER_CONNECT_TIMEOUT_IN_SEC 10
-	#define MAXIMUM_TCP_CONNECTION 	32
+
+	// This value is used in timeout thread for tracking
+	// This value is used to add additional records to timeout tracker list
 	#define ADDITIONAL_RECORDS_TIMEOUT_TRACKER 100
+
+	// Multiplier value for request array
 	#define REQ_ARRAY_MULTIPLIER 100
+
+	// this value will specify maximum events to be register for epoll thread
+	// this is used in epoll receiver thread
+	#define MAXEVENTS 100
+
+ 	// epoll operation timeout
+	// this is used in epoll receiver thread
+	#define EPOLL_TIMEOUT 1000
+
+// RTU specific macros
 #else
+	// RTU packet length
+	// This is as the modbus standard
 	#define TCP_MODBUS_ADU_LENGTH 256
+
 	#define MODBUS_DATA_LENGTH (256)
+
+	// RTU packet header length
+	#define PKT_HDR_LEN 5
+
+	// RTU packet exception length value
+	#define PKT_EXP_LEN 2
+
+	// RTU packet exception value
+	#define EXP_VAL 0x80
+
+	// RTU packet exception code position value
+	#define EXP_POS 1
 #endif
 
+// common macros used for TCP and RTU
+
+// this value is used to validate maximum length validation for env variables recvd from application
+// This is added to fix KW issue
+#define MAX_ENV_VAR_LEN 5000
+
+// Enumerated value for modbus type exception
+#define MODBUS_EXCEPTION 1
+
+// Enumerated value used for stack errors
+#define MODBUS_STACK_ERROR 2
+
+// Response timeout (in milliseconds)value used by timeout thread
+// This is used as a default when it is not provided by user in env
+#define DEFAULT_RESPONSE_TIMEOUT_MS 80
+
+// Interframe delay (in milliseconds) value used while sending request to end device
+// This value is added for every request initiated by stack
+// This is used as a default when it is not provided by user in env
+#define DEFAULT_INTERFRAME_DELAY_MS 0
+
+// Number of bytes till length parameter in header out of total packet
+#define MODBUS_HEADER_LENGTH 6
+
+// maximum devices supported by stack
+// This value is used in epoll thread while receiving raw data from socket
+#define MAX_DEVICE_PER_SITE 300
+
+// Maximum request array size for request queue
+#define MAX_REQUESTS 5000
+
+// Thread priority value for all threads in stack in realtime
+#define THREAD_PRIORITY 30
+
+// Thread scheduler value for all threads in stack in realtime
+// thread scheduler default value is SCHED_RR (round robin)
+#define THREAD_SCHEDULER SCHED_RR
+
+// these values are used in Modbus_Read_File_Record API
 #define FILE_RECORD_REFERENCE_TYPE 6
-#define MAX_ALLOWED_SLAVES	(247)
 
-/// Starting Addresses for coils and registers
-#define SERIES_COIL_STATUS_ADDR		(00001)
-#define SERIES_READ_INPUT_ADDR		(10001)
-#define SERIES_INPUT_REG_ADDR		(30001)
-#define SERIES_HOLDING_REG_ADDR		(40001)
-
-#define APP_DATA_TIMEOUT	(250)
-
-/// Validation limits for stack
-#define MIN_VALUE			(0x0000)
+/// Validation limits for stack for all the API's
 #define MIN_COILS			(1)
 #define MAX_COILS			(2000)
-#define MAX_COIL_REGISTER	(65535)
-
 #define MIN_INPUT_REGISTER	(1)
 #define MAX_INPUT_REGISTER	(125)
 #define MIN_MULTI_REGISTER	(1)
 #define MAX_MULTI_REGISTER	(123)
-
 #define MIN_MULTI_COIL		(1)
 #define MAX_MULTI_COIL		(1968)
-#define MAX_STARTING_ADDRESS (65535)
-#define COIL_ON			(0xFF00)
-#define COIL_OFF		(0x0000)
-#define MAX_VALUE		(65535)
-#define MAX_REGISTERS	(200)
-
 #define MIN_HOLDING_REGISTERS (1)
 #define MAX_HOLDING_REGISTERS (125)
 #define MIN_INPUT			  (1)
 #define MAX_INPUT			(65535)
-
 #define MIN_MUL_WRITE_REG	(1)
 #define MAX_MUL_WRITE_REG	(121)
-
 #define MIN_FILE_BYTE_COUNT		(7)
 #define MAX_FILE_BYTE_COUNT	(245)
-
 /// Application Address
-/// To Do : Need to update as per application requirements
-#define MAX_COIL_ADDR			(65535)
-#define MAX_INPUT_REGISTER_ADDR (65535)
-
 #define MAX_BITS		(8)
 #define VALUE_ZERO		(0x00)
-#define MAX_BYTE	(0xFF)
 #define MEI_TYPE	(14)
 
 

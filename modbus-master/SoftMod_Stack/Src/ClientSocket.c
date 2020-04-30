@@ -36,10 +36,6 @@
 #include <signal.h>
 #endif
 
-#define PKT_HDR_LEN 5
-#define PKT_EXP_LEN 2
-#define EXP_VAL 0x80
-#define EXP_POS 1
 
 /*CRC calculation is for Modbus RTU stack */
 #ifndef MODBUS_STACK_TCPIP_ENABLED
