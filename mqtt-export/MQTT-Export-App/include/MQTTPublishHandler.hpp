@@ -12,7 +12,7 @@
 #define MQTT_PUBLISH_HANDLER_HPP_
 
 #include <atomic>
-#include "mqtt/client.h"
+#include "mqtt/async_client.h"
 #include "MQTTCallback.hpp"
 #include "Logger.hpp"
 #include <queue>
@@ -27,7 +27,7 @@ typedef enum MQTT_CONFIG_STATE
 
 class CMQTTPublishHandler
 {
-	mqtt::client publisher;
+	mqtt::async_client publisher;
 	bool m_bIsFirst;
 	mqtt::connect_options syncConnOpts;
 	mqtt::token_ptr conntok;
