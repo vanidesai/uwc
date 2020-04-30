@@ -18,7 +18,6 @@
 #include <mutex>
 #include "eis/msgbus/msgbus.h"
 #include "cjson/cJSON.h"
-#include "ZmqHandler.hpp"
 #include "PeriodicReadFeature.hpp"
 
 /// node for writerequest Q
@@ -26,6 +25,7 @@ struct stRequest
 {
 	std::string m_strTopic;
 	std::string m_strMsg;
+	struct timespec m_tsReqRcvd;
 };
 
 class onDemandHandler
@@ -54,9 +54,9 @@ public:
 	 */
 	bool processMsg(msg_envelope_t *msg, std::string stTopic);
 
-	eMbusStackErrorCode onDemandInfoHandler(stRequest& stRequest);
+	eMbusAppErrorCode onDemandInfoHandler(stRequest& stRequest);
 
-	eMbusStackErrorCode jsonParserForOnDemandRequest(cJSON *root,
+	eMbusAppErrorCode jsonParserForOnDemandRequest(cJSON *root,
 											MbusAPI_t &stMbusApiPram,
 											unsigned char& funcCode,
 											unsigned short txID,
@@ -74,20 +74,13 @@ public:
 
 	bool validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand);
 
-	void createErrorResponse(eMbusStackErrorCode errorCode,
+	void createErrorResponse(eMbusAppErrorCode errorCode,
 			uint8_t  u8FunCode,
 			unsigned short txID,
 			bool isRT,
 			bool isWrite);
 
 	bool compareString(const std::string stBaseString, const std::string strToCompare);
-
-	/**
-	 * get request priority from global configuration depending on the operation priority
-	 * @param a_Ops			:[in] global config for which to retrieve operation priority
-	 * @return [long]		:[out] request priority to be sent to stack.(lower is the value higher is the priority)
-	 */
-	long getReqPriority(const globalConfig::COperation a_Ops);
 };
 
 

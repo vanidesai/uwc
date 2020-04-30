@@ -53,23 +53,23 @@ PublishJsonHandler& PublishJsonHandler::instance()
  * @return 	true : on success,
  * 			false : on error
  */
-BOOLEAN PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, void* pub_ctx, const std::string a_sTopic)
+bool PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, void* pub_ctx, const std::string a_sTopic)
 {
 	if((NULL == msg) || (NULL == msgbus_ctx) || (NULL == pub_ctx))
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(": Failed to publish message - Input parameters are NULL"));
+		DO_LOG_ERROR(": Failed to publish message - Input parameters are NULL");
 		return false;
 	}
 	std::lock_guard<std::mutex> lock(publishJsonMutex);
 
 	msgbus_ret_t ret;
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("msg to publish :: Topic :: " + a_sTopic));
+	DO_LOG_DEBUG("msg to publish :: Topic :: " + a_sTopic);
 
 	ret = msgbus_publisher_publish(msgbus_ctx, (publisher_ctx_t*)pub_ctx, msg);
 	if(ret != MSG_SUCCESS)
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(" Failed to publish message errno: " + std::to_string(ret)));
+		DO_LOG_ERROR(" Failed to publish message errno: " + std::to_string(ret));
 		return false;
 	}
 

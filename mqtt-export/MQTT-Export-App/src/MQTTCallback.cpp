@@ -19,14 +19,14 @@ void CMQTTCallback::connection_lost(const std::string& cause)
 {
 	CMQTTHandler::instance().setMQTTSubConfigState(MQTT_SUSCRIBER_CONNECT_STATE);
 
-	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT Connection lost"));
+	DO_LOG_ERROR("MQTT Connection lost");
 
 	if (!cause.empty())
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT Connection lost cause:  " + cause));
+		DO_LOG_ERROR("MQTT Connection lost cause:  " + cause);
 	}
 #ifdef PERFTESTING
-	CLogger::getInstance().log(ERROR, LOGDETAILS("CMQTTCallback:connection_lost:" + cause));
+	DO_LOG_ERROR("CMQTTCallback:connection_lost:" + cause);
 	CMQTTHandler::m_ui32ConnectionLost++;
 	CMQTTHandler::printCounters();
 #endif
@@ -72,10 +72,10 @@ void CMQTTCallback::message_arrived(mqtt::const_message_ptr msg)
  */
 void CMQTTActionListener::on_failure(const mqtt::token& tok)
 {
-	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT action (connect/message sending) failed"));
+	DO_LOG_ERROR("MQTT action (connect/message sending) failed");
 #ifdef PERFTESTING
 	CMQTTPublishHandler::m_ui32PublishFailed++;
-	CLogger::getInstance().log(ERROR, LOGDETAILS("CMQTTActionListener::on_failure:" + std::to_string(tok.get_message_id())));
+	DO_LOG_ERROR("CMQTTActionListener::on_failure:" + std::to_string(tok.get_message_id()));
 	CMQTTHandler::printCounters();
 #endif
 }
@@ -99,11 +99,11 @@ void CMQTTActionListener::on_success(const mqtt::token& tok)
  */
 void CSyncCallback::connection_lost(const std::string& cause)
 {
-	CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher lost MQTT Connection"));
+	DO_LOG_ERROR("MQTT publisher lost MQTT Connection");
 
 	if (!cause.empty())
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS("MQTT publisher lost MQTT Connection : cause:  " + cause));
+		DO_LOG_ERROR("MQTT publisher lost MQTT Connection : cause:  " + cause);
 	}
 #ifdef PERFTESTING
 	CMQTTPublishHandler::m_ui32ConnectionLost++;

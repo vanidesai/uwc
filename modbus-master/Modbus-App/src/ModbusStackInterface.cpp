@@ -29,10 +29,10 @@ std::mutex g_RWCommonCallbackMutex;
  */
 void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	DO_LOG_DEBUG("Start");
 	if(pstMbusAppCallbackParams == NULL)
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null for on-demand read"));
+		DO_LOG_DEBUG("Response received from stack is null for on-demand read");
 		return;
 	}
 
@@ -41,7 +41,7 @@ void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParam
 															MBUS_CALLBACK_ONDEMAND_READ,
 															PublishJsonHandler::instance().getSReadResponseTopic());
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**
@@ -51,10 +51,10 @@ void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParam
  */
 void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	DO_LOG_DEBUG("Start");
 	if(pstMbusAppCallbackParams == NULL)
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null for realtime on-demand read"));
+		DO_LOG_DEBUG("Response received from stack is null for realtime on-demand read");
 		return;
 	}
 
@@ -63,7 +63,7 @@ void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPar
 															MBUS_CALLBACK_ONDEMAND_READ_RT,
 															PublishJsonHandler::instance().getSReadResponseTopicRT());
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**
@@ -74,10 +74,10 @@ void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPar
  */
 void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	DO_LOG_DEBUG("Start");
 	if(pstMbusAppCallbackParams == NULL)
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null for on-demand write"));
+		DO_LOG_DEBUG("Response received from stack is null for on-demand write");
 		return;
 	}
 
@@ -86,7 +86,7 @@ void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPara
 														MBUS_CALLBACK_ONDEMAND_WRITE,
 														PublishJsonHandler::instance().getSWriteResponseTopic());
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**
@@ -96,10 +96,10 @@ void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPara
  */
 void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	DO_LOG_DEBUG("Start");
 	if(pstMbusAppCallbackParams == NULL)
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Response received from stack is null for realtime on-demand write"));
+		DO_LOG_DEBUG("Response received from stack is null for realtime on-demand write");
 		return;
 	}
 
@@ -108,7 +108,7 @@ void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPa
 														MBUS_CALLBACK_ONDEMAND_WRITE_RT,
 														PublishJsonHandler::instance().getSWriteResponseTopicRT());
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**
@@ -122,14 +122,14 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					void* vpCallBackFun)
 {
 	string temp; /// temporary string for logging
-	uint8_t u8ReturnType = MBUS_JSON_APP_ERROR_NULL_POINTER;
+	uint8_t u8ReturnType = APP_SUCCESS;
 
 	if(pstMbusApiPram != NULL)
 	{
 		switch ((eModbusFuncCode_enum)u8FunCode)
 		{
 			case READ_COIL_STATUS:
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Read Coil Request Received"));
+				DO_LOG_DEBUG("Read Coil Request Received");
 				u8ReturnType = Modbus_Read_Coils(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -140,7 +140,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					vpCallBackFun);
 			break;
 			case READ_INPUT_STATUS:
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Read Input Status Request Received"));
+				DO_LOG_DEBUG("Read Input Status Request Received");
 				u8ReturnType = Modbus_Read_Discrete_Inputs(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -151,7 +151,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					vpCallBackFun);
 			break;
 			case READ_HOLDING_REG:
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Read Holding Register Request Received"));
+				DO_LOG_DEBUG("Read Holding Register Request Received");
 				u8ReturnType = Modbus_Read_Holding_Registers(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -162,7 +162,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					vpCallBackFun);
 			break;
 			case READ_INPUT_REG:
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Read Input Register Request Received"));
+				DO_LOG_DEBUG("Read Input Register Request Received");
 				u8ReturnType = Modbus_Read_Input_Registers(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -174,7 +174,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 			break;
 			case WRITE_SINGLE_COIL:
 			{
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Write Single Coil Request Received"));
+				DO_LOG_DEBUG("Write Single Coil Request Received");
 				uint16_t *pu16OutData = (uint16_t *)pstMbusApiPram->m_pu8Data;
 				u8ReturnType = Modbus_Write_Single_Coil(pstMbusApiPram->m_u16StartAddr,
 						*pu16OutData,
@@ -189,7 +189,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 
 			case WRITE_SINGLE_REG:
 			{
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Write Single Register Request Received"));
+				DO_LOG_DEBUG("Write Single Register Request Received");
 				uint16_t u16OutData = 0;
 				memcpy_s(&u16OutData,sizeof(uint16_t),pstMbusApiPram->m_pu8Data,sizeof(uint16_t));
 				u8ReturnType = Modbus_Write_Single_Register(pstMbusApiPram->m_u16StartAddr,
@@ -203,7 +203,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 			}
 			break;
 			case WRITE_MULTIPLE_COILS:
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Write Multiple Coils Request Received"));
+				DO_LOG_DEBUG("Write Multiple Coils Request Received");
 				u8ReturnType = Modbus_Write_Multiple_Coils(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -215,7 +215,7 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 					vpCallBackFun);
 			break;
 			case WRITE_MULTIPLE_REG:
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Write Multiple Register Request Received"));
+				DO_LOG_DEBUG("Write Multiple Register Request Received");
 				u8ReturnType = Modbus_Write_Multiple_Register(pstMbusApiPram->m_u16StartAddr,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
@@ -228,8 +228,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram
 			break;
 
 			default:
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid Request Received"));
-				u8ReturnType = MBUS_STACK_ERROR_INVALID_INPUT_PARAMETER;
+				DO_LOG_ERROR("Invalid Request Received");
+				u8ReturnType = APP_ERROR_INVALID_FUNCTION_CODE;
 			break;
 		}
 	}

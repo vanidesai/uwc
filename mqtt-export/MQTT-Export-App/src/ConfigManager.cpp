@@ -127,8 +127,8 @@ void globalConfig::display_sched_attr(int policy, struct sched_param& param)
 	{
 		sPolicy = "UNKNOWN";
 	}
-	CLogger::getInstance().log(INFO, LOGDETAILS("policy = " + sPolicy +
-			" priority = "+ to_string(param.sched_priority)));
+	DO_LOG_INFO("policy = " + sPolicy +
+			" priority = "+ to_string(param.sched_priority));
 }
 
 /**
@@ -147,7 +147,7 @@ void globalConfig::display_thread_sched_attr(const std::string a_sMsg)
 	{
 		handle_error_en(s, "pthread_getschedparam");
 	}
-	CLogger::getInstance().log(INFO, LOGDETAILS("Thread number :: " + to_string(count++) +" Thread Name :: " + a_sMsg));
+	DO_LOG_INFO("Thread number :: " + to_string(count++) +" Thread Name :: " + a_sMsg);
 
 	display_sched_attr(policy, param);
 }
@@ -203,8 +203,8 @@ void globalConfig::set_thread_sched_param(const COperation a_OpsInfo,
 
 	if(iThreadPriority == -1 || threadPolicy == UNKNOWN)
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to set thread priority for this thread"));
-		CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid operation priority received for thread set priority"));
+		DO_LOG_ERROR("Failed to set thread priority for this thread");
+		DO_LOG_ERROR("Invalid operation priority received for thread set priority");
 		return;
 	}
 
@@ -215,12 +215,12 @@ void globalConfig::set_thread_sched_param(const COperation a_OpsInfo,
 	if(0 != result)
 	{
 		handle_error_en(result, "pthread_setschedparam");
-		CLogger::getInstance().log(ERROR, LOGDETAILS("Cannot set thread priority to : " + std::to_string(iThreadPriority)));
+		DO_LOG_ERROR("Cannot set thread priority to : " + std::to_string(iThreadPriority));
 		std::cout << __func__ << ":" << __LINE__ << " Cannot set thread priority, result : " << result << std::endl;
 	}
 	else
 	{
-		CLogger::getInstance().log(INFO, LOGDETAILS("thread priority to set to: " + std::to_string(iThreadPriority)));
+		DO_LOG_INFO("thread priority to set to: " + std::to_string(iThreadPriority));
 	}
 	//end of set priority for current thread
 }
@@ -255,8 +255,8 @@ int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 	{
 		if(!(a_BaseNode[a_sKey])  || a_BaseNode[a_sKey].as<std::string>() == "")
 		{
-			CLogger::getInstance().log(WARN, LOGDETAILS(a_sKey + " is not present or empty !!"));
-			CLogger::getInstance().log(WARN, LOGDETAILS("setting it to default !!"));
+			DO_LOG_WARN(a_sKey + " is not present or empty !!");
+			DO_LOG_WARN("setting it to default !!");
 			iRet = -1;
 		}
 		else
@@ -290,7 +290,7 @@ int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 				break;
 				default:
 				{
-					CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid data type::" + to_string(a_eDataType)));
+					DO_LOG_ERROR("Invalid data type::" + to_string(a_eDataType));
 					iRet = -3;
 				}
 				break;
@@ -299,8 +299,8 @@ int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 	}
 	catch (YAML::Exception &e)
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS( a_sKey +
-				" field data type is invalid, setting it to default, exception :: " +	std::string(e.what())));
+		DO_LOG_ERROR( a_sKey +
+				" field data type is invalid, setting it to default, exception :: " +	std::string(e.what()));
 		iRet = -2;
 	}
 	return iRet;
@@ -322,13 +322,13 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 	if(!a_isRT)
 	{
 		cout << "non-realtime parameters: " << endl;
-		CLogger::getInstance().log(INFO, LOGDETAILS("non-realtime parameters: "));
+		DO_LOG_INFO("non-realtime parameters: ");
 		ops = "non-realtime";
 	}
 	else
 	{
 		cout << "realtime parameters: " << endl;
-		CLogger::getInstance().log(INFO, LOGDETAILS("realtime parameters: "));
+		DO_LOG_INFO("realtime parameters: ");
 		ops = "realtime";
 	}
 
@@ -343,8 +343,8 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		if(a_baseNode[ops]["operation_priority"].as<int>() <= 0 ||
 				a_baseNode[ops]["operation_priority"].as<int>() > 6)
 		{
-			CLogger::getInstance().log(WARN, LOGDETAILS(
-					"operation_priority parameter is out of range (i.e. expected value must be between 1-6 inclusive ) setting it to default (i.e. 1)"));
+			DO_LOG_WARN(
+					"operation_priority parameter is out of range (i.e. expected value must be between 1-6 inclusive ) setting it to default (i.e. 1)");
 			a_refOpration.m_operationPriority = DEFAULT_OPERATION_PRIORITY;
 		}
 		else
@@ -364,8 +364,8 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		if(a_baseNode[ops]["retries"].as<int>() < 0 ||
 				a_baseNode[ops]["retries"].as<int>() > 4)
 		{
-			CLogger::getInstance().log(WARN, LOGDETAILS(
-					"retries parameter is out of range (i.e. expected value must be between 0-4 inclusive) setting it to default (i.e. 0)"));
+			DO_LOG_WARN(
+					"retries parameter is out of range (i.e. expected value must be between 0-4 inclusive) setting it to default (i.e. 0)");
 			a_refOpration.m_retries = DEFAULT_RETRIES;
 		}
 		else
@@ -385,8 +385,8 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		if(a_baseNode[ops]["qos"].as<int>() < 0 ||
 				a_baseNode[ops]["qos"].as<int>() > 2)
 		{
-			CLogger::getInstance().log(WARN, LOGDETAILS(
-					"qos parameter is out of range (i.e. expected value must be between 0-2 inclusive) setting it to default (i.e. 0)"));
+			DO_LOG_WARN(
+					"qos parameter is out of range (i.e. expected value must be between 0-2 inclusive) setting it to default (i.e. 0)");
 			a_refOpration.m_qos = DEFAULT_QOS;
 		}
 		else
@@ -397,8 +397,8 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 
 	cout << "	operation priority :: " <<a_refOpration.getOperationPriority()<< endl;
 	cout << "	retries :: " <<a_refOpration.getRetries()<< endl;
-	CLogger::getInstance().log(INFO, LOGDETAILS("operation priority :: " + to_string(a_refOpration.getOperationPriority())));
-	CLogger::getInstance().log(INFO, LOGDETAILS("retries :: " + to_string(a_refOpration.getRetries())));
+	DO_LOG_INFO("operation priority :: " + to_string(a_refOpration.getOperationPriority()));
+	DO_LOG_INFO("retries :: " + to_string(a_refOpration.getRetries()));
 }
 
 /**
@@ -423,7 +423,7 @@ void globalConfig::COperationInfo::buildOperationInfo(const YAML::Node& a_baseNo
 		a_refOpInfo.m_defaultIsRT = a_baseNode["default_realtime"].as<bool>();
 	}
 	cout << " default RT :: " << a_refOpInfo.m_defaultIsRT << endl;
-	CLogger::getInstance().log(INFO, LOGDETAILS(" default RT :: " + to_string(a_refOpInfo.m_defaultIsRT)));
+	DO_LOG_INFO(" default RT :: " + to_string(a_refOpInfo.m_defaultIsRT));
 
 	COperation Obj;
 	// realtime
@@ -463,10 +463,10 @@ bool globalConfig::loadGlobalConfigurations()
 						node = key["Polling"];
 
 						cout << "********************************************************************";
-						CLogger::getInstance().log(INFO, LOGDETAILS("\nFollowing Global configurations is available inside container"));
+						DO_LOG_INFO("\nFollowing Global configurations is available inside container");
 						cout << "\nFollowing Global configurations is available inside container \n";
 						cout << "********************************************************************\n";
-						CLogger::getInstance().log(INFO, LOGDETAILS("For Polling >>>"));
+						DO_LOG_INFO("For Polling >>>");
 						cout << "For Polling >>>\n";
 						COperationInfo::buildOperationInfo(node,
 								globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig(),
@@ -478,7 +478,7 @@ bool globalConfig::loadGlobalConfigurations()
 					{
 						node = key["on-demand-read"];
 						cout << "For On-demand read >>>\n";
-						CLogger::getInstance().log(INFO, LOGDETAILS("For On-demand read >>>"));
+						DO_LOG_INFO("For On-demand read >>>");
 						COperationInfo::buildOperationInfo(node,
 								globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig(),
 								ON_DEMAND_READ);
@@ -489,7 +489,7 @@ bool globalConfig::loadGlobalConfigurations()
 					{
 						node = key["on-demand-write"];
 						cout << "For On-demand write >>>\n";
-						CLogger::getInstance().log(INFO, LOGDETAILS("For On-demand write >>>"));
+						DO_LOG_INFO("For On-demand write >>>");
 						COperationInfo::buildOperationInfo(node,
 								globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig(),
 								ON_DEMAND_WRITE);
@@ -503,7 +503,7 @@ bool globalConfig::loadGlobalConfigurations()
 	catch (YAML::Exception& e)
 	{
 		cout << "Error while loading global configurations :: " << e.what()<< "\n";
-		CLogger::getInstance().log(ERROR, LOGDETAILS("Error while loading global configurations::" + std::string(e.what())));
+		DO_LOG_ERROR("Error while loading global configurations::" + std::string(e.what()));
 		bRetVal = false;
 	}
 
@@ -516,21 +516,21 @@ bool globalConfig::loadGlobalConfigurations()
 	// check for errors
 	if(!isPollingExist)
 	{
-		CLogger::getInstance().log(INFO, LOGDETAILS("Setting default config for Polling >>>"));
+		DO_LOG_INFO("Setting default config for Polling >>>");
 		cout << "Setting default config for Polling >>>\n";
 		bRetVal = false;
 		setDefaultConfig(POLLING);
 	}
 	if (!isOdReadExist)
 	{
-		CLogger::getInstance().log(INFO, LOGDETAILS("Setting default config for On-Demand-Read >>>"));
+		DO_LOG_INFO("Setting default config for On-Demand-Read >>>");
 		cout << "Setting default config for On-Demand-Read >>>\n";
 		bRetVal = false;
 		setDefaultConfig(ON_DEMAND_READ);
 	}
 	if (!isOdWriteExist)
 	{
-		CLogger::getInstance().log(INFO, LOGDETAILS("Setting default config for On-Demand-Write >>>"));
+		DO_LOG_INFO("Setting default config for On-Demand-Write >>>");
 		cout << "Setting default config for On-Demand-Write >>>\n";
 		bRetVal = false;
 		setDefaultConfig(ON_DEMAND_WRITE);

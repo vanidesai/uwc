@@ -181,6 +181,17 @@ public:
 	void setDevMode(bool devMode) {
 		m_devMode = devMode;
 	}
+
+	/**
+	 * Get current time in nano seconds
+	 * @param ts :[in] timestamp to get microsecond value
+	 * @return time in micro seconds
+	 */
+	unsigned long get_micros(struct timespec ts)
+	{
+		return (unsigned long)ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+	}
+
 };
 
 

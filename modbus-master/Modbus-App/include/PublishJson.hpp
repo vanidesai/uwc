@@ -11,7 +11,9 @@
 #ifndef INCLUDE_PUBLISHJSON_HPP_
 #define INCLUDE_PUBLISHJSON_HPP_
 
-#include "Common.hpp"
+#include <vector>
+#include <atomic>
+#include "ZmqHandler.hpp"
 
 /**
  * Structure to contain state for a publisher thread
@@ -54,7 +56,7 @@ class PublishJsonHandler
 public:
 	// function to get single instance of this class
 	static PublishJsonHandler& instance();
-	BOOLEAN publishJson(msg_envelope_t* msg, void* msgbus_ctx, void* pub_ctx, const std::string str_Topic);
+	bool publishJson(msg_envelope_t* msg, void* msgbus_ctx, void* pub_ctx, const std::string str_Topic);
 
 	/**
 	 * Retrieve polled data topic

@@ -30,6 +30,8 @@ CLogger::CLogger()
 
 	log4cpp::Category& root = log4cpp::Category::getRoot();
 
+	std::cout << "Log level is set as: " << log4cpp::Priority::getPriorityName(root.getPriority()) << std::endl;
+
 	logger = &root;
 }
 
@@ -38,8 +40,11 @@ CLogger::CLogger()
  */
 CLogger::~CLogger()
 {
-	logger->removeAllAppenders();
-	logger->shutdownForced();
+	if(NULL != logger)
+	{
+		logger->removeAllAppenders();
+		logger->shutdownForced();
+	}
 }
 
 /**
@@ -49,7 +54,10 @@ CLogger::~CLogger()
  */
 void CLogger::LogInfo(std::string msg)
 {
-	logger->info(msg);
+	if(NULL != logger)
+	{
+		logger->info(msg);
+	}
 }
 
 /**
@@ -59,7 +67,10 @@ void CLogger::LogInfo(std::string msg)
  */
 void CLogger::LogDebug(std::string msg)
 {
-	logger->debug(msg);
+	if(NULL != logger)
+	{
+		logger->debug(msg);
+	}
 }
 
 /**
@@ -69,7 +80,10 @@ void CLogger::LogDebug(std::string msg)
  */
 void CLogger::LogWarn(std::string msg)
 {
-	logger->warn(msg);
+	if(NULL != logger)
+	{
+		logger->warn(msg);
+	}
 }
 
 /**
@@ -79,7 +93,10 @@ void CLogger::LogWarn(std::string msg)
  */
 void CLogger::LogError(std::string msg)
 {
-	logger->error(msg);
+	if(NULL != logger)
+	{
+		logger->error(msg);
+	}
 }
 
 /**
@@ -89,49 +106,8 @@ void CLogger::LogError(std::string msg)
  */
 void CLogger::LogFatal(std::string msg)
 {
-	logger->fatal(msg);
-}
-
-/**
- * Write statements in log file with given log level
- * @param lvl :[in] log level
- * @param msg :[in] statement to log
- * @return None
- */
-void CLogger::log(LogLevel lvl, std::string msg)
-{
-	try
+	if(NULL != logger)
 	{
-		if(logger == NULL)
-		{
-			std::cout << __func__ << " null logger instance \n";
-			return;
-		}
-
-		switch (lvl)
-		{
-		case INFO:
-			logger->info(msg);
-			break;
-		case DEBUG:
-			logger->debug(msg);
-			break;
-		case WARN:
-			logger->warn(msg);
-			break;
-		case ERROR:
-			logger->error(msg);
-			break;
-		case FATAL:
-			logger->fatal(msg);
-			break;
-		default:
-			std::cout << __func__ << " Invalid log level \n";
-		}
-
-	}
-	catch (std::exception &e)
-	{
-		std::cout << __func__ << ":" << __LINE__ << "Exception : " << e.what() << std::endl;
+		logger->fatal(msg);
 	}
 }

@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.3.7"
+#define APP_VERSION "0.0.4.0"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -47,8 +47,7 @@ extern std::atomic<bool> g_stopThread;
  */
 void populatePollingRefData()
 {
-	string temp = "";
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	DO_LOG_DEBUG("Start");
 
 	using network_info::CUniqueDataPoint;
 	using network_info::eEndPointType;
@@ -64,7 +63,7 @@ void populatePollingRefData()
 		const CUniqueDataPoint &a = mapUniquePoint.at(pt.first);
 		if(0 == a.getDataPoint().getPollingConfig().m_uiPollFreq)
 		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("Polling is not set for "+ a.getDataPoint().getID()));
+			DO_LOG_INFO("Polling is not set for "+ a.getDataPoint().getID());
 			// Polling frequency is not set
 			continue; // go to next point
 		}
@@ -72,7 +71,7 @@ void populatePollingRefData()
 		{
 			std::string sTopic = PublishJsonHandler::instance().getPolledDataTopic();
 
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("Topic for context search: " + sTopic));
+			DO_LOG_DEBUG("Topic for context search: " + sTopic);
 
 			std::cout << iCount++ << ". Point to poll: " << a.getID() << ", RT: "
 					<< a.getDataPoint().getPollingConfig().m_bIsRealTime << ", Freq: "
@@ -101,30 +100,25 @@ void populatePollingRefData()
 
 			CTimeMapper::instance().insert(a.getDataPoint().getPollingConfig().m_uiPollFreq, objRefPolling);
 
-			temp = "Polling is set for ";
-			temp.append(a.getDataPoint().getID());
-			temp.append(", FunctionCode ");
-			temp.append(to_string((unsigned)uiFuncCode));
-			temp.append(", frequency ");
-			temp.append(to_string(a.getDataPoint().getPollingConfig().m_uiPollFreq));
-			temp.append(", RT ");
-			temp.append(to_string(a.getDataPoint().getPollingConfig().m_bIsRealTime));
-
-			CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+			DO_LOG_INFO("Polling is set for " +
+						a.getDataPoint().getID() +
+						", FunctionCode " +
+						to_string((unsigned)uiFuncCode) +
+						", frequency " +
+						to_string(a.getDataPoint().getPollingConfig().m_uiPollFreq) +
+						", RT " +
+						to_string(a.getDataPoint().getPollingConfig().m_bIsRealTime));
 		}
 		catch(std::exception &e)
 		{
-
-			temp = "Exception '";
-			temp.append(e.what());
-			temp.append("' in processing ");
-			temp.append(a.getDataPoint().getID());
-
-			CLogger::getInstance().log(FATAL, LOGDETAILS(temp));
+			DO_LOG_FATAL("Exception " +
+						(string)e.what() +
+						"in processing " +
+						a.getDataPoint().getID());
 		}
 	}
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**
@@ -175,12 +169,12 @@ bool CommonUtils::readEnvVariable(const char *pEnvVarName, string &storeVal)
 		bRetVal = true;
 		std::string tmp (cEvar);
 		storeVal = tmp;
-		CLogger::getInstance().log(INFO, LOGDETAILS(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal));
+		DO_LOG_INFO(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal);
 		std::cout << std::string(pEnvVarName) + " environment variable is set to ::" + storeVal << endl;
 	}
 	else
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(std::string(pEnvVarName) + " environment variable is not found"));
+		DO_LOG_ERROR(std::string(pEnvVarName) + " environment variable is not found");
 		cout << std::string(pEnvVarName) + " environment variable is not found" <<endl;
 	}
 	return bRetVal;
@@ -231,21 +225,21 @@ bool CommonUtils::readCommonEnvVariables()
 	if (devMode == "TRUE")
 	{
 		PublishJsonHandler::instance().setDevMode(true);
-		CLogger::getInstance().log(INFO, LOGDETAILS("DEV_MODE is set to true"));
+		DO_LOG_INFO("DEV_MODE is set to true");
 		cout << "DEV_MODE is set to true\n";
 
 	}
 	else if (devMode == "FALSE")
 	{
 		PublishJsonHandler::instance().setDevMode(false);
-		CLogger::getInstance().log(INFO, LOGDETAILS("DEV_MODE is set to false"));
+		DO_LOG_INFO("DEV_MODE is set to false");
 		cout << "DEV_MODE is set to false\n";
 	}
 	else
 	{
 		/// default set to false
-		CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid value for DEV_MODE env variable"));
-		CLogger::getInstance().log(INFO, LOGDETAILS("Set the dev mode to default (i.e. true)"));
+		DO_LOG_ERROR("Invalid value for DEV_MODE env variable");
+		DO_LOG_INFO("Set the dev mode to default (i.e. true)");
 		cout << "DEV_MODE is set to default false\n";
 	}
 
@@ -263,26 +257,25 @@ bool CommonUtils::readCommonEnvVariables()
  */
 int main(int argc, char* argv[])
 {
-	CLogger::getInstance().log(DEBUG, "Start");
-	string temp;
+	DO_LOG_DEBUG("Start");
 
 	try
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Starting Modbus_App ..."));
+		DO_LOG_DEBUG("Starting Modbus_App ...");
 
-		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus container app version is set to :: " + std::string(APP_VERSION)));
+		DO_LOG_INFO("Modbus container app version is set to :: " + std::string(APP_VERSION));
 		cout <<"\nModbus container app version is :: " + std::string(APP_VERSION) << "\n"<<endl;
 
 		// load global configuration for container real-time setting
 		bool bRetVal = globalConfig::loadGlobalConfigurations();
 		if(!bRetVal)
 		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("Global configuration is set with some default parameters"));
+			DO_LOG_INFO("Global configuration is set with some default parameters");
 			cout << "\nGlobal configuration is set with some default parameters\n\n";
 		}
 		else
 		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("Global configuration is set successfully"));
+			DO_LOG_INFO("Global configuration is set successfully");
 			cout << "\nGlobal configuration for container real-time is set successfully\n\n";
 		}
 
@@ -296,7 +289,7 @@ int main(int argc, char* argv[])
 
 		if (!CommonUtils::readCommonEnvVariables())
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Required env variables are not set."));
+			DO_LOG_ERROR("Required env variables are not set.");
 			std::cout << "Required common env variables are not set.\n";
 			exit(1);
 		}
@@ -304,10 +297,10 @@ int main(int argc, char* argv[])
 		string cutOff;
 		if(!CommonUtils::readEnvVariable("CUTOFF_INTERVAL_PERCENTAGE", cutOff))
 		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("CUTOFF_INTERVAL_PERCENTAGE env variables are not set."));
+			DO_LOG_INFO("CUTOFF_INTERVAL_PERCENTAGE env variables are not set.");
 			cout << "CUTOFF_INTERVAL_PERCENTAGE env variables are not set."<<endl;
 			std::cout << "setting it to default i.e. 90 \n";
-			CLogger::getInstance().log(INFO, LOGDETAILS("setting it to default i.e. 90"));
+			DO_LOG_INFO("setting it to default i.e. 90");
 			PublishJsonHandler::instance().setCutoffIntervalPercentage(90);
 		}
 		else
@@ -325,13 +318,13 @@ int main(int argc, char* argv[])
 				(CommonUtils::readEnvVariable("BAUD_RATE", sBaudrate)) &&
 				(CommonUtils::readEnvVariable("PARITY", sParity))))
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Required environment variables are not found for RTU"));
+			DO_LOG_ERROR("Required environment variables are not found for RTU");
 			std::cout << "Required environment variables are not found for RTU" << endl;
 			exit(1);
 		}
 		else
 		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("Required environment variables are found for RTU"));
+			DO_LOG_INFO("Required environment variables are found for RTU");
 		}
 
 		if(sParity == "N" || sParity == "n" ||
@@ -342,7 +335,7 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Set Parity is wrong for RTU. Set correct parity N/E/O"));
+			DO_LOG_ERROR("Set Parity is wrong for RTU. Set correct parity N/E/O");
 			std::cout << "Set Parity \"" << sParity << "\" is wrong for RTU. Set correct parity N/E/O" << endl;
 			exit(1);
 		}
@@ -353,10 +346,10 @@ int main(int argc, char* argv[])
 		cout<<"Parity = "<< sParity << endl;
 		cout << "********************************************************************"<<endl;
 
-		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus RTU container is running with below configuration.."));
+		DO_LOG_INFO("Modbus RTU container is running with below configuration..");
 
-		CLogger::getInstance().log(INFO, LOGDETAILS("Baud rate = " + sBaudrate + " \n" +
-				"Port Name = " + sPortName + " \n" + "Parity = " + sParity + " \n"));
+		DO_LOG_INFO("Baud rate = " + sBaudrate + " \n" +
+				"Port Name = " + sPortName + " \n" + "Parity = " + sParity + " \n");
 
 		int fd;
 		long l_serialPortOpenDelay;
@@ -380,9 +373,9 @@ int main(int argc, char* argv[])
 				cout << "Failed to initialize serial port for RTU."<<endl;
 				cout << "Connect the RTU device to serial port"<<endl;
 				//cout << "Container will restart until the serial port is connected."<<endl;
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize serial port for RTU."));
+				DO_LOG_ERROR("Failed to initialize serial port for RTU.");
 
-				CLogger::getInstance().log(ERROR, LOGDETAILS(temp = "File descriptor is set to ::" + to_string(fd)));
+				DO_LOG_ERROR("File descriptor is set to ::" + to_string(fd));
 
 				cout << "Error:: File descriptor is set to :: " << fd << endl;
 				cout << "Attempting to Open Serial Port again :: " << endl;
@@ -391,7 +384,7 @@ int main(int argc, char* argv[])
 			else
 			{
 				cout << "Initialize serial port for RTU is successful"<<endl;
-				CLogger::getInstance().log(INFO, LOGDETAILS(temp = "File descriptor is set to ::" + to_string(fd)));
+				DO_LOG_INFO("File descriptor is set to ::" + to_string(fd));
 				cout << "File descriptor is set to :: " << fd << endl;
 			}
 			sleep(l_serialPortOpenDelay);
@@ -427,21 +420,20 @@ int main(int argc, char* argv[])
 		if(STACK_NO_ERROR != AppMbusMaster_SetStackConfigParam(&stDevConf))
 		{
 			std::cout << "Error: Exiting. Failed to set stack  config parameters"<< std::endl;
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to set stack  config parameters"));
+			DO_LOG_ERROR("Failed to set stack  config parameters");
 			return -1;
 		}
 		else
 		{
 			std::cout << "Success :: modbus stack set config successful" << std::endl;
-			CLogger::getInstance().log(INFO, LOGDETAILS("modbus stack set config successful"));
+			DO_LOG_INFO("modbus stack set config successful");
 		}
 
 		uint8_t	u8ReturnType = AppMbusMaster_StackInit();
 		if(0 != u8ReturnType)
 		{
-			temp = "Exiting. Failed to initialize modbus stack:";
-			temp.append(to_string(u8ReturnType));
-			CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+			DO_LOG_ERROR("Exiting. Failed to initialize modbus stack:" +
+						to_string(u8ReturnType));
 
 			std::cout << "Error: Exiting. Failed to initialize modbus stack:" << (unsigned)u8ReturnType << std::endl;
 			exit(1);
@@ -449,51 +441,51 @@ int main(int argc, char* argv[])
 		else
 		{
 			std::cout << "\nSuccess :: modbus stack initialization successful" << std::endl;
-			CLogger::getInstance().log(INFO, LOGDETAILS("modbus stack initialization successful"));
+			DO_LOG_INFO("modbus stack initialization successful");
 		}
 
 		// Initializing all the pub/sub topic base context for ZMQ
 		if(const char* pcPubTopic = std::getenv("PubTopics"))
 		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("List of topic configured for Pub are :: " + std::string(pcPubTopic)));
+			DO_LOG_INFO("List of topic configured for Pub are :: " + std::string(pcPubTopic));
 
 			bool bRes = zmq_handler::prepareCommonContext("pub");
 			if(!bRes)
 			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Context creation failed for pub topic "));
+				DO_LOG_ERROR("Context creation failed for pub topic ");
 			}
 		}
 		if(const char* pcSubTopic = std::getenv("SubTopics"))
 		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("List of topic configured for Sub are :: " + std::string(pcSubTopic)));
+			DO_LOG_INFO("List of topic configured for Sub are :: " + std::string(pcSubTopic));
 
 			bool bRetVal = zmq_handler::prepareCommonContext("sub");
 			if(!bRetVal)
 			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Context creation failed for sub topic "));
+				DO_LOG_ERROR("Context creation failed for sub topic ");
 			}
 		}
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 		/// store the yaml files in data structures
 		network_info::buildNetworkInfo(true);
-		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus container application is set to TCP mode"));
+		DO_LOG_INFO("Modbus container application is set to TCP mode");
 		cout << "Modbus container application is set to TCP mode.." << endl;
 #else
 
 		// Setting RTU mode
 		network_info::buildNetworkInfo(false);
-		CLogger::getInstance().log(INFO, LOGDETAILS("Modbus container application is set to RTU mode"));
+		DO_LOG_INFO("Modbus container application is set to RTU mode");
 		cout << "Modbus container application is set to RTU mode.." << endl;
 #endif
 
 		if(false == onDemandHandler::Instance().isWriteInitialized())
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("modWriteHandler is not initialized"));
+			DO_LOG_ERROR("modWriteHandler is not initialized");
 		}
 		else
 		{
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("modWriteHandler is properly initialized"));
+			DO_LOG_DEBUG("modWriteHandler is properly initialized");
 			/// On-Demand request initializer thread.
 			onDemandHandler::Instance().createOnDemandListener();
 		}
@@ -505,11 +497,11 @@ int main(int argc, char* argv[])
 
 		if(false == CPeriodicReponseProcessor::Instance().isInitialized())
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("CPeriodicReponseProcessor is not initialized"));
+			DO_LOG_ERROR("CPeriodicReponseProcessor is not initialized");
 		}
 		else
 		{
-			CLogger::getInstance().log(INFO, LOGDETAILS("CPeriodicReponseProcessor is properly initialized"));
+			DO_LOG_INFO("CPeriodicReponseProcessor is properly initialized");
 			CPeriodicReponseProcessor::Instance().initRespHandlerThreads();
 		}
 
@@ -520,7 +512,7 @@ int main(int argc, char* argv[])
 		return RUN_ALL_TESTS();
 #endif
 
-		CLogger::getInstance().log(INFO, LOGDETAILS("Configuration done. Starting operations."));
+		DO_LOG_INFO("Configuration done. Starting operations.");
 		CTimeMapper::instance().initTimerFunction();
 
 		// Get best possible polling frequency
@@ -533,9 +525,9 @@ int main(int argc, char* argv[])
 		std::unique_lock<std::mutex> lck(mtx);
 		cv.wait(lck,exitMainThread);
 
-		CLogger::getInstance().log(INFO, LOGDETAILS("Condition variable is set for application exit."));
+		DO_LOG_INFO("Condition variable is set for application exit.");
 
-		CLogger::getInstance().log(INFO, LOGDETAILS("Exiting the application gracefully."));
+		DO_LOG_INFO("Exiting the application gracefully.");
 		cout << "************************************************************************************************" <<endl;
 		cout << "********************** Exiting modbus container ***********" <<endl;
 		cout << "************************************************************************************************" <<endl;
@@ -544,14 +536,13 @@ int main(int argc, char* argv[])
 	}
 	catch (const std::exception &e)
 	{
-		temp = "fatal::Error in getting arguments: ";
-		temp.append(e.what());
-		std::cout << "Exception in main::"<<temp << endl;
-		CLogger::getInstance().log(FATAL, LOGDETAILS(temp));
+		std::cout << "Exception in main::"<<"fatal::Error in getting arguments: "<<e.what()<< endl;
+		DO_LOG_FATAL("fatal::Error in getting arguments: " +
+					(string)e.what());
 
 		return EXIT_FAILURE;
 	}
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 
 	return EXIT_SUCCESS;
 }

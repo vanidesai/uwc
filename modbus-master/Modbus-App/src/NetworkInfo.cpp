@@ -44,7 +44,7 @@ namespace
 	 */
 	void populateUniquePointData(const CWellSiteInfo &a_oWellSite)
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+		DO_LOG_DEBUG("Start");
 		for(auto &objWellSiteDev : a_oWellSite.getDevices())
 		{
 			//unsigned int uiPoint = 0;
@@ -53,18 +53,17 @@ namespace
 				std::string sUniqueId(SEPARATOR_CHAR + objWellSiteDev.getID()
 						+ SEPARATOR_CHAR + a_oWellSite.getID() + SEPARATOR_CHAR +
 										objPt.getID());
-				//CLogger::getInstance().log(INFO, LOGDETAILS(" " << sUniqueId;
 				
 				// Build unique data point
 				CUniqueDataPoint oUniquePoint{sUniqueId, a_oWellSite, objWellSiteDev, objPt};
 				g_mapUniqueDataPoint.emplace(sUniqueId, oUniquePoint);
-				string temp = oUniquePoint.getID();
-				temp.append("=");
-				temp.append(std::to_string(oUniquePoint.getMyRollID()));
-				CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
+				DO_LOG_INFO(oUniquePoint.getID() +
+							"=" +
+							std::to_string(oUniquePoint.getMyRollID()));
 			}
 		}
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+		DO_LOG_DEBUG("End");
 	}
 
 	
@@ -78,7 +77,7 @@ namespace
 	 */
 	bool _getWellSiteList()
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start: Reading site_list.yaml"));
+		DO_LOG_DEBUG(" Start: Reading site_list.yaml");
 		try
 		{
 			YAML::Node Node = CommonUtils::loadYamlFile(PublishJsonHandler::instance().getSiteListFileName());
@@ -86,10 +85,10 @@ namespace
 		}
 		catch(YAML::Exception &e)
 		{
-			CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+			DO_LOG_FATAL(e.what());
 			return false;
 		}
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
+		DO_LOG_DEBUG("End:");
 		return true;
 	}
 	#endif
@@ -107,25 +106,23 @@ int network_info::CDeviceInfo::addDataPoint(CDataPoint a_oDataPoint)
 	// Search whether given point name is already present
 	// If present, ignore the datapoint
 	// If not present, add it
-	string temp = "Start: To add DataPoint - ";
-	temp.append(a_oDataPoint.getID());
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
+	DO_LOG_DEBUG("Start: To add DataPoint - " +
+				a_oDataPoint.getID());
 	for(auto oDataPoint: m_DataPointList)
 	{
 		if(0 == oDataPoint.getID().compare(a_oDataPoint.getID()))
 		{
-			string temp = ":Already present DataPoint with id";
-			temp.append(a_oDataPoint.getID());
-			CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
+			DO_LOG_ERROR(":Already present DataPoint with id" +
+						a_oDataPoint.getID());
 			// This point name is already present. Ignore this point
 			return -1;
 		}
 	}
 	m_DataPointList.push_back(a_oDataPoint);
-	string temp0 = "End: Added DataPoint - " ;
-	temp0.append(a_oDataPoint.getID());
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp0));
+	DO_LOG_DEBUG("End: Added DataPoint - " +
+				a_oDataPoint.getID());
 	return 0;
 }
 
@@ -145,13 +142,12 @@ int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 	// 2. Search whether given device name is already present
 	//    If present, ignore the device
 	//    If not present, add it
-	string temp = " Start: To add DataPoint - " ;
-	temp.append(a_oDevice.getID());
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+
+	DO_LOG_DEBUG(" Start: To add DataPoint - " +
+				a_oDevice.getID());
 	// Check network type
 	if (g_eNetworkType != a_oDevice.getAddressInfo().a_NwType)
 	{
-		//CLogger::getInstance().log(ERROR, LOGDETAILS" Networktype mismatch. Expected - " << g_eNetworkType << ", but received " << a_oDevice.getAddressInfo().a_NwType;
 		// Device type and network type are not matching.
 		return -2;
 	}
@@ -161,15 +157,13 @@ int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 	{
 		if(0 == oDev.getID().compare(a_oDevice.getID()))
 		{
-			//CLogger::getInstance().log(ERROR, LOGDETAILS" : Already present device with id " << a_oDevice.getID();
 			// This point name is already present. Ignore this point
 			return -1;
 		}
 	}
 	m_DevList.push_back(a_oDevice);
-	string temp2 = " End: Added device - ";
-	temp2.append(a_oDevice.getID());
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp2));
+	DO_LOG_DEBUG(" End: Added device - " +
+				a_oDevice.getID());
 	return 0;
 }
 
@@ -180,7 +174,7 @@ int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
  */
 void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo &a_oWellSite)
 {
-	//CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start";
+	//DO_LOG_DEBUG(" Start");
 	bool bIsIdPresent = false;
 	try
 	{
@@ -189,9 +183,9 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 			if(test.first.as<std::string>() == "id")
 			{
 				a_oWellSite.m_sId = test.second.as<std::string>();
-				string temp = " : Scanning site: ";
-				temp.append(a_oWellSite.m_sId);
-				CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
+				DO_LOG_INFO(" : Scanning site: " +
+							a_oWellSite.m_sId);
 				bIsIdPresent = true;
 				continue;
 			}
@@ -207,40 +201,39 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 					i32RetVal = a_oWellSite.addDevice(objWellsiteDev);
 					if(0 == i32RetVal)
 					{
-						string temp = " : Added device with id: ";
-						temp.append(objWellsiteDev.getID());
-						CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+						DO_LOG_INFO(" : Added device with id: " +
+									objWellsiteDev.getID());
 					}
 					else if(-1 == i32RetVal)
 					{
-						string temp = "Ignoring device with id : " ;
-						temp.append(objWellsiteDev.getID());
-						CLogger::getInstance().log(ERROR, LOGDETAILS(temp + ", since this point name is already present. Ignore this point."));
-						std::cout << temp << ", since this point name is already present. Ignore this point."<< endl;
+						DO_LOG_ERROR("Ignoring device with id : " + 
+						objWellsiteDev.getID() +
+						", since this point name is already present. Ignore this point.");
+						std::cout << "Ignoring device with id : " << objWellsiteDev.getID() << ", since this point name is already present. Ignore this point."<< endl;
 					}
 					else if(-2 == i32RetVal)
 					{
-						string temp = "Ignoring device with id : " ;
-						temp.append(objWellsiteDev.getID());
-						CLogger::getInstance().log(ERROR, LOGDETAILS(temp + ", since Device type and network type are not matching."));
-						std::cout << temp << ", since Device type and network type are not matching."<< endl;
+						DO_LOG_ERROR("Ignoring device with id : " + 
+						objWellsiteDev.getID() +
+						", since Device type and network type are not matching.");
+						std::cout << "Ignoring device with id : " << objWellsiteDev.getID() << ", since Device type and network type are not matching."<< endl;
 					}
 				}
 			}
 		}
 		if(false == bIsIdPresent)
 		{
-			CLogger::getInstance().log(FATAL, LOGDETAILS(" Site without id is found. Ignoring this site."));
+			DO_LOG_FATAL(" Site without id is found. Ignoring this site.");
 			throw YAML::Exception(YAML::Mark::null_mark(), "Id key not found");
 			cout << "Site without id is found. Ignoring this site."<<endl;
 		}
 	}
 	catch(YAML::Exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS( e.what()));
+		DO_LOG_FATAL( e.what());
 		throw;
 	}
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(" End"));
+	DO_LOG_DEBUG(" End");
 }
 
 /**
@@ -265,7 +258,7 @@ bool network_info::validateIpAddress(const string &ipAddress)
  */
 void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteDevInfo &a_oWellSiteDevInfo)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start"));
+	DO_LOG_DEBUG(" Start");
 	bool bIsIdPresent = false;
 	bool bIsProtocolPresent = false;
 	try
@@ -275,9 +268,9 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 			if(it.first.as<std::string>() == "id")
 			{
 				a_oWellSiteDevInfo.m_sId = it.second.as<std::string>();
-				string temp = " : Scanning site device: ";
-				temp.append( a_oWellSiteDevInfo.m_sId);
-				CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+
+				DO_LOG_INFO(" : Scanning site device: " +
+							a_oWellSiteDevInfo.m_sId);
 				bIsIdPresent = true;
 				continue;
 			}
@@ -295,13 +288,12 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 
 						a_oWellSiteDevInfo.m_stAddress.a_NwType = network_info::eNetworkType::eRTU;
 						bIsProtocolPresent = true;
-						string temp = " : RTU protocol: ";
 						//temp.append(tempMap.at("port").c_str());
-						CLogger::getInstance().log(INFO, LOGDETAILS(temp));
+						DO_LOG_INFO(" : RTU protocol: ");
 					}
 					catch(exception &e)
 					{
-						CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+						DO_LOG_FATAL(e.what());
 						std::cout << __func__ << "Required keys not found in PROTOCOL_RTU" << endl;
 						throw YAML::Exception(YAML::Mark::null_mark(), "Required keys not found in PROTOCOL_RTU");
 					}
@@ -317,11 +309,11 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 							std::cout << " ipaddress:: " << tempMap.at("ipaddress")<<endl;
 							std::cout  << " port:: " << tempMap.at("port")<<endl;
 							std::cout  << " unitid:: " <<tempMap.at("unitid")<<endl;
-							CLogger::getInstance().log(ERROR, LOGDETAILS("ipaddress or port or unitid cannot be empty"));
-							CLogger::getInstance().log(ERROR, LOGDETAILS("Given parameters are following ::"));
-							CLogger::getInstance().log(ERROR, LOGDETAILS("ipaddress:: " + tempMap.at("ipaddress")));
-							CLogger::getInstance().log(ERROR, LOGDETAILS("unitid:: " + tempMap.at("unitid")));
-							CLogger::getInstance().log(ERROR, LOGDETAILS("port:: " + tempMap.at("port")));
+							DO_LOG_ERROR("ipaddress or port or unitid cannot be empty");
+							DO_LOG_ERROR("Given parameters are following ::");
+							DO_LOG_ERROR("ipaddress:: " + tempMap.at("ipaddress"));
+							DO_LOG_ERROR("unitid:: " + tempMap.at("unitid"));
+							DO_LOG_ERROR("port:: " + tempMap.at("port"));
 							return;
 						}
 
@@ -332,21 +324,21 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 						else
 						{
 							std::cout << "ERROR : IP address is invalid!!" <<tempMap.at("ipaddress") <<endl;
-							CLogger::getInstance().log(ERROR, LOGDETAILS("IP address is invalid " + tempMap.at("ipaddress")));
+							DO_LOG_ERROR("IP address is invalid " + tempMap.at("ipaddress"));
 						}
 
 						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber = atoi(tempMap.at("port").c_str());
 						a_oWellSiteDevInfo.m_stAddress.a_NwType = network_info::eNetworkType::eTCP;
 						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_uiUnitID = atoi(tempMap.at("unitid").c_str());
 						bIsProtocolPresent = true;
-						string tempVar = " : TCP protocol: ";
-						tempVar.append(a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress);
-						tempVar.append(":" +std::to_string(a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber));
-						CLogger::getInstance().log(INFO, LOGDETAILS(tempVar));
+
+						DO_LOG_INFO(" : TCP protocol: " +
+									a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress +
+									":" +std::to_string(a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber));
 					}
 					catch(exception &e)
 					{
-						CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+						DO_LOG_FATAL(e.what());
 						std::cout << "Required keys not found in PROTOCOL_TCP"<<endl;
 						throw YAML::Exception(YAML::Mark::null_mark(), "Required keys not found in PROTOCOL_TCP");
 					}
@@ -354,11 +346,9 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 				else
 				{
 					// error
-					string temp = " : Unknown protocol: ";
-					temp.append(tempMap.at("protocol"));
-				//	CLogger::getInstance().log(FATAL, LOGDETAILS(" : Unknown protocol: " << tempMap.at("protocol");
-					CLogger::getInstance().log(ERROR, LOGDETAILS(temp));
-					std::cout << __func__<< temp << endl;
+					DO_LOG_ERROR(" : Unknown protocol: " +
+								tempMap.at("protocol"));
+					std::cout << __func__<< " : Unknown protocol: " << tempMap.at("protocol") << endl;
 					throw YAML::Exception(YAML::Mark::null_mark(), "Unknown protocol found");
 				}
 			}
@@ -371,26 +361,26 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 		}
 		if(false == bIsIdPresent)
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS(" Site device without id is found. Ignoring this well device."));
+			DO_LOG_ERROR(" Site device without id is found. Ignoring this well device.");
 			std::cout << __func__ << " Site device without id is found. Ignoring this well device."<<endl;
 			throw YAML::Exception(YAML::Mark::null_mark(), "Id key not found");
 
 		}
 		if(false == bIsProtocolPresent)
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS(" Site device without protocol is found. Ignoring it."));
+			DO_LOG_ERROR(" Site device without protocol is found. Ignoring it.");
 			std::cout << __func__ << " Site device without protocol is found. Ignoring it.."<<endl;
 			throw YAML::Exception(YAML::Mark::null_mark(), "Protocol key not found");
 		}
 	}
 	catch(YAML::Exception &e)
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(e.what()));
+		DO_LOG_ERROR(e.what());
 		std::cout << __func__<<" Exception :: " << e.what()<<endl;
 		throw;
 	}
 	
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**
@@ -401,7 +391,7 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
  */
 void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_oCDeviceInfo )
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start"));
+	DO_LOG_DEBUG("Start");
 	bool bIsNameFound = false;
 	try
 	{
@@ -417,7 +407,7 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 				}
 				catch(exception &e)
 				{
-					CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+					DO_LOG_FATAL(e.what());
 					throw YAML::Exception(YAML::Mark::null_mark(), "name key not found in device_info");
 				}				
 			}
@@ -425,9 +415,9 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 			if(test.first.as<std::string>() == "pointlist")
 			{
 				YAML::Node node = CommonUtils::loadYamlFile(test.second.as<std::string>());
-				string temp2 = " : pointlist found: ";
-				temp2.append(test.second.as<std::string>());
-				CLogger::getInstance().log(INFO, LOGDETAILS(temp2));
+
+				DO_LOG_INFO(" : pointlist found: " +
+							test.second.as<std::string>());
 
 				for (auto it : node)
 				{
@@ -444,13 +434,12 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 							CDataPoint::build(it1, objCDataPoint);
 							if(0 == a_oCDeviceInfo.addDataPoint(objCDataPoint))
 							{
-								string temp3 = "Added point with id: ";
-								temp3.append(objCDataPoint.getID());
-								CLogger::getInstance().log(INFO, LOGDETAILS(temp3));
+								DO_LOG_INFO("Added point with id: " +
+											objCDataPoint.getID());
 							}
 							else
 							{
-								CLogger::getInstance().log(ERROR, LOGDETAILS("Ignoring duplicate point ID from polling :"+ objCDataPoint.getID()));
+								DO_LOG_ERROR("Ignoring duplicate point ID from polling :"+ objCDataPoint.getID());
 								std::cout << "ERROR: Ignoring duplicate point ID from polling :"<< objCDataPoint.getID() <<endl;
 							}
 						}
@@ -460,16 +449,16 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 		}
 		if(false == bIsNameFound)
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS(" Device without name is found. Ignoring this device."));
+			DO_LOG_ERROR(" Device without name is found. Ignoring this device.");
 			throw YAML::Exception(YAML::Mark::null_mark(), "name key not found");
 		}
 	}
 	catch(YAML::Exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		throw;
 	}
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**
@@ -478,7 +467,7 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
  */
 const std::map<std::string, CWellSiteInfo>& network_info::getWellSiteList()
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(""));
+	DO_LOG_DEBUG("");
 	return g_mapYMLWellSite;	
 }
 
@@ -488,7 +477,7 @@ const std::map<std::string, CWellSiteInfo>& network_info::getWellSiteList()
  */
 const std::map<std::string, CUniqueDataPoint>& network_info::getUniquePointList()
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(""));
+	DO_LOG_DEBUG("");
 	return g_mapUniqueDataPoint;
 }
 
@@ -499,9 +488,8 @@ const std::map<std::string, CUniqueDataPoint>& network_info::getUniquePointList(
  */
 eEndPointType network_info::CDataPoint::getPointType(const std::string& a_type)
 {
-	string temp = " Start: Received type: ";
-	temp.append(a_type);
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp));
+	DO_LOG_DEBUG(" Start: Received type: " +
+				a_type);
 	eEndPointType type;
 	if(a_type == "INPUT_REGISTER")
 	{
@@ -521,13 +509,12 @@ eEndPointType network_info::CDataPoint::getPointType(const std::string& a_type)
 	}
 	else
 	{
-		string temp4 = " : Unknown type: " ;
-		temp4.append(a_type);
-		CLogger::getInstance().log(INFO, LOGDETAILS(temp4));
+		DO_LOG_INFO(" : Unknown type: " +
+					a_type);
 		throw YAML::Exception(YAML::Mark::null_mark(), "Unknown Modbus point type");
 	}
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 	return type;
 }
 
@@ -554,7 +541,7 @@ bool network_info:: isNumber(string s)
  */
 void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(" Start"));
+	DO_LOG_DEBUG(" Start");
 	// First check optional parameters
 
 	a_oCDataPoint.m_stPollingConfig.m_uiPollFreq = 0;
@@ -601,7 +588,7 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 			catch(YAML::Exception &e)
 			{
 				a_oCDataPoint.m_stAddress.m_bIsByteSwap = false;
-				CLogger::getInstance().log(WARN, LOGDETAILS("ByteSwap value is incorrect. Set to default with exception ::" + std::string(e.what())));
+				DO_LOG_WARN("ByteSwap value is incorrect. Set to default with exception ::" + std::string(e.what()));
 				cout << "ByteSwap value is incorrect. Set to default with exception :: "<< e.what();
 			}
 		}
@@ -614,23 +601,23 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 			catch(YAML::Exception &e)
 			{
 				a_oCDataPoint.m_stAddress.m_bIsWordSwap = false;
-				CLogger::getInstance().log(WARN, LOGDETAILS("WordSwap value is incorrect. Set to default." + std::string(e.what())));
+				DO_LOG_WARN("WordSwap value is incorrect. Set to default." + std::string(e.what()));
 				cout << "WordSwap value is incorrect. Set to default with exception :: "<< e.what();
 			}
 		}
 	}
 	catch(YAML::Exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		throw;
 	}
 	catch(exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		throw YAML::Exception(YAML::Mark::null_mark(), "key not found");
 	}
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**
@@ -639,27 +626,25 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
  */
 void printWellSite(CWellSiteInfo a_oWellSite)
 {
-	string temp6 = " Start: wellsite: ";
-	temp6.append(a_oWellSite.getID());
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp6));
+	DO_LOG_DEBUG(" Start: wellsite: " +
+				a_oWellSite.getID());
+
 	for(auto objWellSiteDev : a_oWellSite.getDevices())
 	{
-		string temp7 = a_oWellSite.getID();
-		temp7.append("\\");
-		temp7.append(objWellSiteDev.getID());
-		CLogger::getInstance().log(DEBUG, LOGDETAILS(temp7));
+		DO_LOG_DEBUG(a_oWellSite.getID() +
+					"\\" +
+					objWellSiteDev.getID());
+
 		for(auto objPt : objWellSiteDev.getDevInfo().getDataPoints())
 		{
-			string temp7 =a_oWellSite.getID();
-			temp7.append("\\");
-			temp7.append(objWellSiteDev.getID());
-			temp7.append("\\");
-			temp7.append(objPt.getID());
-
-			CLogger::getInstance().log(DEBUG, LOGDETAILS(temp7));
+			DO_LOG_DEBUG(a_oWellSite.getID() +
+						"\\" +
+						objWellSiteDev.getID() +
+						"\\" +
+						objPt.getID());
 		}
 	}
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**
@@ -670,14 +655,14 @@ void printWellSite(CWellSiteInfo a_oWellSite)
  */
 void network_info::buildNetworkInfo(bool a_bIsTCP)
 {
-	string temp8 = " Start: is it TCP ? ";
-	temp8.append(std::to_string(a_bIsTCP));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS(temp8));
+	DO_LOG_DEBUG(" Start: is it TCP ? " +
+				std::to_string(a_bIsTCP));
+
 	// Check if this function is already called once. If yes, then exit
 	if(true == g_bIsStarted)
 	{
 		std::cout << "already started... return with no action \n";
-		CLogger::getInstance().log(INFO, LOGDETAILS(" This function is already called once. Ignoring this call"));
+		DO_LOG_INFO(" This function is already called once. Ignoring this call");
 		return;
 	}
 	// Set the flag to avoid all future calls to this function. 
@@ -695,19 +680,18 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 	}
 
 	std::cout << "Network set as: " << (int)g_eNetworkType << std::endl;
-	string temp9 = " Network set as: ";
-	temp9.append(std::to_string((int)g_eNetworkType));
-	CLogger::getInstance().log(INFO, LOGDETAILS(temp9));
+	DO_LOG_INFO(" Network set as: " +
+				std::to_string((int)g_eNetworkType));
 	
 	// Following stage is needed only when configuration files are placed in a docker volume
 	#ifdef CONFIGFILES_IN_DOCKER_VOLUME
 	//std::cout << "Config files are kept in a docker volume\n";
-	//CLogger::getInstance().log(INFO, LOGDETAILS(" Config files are kept in a docker volume";
+	//DO_LOG_INFO(" Config files are kept in a docker volume");
 	
 	// get list of well sites
 	if(false == _getWellSiteList())
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(" Site-list could not be obtained"));
+		DO_LOG_ERROR(" Site-list could not be obtained");
 		return;
 	}
 	std::vector<CWellSiteInfo> oWellSiteList;
@@ -716,7 +700,7 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 		if(true == sWellSiteFile.empty())
 		{
 			std::cout << __func__ <<" : Encountered empty file name. Ignoring";
-			CLogger::getInstance().log(INFO, LOGDETAILS(" : Encountered empty file name. Ignoring"));
+			DO_LOG_INFO(" : Encountered empty file name. Ignoring");
 			continue;
 		}
 		// Check if the file is already scanned
@@ -726,16 +710,13 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 		{
 			// It means record exists
 			std::cout << __func__ << " " << sWellSiteFile <<" : is already scanned. Ignoring";
-			string temp01 = "sWellSiteFile";
-			temp01.append("Already scanned YML file: Ignoring it.");
-
-			CLogger::getInstance().log(INFO, LOGDETAILS(temp01));
+			DO_LOG_INFO(sWellSiteFile +
+						"Already scanned YML file: Ignoring it.");
 			continue;
 		}
-		string temp02 = " New YML file: ";
-		temp02.append(sWellSiteFile);
-		
-		CLogger::getInstance().log(INFO, LOGDETAILS(temp02));
+
+		DO_LOG_INFO(" New YML file: " +
+					sWellSiteFile);
 
 		try
 		{
@@ -745,19 +726,18 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 			CWellSiteInfo::build(baseNode, objWellSite);
 			oWellSiteList.push_back(objWellSite);
 			g_mapYMLWellSite.emplace(sWellSiteFile, objWellSite);
-			string temp03 = " Successfully scanned: ";
-			temp03.append(sWellSiteFile);
-			temp03.append(": Id = ");
-			temp03.append(objWellSite.getID());
-			CLogger::getInstance().log(INFO, LOGDETAILS(temp03));
+
+			DO_LOG_INFO(" Successfully scanned: " +
+						sWellSiteFile +
+						": Id = " +
+						objWellSite.getID());
 		}
 		catch(YAML::Exception &e)
 		{
-			string temp04 = " Ignoring YML:";
-			temp04.append(sWellSiteFile);
-			temp04.append("Error: " );
-			temp04.append(e.what());
-			CLogger::getInstance().log(FATAL, LOGDETAILS(temp04));
+			DO_LOG_FATAL(" Ignoring YML:" +
+						sWellSiteFile +
+						"Error: " +
+						e.what());
 			// Add this file to error YML files
 			g_sErrorYMLs.push_back(sWellSiteFile);
 		}
@@ -767,20 +747,19 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 	// Set variables for unique point listing
 	if(const char* env_p = std::getenv("MY_APP_ID"))
 	{
-		string temp05 = ": MY_APP_ID value = ";
-		temp05.append(std::to_string(*env_p));
-		CLogger::getInstance().log(INFO, LOGDETAILS(temp05));
+		DO_LOG_INFO(": MY_APP_ID value = " +
+					std::to_string(*env_p));
 		auto a = (unsigned short) atoi(env_p);
 		a = a & 0x000F;
 		g_usTotalCnt = (a << 12);
 	}
 	else
 	{
-		CLogger::getInstance().log(INFO, LOGDETAILS("MY_APP_ID value is not set. Expected values 0 to 16"));
-		CLogger::getInstance().log(INFO, LOGDETAILS("Assuming value as 0"));
+		DO_LOG_INFO("MY_APP_ID value is not set. Expected values 0 to 16");
+		DO_LOG_INFO("Assuming value as 0");
 		g_usTotalCnt = 0;
 	}
-	CLogger::getInstance().log(INFO, LOGDETAILS(": Count start from = " +g_usTotalCnt));
+	DO_LOG_INFO(": Count start from = " +g_usTotalCnt);
 	for(auto a: g_mapYMLWellSite)
 	{
 		populateUniquePointData(g_mapYMLWellSite.at(a.first));
@@ -793,7 +772,7 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 	}
 
 	#endif
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End"));
+	DO_LOG_DEBUG("End");
 }
 
 /**

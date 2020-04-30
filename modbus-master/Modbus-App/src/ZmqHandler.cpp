@@ -46,7 +46,7 @@ namespace
  */
 bool zmq_handler::prepareCommonContext(std::string topicType)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start:"));
+	DO_LOG_DEBUG("Start:");
 	msgbus_ret_t retVal = MSG_SUCCESS;
 	bool retValue = false;
 	recv_ctx_t* sub_ctx = NULL;
@@ -54,7 +54,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 
 	if(!(topicType == "pub" || topicType == "sub"))
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid TopicType parameter ::" + topicType));
+		DO_LOG_ERROR("Invalid TopicType parameter ::" + topicType);
 		return retValue;
 	}
 	if(CfgManager::Instance().IsClientCreated())
@@ -74,7 +74,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 		}
 		else
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("topic list is empty"));
+			DO_LOG_ERROR("topic list is empty");
 			cout << "topic list is empty" << endl;
 			return false;
 		}
@@ -84,7 +84,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 			retValue = true;
 			config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(CfgManager::Instance().getConfigClient(), topic.c_str(), topicType.c_str());
 			if(config == NULL) {
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to get publisher message bus config ::" + topic));
+				DO_LOG_ERROR("Failed to get publisher message bus config ::" + topic);
 				continue;
 			}
 
@@ -92,7 +92,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 			if(msgbus_ctx == NULL)
 			{
 				/// cleanup
-				CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to get message bus context with config for topic ::" + topic));
+				DO_LOG_ERROR("Failed to get message bus context with config for topic ::" + topic);
 
 				/// free config context
 				if(config != NULL)
@@ -116,7 +116,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 				if(retVal != MSG_SUCCESS)
 				{
 					/// cleanup
-					CLogger::getInstance().log(ERROR, LOGDETAILS("Failed to initialize publisher errno: " + std::to_string(retVal)));
+					DO_LOG_ERROR("Failed to initialize publisher errno: " + std::to_string(retVal));
 					zmq_handler::removeCTX(topic);
 
 					/// free config context
@@ -185,16 +185,16 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 					}
 				}
 			}
-			CLogger::getInstance().log(INFO, LOGDETAILS("Context created and stored for config for topic :: " + topic));
+			DO_LOG_INFO("Context created and stored for config for topic :: " + topic);
 
 		}
 	}
 	else
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS("Context creation failed !! config manager client is empty!! "));
+		DO_LOG_ERROR("Context creation failed !! config manager client is empty!! ");
 		std::cout << "Context creation failed !! config manager client is empty!! " <<endl;
 	}
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
 
 	return retValue;
 }
@@ -206,7 +206,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
  */
 stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
+	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
 
 	/// return the request ID
@@ -220,12 +220,12 @@ stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
  */
 void zmq_handler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRef)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
+	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
 
 	/// insert the data in map
 	g_mapSubContextMap.insert(std::pair <std::string, stZmqSubContext> (a_sTopic, ctxRef));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
 }
 
 /**
@@ -234,11 +234,11 @@ void zmq_handler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRef)
  */
 void zmq_handler::removeSubCTX(std::string a_sTopic)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
+	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
 
 	g_mapSubContextMap.erase(a_sTopic);
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
+	DO_LOG_DEBUG("End:");
 }
 
 /**
@@ -248,7 +248,7 @@ void zmq_handler::removeSubCTX(std::string a_sTopic)
  */
 stZmqContext& zmq_handler::getCTX(std::string a_sTopic)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
+	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__ctxMapLock);
 
 	/// return the request ID
@@ -262,12 +262,12 @@ stZmqContext& zmq_handler::getCTX(std::string a_sTopic)
  */
 void zmq_handler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
+	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__ctxMapLock);
 
 	/// insert the data in map
 	g_mapContextMap.insert(std::pair <std::string, stZmqContext> (a_sTopic, ctxRef));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
 }
 
 /**
@@ -276,11 +276,11 @@ void zmq_handler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
  */
 void zmq_handler::removeCTX(std::string a_sTopic)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
+	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__ctxMapLock);
 
 	g_mapContextMap.erase(a_sTopic);
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End:"));
+	DO_LOG_DEBUG("End:");
 }
 
 /**
@@ -290,10 +290,10 @@ void zmq_handler::removeCTX(std::string a_sTopic)
  */
 stZmqPubContext& zmq_handler::getPubCTX(std::string a_sTopic)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
+	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__PubctxMapLock);
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
 
 	/// return the context
 	return g_mapPubContextMap.at(a_sTopic);
@@ -308,7 +308,7 @@ stZmqPubContext& zmq_handler::getPubCTX(std::string a_sTopic)
  */
 bool zmq_handler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRef)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: "));
+	DO_LOG_DEBUG("Start: ");
 	bool bRet = true;
 	try
 	{
@@ -319,10 +319,10 @@ bool zmq_handler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRef)
 	}
 	catch (exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		bRet = false;
 	}
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
 
 	return bRet;
 }
@@ -333,8 +333,8 @@ bool zmq_handler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRef)
  */
 void zmq_handler::removePubCTX(std::string a_sTopic)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + a_sTopic));
+	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__PubctxMapLock);
 	g_mapPubContextMap.erase(a_sTopic);
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
 }

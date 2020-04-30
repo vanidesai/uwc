@@ -35,11 +35,11 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 
 		connectSubscriber();
 
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("MQTT initialized successfully"));
+		DO_LOG_DEBUG("MQTT initialized successfully");
 	}
 	catch (const std::exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 	}
 }
@@ -56,7 +56,7 @@ CMQTTHandler& CMQTTHandler::instance()
 
 	if(strPlBusUrl.empty())
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(":MQTT_URL_FOR_EXPORT Environment variable is not set"));
+		DO_LOG_ERROR(":MQTT_URL_FOR_EXPORT Environment variable is not set");
 		std::cout << __func__ << ":" << __LINE__ << " Error : MQTT_URL_FOR_EXPORT Environment variable is not set" <<  std::endl;
 		exit(EXIT_FAILURE);
 	}
@@ -80,12 +80,12 @@ std::atomic<uint32_t> CMQTTHandler::m_uiSubscribeQReqTried(0);
  */
 void CMQTTHandler::printCounters()
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req conn lost: " + std::to_string(m_ui32ConnectionLost)));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Req conn done: " + std::to_string(m_ui32Connection)));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("++++Req posted from Q: " + std::to_string(m_uiQReqTried)));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber tried to publish message:" + std::to_string(m_uiSubscribeQReqTried)));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber skipped publishing message:" + std::to_string(m_ui32SubscribeSkipped)));
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber received messages:" + std::to_string(m_ui32MessageArrived)));
+	DO_LOG_DEBUG("Req conn lost: " + std::to_string(m_ui32ConnectionLost));
+	DO_LOG_DEBUG("Req conn done: " + std::to_string(m_ui32Connection));
+	DO_LOG_DEBUG("++++Req posted from Q: " + std::to_string(m_uiQReqTried));
+	DO_LOG_DEBUG("Subscriber tried to publish message:" + std::to_string(m_uiSubscribeQReqTried));
+	DO_LOG_DEBUG("Subscriber skipped publishing message:" + std::to_string(m_ui32SubscribeSkipped));
+	DO_LOG_DEBUG("Subscriber received messages:" + std::to_string(m_ui32MessageArrived));
 }
 #endif
 
@@ -129,7 +129,7 @@ bool CMQTTHandler::subscribeToTopics()
 			const char* env_pubWriteTopic = std::getenv(envTopic.c_str());
 			if(env_pubWriteTopic == NULL)
 			{
-				CLogger::getInstance().log(ERROR, LOGDETAILS(envTopic + " Environment Variable is not set"));
+				DO_LOG_ERROR(envTopic + " Environment Variable is not set");
 				std::cout << __func__ << ":" << __LINE__ << " Error : " + envTopic + " Environment Variable is not set" <<  std::endl;
 				continue;
 			}
@@ -140,7 +140,7 @@ bool CMQTTHandler::subscribeToTopics()
 		{
 			if(! topic.empty())
 			{
-				CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscribing topic : " + topic));
+				DO_LOG_DEBUG("Subscribing topic : " + topic);
 				subscriber.subscribe(topic, QOS, nullptr, listener);
 			}
 		}
@@ -148,12 +148,12 @@ bool CMQTTHandler::subscribeToTopics()
 	}
 	catch(exception &ex)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
+		DO_LOG_FATAL(ex.what());
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
 		return false;
 	}
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscribed topics with MQTT broker"));
+	DO_LOG_DEBUG("Subscribed topics with MQTT broker");
 
 	return true;
 }
@@ -179,12 +179,12 @@ bool CMQTTHandler::connectSubscriber()
 	}
 	catch (const std::exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 		bFlag = false;
 	}
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Subscriber connected successfully with MQTT broker"));
+	DO_LOG_DEBUG("Subscriber connected successfully with MQTT broker");
 
 	return bFlag;
 }
@@ -208,7 +208,7 @@ bool CMQTTHandler::getOperation(string &topic, bool &isWrite)
 	}
 	else
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Invalid topic received on MQTT export from MQTT"));
+		DO_LOG_DEBUG("Invalid topic received on MQTT export from MQTT");
 		return false;
 	}
 
@@ -252,13 +252,13 @@ bool CMQTTHandler::parseMQTTMsg(const char *json, bool &isRealtime, const bool i
 		cJSON *root = cJSON_Parse(json);
 		if (NULL == root)
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Message received from MQTT could not be parsed in json format"));
+			DO_LOG_ERROR("Message received from MQTT could not be parsed in json format");
 			return bRetVal;
 		}
 
 		if(! cJSON_HasObjectItem(root, "realtime"))
 		{
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("Message received from MQTT does not have key \"realtime\", request will be sent as non-RT"));
+			DO_LOG_DEBUG("Message received from MQTT does not have key \"realtime\", request will be sent as non-RT");
 			if (NULL != root)
 				cJSON_Delete(root);
 
@@ -269,7 +269,7 @@ bool CMQTTHandler::parseMQTTMsg(const char *json, bool &isRealtime, const bool i
 		char *crealtime = cJSON_GetObjectItem(root, "realtime")->valuestring;
 		if (NULL == crealtime)
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Key 'realtime' could not be found in message received from ZMQ"));
+			DO_LOG_ERROR("Key 'realtime' could not be found in message received from ZMQ");
 			if (NULL != root)
 			{
 				cJSON_Delete(root);
@@ -300,7 +300,7 @@ bool CMQTTHandler::parseMQTTMsg(const char *json, bool &isRealtime, const bool i
 	}
 	catch (std::exception &ex)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(ex.what()));
+		DO_LOG_FATAL(ex.what());
 		bRetVal = false;
 	}
 
@@ -327,14 +327,14 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg)
 		//this should be present in each incoming request
 		if (payload == "") //will not be the case ever
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("No payload with request"));
+			DO_LOG_ERROR("No payload with request");
 			return false;
 		}
 
 		bool isWrite = false;//toggle between read and write operation
 		if(! getOperation(topic, isWrite))
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid topic received from MQTT on MQTT-Export"));
+			DO_LOG_ERROR("Invalid topic received from MQTT on MQTT-Export");
 			return false;
 		}
 
@@ -342,7 +342,7 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg)
 		bool isRealTime = false;
 		if( ! parseMQTTMsg(payload.c_str(), isRealTime, isWrite))
 		{
-			CLogger::getInstance().log(DEBUG, LOGDETAILS("Could not parse MQTT msg"));
+			DO_LOG_DEBUG("Could not parse MQTT msg");
 			return false;
 		}
 
@@ -374,12 +374,12 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg)
 			}
 		}
 
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Pushed MQTT message in queue"));
+		DO_LOG_DEBUG("Pushed MQTT message in queue");
 		bRet = true;
 	}
 	catch (const std::exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		bRet = false;
 	}
 	return bRet;
@@ -392,7 +392,7 @@ bool CMQTTHandler::pushSubMsgInQ(mqtt::const_message_ptr msg)
  */
 void CMQTTHandler::cleanup()
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroying CMQTTHandler instance ..."));
+	DO_LOG_DEBUG("Destroying CMQTTHandler instance ...");
 
 	conopts.set_automatic_reconnect(0);
 
@@ -401,7 +401,7 @@ void CMQTTHandler::cleanup()
 	if(subscriber.is_connected())
 		subscriber.disconnect();
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroyed CMQTTHandler instance"));
+	DO_LOG_DEBUG("Destroyed CMQTTHandler instance");
 }
 
 /**

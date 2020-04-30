@@ -151,7 +151,7 @@ std::string common_Handler::swapConversion(std::vector<unsigned char> vt, bool a
  */
 bool common_Handler::getReqData(unsigned short seqno, MbusAPI_t& reqData)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
+	DO_LOG_DEBUG("Start: " + std::to_string(seqno));
 	bool bRet = true;
 	try
 	{
@@ -162,10 +162,10 @@ bool common_Handler::getReqData(unsigned short seqno, MbusAPI_t& reqData)
 	}
 	catch(exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(LOGDETAILS(e.what()));
 		bRet = false;
 	}
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
 
 	return bRet;
 }
@@ -179,7 +179,7 @@ bool common_Handler::getReqData(unsigned short seqno, MbusAPI_t& reqData)
  */
 bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t reqData)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: "));
+	DO_LOG_DEBUG("Start: ");
 	bool bRet = true;
 	try
 	{
@@ -190,10 +190,10 @@ bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t reqData)
 	}
 	catch (exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		bRet = false;
 	}
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
 
 	return bRet;
 }
@@ -207,7 +207,7 @@ bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t reqData)
  */
 bool common_Handler::updateReqData(unsigned short seqno, MbusAPI_t reqData)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: "));
+	DO_LOG_DEBUG("Start: ");
 	bool bRet = true;
 	try
 	{
@@ -218,10 +218,10 @@ bool common_Handler::updateReqData(unsigned short seqno, MbusAPI_t reqData)
 	}
 	catch (exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		bRet = false;
 	}
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
 
 	return bRet;
 }
@@ -232,8 +232,61 @@ bool common_Handler::updateReqData(unsigned short seqno, MbusAPI_t reqData)
  */
 void common_Handler::removeReqData(unsigned short seqno)
 {
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Start: " + std::to_string(seqno)));
+	DO_LOG_DEBUG("Start: " + std::to_string(seqno));
 	std::unique_lock<std::mutex> lck(__appReqJsonLock);
 	g_mapRequest.erase(seqno);
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("End: "));
+	DO_LOG_DEBUG("End: ");
+}
+
+/**
+ * get request priority from global configuration depending on the operation priority
+ * @param a_OpsInfo		:[in] global config for which to retrieve operation priority
+ * @return [long]		:[out] request priority to be sent to stack.(lower is the value higher is the priority)
+ */
+long common_Handler::getReqPriority(const globalConfig::COperation a_Ops)
+{
+	long iReqPriority = 0;
+
+	// get the request priority based on operation priority
+	switch (a_Ops.getOperationPriority())
+	{
+		case 1:
+		{
+			iReqPriority = 6000;
+		}
+		break;
+		case 2:
+		{
+			iReqPriority = 5000;
+		}
+		break;
+		case 3:
+		{
+			iReqPriority = 4000;
+		}
+		break;
+		case 4:
+		{
+			iReqPriority = 3000;
+		}
+		break;
+		case 5:
+		{
+			iReqPriority = 2000;
+		}
+		break;
+		case 6:
+		{
+			iReqPriority = 1000;
+		}
+		break;
+		default:
+		{
+			DO_LOG_ERROR("Invalid operation priority received..setting it to 6000 default");
+			iReqPriority = 6000;
+		}
+		break;
+	}
+
+	return iReqPriority;
 }

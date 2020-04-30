@@ -27,7 +27,7 @@ YAML::Node loadYamlFile(const std::string& filename)
 	string sfileToRead = sBasePath + filename;
 
 	cout << "YAML file to be read is :: " + sfileToRead << endl;
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("YAML file to be read is :: " + sfileToRead));
+	DO_LOG_DEBUG("YAML file to be read is :: " + sfileToRead);
 
 	YAML::Node baseNode = YAML::LoadFile(sfileToRead);
 
@@ -53,12 +53,12 @@ bool convertYamlToList(YAML::Node &node, std::vector<std::string>& a_slist)
 				const YAML::Node& list =  it.second;
 
 				cout << "Number of sites in yaml file are ::" << list.size() << std::endl;
-				CLogger::getInstance().log(INFO, LOGDETAILS("Number of sites in yaml file are ::" + list.size()));
+				DO_LOG_INFO("Number of sites in yaml file are ::" + list.size());
 
 				for (auto element : list)
 				{
 					YAML::Node temp = element;
-					CLogger::getInstance().log(INFO, LOGDETAILS("Wellsite is :: " + temp.as<std::string>()));
+					DO_LOG_INFO("Wellsite is :: " + temp.as<std::string>());
 					cout << "Wellsite is ::" << temp.as<std::string>() <<endl;
 					a_slist.push_back(temp.as<std::string>());
 				}
@@ -68,7 +68,7 @@ bool convertYamlToList(YAML::Node &node, std::vector<std::string>& a_slist)
 	}
 	catch (YAML::Exception &e)
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS("Exception is :: " + std::string(e.what())));
+		DO_LOG_ERROR("Exception is :: " + std::string(e.what()));
 		std::cerr << e.what() << "\n";
 	}
 

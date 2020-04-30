@@ -18,15 +18,42 @@
 
 using namespace std;
 
-enum LogLevel{
-	INFO,
-	DEBUG,
-	WARN,
-	ERROR,
-	FATAL
-};
-
 #define LOGDETAILS(msg) "[ " + std::string(__FILE__) + " " + __func__ + " " + std::to_string(__LINE__) + "] " + std::string(msg)
+
+#define DO_LOG_INFO(msg) { \
+	if(CLogger::getInstance().isLevelSupported(log4cpp::Priority::INFO)) \
+	{ \
+		CLogger::getInstance().LogInfo(LOGDETAILS(msg)); \
+	} \
+}
+
+#define DO_LOG_DEBUG(msg) { \
+	if(CLogger::getInstance().isLevelSupported(log4cpp::Priority::DEBUG)) \
+	{ \
+		CLogger::getInstance().LogDebug(LOGDETAILS(msg)); \
+	} \
+}
+
+#define DO_LOG_WARN(msg) { \
+	if(CLogger::getInstance().isLevelSupported(log4cpp::Priority::WARN)) \
+	{ \
+		CLogger::getInstance().LogWarn(LOGDETAILS(msg)); \
+	} \
+}
+
+#define DO_LOG_ERROR(msg) { \
+	if(CLogger::getInstance().isLevelSupported(log4cpp::Priority::ERROR)) \
+	{ \
+		CLogger::getInstance().LogError(LOGDETAILS(msg)); \
+	} \
+}
+
+#define DO_LOG_FATAL(msg) { \
+	if(CLogger::getInstance().isLevelSupported(log4cpp::Priority::FATAL)) \
+	{ \
+		CLogger::getInstance().LogFatal(LOGDETAILS(msg)); \
+	} \
+}
 
 class CLogger {
 private:
@@ -45,13 +72,20 @@ public:
 			return _self;
 	}
 
-	void log(LogLevel lvl, string msg);
 	void LogInfo(std::string msg);
 	void LogDebug(std::string msg);
 	void LogWarn(std::string msg);
 	void LogError(std::string msg);
 	void LogFatal(std::string msg);
 
+	bool isLevelSupported(int priority)
+	{
+		if(NULL != logger)
+		{
+			return logger->isPriorityEnabled(priority);
+		}
+		return false;
+	}
 };
 
 

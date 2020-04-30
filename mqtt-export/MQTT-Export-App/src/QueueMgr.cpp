@@ -82,7 +82,7 @@ bool QMgr::CQueueMgr::getSubMsgFromQ(mqtt::const_message_ptr &msg)
 	}
 	catch (const std::exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		return false;
 	}
 	return true;
@@ -96,7 +96,7 @@ bool QMgr::CQueueMgr::getSubMsgFromQ(mqtt::const_message_ptr &msg)
 void QMgr::CQueueMgr::cleanup()
 {
 	sem_destroy(&m_semaphore);
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Destroyed CMQTTHandler instance"));
+	DO_LOG_DEBUG("Destroyed CMQTTHandler instance");
 }
 
 /**
@@ -133,12 +133,12 @@ bool QMgr::CQueueMgr::initSem()
 	/* Initial value of zero*/
 	if(-1 == sem_init(&m_semaphore, 0, 0))
 	{
-	   CLogger::getInstance().log(ERROR, LOGDETAILS("could not create semaphore, exiting"));
+	   DO_LOG_ERROR("could not create semaphore, exiting");
 	   std::cout << __func__ << ":" << __LINE__ << " Error : could not create semaphore, exiting" <<  std::endl;
 	   exit(0);
 	}
 
-	CLogger::getInstance().log(DEBUG, LOGDETAILS("Semaphore initialized successfully"));
+	DO_LOG_DEBUG("Semaphore initialized successfully");
 
 	return true;
 }
@@ -159,8 +159,8 @@ bool QMgr::CQueueMgr::pushMsg(mqtt::const_message_ptr &msg)
 	}
 	catch(exception &ex)
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(
-				"Exception received while pushing msg in queue :: "+ std::string(ex.what())));
+		DO_LOG_ERROR(
+				"Exception received while pushing msg in queue :: "+ std::string(ex.what()));
 
 		return false;
 	}
@@ -185,14 +185,14 @@ bool QMgr::CQueueMgr::isMsgArrived(mqtt::const_message_ptr& msg)
 		{
 			if (false == getSubMsgFromQ(msg))
 			{
-				CLogger::getInstance().log(INFO, LOGDETAILS("No message to send to EIS in queue"));
+				DO_LOG_INFO("No message to send to EIS in queue");
 				return false;
 			}
 		}
 	}
 	catch(exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS(e.what()));
+		DO_LOG_FATAL(e.what());
 		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
 		return false;
 	}

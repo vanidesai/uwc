@@ -17,7 +17,7 @@
 #include <eis/config_manager/env_config.h>
 #include <eis/config_manager/config_manager.h>
 #include <iostream>
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
 #include "Logger.hpp"
 #include "Common.hpp"
 

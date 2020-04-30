@@ -37,7 +37,7 @@ bool CCommon::readEnvVariable(const char *pEnvVarName, string &storeVal)
 {
 	if(NULL == pEnvVarName)
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS("Environment variable to read is NULL"));
+		DO_LOG_ERROR("Environment variable to read is NULL");
 		return false;
 	}
 	bool bRetVal = false;
@@ -48,11 +48,11 @@ bool CCommon::readEnvVariable(const char *pEnvVarName, string &storeVal)
 		bRetVal = true;
 		std::string tmp (cEvar);
 		storeVal = tmp;
-		CLogger::getInstance().log(DEBUG, LOGDETAILS(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal));
+		DO_LOG_DEBUG(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal);
 	}
 	else
 	{
-		CLogger::getInstance().log(ERROR, LOGDETAILS(std::string(pEnvVarName) + " environment variable is not found"));
+		DO_LOG_ERROR(std::string(pEnvVarName) + " environment variable is not found");
 		std::cout << __func__ << ":" << __LINE__ << " Error : " + std::string(pEnvVarName) + " environment variable is not found" <<  std::endl;
 
 	}
@@ -106,21 +106,21 @@ bool CCommon::readCommonEnvVariables()
 		if (devMode == "TRUE")
 		{
 			setDevMode(true);
-			CLogger::getInstance().log(INFO, LOGDETAILS("DEV_MODE is set to true"));
+			DO_LOG_INFO("DEV_MODE is set to true");
 			cout << "DEV_MODE is set to true\n";
 
 		}
 		else if (devMode == "FALSE")
 		{
 			setDevMode(false);
-			CLogger::getInstance().log(INFO, LOGDETAILS("DEV_MODE is set to false"));
+			DO_LOG_INFO("DEV_MODE is set to false");
 			cout << "DEV_MODE is set to false\n";
 		}
 		else
 		{
 			// default set to false
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Invalid value for DEV_MODE env variable"));
-			CLogger::getInstance().log(INFO, LOGDETAILS("Set the dev mode to default (i.e. true)"));
+			DO_LOG_ERROR("Invalid value for DEV_MODE env variable");
+			DO_LOG_INFO("Set the dev mode to default (i.e. true)");
 			cout << "DEV_MODE is set to default false\n";
 		}
 	}
@@ -140,16 +140,6 @@ CCommon::~CCommon()
 }
 
 /**
- * Get current time in nano seconds
- * @param ts :[in] structure of current time
- * @return current time in nano seconds
-*/
-unsigned long get_nanos(struct timespec ts)
-{
-    return (unsigned long)ts.tv_sec * 1000000000L + ts.tv_nsec;
-}
-
-/**
  * Get current epoch time in string
  * @param strCurTime :[out] set current epoch time in string format
  * @return None
@@ -160,12 +150,12 @@ void CCommon::getCurrentTimestampsInString(std::string &strCurTime)
 	{
 		struct timespec tsMsgReceived;
 		timespec_get(&tsMsgReceived, TIME_UTC);
-		strCurTime = std::to_string(get_nanos(tsMsgReceived));
+		strCurTime = std::to_string(get_micros(tsMsgReceived));
 	}
 	catch(exception &e)
 	{
-		CLogger::getInstance().log(FATAL, LOGDETAILS("Cannot get current time in string :: " +
-				std::string(e.what())));
+		DO_LOG_FATAL("Cannot get current time in string :: " +
+				std::string(e.what()));
 	}
 }
 
@@ -184,14 +174,13 @@ bool CCommon::addTimestampsToMsg(std::string &a_sMsg, string tsKey, string strTi
 		root = cJSON_Parse(a_sMsg.c_str());
 		if (NULL == root)
 		{
-			CLogger::getInstance().log(ERROR,
-					LOGDETAILS("ZMQ Message could not be parsed in json format"));
+			DO_LOG_ERROR("ZMQ Message could not be parsed in json format");
 			return false;
 		}
 
 		if(NULL == cJSON_AddStringToObject(root, tsKey.c_str(), strTimestamp.c_str()))
 		{
-			CLogger::getInstance().log(ERROR, LOGDETAILS("Could not add timestamp in message"));
+			DO_LOG_ERROR("Could not add timestamp in message");
 			if(root != NULL)
 			{
 				cJSON_Delete(root);
@@ -213,13 +202,13 @@ bool CCommon::addTimestampsToMsg(std::string &a_sMsg, string tsKey, string strTi
 			cJSON_Delete(root);
 		}
 
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Added timestamp in payload for MQTT"));
+		DO_LOG_DEBUG("Added timestamp in payload for MQTT");
 		return true;
 
 	}
 	catch (exception &ex)
 	{
-		CLogger::getInstance().log(DEBUG, LOGDETAILS("Failed to add timestamp in payload for MQTT" + std::string(ex.what())));
+		DO_LOG_DEBUG("Failed to add timestamp in payload for MQTT" + std::string(ex.what()));
 
 		if(root != NULL)
 		{
