@@ -34,12 +34,6 @@ TEST_F(Logger_ut, logINFO)
 	CLogger::getInstance().LogInfo(Infomsg);
 }
 
-TEST_F(Logger_ut, logWAR1)
-{
-	//CLogger::getInstance().LogWarn(Infomsg);
-	CLogger::getInstance().log(WARN, "test");
-	CLogger::getInstance().log((LogLevel)8, "test");
-}
 
 TEST_F(Logger_ut, logDEBUG)
 {

@@ -89,7 +89,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_ValidTopicMsg)
 	try
 	{
 		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, isWrite, &ptrAppCallback);
-		EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
+		EXPECT_EQ(APP_SUCCESS, eFunRetType);
 		//EXPECT_EQ(MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER, eFunRetType);
 		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 	}
@@ -140,7 +140,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_Test)
 
 		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, isWrite, &ptrAppCallback);
 
-		EXPECT_EQ(MBUS_STACK_NO_ERROR, eFunRetType);
+		EXPECT_EQ(APP_SUCCESS, eFunRetType);
 		//EXPECT_EQ(MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER, eFunRetType);
 		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 
@@ -182,7 +182,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_InvalidTopicMsg)
 
 		//eFunRetType = modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).jsonParserForOnDemandRequest(writeReq, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId);
 		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, isWrite, &ptrAppCallback);
-		EXPECT_EQ(MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER, eFunRetType);
+		EXPECT_EQ(APP_ERROR_INVALID_INPUT_JSON, eFunRetType);
 		//EXPECT_EQ(MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 	}
 
@@ -231,7 +231,13 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite)
 	try
 	{
 		//EXPECT_EQ(typeid(MbusStackErrorCode), typeid(modWriteHandler::Instance(msgbusMgr, CallerObj, msgbusEnvelope).jsonParserForOnDemandRequest( writeReq, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId)));
-		EXPECT_EQ(typeid(MbusStackErrorCode), typeid(onDemandHandler::Instance().jsonParserForOnDemandRequest(root, stMbusApiPram, m_u8FunCode, stMbusApiPram.m_u16TxId, isWrite, &ptrAppCallback)));
+		EXPECT_EQ(typeid(eFunRetType),
+		typeid(onDemandHandler::Instance().jsonParserForOnDemandRequest(root,
+				stMbusApiPram,
+				m_u8FunCode,
+				stMbusApiPram.m_u16TxId,
+				isWrite,
+				&ptrAppCallback)));
 
 	}
 	catch(std::exception &e)
@@ -755,12 +761,12 @@ TEST_F(ModbusWriteHandler_ut, create_error_response)
 TEST_F(ModbusWriteHandler_ut, OnDemandInfoHandler_test)
 {
 	stRequest stRequestData;
-	eMbusStackErrorCode eMbusStackErrorCode_variable;
+	eMbusAppErrorCode eMbusAppErrorCode_variable;
 	try
 	{
-		eMbusStackErrorCode_variable = onDemandHandler::Instance().onDemandInfoHandler(stRequestData);
+		eMbusAppErrorCode_variable = onDemandHandler::Instance().onDemandInfoHandler(stRequestData);
 
-		EXPECT_EQ(14, eMbusStackErrorCode_variable);
+		EXPECT_EQ(APP_ERROR_INVALID_INPUT_JSON, eMbusAppErrorCode_variable);
 	}
 	catch(std::exception &e)
 	{

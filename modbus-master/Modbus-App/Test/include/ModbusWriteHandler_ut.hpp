@@ -60,10 +60,10 @@ public:
 	unsigned char u8FunCode = READ_COIL_STATUS;
 	std::string strTopic = "";
 	MbusAPI_t stMbusApiPram = {};
-	eMbusStackErrorCode eFunRetType = MBUS_STACK_NO_ERROR;
+	eMbusAppErrorCode eFunRetType = APP_SUCCESS;
 
 	string strCommand, strValue, strWellhead, strVersion, strSourceTopic;
-	eMbusStackErrorCode eFunRetType2;
+	eMbusAppErrorCode eFunRetType2;
 	//sem_t semaphoreWriteReq;
 
 	stOnDemandRequest reqData;

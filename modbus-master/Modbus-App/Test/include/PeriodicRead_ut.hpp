@@ -1,12 +1,12 @@
 /************************************************************************************
-* The source code contained or described herein and all documents related to
-* the source code ("Material") are owned by Intel Corporation. Title to the
-* Material remains with Intel Corporation.
-*
-* No license under any patent, copyright, trade secret or other intellectual
-* property right is granted to or conferred upon you by disclosure or delivery of
-* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
-************************************************************************************/
+ * The source code contained or described herein and all documents related to
+ * the source code ("Material") are owned by Intel Corporation. Title to the
+ * Material remains with Intel Corporation.
+ *
+ * No license under any patent, copyright, trade secret or other intellectual
+ * property right is granted to or conferred upon you by disclosure or delivery of
+ * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+ ************************************************************************************/
 
 #ifndef __PERIODICREAD_H
 #define __PERIODICREAD_H
@@ -63,25 +63,30 @@ public:
 	string str1;
 	string str2;
 	string str3;
+	string Test_String = "Test_String";
+
+//	const CUniqueDataPoint &
 
 	network_info::CUniqueDataPoint CUniqueDataPoint_obj
 	{
-		"Test_String",
+		Test_String,
 		CWellSiteInfo_obj,
 		CWellSiteDevInfo_obj,
 		CDataPoint_obj
 	};
 
-	zmq_handler::stZmqContext stZmqContext_obj;
-	zmq_handler::stZmqPubContext stZmqPubContext_obj;
+//	zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("MQTT_Export_RdReq");
+//	zmq_handler::stZmqPubContext &pubCTX = zmq_handler::getPubCTX("TCP1_PolledData");
+//
+//	uint8_t temp = 16;
 
-	CRefDataForPolling CRefDataForPolling_obj
-	{
-		CUniqueDataPoint_obj,
-		stZmqContext_obj,
-		stZmqPubContext_obj,
-		16
-	};
+//	CRefDataForPolling CRefDataForPolling_obj
+//	{
+//		(const CUniqueDataPoint &)CUniqueDataPoint_obj,
+//		busCTX,
+//		pubCTX,
+//		temp
+//	};
 
 	stMbusAppCallbackParams_t MbusAppCallbackParams;
 	stMbusAppCallbackParams_t *pstMbusAppCallbackParams = &MbusAppCallbackParams;
@@ -90,9 +95,6 @@ public:
 	struct timespec tsPoll = {0};
 
 };
-
-
-
 
 
 #endif /*__PERIODICREAD_H */
