@@ -12,9 +12,7 @@
 #define INCLUDE_INC_COMMON_HPP_
 
 #include "ZmqHandler.hpp"
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include "ConfigManager.hpp"
 #include <string>
 #include <iostream>
 #ifdef __cplusplus
@@ -25,8 +23,6 @@ extern "C" {
 #include <map>
 
 #ifdef __linux
-
-typedef bool            BOOLEAN;
 
 #define TRUE true
 #define FALSE false
@@ -76,38 +72,21 @@ unsigned char GetFunctionCode(uint8_t u8ReadWrite,
 								  uint16_t u16Quantity,
 								  uint8_t u8MbudTable);
 
-// This enumerator defines MODBUS error codes
-typedef enum MbusStackErrorCode
+// This enumerator defines modbus app error codes
+typedef enum MbusAppErrorCode
 {
-	MBUS_STACK_NO_ERROR,
-	MBUS_STACK_TXNID_OR_UNITID_MISSMATCH,
-	MBUS_STACK_ERROR_SOCKET_FAILED,
-	MBUS_STACK_ERROR_CONNECT_FAILED,
-	MBUS_STACK_ERROR_SEND_FAILED,
-	MBUS_STACK_ERROR_RECV_FAILED,
-	MBUS_STACK_ERROR_RECV_TIMEOUT,
-	MBUS_STACK_ERROR_MALLOC_FAILED,
-	MBUS_STACK_ERROR_QUEUE_SEND,
-	MBUS_STACK_ERROR_QUEUE_RECIVE,
-	MBUS_STACK_ERROR_THREAD_CREATE,
-	MBUS_STACK_ERROR_INVALID_INPUT_PARAMETER,
-	MBUS_STACK_ERROR_PACKET_LENGTH_EXCEEDED,
-	MBUS_JSON_APP_ERROR_MALLOC_FAILED,
-	MBUS_JSON_APP_ERROR_INVALID_INPUT_PARAMETER,
-	MBUS_JSON_APP_ERROR_PACKET_LENGTH_EXCEEDED,
-	MBUS_JSON_APP_ERROR_NULL_POINTER,
-	MBUS_JSON_APP_ERROR_INVALID_FUN_CODE,
-	MBUS_JSON_APP_ERROR_EXCEPTION_RISE,
-	MBUS_APP_TAG_OR_SUBTAG_NOT_FOUND,
-	MBUS_APP_SUBSCRIPTION_NOT_FOUND,
-	MBUS_PERIODIC_FAILED_TO_FIND_TOPIC,
-	MBUS_PERIODIC_INTERVAL_OUT_OF_RANG,
-	MBUS_INVALID_ENV_VARIABLE,
-	MBUS_APP_ERROR_UNKNOWN_SERVICE_REQUEST,
-	MBUS_APP_ERROR_IMPROPER_METHOD,
-	MBUS_APP_ERROR_CONTENT_TYPE_NOT_JSON,
-	MBUS_APP_ERROR_AUTHENTICATION_FAILED,
-}eMbusStackErrorCode;
+	APP_SUCCESS = 0,
+	APP_ERROR_DUMMY_RESPONSE = 100,
+	APP_ERROR_REQUEST_SEND_FAILED,
+	APP_ERROR_INVALID_INPUT_JSON,
+	APP_ERROR_CUTOFF_TIME_INTERVAL,
+	APP_ERROR_INVALID_FUNCTION_CODE,
+	APP_ERROR_EMPTY_DATA_RECVD_FROM_STACK,
+	APP_JSON_PARSING_EXCEPTION,
+	APP_ERROR_UNKNOWN_SERVICE_REQUEST,
+	APP_ERROR_POINT_IS_NOT_WRITABLE,
+	APP_ERROR_CODE_MAX
+}eMbusAppErrorCode;
 
 enum eMbusRequestType
 {
@@ -160,6 +139,13 @@ bool updateReqData(unsigned short, MbusAPI_t);
 
 /// function to remove entry from the map
 void removeReqData(unsigned short);
+
+/**
+ * get request priority from global configuration depending on the operation priority
+ * @param a_Ops			:[in] global config for which to retrieve operation priority
+ * @return [long]		:[out] request priority to be sent to stack.(lower is the value higher is the priority)
+ */
+long getReqPriority(const globalConfig::COperation a_Ops);
 }
 
 #endif /* INCLUDE_INC_COMMON_HPP_ */
