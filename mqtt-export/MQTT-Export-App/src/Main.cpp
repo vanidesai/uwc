@@ -31,7 +31,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.4.0"
+#define APP_VERSION "0.0.4.1"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -
@@ -103,60 +103,6 @@ bool addSrTopic(string &json, string& topic)
 }
 
 /**
- * Parse message to retrieve topic name
- * @param json	:[in] message from which to retrieve QOS and topic name
- * @return Topic name from message
- */
-std::string parse_msg(const char *json)
-{
-	std::string topic_name = "";
-	try
-	{
-		cJSON *root = cJSON_Parse(json);
-		if (NULL == root)
-		{
-			DO_LOG_ERROR("Message received from ZMQ could not be parsed in json format");
-			return topic_name;
-		}
-
-		if(! cJSON_HasObjectItem(root, "topic"))
-		{
-			DO_LOG_ERROR("Message received from ZMQ does not have key : topic");
-			if (NULL != root)
-			{
-				cJSON_Delete(root);
-			}
-			return topic_name;
-		}
-
-		char *ctopic_name = cJSON_GetObjectItem(root, "topic")->valuestring;
-		if (NULL == ctopic_name)
-		{
-			DO_LOG_ERROR("Key 'topic' could not be found in message received from ZMQ");
-			if (NULL != root)
-			{
-				cJSON_Delete(root);
-			}
-			return topic_name;
-		}
-
-		topic_name.assign(ctopic_name);
-
-		if (NULL != root)
-		{
-			cJSON_Delete(root);
-		}
-
-	}
-	catch (std::exception &ex)
-	{
-		DO_LOG_FATAL(ex.what());
-	}
-
-	return topic_name;
-}
-
-/**
  * Process message received from EIS and send for publishing on MQTT
  * @param msg	:[in] actual message
  * @param mqttPublisher :[in] mqtt publisher instance from which to publish this message
@@ -177,48 +123,48 @@ bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 	struct timespec tsMsgRcvd;
 	timespec_get(&tsMsgRcvd, TIME_UTC);
 
-	num_parts = msgbus_msg_envelope_serialize(msg, &parts);
-	if (num_parts <= 0)
+	std::string revdTopic;
+	msg_envelope_elem_body_t* data;
+	msgbus_ret_t msgRet = msgbus_msg_envelope_get(msg, "topic", &data);
+	if(msgRet != MSG_SUCCESS)
 	{
-		DO_LOG_ERROR("Failed to serialize message");
+		DO_LOG_ERROR("topic key not present in message: "+(std::string)(parts[0].bytes));
+		bRetVal = false;
 	}
-	else if(NULL != parts)
+	else
 	{
-		if(NULL != parts[0].bytes)
+		revdTopic = data->body.string;
+
+		std::string strTsRcvd = std::to_string(CCommon::getInstance().get_micros(tsMsgRcvd));
+		msg_envelope_elem_body_t* tsMsgRcvdPut = msgbus_msg_envelope_new_string(strTsRcvd.c_str());
+		msgbus_msg_envelope_put(msg, "tsMsgRcvdForProcessing", tsMsgRcvdPut);
+
+		num_parts = msgbus_msg_envelope_serialize(msg, &parts);
+		if (num_parts <= 0)
 		{
-			std::string revdTopic(parse_msg(parts[0].bytes));
-
-			if (revdTopic == "")
-			{
-				DO_LOG_ERROR("topic key not present in message: "+(std::string)(parts[0].bytes));
-
-			}
-			else
+			DO_LOG_ERROR("Failed to serialize message");
+		}
+		else if(NULL != parts)
+		{
+			if(NULL != parts[0].bytes)
 			{
 				string mqttMsg(parts[0].bytes);
-				//publish data to MQTT
-	#ifdef INSTRUMENTATION_LOG
-				DO_LOG_DEBUG("ZMQ Message: Time: "
-						+ std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
-				+ ", Msg: " + mqttMsg);
-	#endif
-				mqttPublisher.publish(mqttMsg, revdTopic, tsMsgRcvd);
+				mqttPublisher.publish(mqttMsg, revdTopic);
 
 				bRetVal = true;
 			}
 		}
-
-		if(parts != NULL)
+		else
 		{
-			msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+			DO_LOG_ERROR("NULL pointer received");
+			bRetVal = false;
 		}
 	}
-	else
-	{
-		DO_LOG_ERROR("NULL pointer received");
-		bRetVal = false;
-	}
 
+	if(parts != NULL)
+	{
+		msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+	}
 	if(msg != NULL)
 	{
 		msgbus_msg_envelope_destroy(msg);

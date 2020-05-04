@@ -121,7 +121,8 @@ void onDemandHandler::createErrorResponse(eMbusAppErrorCode errorCode,
 	/// handle response function to send response on EIS.
 	CPeriodicReponseProcessor::Instance().handleResponse(&objCallback,
 															operationType,
-															strResponseTopic);
+															strResponseTopic,
+															isRT);
 }
 
 /**

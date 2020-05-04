@@ -173,19 +173,23 @@ private:
 	void initiateRequest(struct timespec &a_stPollTimestamp,
 			std::vector<CRefDataForPolling>&,
 			bool isRTRequest,
-			const long a_lPriority);
+			const long a_lPriority,
+			int a_nRetry,
+			void* a_ptrCallbackFunc);
 
 	std::atomic<unsigned int> m_uiIsNextRequest;
 	sem_t semaphoreReqProcess, semaphoreRespProcess;
 	sem_t semaphoreRTReqProcess, semaphoreRTRespProcess;
 
 	std::map<unsigned short, std::reference_wrapper<CRefDataForPolling>> m_mapTxIDReqData;
+	std::map<unsigned short, std::reference_wrapper<CRefDataForPolling>> m_mapTxIDReqDataRT;
 	/// mutex for operation on m_mapTxIDReqData map
-	std::mutex m_mutextTxIDMap;
+	std::mutex m_mutextTxIDMap, m_mutextTxIDMapRT;
 
 	bool init();
 	bool sendRequest(CRefDataForPolling &a_stRdPrdObj, uint16_t &m_u16TxId,
-			bool isRTRequest, const long a_lPriority);
+			bool isRTRequest, const long a_lPriority, int a_nRetry,
+			void* a_ptrCallbackFunc);
 
 	std::queue <struct StPollingInstance> m_qReqFreq, m_qRespFreq;
 	std::queue <struct StPollingInstance> m_qReqFreqRT, m_qRespFreqRT;
@@ -205,16 +209,16 @@ public:
 
 	void initiateMessages(struct StPollingInstance &a_stPollRef, CTimeRecord &a_objTimeRecord, bool a_bIsReq);
 
-	CRefDataForPolling& getTxIDReqData(unsigned short);
+	CRefDataForPolling& getTxIDReqData(unsigned short, bool a_bIsRT);
 
 	// function to insert new entry in map
-	void insertTxIDReqData(unsigned short, CRefDataForPolling&);
+	void insertTxIDReqData(unsigned short, CRefDataForPolling&, bool a_bIsRT);
 
 	// function to check if a txid is present in a map
-	bool isTxIDPresent(unsigned short tokenId);
+	bool isTxIDPresent(unsigned short tokenId, bool a_bIsRT);
 
 	// function to remove entry from the map once reply is sent
-	void removeTxIDReqData(unsigned short);
+	void removeTxIDReqData(unsigned short, bool a_bIsRT);
 
 	const sem_t& getSemaphoreReqProcess() const {
 		return semaphoreReqProcess;
@@ -278,6 +282,7 @@ class CRefDataForPolling
 
 	uint16_t getReqTxID() { return m_uReqTxID.load(); };
 	void setReqTxID(uint16_t a_uTxID) { m_uReqTxID.store(a_uTxID); };
+	void setDataForNewReq(uint16_t a_uTxID, struct timespec& a_tsPoll);
 
 	bool isLastRespAvailable() const {return m_bIsLastRespAvailable.load();};
 

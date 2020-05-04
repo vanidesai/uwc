@@ -17,18 +17,18 @@
 /**
  *
  * DESCRIPTION
- * The OSAL API will allocate memory from the heap.
+ * The OSAL API allocates memory from the heap of specified size.
  *
- * @param a_i32MemorySize [in] Memory size to be allocated.
- * @return Success: Pointer to the allocated memory.
- *         Failed : NULL pointer.
+ * @param a_i32MemorySize [in] int32_t memory size to be allocated.
+ *
+ * @return [out] void* Allocated memory location
  *
  */
 void *OSAL_Malloc(int32_t a_i32MemorySize)
 {
     void *pvData = NULL;
 
-    /// Allocate memory of requested size
+    // Allocate memory of requested size
     pvData = malloc(a_i32MemorySize);
 
 	return pvData;
@@ -37,13 +37,15 @@ void *OSAL_Malloc(int32_t a_i32MemorySize)
 /**
  *
  * DESCRIPTION
- * The OSAL API will deallocate assigned memory pointed by the argument.
+ * The OSAL API de-allocates assigned memory pointed by the argument.
  *
- * @param pPointer [in] Pointer to the memory.
+ * @param pPointer [in] void* Pointer to the memory.
+ *
+ * @return None
  */
 void OSAL_Free(void *pvPointer)
 {
-    /// Check for NULL pointer free
+    // Check for NULL pointer free
     if(NULL == pvPointer)
     {
         return;
@@ -57,12 +59,14 @@ void OSAL_Free(void *pvPointer)
 /**
  *
  * DESCRIPTION
- * The OSAL Thread create API will generate Thread
+ * The OSAL API creates a thread with the specified thread parameters
  * for various OS.
  *
- * @param pThreadParam Pointer to structure holding
- *                  Thread creation parameters.
- * @return Returns Handle to created Thread
+ * @param pThreadParam [in] thread_Create_t* Pointer to structure holding
+ *                  		thread creation parameters.
+ *
+ * @return [out] Thread_H thread id of newly created thread;
+ * 				 -1 in case of NULL input parameters structure or error
  *
  */
 Thread_H Osal_Thread_Create(thread_Create_t *pThreadParam)
@@ -76,7 +80,7 @@ Thread_H Osal_Thread_Create(thread_Create_t *pThreadParam)
     	printf("NULL pointer received in Osal_Thread_Create\n");
     	return -1;
     }
-    /// Set up thread attributes
+    // Set up thread attributes
     pthread_attr_init(&attr);
 
     // set stack size for thread
@@ -89,11 +93,11 @@ Thread_H Osal_Thread_Create(thread_Create_t *pThreadParam)
     	}
     }
 
-    /// Start the thread
+    // Start the thread
     retcode = pthread_create(pThreadParam->lpThreadId, &attr, pThreadParam->lpStartAddress,
                             pThreadParam->lpParameter);
 
-    /// clear up assigned attributes
+    // clear up assigned attributes
     pthread_attr_destroy(&attr);
 
     if (retcode == 0)
@@ -110,20 +114,20 @@ Thread_H Osal_Thread_Create(thread_Create_t *pThreadParam)
 /**
  *
  * DESCRIPTION
- * The OSAL Thread Terminate API will
- * terminate Thread for various OS.
+ * The OSAL API terminates thread specified by thread handle/ thread ID.
  *
- * @param pThreadTerminate Pointer to structure holding
- *                  Thread Termination parameters.
- * @return True/False
+ * @param pThreadTerminate [in] Thread_H Pointer to structure holding
+ *                  			parameters of the thread to terminate.
+ * @return true if thread terminates successfully;
+ * 		   false if fails to terminate thread
  *
  */
 bool Osal_Thread_Terminate(Thread_H pThreadTerminate)
 {
-    /// Cancel thread
+    // Cancel thread
     pthread_cancel(pThreadTerminate);
 
-    /// Wait for thread to stop and reclaim thread resources
+    // Wait for thread to stop and reclaim thread resources
     if (0 == pthread_join(pThreadTerminate, NULL ) )
     {
         return true;
@@ -137,11 +141,13 @@ bool Osal_Thread_Terminate(Thread_H pThreadTerminate)
 /**
  *
  * DESCRIPTION
- * Copies a message to message queue.
+ * The OSAL API copies a message in Linux message queue.
  *
- * @param pstPostThreadMsg [in] Pointer to struct to be copied.
+ * @param pstPostThreadMsg [in] Post_Thread_Msg_t* Pointer to structure to be copied
+ * 								in Linux message queue.
  *
- * @return TRUE/FALSE
+ * @return true if function succeeds to add message in Linux message queue;
+ * 		   false if function fails to add message in Linux message queue
  *
  */
 bool OSAL_Post_Message(Post_Thread_Msg_t *pstPostThreadMsg)
@@ -174,12 +180,15 @@ bool OSAL_Post_Message(Post_Thread_Msg_t *pstPostThreadMsg)
 /**
  *
  * DESCRIPTION
- * Copies a message from message queue.
+ * The OSAL API retrieves the message from Linux message queue. This function blocks/ waits till
+ * either a message is received or an error occurs. It retrieves message of the specified
+ * message id and stores message in pstQueueMsg.
  *
- * @param pstQueueMsg [out] Pointer to struct where data is copied.
- * @param msqid [in]  messages id that can be received.
+ * @param pstQueueMsg [out] Linux_Msg_t* Pointer to structure where message is to be stored.
+ * @param msqid 	  [in]  int Linux message id to be retrieved.
  *
- * @return TRUE/FALSE
+ * @return true if function succeeds in retrieving the message;
+ * 		   false if any error occurs while retrieving the message
  *
  */
 bool OSAL_Get_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
@@ -190,7 +199,7 @@ bool OSAL_Get_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
 
 	MsgSize = sizeof(Linux_Msg_t) - sizeof(long);
 
-	/// Wait Till Message received or Error other than Signal interrupt
+	// Wait Till Message received or Error other than Signal interrupt
 	do
 	{
 		i32RetVal = msgrcv(msqid, pstQueueMsg, MsgSize, MAX_RECV_PRIORITY, 0);
@@ -208,18 +217,21 @@ bool OSAL_Get_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
 
 	}while(i32RetVal > 0);
 
-	/// Returns Number of Bytes received or Error received
+	// Returns Number of Bytes received or Error received
 	return( i32RetVal);
 }
 
 /**
  * DESCRIPTION
- * Copies a message from message queue.
+ * The OSAL API retrieves the message from Linux message queue, without blocking/ waiting
+ * for an error or a message. It retrieves message of the specified message id and stores
+ * message in pstQueueMsg.
  *
- * @param pstQueueMsg [out] Pointer to struct where data is copied.
- * @param msqid [in] messages id that can be received.
+ * @param pstQueueMsg [out] Linux_Msg_t* Pointer to struct where data is copied.
+ * @param msqid 	  [in] int Linux message id to be retrieved.
  *
- * @return TRUE/FALSE
+ * @return true if function succeeds in retrieving the message;
+ * 		   false if any error occurs while retrieving the message
  *
  */
 int32_t OSAL_Get_NonBlocking_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
@@ -230,7 +242,7 @@ int32_t OSAL_Get_NonBlocking_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
 
 	MsgSize = sizeof(Linux_Msg_t) - sizeof(long);
 
-    /// Wait Till Message received or Error other than Signal interrupt
+    // Wait Till Message received or Error other than Signal interrupt
     i32RetVal = msgrcv(msqid, pstQueueMsg, MsgSize, MAX_RECV_PRIORITY, MSG_NOERROR | IPC_NOWAIT);
     if(errno == ENOMSG && (-1 == i32RetVal) && EINTR == errno)
     {
@@ -239,7 +251,7 @@ int32_t OSAL_Get_NonBlocking_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
     	i32RetVal = -1;
     }
 
-    /// Returns Number of Bytes received or Error received
+    // Returns Number of Bytes received or Error received
 	return( i32RetVal);
 }
 
@@ -247,11 +259,13 @@ int32_t OSAL_Get_NonBlocking_Message(Linux_Msg_t *pstQueueMsg, int   msqid)
 /**
  *
  * DESCRIPTION
- * Copies a message to message queue.
+ * This OSAL API initializes the Linux message queue to store requests sent to
+ * the Modbus slave device.
  *
  * @param Nothing
  *
- * @return int32_t value.
+ * @return [out] int32_t Linux message queue id if function succeeds
+ * 				   		-1 in case if function fails to create a message queue
  *
  */
 int32_t OSAL_Init_Message_Queue()
@@ -272,11 +286,12 @@ int32_t OSAL_Init_Message_Queue()
 /**
  *
  * DESCRIPTION
- * Delete a message to message queue.
+ * This OSAL API deletes message queue with specified message queue id.
  *
- * @param MsgQId [in] Message queue id
+ * @param MsgQId [in] int Message queue id to delete
  *
- * @return bool value.
+ * @return [out] bool true if function deletes the message queue successfully;
+ * 					  false if function fails to delete the message queue
  *
  */
 bool OSAL_Delete_Message_Queue(int MsgQId)
@@ -295,17 +310,18 @@ bool OSAL_Delete_Message_Queue(int MsgQId)
 /**
  *
  * DESCRIPTION
- * The OSAL Mutex create API will generate Mutex
- * for various OS.
+ * The OSAL API creates a mutex for various OS.
  *
- * @return Returns Handle to created Mutex
+ * @param None
+ * @return [out] Mutex_H Returns Handle of the newly created mutex if function succeeds;
+ * 				NULL if function fails
  *
  */
 Mutex_H Osal_Mutex(void)
 {
 	Mutex_H pstTpmPtr = NULL;
 
-	/// Assign memory to mutex handle
+	// Assign memory to mutex handle
 	pstTpmPtr = (Mutex_H)OSAL_Malloc(sizeof(pthread_mutex_t));
 
 	if (NULL == pstTpmPtr)
@@ -317,14 +333,14 @@ Mutex_H Osal_Mutex(void)
 	int iRetVal = pthread_mutex_init(pstTpmPtr, NULL);
 	if(EAGAIN == iRetVal || ENOMEM == iRetVal || EPERM == iRetVal)
 	{
-		/// destroy the mutex
+		// destroy the mutex
 		perror("mutex creation failed :: ");
 		OSAL_Free(pstTpmPtr);
 		return NULL;
 	}
 	else if (0 == iRetVal)
 	{
-		/// SUCCESS
+		// SUCCESS
 	}
 	else
 	{
@@ -340,9 +356,12 @@ Mutex_H Osal_Mutex(void)
 /**
  *
  * DESCRIPTION
- * The OSAL API Releases the Mutex acquired by process.
+ * The OSAL API waits to lock the mutex specified by the mutex handle.
  *
- * @return int32_t returns 0 If the function succeeds, the return value is nonzero.
+ * @param pMtxHandle [in] Mutex_H handle to mutex which needs to be locaked
+ *
+ * @return [out] int32_t 0 if the function succeeds;
+ * 						 non-zero if function fails.
  *
  */
 int32_t Osal_Wait_Mutex(Mutex_H pMtxHandle)
@@ -370,9 +389,13 @@ int32_t Osal_Wait_Mutex(Mutex_H pMtxHandle)
 /**
  *
  * DESCRIPTION
- * The OSAL API Releases the Mutex acquired by process.
+ * The OSAL API release the mutex specified by the mutex handle.
  *
- * @return returns 0 If the function succeeds, the return value is nonzero.
+ * @param pMtxHandle [in] Mutex_H handle to mutex which needs to be locaked
+ *
+ * @return [out] int32_t 0 if the function succeeds;
+ * 						 non-zero if function fails.
+ *
  */
 int32_t Osal_Release_Mutex(Mutex_H pMtxHandle)
 {
@@ -399,12 +422,12 @@ int32_t Osal_Release_Mutex(Mutex_H pMtxHandle)
 /**
  *
  * DESCRIPTION
- * Delete a mutex.
+ * The OSAL API destroys the mutex specified by the mutex handle.
  *
- * @param pMtxHandle       Handle of mutex to delete.
+ * @param pMtxHandle [in] Mutex_H handle to mutex which needs to be locaked
  *
- * @retval 0       if Error.
- * @retval 1       if Successful
+ * @return [out] int32_t 0 if the function succeeds;
+ * 						 non-zero if function fails.
  *
  */
 int32_t Osal_Close_Mutex( Mutex_H pMtxHandle)

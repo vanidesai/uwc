@@ -97,86 +97,13 @@ void CMQTTPublishHandler::setMQTTConfigState(Mqtt_Config_state_t tempConfigState
 }
 
 /**
- * Add current time stamp in message
- * @param a_sMsg :[in] message in which to add time
- * @param a_tsMsgRcvd :[in] time stamp in nano seconds
- * @return true/false based on success/failure
- */
-bool CMQTTPublishHandler::addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsMsgRcvd)
-{
-	cJSON *root = NULL;
-	try
-	{
-		root = cJSON_Parse(a_sMsg.c_str());
-		if (NULL == root)
-		{
-			DO_LOG_ERROR("ZMQ Message could not be parsed in json format");
-			return false;
-		}
-
-		std::string strTsRcvd = std::to_string(CCommon::getInstance().get_micros(a_tsMsgRcvd));
-		if(NULL == cJSON_AddStringToObject(root, "tsMsgRcvdForProcessing", strTsRcvd.c_str()))
-		{
-			DO_LOG_ERROR("Could not add tsMsgRcvdForProcessing in message");
-			if(root != NULL)
-			{
-				cJSON_Delete(root);
-			}
-			return false;
-		}
-
-		struct timespec tsMsgPublish;
-		timespec_get(&tsMsgPublish, TIME_UTC);
-		std::string strTsPublish = std::to_string(CCommon::getInstance().get_micros(tsMsgPublish));
-		if(NULL == cJSON_AddStringToObject(root, "tsMsgReadyForPublish", strTsPublish.c_str()))
-		{
-			DO_LOG_ERROR("Could not add tsMsgReadyForPublish in message");
-			if(root != NULL)
-			{
-				cJSON_Delete(root);
-			}
-			return false;
-		}
-
-		a_sMsg.clear();
-		char *psNewJson = cJSON_Print(root);
-		if(NULL != psNewJson)
-		{
-			a_sMsg.assign(psNewJson);
-			free(psNewJson);
-			psNewJson = NULL;
-		}
-
-		if(root != NULL)
-		{
-			cJSON_Delete(root);
-		}
-
-		DO_LOG_DEBUG("Added timestamp in payload for MQTT");
-		return true;
-
-	}
-	catch (exception &ex)
-	{
-		DO_LOG_DEBUG("Failed to add timestamp in payload for MQTT" + std::string(ex.what()));
-		
-		if(root != NULL)
-		{
-			cJSON_Delete(root);
-		}
-
-		return false;
-	}
-}
-
-/**
  * Publish message on MQTT broker
  * @param a_sMsg :[in] message to publish
  * @param a_sTopic :[in] topic on which to publish message
  * @param a_tsMsgRcvd :[in] time stamp to add while publishing
  * @return true/false based on success/failure
  */
-bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic, struct timespec a_tsMsgRcvd)
+bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic)
 {
 	try
 	{
@@ -186,15 +113,30 @@ bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic, st
 			m_bIsFirst = false;
 		}
 
-		// Add timestamp to message
-		addTimestampsToMsg(a_sMsg, a_tsMsgRcvd);
-
 		std::lock_guard<std::mutex> lock(mqttMutexLock);
+
+		// Add timestamp to message
+		struct timespec tsMsgPublish;
+		timespec_get(&tsMsgPublish, TIME_UTC);
+		std::string strTsPublish = std::to_string(CCommon::getInstance().get_micros(tsMsgPublish));
+
+		// remove } bracket to add new key value pair to existing json
+		a_sMsg.pop_back();
+
+		string msgWithTimeStamp =  a_sMsg + ","+ "\"tsMsgReadyForPublish\"" + ":" + "\"" + strTsPublish + "\"" + "}";
+
+		//publish data to MQTT
+#ifdef INSTRUMENTATION_LOG
+		DO_LOG_DEBUG("ZMQ Message: Time: "
+				+ std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+		+ ", Msg: " + msgWithTimeStamp);
+#endif
+
 
 		// Check if topic is blank
 		if (true == a_sTopic.empty())
 		{
-			if (true == a_sMsg.empty())
+			if (true == msgWithTimeStamp.empty())
 			{
 				DO_LOG_ERROR("Blank topic and blank Message");
 			}
@@ -214,7 +156,7 @@ bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic, st
 			if(false == connect())
 			{
 				DO_LOG_ERROR("MQTT publisher is not connected with MQTT broker");
-				DO_LOG_ERROR("Failed to publish msg on MQTT : " + a_sMsg);
+				DO_LOG_ERROR("Failed to publish msg on MQTT : " + msgWithTimeStamp);
 
 				m_bIsFirst = true;
 
@@ -222,10 +164,14 @@ bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic, st
 			}
 		}
 
-		mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, m_QOS, false);
+		mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, msgWithTimeStamp, m_QOS, false);
 
 		publisher.publish(pubmsg, nullptr, listener);
 		DO_LOG_DEBUG("Published message on MQTT broker successfully with QOS:"+ std::to_string(m_QOS));
+
+		msgWithTimeStamp.clear();
+		msgWithTimeStamp = "";
+
 		return true;
 	}
 	catch (const mqtt::exception &exc)

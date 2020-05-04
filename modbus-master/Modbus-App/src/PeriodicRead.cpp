@@ -486,9 +486,9 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 	{
 		if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 		{
-			CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(a_stResp.u16TransacID);
+			CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(a_stResp.u16TransacID, a_stResp.m_bIsRT);
 			// Node is found in transaction map. Remove it now.
-			CRequestInitiator::instance().removeTxIDReqData(a_stResp.u16TransacID);
+			CRequestInitiator::instance().removeTxIDReqData(a_stResp.u16TransacID, a_stResp.m_bIsRT);
 			// Response is received. Reset response awaited status
 			objReqData.getDataPoint().setIsAwaitResp(false);
 			// reset txid
@@ -722,11 +722,11 @@ bool CPeriodicReponseProcessor::checkForRetry(struct stStackResponse &a_stStackR
 			if((MBUS_CALLBACK_POLLING == operationCallbackType) ||
 					(MBUS_CALLBACK_POLLING_RT == operationCallbackType))
 			{
-				bool bIsPresent = CRequestInitiator::instance().isTxIDPresent(a_stStackResNode.u16TransacID);
+				bool bIsPresent = CRequestInitiator::instance().isTxIDPresent(a_stStackResNode.u16TransacID, a_stStackResNode.m_bIsRT);
 				if(true == bIsPresent)
 				{
 					CRefDataForPolling &oRef =
-							CRequestInitiator::instance().getTxIDReqData(a_stStackResNode.u16TransacID);
+							CRequestInitiator::instance().getTxIDReqData(a_stStackResNode.u16TransacID, a_stStackResNode.m_bIsRT);
 					MbusAPI_t &refReq = oRef.getMBusReq();
 					pReqData = &refReq;
 				}
@@ -897,12 +897,14 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
  * @param pstMbusAppCallbackParams :[in] response received from stack
  * @param operationCallbackType :[in] Operation type - polling/on-demand/RT/Non-RT
  * @param strResponseTopic: [in] ZMQ topic to be used. Defined by calling callback function
+ * @param a_bIsRT: [in] indicates whether it is a RT request
  * @return none
  */
 void CPeriodicReponseProcessor::handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams,
 												//eMbusResponseType respType,
 												eMbusCallbackType operationCallbackType,
-												string strResponseTopic)
+												string strResponseTopic,
+												bool a_bIsRT)
 {
 	if(pstMbusAppCallbackParams == NULL)
 	{
@@ -916,6 +918,7 @@ void CPeriodicReponseProcessor::handleResponse(stMbusAppCallbackParams_t *pstMbu
 	stStackResNode.m_operationType = operationCallbackType;
 	stStackResNode.m_u8FunCode = pstMbusAppCallbackParams->m_u8FunctionCode;
 	stStackResNode.m_strResponseTopic = strResponseTopic;
+	stStackResNode.m_bIsRT = a_bIsRT;
 
 	try
 	{
@@ -972,7 +975,8 @@ eMbusAppErrorCode readPeriodicCallBack(stMbusAppCallbackParams_t *pstMbusAppCall
 	//handle response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 														MBUS_CALLBACK_POLLING,
-														PublishJsonHandler::instance().getPolledDataTopic());
+														PublishJsonHandler::instance().getPolledDataTopic(),
+														false);
 	return APP_SUCCESS;
 }
 
@@ -993,7 +997,8 @@ eMbusAppErrorCode readPeriodicRTCallBack(stMbusAppCallbackParams_t *pstMbusAppCa
 	//handle response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 														MBUS_CALLBACK_POLLING_RT,
-														PublishJsonHandler::instance().getPolledDataTopicRT());
+														PublishJsonHandler::instance().getPolledDataTopicRT(),
+														true);
 	return APP_SUCCESS;
 }
 
@@ -1304,11 +1309,15 @@ bool CRequestInitiator::getFreqRefForPollCycle(struct StPollingInstance &a_stPol
  * @param a_vReqData	:[in] List of points to be polled
  * @param isRTRequest	:[in] boolean variable to distinguish between RT/Non-RT requests
  * @param a_lPriority	:[in] priority assigned to message when sending a request
+ * @param a_nRetry		:[in] request retries to be performed in case of timeout
+ * @param a_ptrCallbackFunc	:[in] callback function to be called by stack to send response
  * @return none
  */
 void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std::vector<CRefDataForPolling>& a_vReqData,
 		bool isRTRequest,
-		const long a_lPriority)
+		const long a_lPriority,
+		int a_nRetry,
+		void* a_ptrCallbackFunc)
 {
 	for(auto &objReqData: a_vReqData)
 	{
@@ -1324,7 +1333,7 @@ void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std:
 						+ ", LastTxID: " + to_string(lastTxID));
 			CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException, &a_stPollTimestamp);
 
-			if(false == CRequestInitiator::instance().isTxIDPresent(lastTxID))
+			if(false == CRequestInitiator::instance().isTxIDPresent(lastTxID, isRTRequest))
 			{
 				DO_LOG_INFO("TxID is not present in map.Resetting the response status");
 				objReqData.getDataPoint().setIsAwaitResp(false);
@@ -1334,26 +1343,19 @@ void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std:
 
 		//if(true == bIsFound)
 		{
-			// Response is awaited. Mark the flag
-			objReqData.getDataPoint().setIsAwaitResp(true);
-			// Response is not posted. Mark the flag
-			objReqData.setResponsePosted(false);
-			// Sending the request. Set polling timestamp of request
-			objReqData.setTimestampOfPollReq(a_stPollTimestamp);
-
 			// generate the TX ID
-			uint16_t m_u16TxId = PublishJsonHandler::instance().getTxId();
+			//uint16_t m_u16TxId = PublishJsonHandler::instance().getTxId();
+			uint16_t m_u16TxId = objReqData.getDataPoint().getMyRollID();
 
-			// set txid
-			objReqData.setReqTxID(m_u16TxId);
+			// Set data for this polling request
+			objReqData.setDataForNewReq(m_u16TxId, a_stPollTimestamp);
 
 			DO_LOG_INFO("Trying to send request for - Point: " + 
 						objReqData.getDataPoint().getID() +
 						", with TxID: " + to_string(m_u16TxId));
-			// The entry is found in map
 
 			// Send a request
-			if (true == sendRequest(objReqData, m_u16TxId, isRTRequest, a_lPriority))
+			if (true == sendRequest(objReqData, m_u16TxId, isRTRequest, a_lPriority, a_nRetry, a_ptrCallbackFunc))
 			{
 				// Request is sent successfully
 				// No action
@@ -1377,7 +1379,7 @@ void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std:
 				CPeriodicReponseProcessor::Instance().postDummyBADResponse(objReqData, m_stException);
 
 				/// remove node from TxID map
-				CRequestInitiator::instance().removeTxIDReqData(m_u16TxId);
+				CRequestInitiator::instance().removeTxIDReqData(m_u16TxId, isRTRequest);
 				// reset txid
 				objReqData.setReqTxID(0);
 				DO_LOG_ERROR("sendRequest failed");
@@ -1404,13 +1406,19 @@ void CRequestInitiator::threadReqInit(bool isRTPoint,
 		globalConfig::display_thread_sched_attr("threadReqInit param::");
 
 		sem_t *pSem = NULL;
+		int nRetry = 0;
+		void* ptrCallbackFunc = NULL;
 		if(true == isRTPoint)
 		{
 			pSem = &semaphoreRTReqProcess;
+			nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig().getRetries();
+			ptrCallbackFunc = (void*)readPeriodicRTCallBack;
 		}
 		else
 		{
 			pSem = &semaphoreReqProcess;
+			nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig().getRetries();
+			ptrCallbackFunc = (void*)readPeriodicCallBack;
 		}
 		if(NULL == pSem)
 		{
@@ -1418,6 +1426,7 @@ void CRequestInitiator::threadReqInit(bool isRTPoint,
 			DO_LOG_FATAL("Semaphore is null");
 			return;
 		}
+
 		while(false == g_stopThread.load())
 		{
 			try
@@ -1440,7 +1449,7 @@ void CRequestInitiator::threadReqInit(bool isRTPoint,
 					}
 					std::vector<CRefDataForPolling>& vReqData = CTimeMapper::instance().getPolledPointList(stPollRef.m_uiPollInterval, isRTPoint);
 					initiateRequest(stPollRef.m_tsPollTime, vReqData, isRTPoint, (CTimeMapper::instance().getFreqIndex(stPollRef.m_uiPollInterval) +
-							l_reqPriority + 1));
+							l_reqPriority + 1), nRetry, ptrCallbackFunc);
 				} while(0);
 
 			}
@@ -1584,8 +1593,16 @@ void CRequestInitiator::initiateMessages(struct StPollingInstance &a_stPollRef, 
  */
 CRequestInitiator::~CRequestInitiator()
 {
-	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
-	m_mapTxIDReqData.clear();
+	{
+		// Clear Non-RT structures
+		std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+		m_mapTxIDReqData.clear();
+	}
+	{
+		// Clear RT structures
+		std::lock_guard<std::mutex> lock(m_mutextTxIDMapRT);
+		m_mapTxIDReqDataRT.clear();
+	}
 	sem_destroy(&semaphoreReqProcess);
 	sem_destroy(&semaphoreRespProcess);
 	sem_destroy(&semaphoreRTReqProcess);
@@ -1614,10 +1631,22 @@ CRequestInitiator::CRequestInitiator() : m_uiIsNextRequest(0)
 /**
  * Get point information corresponding to a transaction id for requested data
  * @param tokenId	:[in] get request for request with token
+ * @param a_bIsRT	:[in] indicates whether it is a RT request
  * @return point reference
  */
-CRefDataForPolling& CRequestInitiator::getTxIDReqData(unsigned short tokenId)
+CRefDataForPolling& CRequestInitiator::getTxIDReqData(unsigned short tokenId, bool a_bIsRT)
 {
+	if(true == a_bIsRT)
+	{
+		// This is RT request. Use RT-related structures
+		/// Ensure that only on thread can execute at a time
+		std::lock_guard<std::mutex> lock(m_mutextTxIDMapRT);
+
+		// return the request ID
+		return m_mapTxIDReqDataRT.at(tokenId);
+	}
+
+	// This is Non-RT request. Use Non-RT-related structures
 	/// Ensure that only one thread can execute at a time
 	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
 
@@ -1628,48 +1657,94 @@ CRefDataForPolling& CRequestInitiator::getTxIDReqData(unsigned short tokenId)
 /**
  * Check if a given txid is present in txid map
  * @param tokenId	:[in] check request for request with token
+ * @param a_bIsRT	:[in] indicates whether it is a RT request
  * @return true: present, false: absent
  */
-bool CRequestInitiator::isTxIDPresent(unsigned short tokenId)
+bool CRequestInitiator::isTxIDPresent(unsigned short tokenId, bool a_bIsRT)
 {
-	/// Ensure that only on thread can execute at a time
-	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
-
-	// return the request ID
-	if(m_mapTxIDReqData.end() == m_mapTxIDReqData.find(tokenId))
+	if(true == a_bIsRT)
 	{
-		// token id is not found
-		return false;
+		// This is RT request. Use RT-related structures
+		/// Ensure that only one thread can execute at a time
+		std::lock_guard<std::mutex> lock(m_mutextTxIDMapRT);
+
+		// check if data is present
+		if(m_mapTxIDReqDataRT.end() != m_mapTxIDReqDataRT.find(tokenId))
+		{
+			// token id is found
+			return true;
+		}
 	}
-	return true;
+	else
+	{
+		// This is Non-RT request. Use Non-RT-related structures
+		/// Ensure that only one thread can execute at a time
+		std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+
+		// check if data is present
+		if(m_mapTxIDReqData.end() != m_mapTxIDReqData.find(tokenId))
+		{
+			// token id is found
+			return true;
+		}
+	}
+	// Token id is not found
+	return false;
 }
 
 /**
- * Insert new TxID and point refernece entry in map
+ * Insert new TxID and point reference entry in map
  * @param token 		:[in] token
  * @param objRefData	:[in] reference to polling data
+ * @param a_bIsRT		:[in] defines whether it is a RT request or not
  * @return none
  */
-void CRequestInitiator::insertTxIDReqData(unsigned short token, CRefDataForPolling &objRefData)
+void CRequestInitiator::insertTxIDReqData(unsigned short token, CRefDataForPolling &objRefData, bool a_bIsRT)
 {
-	/// Ensure that only on thread can execute at a time
-	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+	if(true  == a_bIsRT)
+	{
+		// This is RT request. Use RT-related structures
+		/// Ensure that only on thread can execute at a time
+		std::lock_guard<std::mutex> lock(m_mutextTxIDMapRT);
 
-	// insert the data in request map
-	//m_mapTxIDReqData.insert(pair <unsigned short, CRefDataForPolling> (token, objRefData));
-	m_mapTxIDReqData.emplace(token, objRefData);
+		// insert the data in request map
+		//m_mapTxIDReqData.insert(pair <unsigned short, CRefDataForPolling> (token, objRefData));
+		m_mapTxIDReqDataRT.emplace(token, objRefData);
+	}
+	else
+	{
+		// This is Non-RT request. Use Non-RT-related structures
+		/// Ensure that only on thread can execute at a time
+		std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+
+		// insert the data in request map
+		//m_mapTxIDReqData.insert(pair <unsigned short, CRefDataForPolling> (token, objRefData));
+		m_mapTxIDReqData.emplace(token, objRefData);
+	}
 }
 
 /**
  * Removes entry from the map once data is posted on ZMQ for polling.
  * @param tokenId :[in] remove entry with given token id
+ * @param a_bIsRT :[in] indicates whether it is a RT request
  * @return none
  */
-void CRequestInitiator::removeTxIDReqData(unsigned short tokenId)
+void CRequestInitiator::removeTxIDReqData(unsigned short tokenId, bool a_bIsRT)
 {
-	/// Ensure that only on thread can execute at a time
-	std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
-	m_mapTxIDReqData.erase(tokenId);
+	if(true == a_bIsRT)
+	{
+		// This is RT request. Use RT-related structures
+		/// Ensure that only one thread can execute at a time
+		std::lock_guard<std::mutex> lock(m_mutextTxIDMapRT);
+		m_mapTxIDReqDataRT.erase(tokenId);
+	}
+	else
+	{
+		// This is Non-RT request. Use Non-RT-related structures
+		/// Ensure that only one thread can execute at a time
+		std::lock_guard<std::mutex> lock(m_mutextTxIDMap);
+		m_mapTxIDReqData.erase(tokenId);
+	}
 }
 
 /**
@@ -1730,7 +1805,7 @@ void CTimeMapper::checkTimer(const uint32_t &a_uiMaxCounter, uint32_t a_uiCounte
 				}
     		}
 
-    		// set future ccounter-timer value for polled intervals
+    		// set future counter-timer value for polled intervals
     		for(auto &elememt: listPolledTimeRecords)
     		{
     			CTimeRecord &a = elememt.get();
@@ -1773,21 +1848,24 @@ void CTimeMapper::checkTimer(const uint32_t &a_uiMaxCounter, uint32_t a_uiCounte
 /**
  * Initializes data structure to send request for polling.
  * Adds a point in a map for request-response matching in future.
- * @param a_stRdPrdObj	:[in] request to send
+ * @param a_stRdPrdObj:	[in] request to send
  * @param m_u16TxId	:	[in] TxID
- * @param isRTRequest: [in] RT/Non-Rt
- * @param a_lPriority: [in] priority to be used for sending request
+ * @param isRTRequest: 	[in] RT/Non-Rt
+ * @param a_lPriority: 	[in] priority to be used for sending request
+ * @param a_nRetry:		[in] request retries to be performed in case of timeout
+ * @param a_ptrCallbackFunc	:[in] callback function to be called by stack to send response
  * @return 	true : on success,
  * 			false : on error
  */
 bool CRequestInitiator::sendRequest(CRefDataForPolling &a_stRdPrdObj,
 		uint16_t &m_u16TxId,
 		bool isRTRequest,
-		const long a_lPriority)
+		const long a_lPriority,
+		int a_nRetry,
+		void* a_ptrCallbackFunc)
 {
 	uint8_t u8ReturnType = APP_SUCCESS;
 	bool bRet = false;
-	void* ptrCallbackFunc = NULL;
 
 	try
 	{
@@ -1800,25 +1878,18 @@ bool CRequestInitiator::sendRequest(CRefDataForPolling &a_stRdPrdObj,
 		//stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
 		stMbusApiPram.m_u16TxId = m_u16TxId;
 
-		if(true == isRTRequest)
-		{
-			stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getRTConfig().getRetries();
-			ptrCallbackFunc = (void*)readPeriodicRTCallBack;
-		}
-		else
-		{
-			stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getNonRTConfig().getRetries();
-			ptrCallbackFunc = (void*)readPeriodicCallBack;
-		}
+		// Set retries to be done in case of timeout
+		stMbusApiPram.m_nRetry = a_nRetry;
+
 
 #ifdef UNIT_TEST
 		stMbusApiPram.m_u16TxId = 5;
 #endif
-		CRequestInitiator::instance().insertTxIDReqData(stMbusApiPram.m_u16TxId, a_stRdPrdObj);
+		CRequestInitiator::instance().insertTxIDReqData(stMbusApiPram.m_u16TxId, a_stRdPrdObj, isRTRequest);
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.getFunctionCode(), &stMbusApiPram, ptrCallbackFunc);
+		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.getFunctionCode(), &stMbusApiPram, a_ptrCallbackFunc);
 #else
-		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.getFunctionCode(), &stMbusApiPram, ptrCallbackFunc);
+		u8ReturnType = Modbus_Stack_API_Call(a_stRdPrdObj.getFunctionCode(), &stMbusApiPram, a_ptrCallbackFunc);
 #endif
 
 		if(APP_SUCCESS == u8ReturnType)
@@ -2371,4 +2442,20 @@ stLastGoodResponse CRefDataForPolling::getLastGoodResponse()
 	std::lock_guard<std::mutex> lock(m_mutexLastResp);
 	stLastGoodResponse objStackResp = m_oLastGoodResponse;
 	return objStackResp;
+}
+
+/**
+ * Set data structures for new polling request for this point
+ * @param a_uTxID	:[in] TxID of new polling request for this point
+ * @param a_tsPoll	:[in] Timestamp of new polling request for this point
+ * @return 	nothing
+ */
+void CRefDataForPolling::setDataForNewReq(uint16_t a_uTxID, struct timespec& a_tsPoll)
+{
+	// Set following for new request being sent
+
+	m_stPollTsForReq = a_tsPoll;
+	m_uReqTxID.store(a_uTxID);
+	m_bIsRespPosted.store(false);
+	m_objDataPoint.setIsAwaitResp(true);
 }

@@ -132,8 +132,10 @@ int checkforblockingread(void);
 
 #endif
 
+// Function declarations for callback functions from ModbusApp
 void (*ModbusMaster_ApplicationCallback)(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t u16TransactionID);
 
+// Functions that are used in Modbus TCP communication mode
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 void (*ReadFileRecord_CallbackFunction)(uint8_t, uint8_t*,uint16_t, uint16_t,uint8_t,
 		stException_t *,
@@ -146,7 +148,7 @@ void (*WriteFileRecord_CallbackFunction)(uint8_t, uint8_t*, uint16_t, uint16_t,u
 void (*ReadDeviceIdentification_CallbackFunction)(uint8_t, uint8_t*, uint16_t, uint16_t,uint8_t,
 		stException_t*,
 		stRdDevIdResp_t*);
-#else
+#else //Functions that are used in Modbus RTU communication mode
 void (*ReadFileRecord_CallbackFunction)(uint8_t, uint8_t*, uint16_t,uint8_t,
 		stException_t *,
 		stMbusRdFileRecdResp_t*);
@@ -163,11 +165,15 @@ void (*ReadDeviceIdentification_CallbackFunction)(uint8_t, uint8_t*, uint16_t,ui
 /**
  *
  * Description
- * This function adds a sleep for given microseconds.
+ * This function lets the current thread to sleep for an interval specified
+ * with nanosecond precision. This adjusts the speed to complete previous send request.
+ * The function gets the current time, adds the time equal to interframe delay and sleeps
+ * for that much of time.
  *
- * @param lMilliseconds [in] This function sleeps for milliseconds
+ * @param lMilliseconds [in] long time duration in micro-seconds (interframe delay of current request)
  *
- * @return uint8_t [out] 0 for Success, non-zero for Error
+ * @return uint8_t [out] 0 if thread sleeps for calculated duration in nano-seconds
+ * 						 -1 if function fails to calculate or sleep
  *
  */
 int sleep_micros(long lMicroseconds)
@@ -202,10 +208,25 @@ int sleep_micros(long lMicroseconds)
  * Description
  * Application callback handler
  *
- * @param pstMBusRequesPacket [in] Request packet
- * @param eMbusStackErr       [in] Stack error codes
+ * This function get called after a response is received from Modbus device or timeout
+ * occurred. It decides which callback function to call from ModbusApp depending on the
+ * function code i.e. operation type of the request.
+ * This function first checks if there was any exception from Modbus slave device
+ * for the request. It fills up this information about exception in the structure which
+ * needs to send to ModbusApp callback function. Next, this function stores current
+ * time stamp as time to send response to ModbusApp, in the same structure. Later, depending
+ * on the function code, it fills up structure parameters and calls ModbusApp callback function.
  *
- * returns nothing
+ * For function codes READ_FILE_RECORD, WRITE_FILE_RECORD and READ_DEVICE_IDENTIFICATION,
+ * ApplicationCallBackHandler fills up parameters in the structure and calls ModbusApp
+ * functions directly.
+ *
+ * @param pstMBusRequesPacket [in] pointer to structure containing response of a request
+ * 								   with matching transaction ID
+ * @param eMbusStackErr       [in] Error code from stack which occurred for this request
+ * 								   which needs to be sent back to ModbusApp
+ *
+ * @return none
  */
 void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eStackErrorCode eMbusStackErr)
 {
@@ -447,13 +468,18 @@ void ApplicationCallBackHandler(stMbusPacketVariables_t *pstMBusRequesPacket,eSt
 /**
  *
  * Description
- * Function to decode received modbus data
+ * This function decodes the data received from a Modbus response from
+ * the specified buffer index and fills up the details in a structure
+ * of type pstMBusRequesPacket.
  *
- * @param ServerReplyBuff [in] Input buffer
- * @param u16BuffInex 	  [in] buffer index
- * @param pstMBusRequesPacket [in] Request packet
+ * @param ServerReplyBuff 		[in] uint8_t* Pointer to input buffer received from Modbus response
+ * @param u16BuffInex 	  		[in] uint16_t buffer index from where actual response data starts
+ * 							  		 and decode
+ * @param pstMBusRequesPacket 	[in] stMbusPacketVariables_t* Pointer to Modbus request packet
+ * 									 structure to store decoded data
  *
- * @return uint8_t [out] success or failure in integer format
+ * @return uint8_t [out] STACK_NO_ERROR in case of successful decoding of the response;
+ * 						 STACK_ERROR_MALLOC_FAILED in case of error
  *
  */
 uint8_t DecodeRxMBusPDU(uint8_t *ServerReplyBuff,
@@ -757,11 +783,21 @@ uint8_t DecodeRxMBusPDU(uint8_t *ServerReplyBuff,
 
 /**
  * Description
- * Function to decode received modbus data
+ * This function decodes the data received from a Modbus response and
+ * fills up the details in a structure of type pstMBusRequesPacket.
+ * This function starts decoding the information from 0th index from
+ * response buffer. This function also checks if it has received correct response
+ * with transaction ID same as that of the request from pstMBusRequesPacket structure.
  *
- * @param ServerReplyBuff [in] Input buffer
- * @param pstMBusRequesPacket [in] Request packet
- * @return uint8_t [out] success or failure in integer format
+ * @param ServerReplyBuff 		[in] uint8_t* Pointer to input buffer received from Modbus response
+ * @param pstMBusRequesPacket 	[in] stMbusPacketVariables_t* Pointer to Modbus request packet
+ * 									 structure to store decoded data
+ *
+ * @return uint8_t [out] STACK_NO_ERROR in case of successful decoding of the response;
+ * 						 STACK_ERROR_MALLOC_FAILED in case of error;
+ * 						 STACK_TXNID_OR_UNITID_MISSMATCH in case of transaction/ request
+ * 						 ID mismatches with the request ID from pstMBusRequesPacket structure
+ *
  *
  */
 uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBusRequesPacket)
@@ -828,11 +864,14 @@ uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBus
 
 /**
  * Description
- * Function to check the serial blocking read
+ * This function adds socket descriptor in select() to check for blocking read calls.
+ * The socket is read from Modbus stack configuration.
  *
  * @param None
  * @param None
- * @return uint8_t [out] success or failure in integer format
+ * @return uint8_t [out] 0 in case of function fails and sets ERRNO to error,
+ * 						 Non-zero integer which is equal to the number of ready descriptors.
+ *
  *
  */
 int checkforblockingread(void)
@@ -857,12 +896,29 @@ int checkforblockingread(void)
 
 /**
  * Description
- * Function to send packet on network
+ * This function sends request to Modbus slave device using RTU communication mode. The function
+ * prepares CRC depending on the request to send and buffer in which to receive response from
+ * the Modbus slave device. It then fills up the transaction data, then sleeps for the nano-seconds
+ * of frame delay. After sleep, it writes the request on the socket to Modbus slave device. Function
+ * then captures the current time as time stamp when request was sent on the Modbus slave device.
+ * Then it waits for the select() to notify about the incoming response. Depending on the function code
+ * (operation to perform on Modbus slave device), it reads data from the socket descriptor. Once the
+ * complete response is read, function gets the current time as time stamp when response is received.
+ * After this, it decodes the response received from Modbus slave device and fills up appropriate
+ * structures to send the response to ModbusApp.
  *
- * @param pstMBusRequesPacket [in] Request packet
- * @param sfd [in] socket fd
+ * @param pstMBusRequesPacket 	[in] stMbusPacketVariables_t * pointer to structure containing
+ * 								   	 request for Modbus slave device
+ * @param sfd 					[in] int32_t * pointer to socket descriptor of Modbus slave device
+ * 									 on which to send this request
  *
- * @return uint8_t [out] success or failure in integer format
+ * @return uint8_t 			[out] STACK_NO_ERROR in case of success;
+ * 								  STACK_ERROR_SEND_FAILED if function fails to send the request
+ * 								  to Modbus slave device
+ * 								  STACK_ERROR_RECV_TIMEOUT if select() fails to notify of incoming
+ * 								  response
+ *								  STACK_ERROR_RECV_FAILED in case if function fails to read
+ *								  data from socket descriptor
  *
  */
 uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *sfd)
@@ -1002,13 +1058,17 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 
 /**
  * Description
- * Exported function to initiate serial port according to baud rate
+ * This function initiates a serial port according to baud rate for a Modbus slave
+ * communicating using RTU mode.
  *
- * @param portName [in] uint8_t serial port number
- * @param baudrate [in] uint32_t baud rate
- * @param parity [in] uint8_t parity
+ * @param portName 	[in] uint8_t serial port number to initialize for specified baud rate
+ * @param baudrate 	[in] uint32_t baud rate to compare with the Modbus slave device's baud rate
+ * @param parity 	[in] uint8_t parity to set for this Modbus slave device communication
  *
- * @return int [out] success or failure in integer format
+ * @return int 		[out] -1 if function fails to open the specified port or fails to set
+ * 							the baud rate for the port or fails to set attributes of the port;
+ * 						  Non-zero file descriptor integer in case if function succeeds to
+ * 						  	initiate and set configuration of the port.
  *
  */
 MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, eParity  parity)
@@ -1366,14 +1426,16 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
 
 #endif
 
+//when Modbus stack is using TCP mode to communicate with
+// Modbus slave device
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
  * Description
- * Close the socket connection and reset the structure
+ * This function closes the specified socket connection and resets the structure.
  *
- * @param a_pstIPConnect [in] pointer to struct of type IP_Connect_t
+ * @param a_pstIPConnect [in] IP_Connect_t* pointer to struct of socket to close the connection and reset
  *
- * @return void [out] none
+ * @return 				[out] none
  *
  */
 void closeConnection(IP_Connect_t *a_pstIPConnect)
@@ -1392,11 +1454,14 @@ void closeConnection(IP_Connect_t *a_pstIPConnect)
 
 /**
  * Description
- * Set socket failure state
+ * This function sets the specified socket's failure state. The function removes the
+ * socket descriptor entry from the epoll file descriptors (which was registered for
+ * notification of events on it). The function then closes the socket connection and
+ * resets the socket structure.
  *
- * @param a_pstIPConnect [in] pointer to struct of type IP_Connect_t
+ * @param a_pstIPConnect [in] IP_Connect_t* pointer to struct of socket to mark as fail
  *
- * @return void [out] none
+ * @return 				 [out] none
  *
  */
 void Mark_Sock_Fail(IP_Connect_t *a_pstIPConnect)
@@ -1410,17 +1475,34 @@ void Mark_Sock_Fail(IP_Connect_t *a_pstIPConnect)
 
 /**
  * Description
- * Send modbus packet on network
+ * This function sends request to Modbus slave device using TCP communication mode. It then fills
+ * up the transaction data. It checks if socket already exists. If socket exists, it sends
+ * the request on the socket to Modbus slave device.
+ * If the socket does not exist, function creates a socket, tries to connect with the socket and
+ * then sends the request on it.
+ * Upon successfully sending the request to Modbus slave device, function captures the current
+ * time as time stamp when request was sent on the Modbus slave device and adds it to the request structure.
+ * Then it adds this request in request manager's list for further watch.
  *
- * @param pstMBusRequesPacket [in] pointer to request packet struct of type stMbusPacketVariables_t
- * @param a_pstIPConnect [in] pointer to socket struct of type IP_Connect_t
+ * @param pstMBusRequesPacket 	[in] stMbusPacketVariables_t * pointer to structure containing
+ * 								   	 request for Modbus slave device
+ * @param a_pstIPConnect 		[in] IP_Connect_t* pointer to structure of socket descriptor to
+ * 									 connect with Modbus slave device on which to send this request
  *
- * @return uint8_t [out] success or failure in integer format
+ * @return uint8_t 			[out] 0 in case of success;
+ * 								  STACK_ERROR_SEND_FAILED if function fails to send the request
+ * 								  to Modbus slave device
+ * 								  STACK_ERROR_SOCKET_FAILED if function fails to create a new socket
+ * 								  to communicate with the Modbus slave device
+ *								  STACK_ERROR_CONNECT_FAILED in case if function fails to connect
+ *								  with from socket descriptor
+ *								  STACK_ERROR_FAILED_Q_SENT_REQ if function fails to add sent request
+ *								  in request manager's list
  *
  */
 uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Connect_t *a_pstIPConnect)
 {
-	/// local variables
+	//local variables
 	int32_t sockfd = 0;
 	uint8_t u8ReturnType = STACK_NO_ERROR;
 	uint8_t recvBuff[260];
@@ -1506,7 +1588,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 				else
 				{
 					u8ReturnType = STACK_ERROR_CONNECT_FAILED;
-					/// closing socket on error.
+					// closing socket on error.
 					Mark_Sock_Fail(a_pstIPConnect);
 					//printf("Connection with Modbus slave failed, so closing socket descriptor %d\n", sockfd);
 					break;
@@ -1521,7 +1603,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 				int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
 
 				if(res < 0)
-					/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
+					//in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
 				{
 					//printf("1. Closing socket %d as error occurred while sending data\n", sockfd);
 					u8ReturnType = STACK_ERROR_SEND_FAILED;
@@ -1590,14 +1672,14 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			a_pstIPConnect->m_bIsAddedToEPoll = true;
 		}
 
-		/// forcefully sleep for 50ms to complete previous send request
-		/// This is to match the speed between master and slave
+		// forcefully sleep for 50ms to complete previous send request
+		// This is to match the speed between master and slave
 		//usleep(g_lInterframeDelay);
 		sleep_micros(g_stModbusDevConfig.m_lInterframedelay);
 
 		int res = send(sockfd, recvBuff, (pstMBusRequesPacket->m_stMbusTxData.m_u16Length), MSG_NOSIGNAL);
 
-		/// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
+		// in order to avoid application stop whenever SIGPIPE gets generated,used send function with MSG_NOSIGNAL argument
 		if(res < 0)
 		{
 			//printf("Error %d occurred while sending request on %d closing the socket\n", errno, sockfd);
@@ -1607,7 +1689,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 		}
 		a_pstIPConnect->m_lastConnectStatus = SOCK_CONNECT_SUCCESS;
 
-		//// Init req sent timestamp
+		// Init req sent timestamp
 		timespec_get(&(pstMBusRequesPacket->m_objTimeStamps.tsReqSent), TIME_UTC);
 		if(0 != addReqToList(pstMBusRequesPacket))
 		{

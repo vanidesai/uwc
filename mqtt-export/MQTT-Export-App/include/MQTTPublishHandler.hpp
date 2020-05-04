@@ -68,13 +68,13 @@ class CMQTTPublishHandler
 	static std::atomic<uint32_t> m_uiQReqTried;
 #endif
 
-	bool addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsMsgRcvd);
+	//bool addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsMsgRcvd);
 	
 public:
 	CMQTTPublishHandler(std::string strPlBusUrl, std::string strClientID, int iQOS);
 	~CMQTTPublishHandler();
 
-	bool publish(std::string &a_sMsg, std::string &a_sTopic, struct timespec a_tsMsgRcvd);
+	bool publish(std::string &a_sMsg, std::string &a_sTopic);
 
 	bool connect();
 

@@ -39,7 +39,8 @@ void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParam
 	/// handle response to process response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 															MBUS_CALLBACK_ONDEMAND_READ,
-															PublishJsonHandler::instance().getSReadResponseTopic());
+															PublishJsonHandler::instance().getSReadResponseTopic(),
+															false);
 
 	DO_LOG_DEBUG("End");
 }
@@ -61,7 +62,8 @@ void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPar
 	/// handle response to process response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 															MBUS_CALLBACK_ONDEMAND_READ_RT,
-															PublishJsonHandler::instance().getSReadResponseTopicRT());
+															PublishJsonHandler::instance().getSReadResponseTopicRT(),
+															true);
 
 	DO_LOG_DEBUG("End");
 }
@@ -84,7 +86,8 @@ void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPara
 	/// handle response to process response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 														MBUS_CALLBACK_ONDEMAND_WRITE,
-														PublishJsonHandler::instance().getSWriteResponseTopic());
+														PublishJsonHandler::instance().getSWriteResponseTopic(),
+														false);
 
 	DO_LOG_DEBUG("End");
 }
@@ -106,7 +109,8 @@ void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPa
 	/// handle response to process response
 	CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
 														MBUS_CALLBACK_ONDEMAND_WRITE_RT,
-														PublishJsonHandler::instance().getSWriteResponseTopicRT());
+														PublishJsonHandler::instance().getSWriteResponseTopicRT(),
+														true);
 
 	DO_LOG_DEBUG("End");
 }

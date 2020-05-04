@@ -29,19 +29,40 @@ extern int fd;
 
 #endif
 
+//Linux message queue ID
 int32_t i32MsgQueIdSC = 0;
+//flag to check whether to exit the current thread or continue
 extern bool g_bThreadExit;
 
+//if Modbus stack communicates with Modbus slave device using TCP mode
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+
+//Mutex for synchronization of session list
 extern Mutex_H LivSerSesslist_Mutex;
+
+//array of structures containing socket descriptors the have been registered with epoll
+//and data to be read from
 stTcpRecvData_t m_clientAccepted[MAX_DEVICE_PER_SITE] = {{0}};
+
+//initialization of epoll descriptors
 int m_epollFd = 0;
+
+//pointer to structure holding events for registered socket descriptors
 struct epoll_event *m_events = NULL;
+
+//handle of thread receiving data from socket descriptors continuously using epoll mechanism
 Thread_H EpollRecv_ThreadId = 0;
+
+//handle of mutex to synchronize epoll data
 Mutex_H EPollMutex;
+
+//pointer to session list
 stLiveSerSessionList_t *pstSesCtlThdLstHead = NULL;
+
+//structure to tract timeout requests
 struct stTimeOutTracker g_oTimeOutTracker = {0};
 
+//structure to hold data for message queue
 struct stIntDataForQ
 {
 	long m_lType;       /* message type, must be > 0 */
@@ -52,11 +73,12 @@ struct stIntDataForQ
 /**
  *
  * Description
- * Looks for an availale node in request array.
+ * This function looks for an available node in request array.
  * It reserves the available node for using this node.
  *
- * @param - none
- * @returns node index in long format or -1 in case of error
+ * @param none
+ * @return long [out] non-zero node index in long format;
+ * 					   -1 in case of error
  *
  */
 long getAvailableReqNode()
@@ -88,10 +110,11 @@ long getAvailableReqNode()
 /**
  *
  * Description
- * Resets the request node to default values.
+ * This function resets the request node to default values.
  *
- * @param a_pObjReqNode [in] node to reset
- * @returns none
+ * @param a_pObjReqNode [in] stMbusPacketVariables_t* pointer to structure of node to reset
+ *
+ * @return none
  *
  */
 void resetReqNode(stMbusPacketVariables_t* a_pObjReqNode)
@@ -120,10 +143,13 @@ void resetReqNode(stMbusPacketVariables_t* a_pObjReqNode)
 /**
  *
  * Description
- * Initiate request manager and data structures within it.
+ * This function initiates the request manager and data structures within it. The request
+ * manager keeps track of requests send to Modbus slave and responses received for those requests.
  *
- * @param - none
- * @returns true/false
+ * @param none
+ *
+ * @return bool [out] true if function succeeds in initializing the request manager;
+ * 					   false if function fails to initialize the request manager;
  *
  */
 bool initReqManager()
@@ -146,10 +172,12 @@ bool initReqManager()
 /**
  *
  * Description
- * Sets data structure to process new request
+ * This function sets data structure to process new request. It gets the available node
+ * from the request manager's list and updates new request at the empty node.
  *
- * @param - tsReqRcvd - request received time-stamp
- * @returns pointer to stMbusPacketVariables_t
+ * @param tsReqRcvd [in] const struct timespec time-stamp when request was received
+ * @return [out] stMbusPacketVariables_t* pointer to emplaced request
+ * 				 NULL in case of error
  *
  */
 stMbusPacketVariables_t* emplaceNewRequest(const struct timespec tsReqRcvd)
@@ -188,10 +216,12 @@ stMbusPacketVariables_t* emplaceNewRequest(const struct timespec tsReqRcvd)
 /**
  *
  * Description
- * Free request node and index to queue to mark as available
+ * This function frees a request node and resets it for use by next requests. This function
+ * also releases the request from tracking for timeout.
  *
- * @param - request node to mark as free
- * @returns none
+ * @param a_pobjReq [in] stMbusPacketVariables_t* request node to mark as free
+ *
+ * @return none
  *
  */
 void freeReqNode(stMbusPacketVariables_t* a_pobjReq)
@@ -206,15 +236,16 @@ void freeReqNode(stMbusPacketVariables_t* a_pobjReq)
 	resetReqNode(a_pobjReq);
 }
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
  *
  * Description
- * Session control thread function
+ * This function is a thread routine for session control thread
  *
- * @param threadArg [in] thread argument
+ * @param threadArg [in] void* thread arguments to start thread
+ *
  * @return void 	[out] nothing
  */
-#ifdef MODBUS_STACK_TCPIP_ENABLED
 void* SessionControlThread(void* threadArg)
 {
 	int32_t i32MsgQueIdSC = 0;
@@ -432,10 +463,13 @@ void* SessionControlThread(void* threadArg)
 /**
  *
  * Description
- * get client socker id from already established client's list
+ * This function gets client socket id from already established client's list
  *
- * @param socketID [in] socket id
- * @return int 	[out] client index from list
+ * @param socketID [in] int socket id to retrieve from the list
+ *
+ * @return int [out] client index from list if client socket id already exists in the list;
+ * 					 -1 if client socket id is not in the list
+ *
  */
 int getClientIdFromList(int socketID)
 {
@@ -458,10 +492,11 @@ int getClientIdFromList(int socketID)
 /**
  *
  * Description
- * reset client struct after data is read from the socket
+ * This function resets client structure after data is read from the socket.
  *
- * @param clientAccepted [in] pointer to stTcpRecvData_t holding socket's data received information
- * @return void	[out] none
+ * @param clientAccepted [in] stTcpRecvData_t* pointer that holds socket's data received information
+ *
+ * @return [out] none
  */
 void resetEPollClientDataStruct(stTcpRecvData_t* clientAccepted)
 {
@@ -478,10 +513,14 @@ void resetEPollClientDataStruct(stTcpRecvData_t* clientAccepted)
 /**
  *
  * Description
- * Initializes data structures needed for epoll operation for receiving TCP data
+ * This function initializes data structures needed for epoll operation for receiving TCP data,
+ * then creates epoll descriptor and starts a thread to receive data from registered socket
+ * descriptors using epoll mechanism.
  *
  * @param None
- * @return true/false based on status
+ *
+ * @return bool [out] true if function succeeds;
+ * 					  false if function fails or in case of errors
  */
 bool initEPollData()
 {
@@ -519,9 +558,11 @@ bool initEPollData()
 /**
  *
  * Description
- * De-initializes data structures related to epoll operation for receiving TCP data
+ * This function de-initializes data structures related to epoll operation for receiving TCP data.
+ * It resets all the socket descriptors registered for epoll.
  *
  * @param None
+ *
  * @return None
  */
 void deinitEPollData()
@@ -540,11 +581,12 @@ void deinitEPollData()
 /**
  *
  * Description
- * Stops listening on a socket with epoll.
- * Resets associated data structures.
+ * This function removes a socket descriptor registered with with epoll and
+ * resets associated data structures.
  * The calling function should have the lock for epoll data structure.
  *
- * @param Reference to epoll data structure
+ * @param a_iIndex [in] int reference to epoll data structure
+ *
  * @return None
  */
 void removeEPollRefNoLock(int a_iIndex)
@@ -572,11 +614,12 @@ void removeEPollRefNoLock(int a_iIndex)
 /**
  *
  * Description
- * Stops listening on a socket with epoll.
- * Resets associated data structures.
+ * This function removes a socket descriptor from epoll descriptors and
+ * resets associated data structures.
  * This function acquires lock for epoll data structure.
  *
- * @param Reference to epoll data structure
+ * @param a_iIndex [in] int Reference to epoll data structure
+ *
  * @return None
  */
 void removeEPollRef(int a_iIndex)
@@ -603,11 +646,15 @@ void removeEPollRef(int a_iIndex)
 
 /**
  * Description
- * Set socket failure state
+ * This function sets the socket's failure state. It checks if the referenced socket ID and
+ * socket ID from the function argument are same or not. If they are different, it removes the
+ * socket descriptor from the epoll and resets the structure for next use. If socket IDs are same
+ * and getting used for different operation, close the connection. If there is no socket ID with
+ * the reference given, reset the socket descriptor.
  *
- * @param stIPConnect [in] pointer to struct of type IP_Connect_t
+ * @param stIPConnect [in] IP_Connect_t* pointer to struct of type IP_Connect_t
  *
- * @return void [out] none
+ * @return [out] none
  *
  */
 int addtoEPollList(IP_Connect_t *a_pstIPConnect)
@@ -705,10 +752,11 @@ int addtoEPollList(IP_Connect_t *a_pstIPConnect)
 /**
  *
  * Description
- * reset client struct after data is read from the socket
+ * This function gets the current epoch time
  *
- * @param - none
- * @return struct [out] epoch time struct
+ * @param none
+ *
+ * @return struct timespec [out] epoch time struct
  */
 struct timespec getEpochTime() {
 
@@ -721,10 +769,21 @@ struct timespec getEpochTime() {
 /**
  *
  * Description
- * thread to start polling on sockets o receive data
+ * This function is a thread routine to start polling on sockets registered with epoll to receive data.
+ * This function sets the thread priority as per the configuration. It then allocates the number of polling events
+ * the can occur and thus initializes epoll descriptors event structure.
+ * Function then waits for events to occur on registered socket descriptors. If any socket descriptor notifies
+ * of incoming response, epoll notifies it to the function. Function then iterates through all the socket descriptors
+ * and reads the response data. In order to read the data, the function first reads only 6 bytes from the response
+ * and parses the length of the response. Then calculates the number of bytes to be read from that socket descriptor.
+ * It keeps on reading till a complete response is not received or if it has read 0 bytes, it goes to read from the
+ * next socket descriptor.
+ * Once the complete response is received, function adds it to the request manager's queue to process further
+ * and resets the socket descriptor to be used for next request.
  *
- * @param - none
- * @return void [out] none
+ * @param  none
+ * @return [out] none
+ *
  */
 void* EpollRecvThread()
 {
@@ -884,10 +943,17 @@ void* EpollRecvThread()
 /**
  *
  * Description
- * Thread sends Modbus RTU messages which are available in the message queue to the Modbus RTU device.
- * Thread gets executed whenever message is available in the queue.
- * @param threadArg [in] thread argument
- * @return void [out] nothing
+ * This function is a thread routine to send Modbus RTU messages to Modbus slave device
+ * which are available in the Linux message queue. Thread continuously checks for a new message in
+ * Linux message queue; once the message is available it sends the request to the Modbus slave device.
+ * The Modbus_SendPacket function receives the response from Modbus slave device, after this session
+ * control thread function invokes the ModbusApp callback function. After invoking ModbusApp callback
+ * function, this function frees up with request node from request manager's list.
+ *
+ * @param threadArg [in] void* thread argument
+ *
+ * @return [out] none
+ *
  */
 void* SessionControlThread(void* threadArg)
 {
@@ -922,16 +988,20 @@ void* SessionControlThread(void* threadArg)
 }
 #endif
 
+//when Modbus communication mode is TCP
 #ifdef MODBUS_STACK_TCPIP_ENABLED
+
+//structure to store response for processsing
 struct stResProcessData g_stRespProcess;
 
 /**
  *
  * Description
- * get time stamp in nano-seconds
+ * This function gets current time stamp in nano-seconds.
  *
- * @param - none
- * @return unsigned long [out] time in nano-seconds
+ * @param none
+ *
+ * @return [out] unsigned long time in nano-seconds
  */
 unsigned long get_nanos(void) {
     struct timespec ts;
@@ -942,11 +1012,16 @@ unsigned long get_nanos(void) {
 /**
  *
  * Description
- * Remove request from timeout tracker node. Assumed is calling function has acquired lock.
+ * This function removes request from timeout tracker node.
+ * Assumed is calling function has acquired lock.
  *
- * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
- * @param reference to timeout tracker list from which node needs to be removed
- * @return void [out] none
+ * @param pstMBusRequesPacket [in] stMbusPacketVariables_t* pointer to structure holding request
+ * 									sent on Modbus slave device
+ *
+ * @param a_pstTracker [in] stTimeOutTrackerNode* reference to timeout tracker list from which
+ * 							node needs to be removed
+ *
+ * @return [out] none
  */
 void releaseFromTrackerNode(stMbusPacketVariables_t *a_pstNodeToRemove,
 		struct stTimeOutTrackerNode *a_pstTracker)
@@ -986,10 +1061,12 @@ void releaseFromTrackerNode(stMbusPacketVariables_t *a_pstNodeToRemove,
 /**
  *
  * Description
- * Remove the request from timeout tracker.
+ * This function removes the request from timeout tracker.
  * Identifies tracker node from the tracker list and then removes the node from that tracker
  *
- * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
+ * @param pstMBusRequesPacket [in] stMbusPacketVariables_t* pointer to structure holding information
+ * 									about the request
+ *
  * @return void [out] none
  */
 void releaseFromTracker(stMbusPacketVariables_t *pstMBusRequesPacket)
@@ -1029,10 +1106,13 @@ void releaseFromTracker(stMbusPacketVariables_t *pstMBusRequesPacket)
 /**
  *
  * Description
- * Add msg to response queue
+ * This function adds Modbus request (sent to Modbus slave device) in
+ * response queue
  *
- * @param a_pstReq [in] pointer to struct of type stMbusPacketVariables_t
- * @return void [out] none
+ * @param a_pstReq [in] stMbusPacketVariables_t* pointer to structure holding information
+ * 						about request to add in response queue
+ *
+ * @return [out] none
  */
 void addToRespQ(stMbusPacketVariables_t *a_pstReq)
 {
@@ -1061,10 +1141,15 @@ void addToRespQ(stMbusPacketVariables_t *a_pstReq)
 /**
  *
  * Description
- * Thread which posts response to application. It listens on a queue to receive data to post
+ * This function is thread routine which posts response to application.
+ * It listens on a Linux message queue to receive response of requests to post to ModbusApp.
+ * Once the response is sent to ModbusApp, function frees the response node so that other
+ * requests can reuse it. The thread keeps working till the flag is not set to terminate
+ * the thread.
  *
- * @param threadArg [in] void pointer
- * @return void [out] none
+ * @param threadArg [in] void* pointer
+ *
+ * @return [out] none
  */
 void* postResponseToApp(void* threadArg)
 {
@@ -1111,11 +1196,12 @@ void* postResponseToApp(void* threadArg)
 /**
  *
  * Description
+ * This function returns current timeout counter.
  * Timeout is implemented in the form of counter.
- * This function returns current counter.
  *
  * @param none
- * @return returns the counter
+ *
+ * @return [out] int the timeout counter
  */
 int getTimeoutTrackerCount()
 {
@@ -1125,10 +1211,12 @@ int getTimeoutTrackerCount()
 /**
  *
  * Description
- * Thread function: Implements a timer to measure timeout for
- * initiated requests.
+ * This function is a thread routine which implements a timer to measure timeout for
+ * initiated requests. If the timeout occurs for a request, it notifies the processing
+ * thread about the same.
  *
- * @param thread argument - none
+ * @param [in] void* thread argument
+ *
  * @return none
  */
 void* timeoutTimerThread(void* threadArg)
@@ -1193,10 +1281,11 @@ void* timeoutTimerThread(void* threadArg)
 /**
  *
  * Description
- * Thread function: Identifies timed out requests and
+ * The function is a thread routine which identifies timed out requests and
  * initiates a response accordingly.
  *
- * @param thread argument - none
+ * @param [in] void* thread argument
+ *
  * @return none
  */
 void* timeoutActionThread(void* threadArg)
@@ -1279,11 +1368,12 @@ void* timeoutActionThread(void* threadArg)
 /**
  *
  * Description
- * Initialize timeout tracker data structure and threads
+ * This function initialize timeout tracker data structure and threads.
  *
  * @param none
- * @return int [out] 0 (if success)
- * 					-1 (if failure)
+ *
+ * @return [out] int 0 if function succeeds in the initialization of timeout tracker;
+ * 					-1 if function fails
  */
 int initTimeoutTrackerArray()
 {
@@ -1367,11 +1457,13 @@ int initTimeoutTrackerArray()
 /**
  *
  * Description
- * Initialize request list data
+ * This function initializes the request list data and data structures
+ * needed for epoll mechanism.
  *
  * @param none
- * @return int [out] 0 (if success)
- * 					-1 (if failure)
+ *
+ * @return [out] int  0 if function succeeds in initialization;
+ * 					  -1 if function fails to initialize
  */
 int initTCPRespStructs()
 {
@@ -1418,9 +1510,10 @@ int initTCPRespStructs()
 /**
  *
  * Description
- * De-initialize timeout tracker data structure and threads
+ * This function de-initializes the timeout tracker data structure and threads.
  *
  * @param none
+ *
  * @return none
  */
 void deinitTimeoutTrackerArray()
@@ -1443,11 +1536,12 @@ void deinitTimeoutTrackerArray()
 /**
  *
  * Description
- * De-initialize data structures related to TCP response processing.
+ * This function de-initializes data structures related to TCP response processing.
  *
  * @param none
- * @return int [out] 0 (if success)
- * 					-1 (if failure)
+ *
+ * @return [out] int 0 if function succeeds;
+ * 					-1 if function fails
  */
 void deinitTCPRespStructs()
 {
@@ -1473,10 +1567,13 @@ void deinitTCPRespStructs()
 /**
  *
  * Description
- * Add request to list for tracking timeout
+ * This function adds request to list for tracking timeout.
  *
- * @param pstMBusRequesPacket [in] pointer to struct of type stMbusPacketVariables_t
- * @return int 0 for success, -1 for error
+ * @param pstMBusRequesPacket [in] stMbusPacketVariables_t* pointer to structure holding
+ * 									 information about the request sent on Modbus slave device
+ *
+ * @return [out] int 0 if function succeeds;
+ *  				 -1 if function fails
  */
 int addReqToList(stMbusPacketVariables_t *pstMBusRequesPacket)
 {
@@ -1533,11 +1630,14 @@ int addReqToList(stMbusPacketVariables_t *pstMBusRequesPacket)
 /**
  *
  * Description
- * Search request with specific unit id and transaction id in request list and mark as response is received
+ * This function searches a request with specific unit id (Modbus slave device id) and
+ * transaction id (request id that was sent on Modbus slave device) in request list and
+ * mark as response is received.
  *
- * @param a_u8UnitID [in] uint8_t
- * @param a_u16TransactionID  [in] uint16_t
- * @return stMbusPacketVariables_t [out] pointer to struct of type stMbusPacketVariables_t
+ * @param a_u8UnitID 				[in] uint8_t Modbus slave device ID
+ * @param a_u16TransactionID  		[in] uint16_t request id that was sent on Modbus slave device
+ * @return stMbusPacketVariables_t 	[out] stMbusPacketVariables_t* pointer to structure holding
+ * 										  information
  */
 stMbusPacketVariables_t* markRespRcvd(uint8_t a_u8UnitID, uint16_t a_u16TransactionID)
 {
@@ -1564,10 +1664,15 @@ stMbusPacketVariables_t* markRespRcvd(uint8_t a_u8UnitID, uint16_t a_u16Transact
 /**
  *
  * Description
- * TCP and callback thread function
+ * This function is a thread routine for TCP and callback functions. This function
+ * sets the thread priority, receives a request from message queue and then sends it
+ * to the Modbus slave device. After the request is sent a response is received in global
+ * message queue, function adds it in the response queue for further processing.
+ * The thread continues till the flag to terminate the thread is not set.
  *
- * @param threadArg [in] thread argument
- * @return void pointer
+ * @param threadArg [in] void* thread argument
+ *
+ * @return [out] void pointer
  *
  */
 void* ServerSessTcpAndCbThread(void* threadArg)
@@ -1636,10 +1741,11 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 /**
  *
  * Description
- * Add response to handle in a queue
+ * This function adds a response to handle in response queue.
  *
- * @param a_pstReq [in] response data received from network
- * @return void [out] none
+ * @param a_pstReq [in] stTcpRecvData_t* response data received from Modbus slave device
+ *
+ * @return [out] none
  */
 void addToHandleRespQ(stTcpRecvData_t *a_pstReq)
 {
@@ -1683,7 +1789,8 @@ void addToHandleRespQ(stTcpRecvData_t *a_pstReq)
  * At present, all stack threads are configured with same parameters.
  *
  * @param none
- * @return void [out] none
+ *
+ * @return [out] none
  */
 void set_thread_sched_param()
 {

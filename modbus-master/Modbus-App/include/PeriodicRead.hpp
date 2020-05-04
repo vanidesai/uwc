@@ -41,6 +41,7 @@ struct stStackResponse
 	uint8_t  m_u8FunCode;
 	eMbusCallbackType m_operationType;
 	string m_strResponseTopic;
+	bool m_bIsRT;
 };
 
 class CRefDataForPolling; 
@@ -89,7 +90,7 @@ public:
 	static CPeriodicReponseProcessor& Instance();
 	void handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams,
 						eMbusCallbackType operationCallbackType,
-						string strResponseTopic);
+						string strResponseTopic, bool a_bIsRT);
 	bool isInitialized() {return m_bIsInitialized;}
 	void initRespHandlerThreads();
 	bool postDummyBADResponse(CRefDataForPolling& a_objReqData, const stException_t m_stException, struct timespec *a_pstRefPollTime);
