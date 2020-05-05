@@ -490,8 +490,7 @@ void CEISMsgbusHandler::cleanup()
 					if (zmqCtx.m_pContext != NULL)
 					{
 						msgbus_destroy(zmqCtx.m_pContext);
-						DO_LOG_DEBUG("destroyed contexts for topic : "
-								+ it->first);
+						DO_LOG_DEBUG("destroyed contexts");
 					}
 				}
 

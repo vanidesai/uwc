@@ -649,8 +649,6 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 		DO_LOG_ERROR("Invalid topic name in SubTopics");
 		bRet = false;
 		a_iRetry = 0;
-		vpCallback = NULL;
-		*vpCallback = NULL;
 	}
 
 	return bRet;

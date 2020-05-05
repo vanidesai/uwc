@@ -128,7 +128,7 @@ bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 	msgbus_ret_t msgRet = msgbus_msg_envelope_get(msg, "topic", &data);
 	if(msgRet != MSG_SUCCESS)
 	{
-		DO_LOG_ERROR("topic key not present in message: "+(std::string)(parts[0].bytes));
+		DO_LOG_ERROR("topic key not present in zmq message");
 		bRetVal = false;
 	}
 	else
