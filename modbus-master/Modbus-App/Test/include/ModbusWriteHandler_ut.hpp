@@ -55,7 +55,7 @@ public:
 	string tValue = "0xFF00";
 	unsigned char byte1;
 	int i = 0;
-	stRequest writeReq;
+	//stRequest writeReq;
 	unsigned char  m_u8FunCode = 0;
 	unsigned char u8FunCode = READ_COIL_STATUS;
 	std::string strTopic = "";

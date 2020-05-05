@@ -36,7 +36,7 @@ TEST_F(MQTTPublishHandler_ut, pushMsgInQ)
 }
 #endif
 
-
+#if 0 //SPRINT13CHANGES
 TEST_F(MQTTPublishHandler_ut, publish_NotConnected)
 {
 	string PubTpoic = "PubTopics";
@@ -58,7 +58,10 @@ TEST_F(MQTTPublishHandler_ut, publish_NotConnected)
 
 	EXPECT_EQ(false, retVal);
 }
+#endif
 
+
+#if 0 //SPRINT13CHANGES
 TEST_F(MQTTPublishHandler_ut, publish_MsgEmpty)
 {
 	string PubTpoic = "";
@@ -81,7 +84,9 @@ TEST_F(MQTTPublishHandler_ut, publish_MsgEmpty)
 
 	EXPECT_EQ(false, retVal);
 }
+#endif
 
+#if 0 //SPRINT13CHANGES
 TEST_F(MQTTPublishHandler_ut, publish_Called_moreThan1)
 {
 	string PubTpoic = "";
@@ -109,7 +114,9 @@ TEST_F(MQTTPublishHandler_ut, publish_Called_moreThan1)
 
 	EXPECT_EQ(false, retVal);
 }
+#endif
 
+#if 0 //SPRINT13CHANGES
 TEST_F(MQTTPublishHandler_ut, publish_TopicEmp)
 {
 	string PubTpoic = "";
@@ -132,6 +139,7 @@ TEST_F(MQTTPublishHandler_ut, publish_TopicEmp)
 
 	EXPECT_EQ(false, retVal);
 }
+#endif
 
 // How to confirm??
 // Working on it..

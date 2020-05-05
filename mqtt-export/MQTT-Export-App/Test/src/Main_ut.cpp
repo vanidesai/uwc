@@ -27,6 +27,7 @@ std::atomic<bool> g_shouldStop_ut(false);
 sem_t g_semaphoreRespProcess_ut;
 
 /* Valid JSON */
+#if 0 //SPRINT13CHANGES
 TEST_F(Main_ut, parse_msg_ValidJson) {
 
 	try
@@ -41,8 +42,9 @@ TEST_F(Main_ut, parse_msg_ValidJson) {
 		EXPECT_EQ("", "PL0_iou_write");
 	}
 }
+#endif
 
-
+#if 0 //SPRINT13CHANGES
 /* Valid JSON; "tooic value object is empty */
 TEST_F(Main_ut, parse_msg_NoTopic) {
 
@@ -58,7 +60,9 @@ TEST_F(Main_ut, parse_msg_NoTopic) {
 		EXPECT_EQ("", "PL0_iou_write");
 	}
 }
+#endif
 
+#if 0 //SPRINT13CHANGES
 TEST_F(Main_ut, parse_msg_EmptyTopic) {
 
 	try
@@ -73,7 +77,9 @@ TEST_F(Main_ut, parse_msg_EmptyTopic) {
 		EXPECT_EQ("", "PL0_iou_write");
 	}
 }
+#endif
 
+#if 0 //SPRINT13CHANGES
 /* Invalid JSON */
 TEST_F(Main_ut, parse_msg_InvalidJson) {
 
@@ -89,6 +95,7 @@ TEST_F(Main_ut, parse_msg_InvalidJson) {
 		EXPECT_EQ("", "PL0_iou_write");
 	}
 }
+#endif
 
 TEST_F(Main_ut, addSrTopic_InvalidTopic)
 {
@@ -262,7 +269,7 @@ TEST_F(Main_ut, processMsg_EmptyTopic)
 
 	bool RetVal = processMsg(msg, mqttPublisher);
 
-	EXPECT_EQ(false, RetVal);
+	EXPECT_EQ(true, RetVal);
 }
 
 
