@@ -122,8 +122,9 @@ void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPa
  * @param vpCallBackFun		[in] callback function pointer
  * @return uint8_t			[out] return 0 on success else error code
  */
-uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode, MbusAPI_t *pstMbusApiPram,
-					void* vpCallBackFun)
+uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
+		MbusAPI_t *pstMbusApiPram,
+		void* vpCallBackFun)
 {
 	string temp; /// temporary string for logging
 	uint8_t u8ReturnType = APP_SUCCESS;

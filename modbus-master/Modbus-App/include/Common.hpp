@@ -39,6 +39,9 @@ struct stOnDemandRequest
 	std::string m_strMetric;
 	std::string m_strVersion;
 	std::string m_strTopic;
+	std::string m_sValue;
+	std::string m_sUsec;
+	std::string m_sTimestamp;
 	bool m_isByteSwap;
 	bool m_isWordSwap;
 	bool m_isRT;
@@ -85,6 +88,7 @@ typedef enum MbusAppErrorCode
 	APP_JSON_PARSING_EXCEPTION,
 	APP_ERROR_UNKNOWN_SERVICE_REQUEST,
 	APP_ERROR_POINT_IS_NOT_WRITABLE,
+	APP_INTERNAL_ERORR,
 	APP_ERROR_CODE_MAX
 }eMbusAppErrorCode;
 

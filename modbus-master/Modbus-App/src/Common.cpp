@@ -179,7 +179,7 @@ bool common_Handler::getReqData(unsigned short seqno, MbusAPI_t& reqData)
  */
 bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t reqData)
 {
-	DO_LOG_DEBUG("Start: ");
+	//DO_LOG_DEBUG("Start: ");
 	bool bRet = true;
 	try
 	{
@@ -193,7 +193,7 @@ bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t reqData)
 		DO_LOG_FATAL(e.what());
 		bRet = false;
 	}
-	DO_LOG_DEBUG("End: ");
+	//DO_LOG_DEBUG("End: ");
 
 	return bRet;
 }
@@ -232,10 +232,10 @@ bool common_Handler::updateReqData(unsigned short seqno, MbusAPI_t reqData)
  */
 void common_Handler::removeReqData(unsigned short seqno)
 {
-	DO_LOG_DEBUG("Start: " + std::to_string(seqno));
+	//DO_LOG_DEBUG("Start: " + std::to_string(seqno));
 	std::unique_lock<std::mutex> lck(__appReqJsonLock);
 	g_mapRequest.erase(seqno);
-	DO_LOG_DEBUG("End: ");
+	//DO_LOG_DEBUG("End: ");
 }
 
 /**

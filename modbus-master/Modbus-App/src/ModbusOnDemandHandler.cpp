@@ -126,64 +126,62 @@ void onDemandHandler::createErrorResponse(eMbusAppErrorCode errorCode,
 }
 
 /**
- * Handler function to start the processing of on-demand requests.
- * @param stRequestData			:[in] Request structure containing topic and request message.
- * @return 	eMbusAppErrorCode : Error code
- */
-eMbusAppErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestData)
+* Handler function to start the processing of on-demand requests.
+* @param a_pstMbusApiPram	:[in] Structure to read data received from ZMQ
+* @param topic				:[in] topic for zmq listening
+* @param vpCallback			:[in] set the stack callback as per the operation
+* @param a_bIsWriteReq		:[in] flag used to distinguish read/write request for further processing
+* @return 	eMbusAppErrorCode : Error code
+*/
+eMbusAppErrorCode onDemandHandler::onDemandInfoHandler(MbusAPI_t *a_pstMbusApiPram,
+		const string a_sTopic,
+		void *vpCallback,
+		bool a_IsWriteReq)
 {
-	DO_LOG_DEBUG("Start");
 
 	eMbusAppErrorCode eFunRetType = APP_SUCCESS;
 	unsigned char  m_u8FunCode;
-	MbusAPI_t stMbusApiPram = {};
-	cJSON *root = NULL;
+
+	// check for NULL
+	if(NULL == a_pstMbusApiPram || NULL == vpCallback)
+	{
+		DO_LOG_ERROR("NULL pointer received..discarding the request");
+		return APP_INTERNAL_ERORR;
+	}
 
 	try
 	{
 		/// Transaction ID
-		stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
-		// Assign timestamp for future use
-		stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS = stRequestData.m_tsReqRcvd;
-#ifdef INSTRUMENTATION_LOG
-		DO_LOG_DEBUG("On-demand request::" + stRequestData.m_strMsg);
-#endif
-
-		root = cJSON_Parse(stRequestData.m_strMsg.c_str());
-		void* ptrAppCallback = NULL;
-
-		/// Comparing request topic for RT/Non-RT requests
-		string strSearchString = "_", tempTopic;
-		std::size_t found = stRequestData.m_strTopic.find_last_of(strSearchString);
-		if (found!=std::string::npos)
-		{
-			tempTopic = stRequestData.m_strTopic.substr(found+1, stRequestData.m_strTopic.length());
-		}
-		string strToCompare = "RT";
-		stMbusApiPram.m_stOnDemandReqData.m_isRT = compareString(tempTopic, strToCompare);
-		bool isWrite = false;
+		a_pstMbusApiPram->m_u16TxId = PublishJsonHandler::instance().getTxId();
 
 		/// Function called to parse request JSON and fill structure
-		eFunRetType = jsonParserForOnDemandRequest(root,
-				stMbusApiPram,
+		eFunRetType = jsonParserForOnDemandRequest(*a_pstMbusApiPram,
 				m_u8FunCode,
-				stMbusApiPram.m_u16TxId,
-				isWrite,
-				&ptrAppCallback);
+				a_pstMbusApiPram->m_u16TxId,
+				a_IsWriteReq);
 
 		/// inserting structure to map for retry and to create response JSON.
-		if(false == common_Handler::insertReqData(stMbusApiPram.m_u16TxId, stMbusApiPram))
+		if(false == common_Handler::insertReqData(a_pstMbusApiPram->m_u16TxId, *a_pstMbusApiPram))
 		{
-			DO_LOG_WARN("Failed to add MbusAPI_t data to map.");
+			DO_LOG_ERROR("Failed to add MbusAPI_t data to map.");
 		}
 
 		if(APP_SUCCESS == eFunRetType && MBUS_MIN_FUN_CODE != m_u8FunCode)
 		{
-			DO_LOG_DEBUG("On-Demand Process initiated...");
-			eFunRetType = (eMbusAppErrorCode) Modbus_Stack_API_Call(
+			eFunRetType = (eMbusAppErrorCode)Modbus_Stack_API_Call(
 					m_u8FunCode,
-					&stMbusApiPram,
-					ptrAppCallback);
+					a_pstMbusApiPram,
+					vpCallback);
+
+			if(APP_SUCCESS != eFunRetType)
+			{
+				DO_LOG_ERROR("Failed to initiate request from stack");
+				eFunRetType = APP_ERROR_REQUEST_SEND_FAILED;
+			}
+			else
+			{
+				DO_LOG_DEBUG("Request is successfully sent to end device");
+			}
 		}
 		else
 		{
@@ -193,9 +191,9 @@ eMbusAppErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestData)
 				/// error response if request JSON is invalid
 				createErrorResponse(eFunRetType,
 						m_u8FunCode,
-						stMbusApiPram.m_u16TxId,
-						stMbusApiPram.m_stOnDemandReqData.m_isRT,
-						isWrite);
+						a_pstMbusApiPram->m_u16TxId,
+						a_pstMbusApiPram->m_stOnDemandReqData.m_isRT,
+						a_IsWriteReq);
 			}
 		}
 	}
@@ -204,11 +202,6 @@ eMbusAppErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestData)
 		eFunRetType = APP_JSON_PARSING_EXCEPTION;
 		DO_LOG_FATAL(e.what());
 	}
-
-	if(NULL != root)
-		cJSON_Delete(root);
-
-	DO_LOG_DEBUG("End");
 
 	return eFunRetType;
 }
@@ -220,7 +213,7 @@ eMbusAppErrorCode onDemandHandler::onDemandInfoHandler(stRequest& stRequestData)
  */
 int char2int(char input)
 {
-	DO_LOG_DEBUG("Start");
+	//DO_LOG_DEBUG("Start");
 	if(input >= '0' && input <= '9')
 		return input - '0';
 	if(input >= 'A' && input <= 'F')
@@ -228,7 +221,7 @@ int char2int(char input)
 	if(input >= 'a' && input <= 'f')
 		return input - 'a' + 10;
 
-	DO_LOG_DEBUG("End");
+	//DO_LOG_DEBUG("End");
 	throw std::invalid_argument("Invalid input string");
 }
 
@@ -298,7 +291,7 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
  */
 bool onDemandHandler::validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand)
 {
-	DO_LOG_DEBUG("End");
+	//DO_LOG_DEBUG("End");
 	bool retValue = false;
 	try
 	{
@@ -337,306 +330,200 @@ bool onDemandHandler::validateInputJson(std::string stSourcetopic, std::string s
 		DO_LOG_DEBUG("i/p json wellhead or command mismatch with sourcetopic");
 	}
 
-	DO_LOG_DEBUG("End");
+	//DO_LOG_DEBUG("End");
 	return retValue;
 }
 
 /**
- * function to set callback for Read/Write for RT/Non-RT requests.
- * @param ptrAppCallback:[out] function pointer of callback function
- * @param isRTFlag		:[in] flag to decide RT/Non-RT request
- * @param isWriteFlag	:[in] flag to decide read/write request
- * @param stMbusApiPram	:[out] structure to fill retry value if timeout occurs.
- */
-void onDemandHandler::setCallbackforOnDemand(void*** ptrAppCallback, bool isRTFlag, bool isWriteFlag, MbusAPI_t &stMbusApiPram)
-{
-	if(true == isRTFlag && true == isWriteFlag)	/// for RT Write request
-	{
-		**ptrAppCallback = (void*)OnDemandWriteRT_AppCallback;
-		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getRTConfig().getRetries();
-	}
-	else if(false == isRTFlag && true == isWriteFlag)	/// for non-RT Write request
-	{
-		**ptrAppCallback = (void*)OnDemandWrite_AppCallback;
-		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().getNonRTConfig().getRetries();
-	}
-	else if(true == isRTFlag && false == isWriteFlag)	//// for RT read request
-	{
-		**ptrAppCallback = (void*)OnDemandReadRT_AppCallback;
-		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getRTConfig().getRetries();
-	}
-	else	/// For non-RT read request
-	{
-		**ptrAppCallback = (void*)OnDemandRead_AppCallback;
-		stMbusApiPram.m_nRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().getNonRTConfig().getRetries();
-	}
-}
-
-/**
  * Function to parse request JSON and fill the structure.
- * @param root			:[in] request message in JSON format
- * @param stMbusApiPram	:[out] modbus API param structure to fill from request JSON
- * @param funcCode		:[out] function code of the request
- * @param txID			:[in] request transaction id
- * @param isWrite		:[out] boolean variable to differentiate between read/write request
- * @param ptrAppCallback:[out] function pointer to get callback function
+ * @param stMbusApiPram		:[out] modbus API param structure to fill from received msg
+ * @param funcCode			:[out] function code of the request
+ * @param txID				:[in] request transaction id
+ * @param a_IsWriteReq		:[out] boolean variable to differentiate between read/write request
  * @return appropriate error code
  */
-eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
-											MbusAPI_t &stMbusApiPram,
+eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stMbusApiPram,
 											unsigned char& funcCode,
 											unsigned short txID,
-											bool& isWrite,
-											void** ptrAppCallback)
+											const bool a_IsWriteReq)
 {
-	if(NULL == root)
-	{
-		DO_LOG_ERROR(" Invalid input. cJSON root is null");
-		return APP_ERROR_INVALID_INPUT_JSON;
-	}
-	DO_LOG_DEBUG("Start");
-
+	// locals
 	eMbusAppErrorCode eFunRetType = APP_SUCCESS;
-	string strCommand, strValue, strWellhead, strVersion, strSourceTopic, strAppSeq;
 	network_info::CDataPoint obj;
+	string strSourceTopic, strValue;
 	bool isValidJson = false;
 	try
 	{
-		if(APP_SUCCESS == eFunRetType)
+		/// to check all the values are present in request JSON.
+		if(!a_stMbusApiPram.m_stOnDemandReqData.m_strMetric.empty()
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strWellhead.empty()
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strVersion.empty()
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strTopic.empty()
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strMqttTime.empty()
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strEisTime.empty())
 		{
-			cJSON *appseq = cJSON_GetObjectItem(root,"app_seq");
-			cJSON *cmd=cJSON_GetObjectItem(root,"command");
-			cJSON *value=cJSON_GetObjectItem(root,"value");
-			cJSON *wellhead=cJSON_GetObjectItem(root,"wellhead");
-			cJSON *version=cJSON_GetObjectItem(root,"version");
-			cJSON *sourcetopic=cJSON_GetObjectItem(root,"sourcetopic");
-			cJSON *timestamp=cJSON_GetObjectItem(root,"timestamp");
-			cJSON *usec=cJSON_GetObjectItem(root,"usec");
-			cJSON *mqttTime=cJSON_GetObjectItem(root,"tsMsgRcvdFromMQTT");
-			cJSON *eisTime=cJSON_GetObjectItem(root,"tsMsgPublishOnEIS");
+			isValidJson = true;
 
-			/// to check all the values are present in request JSON.
-			if(cmd && appseq && wellhead && version && timestamp && usec && sourcetopic && mqttTime && eisTime)
+			/// Comparing sourcetopic for read/write request.
+			strSourceTopic = a_stMbusApiPram.m_stOnDemandReqData.m_strTopic;
+
+			if(true == a_IsWriteReq)
 			{
-				isValidJson = true;
-				strAppSeq = appseq->valuestring;
-				strCommand = cmd->valuestring;
-				strWellhead = wellhead->valuestring;
-				strVersion = version->valuestring;
-				strSourceTopic = sourcetopic->valuestring;
-
-				stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = strAppSeq;
-				stMbusApiPram.m_stOnDemandReqData.m_strMetric = strCommand;
-				stMbusApiPram.m_stOnDemandReqData.m_strVersion = strVersion;
-				stMbusApiPram.m_stOnDemandReqData.m_strWellhead = strWellhead;
-				stMbusApiPram.m_stOnDemandReqData.m_strTopic = strSourceTopic;
-				stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = mqttTime->valuestring;
-				stMbusApiPram.m_stOnDemandReqData.m_strEisTime = eisTime->valuestring;
-
-				/// Comparing sourcetopic for read/write request.
-				string strSearchString = "/", tempTopic;
-				std::size_t found = strSourceTopic.find_last_of(strSearchString);
-				if (found!=std::string::npos)
+				if(!a_stMbusApiPram.m_stOnDemandReqData.m_sValue.empty())
 				{
-					tempTopic = strSourceTopic.substr(found+1, strSourceTopic.length());
-				}
-				string strToCompare = "write";
-				isWrite = compareString(tempTopic, strToCompare);
-
-				if(true == isWrite)
-				{
-					if(value)
-					{
-						strValue = value->valuestring;
-					}
-					else
-					{
-						DO_LOG_ERROR(" Invalid input json parameter for write request");
-						eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
-					}
-				}
-
-				isValidJson = validateInputJson(strSourceTopic, strWellhead, strCommand);
-			}
-			if(!isValidJson)
-			{
-				DO_LOG_ERROR(" Invalid input json parameter or topic.");
-				eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
-			}
-
-			string strSearchString = "/", stTopic = "";
-			std::size_t found = strSourceTopic.find_last_of(strSearchString);
-			if (found!=std::string::npos)
-			{
-				stTopic = strSourceTopic.substr(0, found);
-			}
-			if(stTopic.empty())
-			{
-				DO_LOG_ERROR("Topic is not found in request json.");
-				eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
-			}
-
-			const std::map<std::string, network_info::CUniqueDataPoint>& mpp = network_info::getUniquePointList();
-			struct network_info::stModbusAddrInfo addrInfo;
-			try
-			{
-				addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
-			}
-			catch(const std::out_of_range& oor)
-			{
-				DO_LOG_INFO(" Request is not for this application." + std::string(oor.what()));
-
-				return APP_ERROR_UNKNOWN_SERVICE_REQUEST;
-			}
-
-			obj = mpp.at(stTopic).getDataPoint();
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-			string stIpAddress = addrInfo.m_stTCP.m_sIPAddress;
-			stMbusApiPram.m_u16Port = addrInfo.m_stTCP.m_ui16PortNumber;
-			stMbusApiPram.m_u8DevId = addrInfo.m_stTCP.m_uiUnitID;
-			CommonUtils::ConvertIPStringToCharArray(stIpAddress,&(stMbusApiPram.m_u8IpAddr[0]));
-#else
-			stMbusApiPram.m_u8DevId = addrInfo.m_stRTU.m_uiSlaveId;
-#endif
-			stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
-			stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
-
-			setCallbackforOnDemand(&ptrAppCallback, stMbusApiPram.m_stOnDemandReqData.m_isRT, isWrite, stMbusApiPram);
-
-			stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
-			stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
-			if(true == isWrite)
-			{
-				if(stMbusApiPram.m_stOnDemandReqData.m_isRT)
-				{
-					stMbusApiPram.m_lPriority = common_Handler::getReqPriority(
-							globalConfig::CGlobalConfig::getInstance().
-							getOpOnDemandWriteConfig().getRTConfig());
+					//strValue = value->valuestring;
+					strValue = a_stMbusApiPram.m_stOnDemandReqData.m_sValue;
 				}
 				else
 				{
-					stMbusApiPram.m_lPriority = common_Handler::getReqPriority(
-							globalConfig::CGlobalConfig::getInstance().
-							getOpOnDemandWriteConfig().getNonRTConfig());
+					DO_LOG_ERROR(" Invalid input json parameter for write request");
+					eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
 				}
+			}
+
+			isValidJson = validateInputJson(strSourceTopic,
+					a_stMbusApiPram.m_stOnDemandReqData.m_strWellhead,
+					a_stMbusApiPram.m_stOnDemandReqData.m_strMetric);
+		}
+		if(!isValidJson)
+		{
+			DO_LOG_ERROR(" Invalid input json parameter or topic.");
+			eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+		}
+
+		string strSearchString = "/", stTopic = "";
+		std::size_t found = strSourceTopic.find_last_of(strSearchString);
+		if (found!=std::string::npos)
+		{
+			stTopic = strSourceTopic.substr(0, found);
+		}
+		if(stTopic.empty())
+		{
+			DO_LOG_ERROR("Topic is not found in request json.");
+			eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+		}
+
+		const std::map<std::string, network_info::CUniqueDataPoint>& mpp = network_info::getUniquePointList();
+		struct network_info::stModbusAddrInfo addrInfo;
+		try
+		{
+			addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
+		}
+		catch(const std::out_of_range& oor)
+		{
+			DO_LOG_INFO(" Request is not for this application." + std::string(oor.what()));
+
+			return APP_ERROR_UNKNOWN_SERVICE_REQUEST;
+		}
+
+		obj = mpp.at(stTopic).getDataPoint();
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+		string stIpAddress = addrInfo.m_stTCP.m_sIPAddress;
+		a_stMbusApiPram.m_u16Port = addrInfo.m_stTCP.m_ui16PortNumber;
+		a_stMbusApiPram.m_u8DevId = addrInfo.m_stTCP.m_uiUnitID;
+		CommonUtils::ConvertIPStringToCharArray(stIpAddress,&(a_stMbusApiPram.m_u8IpAddr[0]));
+#else
+		a_stMbusApiPram.m_u8DevId = addrInfo.m_stRTU.m_uiSlaveId;
+#endif
+		a_stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
+		a_stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
+
+		a_stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
+		a_stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
+
+		network_info::eEndPointType eType = obj.getAddress().m_eType;
+
+		/// to find function code of received requestS
+		switch(eType)
+		{
+		case network_info::eEndPointType::eCoil:
+			funcCode = a_IsWriteReq ? WRITE_SINGLE_COIL: READ_COIL_STATUS;
+			break;
+		case network_info::eEndPointType::eHolding_Register:
+			funcCode = a_IsWriteReq ? a_stMbusApiPram.m_u16Quantity == 1 ? WRITE_SINGLE_REG: WRITE_MULTIPLE_REG : READ_HOLDING_REG;
+			break;
+		case network_info::eEndPointType::eInput_Register:
+			funcCode = READ_INPUT_REG;
+			break;
+		case network_info::eEndPointType::eDiscrete_Input:
+			funcCode = READ_INPUT_STATUS;
+			break;
+		default:
+			DO_LOG_ERROR(" Invalid type in datapoint:: " + a_stMbusApiPram.m_stOnDemandReqData.m_strMetric);
+			break;
+		}
+
+		if(a_IsWriteReq && (funcCode == READ_INPUT_REG || funcCode == READ_INPUT_STATUS))
+		{
+			funcCode = MBUS_MAX_FUN_CODE;
+			return APP_ERROR_POINT_IS_NOT_WRITABLE;
+		}
+
+		if(WRITE_MULTIPLE_REG == funcCode)
+		{
+			a_stMbusApiPram.m_u16ByteCount = a_stMbusApiPram.m_u16Quantity*2;
+		}
+		else if(WRITE_MULTIPLE_COILS == funcCode)
+		{
+			uint8_t u8ByteCount = (0 != (a_stMbusApiPram.m_u16Quantity%8))
+															?((a_stMbusApiPram.m_u16Quantity/8)+1)
+																	:(a_stMbusApiPram.m_u16Quantity/8);
+
+			a_stMbusApiPram.m_u16ByteCount = (uint8_t)u8ByteCount;
+		}
+		else if(WRITE_SINGLE_COIL == funcCode ||
+				WRITE_SINGLE_REG == funcCode)
+		{
+			a_stMbusApiPram.m_u16ByteCount = MODBUS_SINGLE_REGISTER_LENGTH;
+		}
+
+		if(WRITE_SINGLE_COIL == funcCode)
+		{
+			// If value is 0x01, then write 0xFF00
+			if( (0 == strValue.compare("0x00")) ||
+					(0 == strValue.compare("0X00"))  ||
+					(0 == strValue.compare("00")))
+			{
+				strValue = "0x0000";
+			}
+			else if( (0 == strValue.compare("0x01")) ||
+					(0 == strValue.compare("0X01")) ||
+					(0 == strValue.compare("01")))
+			{
+				strValue = "0xFF00";
 			}
 			else
 			{
-				if(stMbusApiPram.m_stOnDemandReqData.m_isRT)
+				eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+			}
+		}
+		if(true == a_IsWriteReq && funcCode != WRITE_MULTIPLE_COILS)
+		{
+			if((true == obj.getAddress().m_bIsByteSwap || true == obj.getAddress().m_bIsWordSwap))
+			{
+				std::vector<uint8_t> tempVt;
+				int i = 0;
+				if( ('0' == strValue[0]) && (('X' == strValue[1]) || ('x' == strValue[1])) )
 				{
-					stMbusApiPram.m_lPriority = common_Handler::getReqPriority(
-							globalConfig::CGlobalConfig::getInstance().
-							getOpOnDemandReadConfig().getRTConfig());
+					i = 2;
 				}
-				else
+				int iLen = strValue.length();
+				while(i < iLen)
 				{
-					stMbusApiPram.m_lPriority = common_Handler::getReqPriority(
-							globalConfig::CGlobalConfig::getInstance().
-							getOpOnDemandReadConfig().getNonRTConfig());
+					unsigned char byte1 = char2int(strValue[i])*16 + char2int(strValue[i+1]);
+					tempVt.push_back(byte1);
+					i = i+2;
 				}
+				strValue = common_Handler::swapConversion(tempVt,
+						!obj.getAddress().m_bIsByteSwap,
+						obj.getAddress().m_bIsWordSwap);
 			}
-			network_info::eEndPointType eType = obj.getAddress().m_eType;
-
-			/// to find function code of received requestS
-			switch(eType)
+			int retVal = hex2bin(strValue, a_stMbusApiPram.m_u16ByteCount, a_stMbusApiPram.m_pu8Data);
+			if(-1 == retVal)
 			{
-			case network_info::eEndPointType::eCoil:
-				funcCode = isWrite ? WRITE_SINGLE_COIL: READ_COIL_STATUS;
-				break;
-			case network_info::eEndPointType::eHolding_Register:
-				funcCode = isWrite ? stMbusApiPram.m_u16Quantity == 1 ? WRITE_SINGLE_REG: WRITE_MULTIPLE_REG : READ_HOLDING_REG;
-				break;
-			case network_info::eEndPointType::eInput_Register:
-				funcCode = READ_INPUT_REG;
-				break;
-			case network_info::eEndPointType::eDiscrete_Input:
-				funcCode = READ_INPUT_STATUS;
-				break;
-			default:
-				DO_LOG_ERROR(" Invalid type in datapoint:: " + strCommand);
-				break;
+				DO_LOG_FATAL("Invalid value in request json.");
+				eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
 			}
-
-			if(isWrite && (funcCode == READ_INPUT_REG || funcCode == READ_INPUT_STATUS))
-			{
-				funcCode = MBUS_MAX_FUN_CODE;
-				return APP_ERROR_POINT_IS_NOT_WRITABLE;
-			}
-
-			if(WRITE_MULTIPLE_REG == funcCode)
-			{
-				stMbusApiPram.m_u16ByteCount = stMbusApiPram.m_u16Quantity*2;
-			}
-			else if(WRITE_MULTIPLE_COILS == funcCode)
-			{
-				uint8_t u8ByteCount = (0 != (stMbusApiPram.m_u16Quantity%8))
-													?((stMbusApiPram.m_u16Quantity/8)+1)
-															:(stMbusApiPram.m_u16Quantity/8);
-
-				stMbusApiPram.m_u16ByteCount = (uint8_t)u8ByteCount;
-			}
-			else if(WRITE_SINGLE_COIL == funcCode ||
-					WRITE_SINGLE_REG == funcCode)
-			{
-				stMbusApiPram.m_u16ByteCount = MODBUS_SINGLE_REGISTER_LENGTH;
-			}
-
-			//if(NULL != stMbusApiPram.m_pu8Data)
-			{
-				if(WRITE_SINGLE_COIL == funcCode)
-				{
-					// If value is 0x01, then write 0xFF00
-					if( (0 == strValue.compare("0x00")) ||
-							(0 == strValue.compare("0X00"))  ||
-							(0 == strValue.compare("00")))
-					{
-						strValue = "0x0000";
-					}
-					else if( (0 == strValue.compare("0x01")) ||
-							(0 == strValue.compare("0X01")) ||
-							(0 == strValue.compare("01")))
-					{
-						strValue = "0xFF00";
-					}
-					else
-					{
-						eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
-					}
-				}
-				if(true == isWrite && funcCode != WRITE_MULTIPLE_COILS)
-				{
-					if((true == obj.getAddress().m_bIsByteSwap || true == obj.getAddress().m_bIsWordSwap))
-					{
-						std::vector<uint8_t> tempVt;
-						int i = 0;
-						if( ('0' == strValue[0]) && (('X' == strValue[1]) || ('x' == strValue[1])) )
-						{
-							i = 2;
-						}
-						int iLen = strValue.length();
-						while(i < iLen)
-						{
-							unsigned char byte1 = char2int(strValue[i])*16 + char2int(strValue[i+1]);
-							tempVt.push_back(byte1);
-							i = i+2;
-						}
-						strValue = common_Handler::swapConversion(tempVt,
-								!obj.getAddress().m_bIsByteSwap,
-								obj.getAddress().m_bIsWordSwap);
-					}
-					int retVal = hex2bin(strValue, stMbusApiPram.m_u16ByteCount, stMbusApiPram.m_pu8Data);
-					if(-1 == retVal)
-					{
-						DO_LOG_FATAL("Invalid value in request json.");
-						eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
-					}
-				}
-			}
-			/*else
-			{
-				eFunRetType = APP_ERROR_MEMORY_ALLOC_FAILED;
-				DO_LOG_ERROR(" Unable to allocate memory. Request not sent");
-			}*/
 		}
 	}
 	catch(const std::exception &e)
@@ -645,19 +532,27 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(cJSON *root,
 		DO_LOG_FATAL(e.what());
 	}
 
-	DO_LOG_DEBUG("End");
-
 	return eFunRetType;
 }
 
 /**
- * get operation info from global config depending on the topic name
+ * Function will get the realtime parameters per operation required for on-demand operation
+ * These parameters will be used for individual threads for on-demand operations
  * @param topic			:[in] topic for which to retrieve operation info
  * @param operation		:[out] operation info
- * @return 	true : on success,
- * 			false : on error
+ * @param vpCallback	:[out] set the stack callback as per the operation
+ * @param a_iRetry		:[out] set the retry value to be used for application retry mechanism
+ * @param a_lPriority	:[out] set the priority value to be used for stack priority queues
+ * @param a_bIsWriteReq	:[out] flag used to distinguish read/write request for further processing
+ * @param a_bIsRT		:[out] flag used to distinguish RT/NON-RT request for further processing
+ * @return true/false based on success/error
  */
-bool onDemandHandler::getOperation(string topic, globalConfig::COperation& operation)
+bool onDemandHandler::getOperation(string topic, globalConfig::COperation& operation,
+		void **vpCallback,
+		int& a_iRetry,
+		long& a_lPriority,
+		bool& a_bIsWriteReq,
+		bool& a_bIsRT)
 {
 	bool bRet = true;
 	if(std::string::npos != topic.find(READ,
@@ -666,6 +561,20 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 	{
 		operation = globalConfig::CGlobalConfig::getInstance().
 				getOpOnDemandReadConfig().getNonRTConfig();
+		*vpCallback = (void *)OnDemandRead_AppCallback;
+
+		// get retry value per operation to be used for retry mechanism
+		a_iRetry = globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandReadConfig().getNonRTConfig().getRetries();
+
+		/// get the priority
+		a_lPriority = common_Handler::getReqPriority(
+				globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandReadConfig().getNonRTConfig());
+
+		// set flag to distinguish read/write request
+		a_bIsWriteReq = false;
+		a_bIsRT = false;
 	}
 	else if(std::string::npos != topic.find(READ_RT,
 			topic.length() - std::string(READ_RT).length(),
@@ -673,6 +582,22 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 	{
 		operation = globalConfig::CGlobalConfig::getInstance().
 				getOpOnDemandReadConfig().getRTConfig();
+		*vpCallback = (void *)OnDemandReadRT_AppCallback;
+
+		// get retry value per operation to be used for retry mechanism
+		a_iRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig().
+				getRTConfig().getRetries();
+
+		/// get the priority
+		a_lPriority = common_Handler::getReqPriority(
+				globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandReadConfig().getRTConfig());
+
+		// set flag to distinguish read/write request
+		a_bIsWriteReq = false;
+
+		// set realtime to true
+		a_bIsRT = true;
 	}
 	else if(std::string::npos != topic.find(WRITE,
 			topic.length() - std::string(WRITE).length(),
@@ -680,6 +605,21 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 	{
 		operation = globalConfig::CGlobalConfig::getInstance().
 				getOpOnDemandWriteConfig().getNonRTConfig();
+		*vpCallback = (void *)OnDemandWrite_AppCallback;
+
+		// get retry value per operation to be used for retry mechanism
+		a_iRetry = globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig().
+				getNonRTConfig().getRetries();
+
+		/// get the priority
+		a_lPriority = common_Handler::getReqPriority(
+				globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandWriteConfig().getNonRTConfig());
+
+		// set flag to distinguish read/write request
+		a_bIsWriteReq = true;
+
+		a_bIsRT = false;
 	}
 	else if(std::string::npos != topic.find(WRITE_RT,
 			topic.length() - std::string(WRITE_RT).length(),
@@ -687,11 +627,30 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 	{
 		operation = globalConfig::CGlobalConfig::getInstance().
 				getOpOnDemandWriteConfig().getRTConfig();
+		*vpCallback = (void *)OnDemandWriteRT_AppCallback;
+
+		// get retry value per operation to be used for retry mechanism
+		a_iRetry = globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandWriteConfig().getRTConfig().getRetries();
+
+		/// get the priority
+		a_lPriority = common_Handler::getReqPriority(
+				globalConfig::CGlobalConfig::getInstance().
+				getOpOnDemandWriteConfig().getRTConfig());
+
+		// set flag to distinguish read/write request
+		a_bIsWriteReq = true;
+
+		// set realtime to true
+		a_bIsRT = true;
 	}
 	else
 	{
 		DO_LOG_ERROR("Invalid topic name in SubTopics");
 		bRet = false;
+		a_iRetry = 0;
+		vpCallback = NULL;
+		*vpCallback = NULL;
 	}
 
 	return bRet;
@@ -703,6 +662,11 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 void onDemandHandler::createOnDemandListener()
 {
 	DO_LOG_DEBUG("Start");
+	bool bIsRT = false;
+	void *vpCallback = NULL;
+	int iRetry = 0;
+	long a_lPriority;
+	bool a_bIsWriteReq = false;
 
 	std::vector<std::string> stTopics = PublishJsonHandler::instance().getSubTopicList();
 	for(std::vector<std::string>::iterator it = stTopics.begin(); it != stTopics.end(); ++it)
@@ -712,7 +676,7 @@ void onDemandHandler::createOnDemandListener()
 			continue;
 		}
 		globalConfig::COperation ops;
-		if(!getOperation(*it, ops))
+		if(!getOperation(*it, ops, &vpCallback, iRetry, a_lPriority, a_bIsWriteReq, bIsRT))
 		{
 			DO_LOG_ERROR("Invalid topic name in SubTopics..hence ignoring");
 
@@ -720,7 +684,11 @@ void onDemandHandler::createOnDemandListener()
 			continue;
 		}
 
-		std::thread(&onDemandHandler::subscribeDeviceListener, this, *it, ops).detach();
+		// create separate thread per topic mentioned in SubTopics section in docker-compose.yml file
+		std::thread(&onDemandHandler::subscribeDeviceListener, this, *it, ops,
+				bIsRT, vpCallback, iRetry,
+				a_lPriority,
+				a_bIsWriteReq).detach();
 	}
 	DO_LOG_DEBUG("End");
 }
@@ -736,76 +704,143 @@ onDemandHandler& onDemandHandler::Instance()
 }
 
 /**
- * Function to serialize ZMQ message and send for processing.
- * @param msg	:	[in] actual message
- * @param stTopic:	[in] received topic
- * @return[bool] true: on Success
- * 				 false: On failure
+ * Function to get value from zmq message based on given key
+ * @param msg	:	[in] actual message received from ZMQ
+ * @param a_sKey:	[in] key to find
+ * @return[string]  : on Success return actual value
+ * 					: On failure - return empty string
  */
-bool onDemandHandler::processMsg(msg_envelope_t *msg, std::string stTopic)
+string onDemandHandler::getMsgElement(msg_envelope_t *a_Msg,
+		string a_sKey)
 {
-	struct stRequest stRequestNode;
-	timespec_get(&stRequestNode.m_tsReqRcvd, TIME_UTC);
-	msg_envelope_serialized_part_t* parts = NULL;
-	int num_parts = 0;
-	bool bRet = false;
+	msg_envelope_elem_body_t* data = NULL;
 
-	if(NULL == msg)
+	// check for NULL
+	if(NULL == a_Msg)
 	{
-		DO_LOG_ERROR(
-				"NULL pointer received while processing msg.");
-		return false;
-	}
-	num_parts = msgbus_msg_envelope_serialize(msg, &parts);
-	if(num_parts <= 0)
-	{
-		DO_LOG_ERROR(
-				" Failed to serialize message");
+		DO_LOG_ERROR("NULL msg received from ZMQ");
+		return "";
 	}
 
-	if(NULL != parts && NULL != parts[0].bytes)
+	// get the value
+	msgbus_ret_t msgRet = msgbus_msg_envelope_get(a_Msg, a_sKey.c_str(), &data);
+
+#ifdef INSTRUMENTATION_LOG
+	DO_LOG_DEBUG(a_sKey +":" +data->body.string);
+#endif
+	if(msgRet != MSG_SUCCESS)
 	{
-		std::string strMsg(parts[0].bytes);
-
-		stRequestNode.m_strTopic = stTopic;
-		stRequestNode.m_strMsg = strMsg;
-
-		DO_LOG_INFO(" on-demand request initiated for msg:: "+ strMsg);
-		onDemandInfoHandler(stRequestNode);
-
-		bRet = true;
+		DO_LOG_ERROR(a_sKey + " key not present in message: ");
 	}
 	else
 	{
-		DO_LOG_ERROR(
-				"NULL pointer received while processing msg.");
-		bRet = false;
+		// Since all the parameters are in string format, hence string is returned
+		// If any other parameter is added with different data types in JSON payload then return value needs to changed
+		if(MSG_ENV_DT_STRING == data->type)
+		{
+			return data->body.string;
+		}
+	}
+	return "";
+}
+
+
+/**
+ * generic function to process message received from ZMQ.
+ * @param msg			:[in] actual message received from zmq
+ * @param topic			:[in] topic for zmq listening
+ * @param a_bIsRT		:[in] flag used to distinguish RT/NON-RT request for further processing
+ * @param vpCallback	:[in] set the stack callback as per the operation
+ * @param a_iRetry		:[in] set the retry value to be used for application retry mechanism
+ * @param a_lPriority	:[in] set the priority value to be used for stack priority queues
+ * @param a_bIsWriteReq	:[in] flag used to distinguish read/write request for further processing
+ * @return[bool] true: on Success
+ * 				 false: On failure
+ */
+bool onDemandHandler::processMsg(msg_envelope_t *msg,
+		std::string stTopic,
+		bool a_bIsRT,
+		void *vpCallback,
+		const int a_iRetry,
+		const long a_lPriority,
+		const bool a_bIsWriteReq)
+{
+
+	MbusAPI_t stMbusApiPram = {};
+	struct onDemandmsg zmqMsg;
+	timespec_get(&stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS, TIME_UTC);
+	bool bRet = false;
+
+	if(NULL == msg || NULL == vpCallback)
+	{
+		DO_LOG_ERROR("NULL pointer received while processing msg. hence discarding the msg");
+
+		if(msg != NULL)
+		{
+			msgbus_msg_envelope_destroy(msg);
+		}
+		msg = NULL;
+		return false;
 	}
 
-	if(parts != NULL)
-	{
-		msgbus_msg_envelope_serialize_destroy(parts, num_parts);
-	}
+#ifdef INSTRUMENTATION_LOG
+		DO_LOG_DEBUG("On-demand request received on "+ stTopic + " realtime:: "+ to_string(a_bIsRT) + " with following parameters::");
+#endif
+
+	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = getMsgElement(msg, "app_seq");
+	stMbusApiPram.m_stOnDemandReqData.m_strMetric = getMsgElement(msg, "command");
+	stMbusApiPram.m_stOnDemandReqData.m_sValue = getMsgElement(msg, "value");
+	stMbusApiPram.m_stOnDemandReqData.m_strWellhead = getMsgElement(msg, "wellhead");
+	stMbusApiPram.m_stOnDemandReqData.m_strVersion = getMsgElement(msg, "version");
+	stMbusApiPram.m_stOnDemandReqData.m_strTopic = getMsgElement(msg, "sourcetopic");
+	stMbusApiPram.m_stOnDemandReqData.m_sTimestamp = getMsgElement(msg, "timestamp");
+	stMbusApiPram.m_stOnDemandReqData.m_sUsec = getMsgElement(msg, "usec");
+	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = getMsgElement(msg, "tsMsgRcvdFromMQTT");
+	stMbusApiPram.m_stOnDemandReqData.m_strEisTime = getMsgElement(msg, "tsMsgPublishOnEIS");
+	stMbusApiPram.m_stOnDemandReqData.m_isRT = a_bIsRT;
+
+	// fill retry and priority used for further processing
+	stMbusApiPram.m_nRetry = a_iRetry;
+	stMbusApiPram.m_lPriority = a_lPriority;
+
+	onDemandInfoHandler(&stMbusApiPram, stTopic, vpCallback, a_bIsWriteReq);
+
 	if(msg != NULL)
 	{
 		msgbus_msg_envelope_destroy(msg);
 	}
 	msg = NULL;
-	parts = NULL;
 
 	return bRet;
 } 
 
 /**
- * Thread to listen for any on-demand request on ZMQ
- * @param stTopic	:[in] topic to subscribe
- * @param a_refOps	:[in] global configuration value for QOS,retry, RT and operation priority.
- */
+* Thread to listen for on-demand request on ZMQ for all the topics mentioned in SubTopics section
+* @param topic			:[in] topic for zmq listening
+* @param operation		:[out] operation info used to set thread parameters
+* @param a_bIsRT		:[out] flag used to distinguish RT/NON-RT request for further processing
+* @param vpCallback	:[out] set the stack callback as per the operation
+* @param a_iRetry		:[out] set the retry value to be used for application retry mechanism
+* @param a_lPriority	:[out] set the priority value to be used for stack priority queues
+* @param a_bIsWriteReq	:[out] flag used to distinguish read/write request for further processing
+* @return Nothing
+*/
 void onDemandHandler::subscribeDeviceListener(const std::string stTopic,
-		const globalConfig::COperation a_refOps)
+		const globalConfig::COperation a_refOps,
+		bool a_bIsRT,
+		void *vpCallback,
+		const int a_iRetry,
+		const long a_lPriority,
+		const bool a_bIsWriteReq)
 {
 	msg_envelope_t *msg = NULL;
-	msgbus_ret_t ret;
+	msgbus_ret_t ret = MSG_SUCCESS;
+
+	if(NULL == vpCallback)
+	{
+		DO_LOG_ERROR("NULL callback value is received..");
+		return;
+	}
 
 	//set the thread priority
 	globalConfig::set_thread_sched_param(a_refOps);
@@ -826,7 +861,7 @@ void onDemandHandler::subscribeDeviceListener(const std::string stTopic,
 				continue;
 			}
 			/// process messages
-			processMsg(msg, stTopic);
+			processMsg(msg, stTopic, a_bIsRT, vpCallback, a_iRetry, a_lPriority, a_bIsWriteReq);
 		}
 	}
 	catch(const std::exception& e)
