@@ -51,6 +51,8 @@ sudo ./ConfigureUWC.sh
 ```
 Follow EIS installer process for further deployment.
 Go to EdgeInsightsSoftware-v2.2-PV/installer/installation and then execute setup.sh script.
+
+Please Note : Refer UWC user guide for more details.
 ```
 
 ## Verify container status
@@ -94,4 +96,3 @@ docker logs modbus-tcp-container > docker.log 2>&1
 Execute below script to create UWC bundle for deployment.
 sudo ./create_uwc_package.sh
 ```
-
