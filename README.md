@@ -79,10 +79,12 @@ sudo docker ps
 6. For Modbus RTU, to check attached COM port for serial communication, use "dmesg | grep tty" command.
 
 ## Redirect docker logs to file including errors
+```
 docker logs modbus-tcp-container > docker.log 2>&1
 ```
 
 ## ETCD UI access (*Note : This is not required since we are not storing any configuration data for UWC containers in ETCD)
+```
 1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL. (username - root , password- eis123)
 ```
 
