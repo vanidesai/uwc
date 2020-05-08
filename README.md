@@ -77,6 +77,7 @@ sudo docker ps
    Syntax - docker cp <container_name>:<file to copy from container> <file to be copied i.e. host directory>
 5. To check the IP address of machine, use "ifconfig" command.
 6. For Modbus RTU, to check attached COM port for serial communication, use "dmesg | grep tty" command.
+```
 
 ## Redirect docker logs to file including errors
 ```
