@@ -193,15 +193,27 @@ copyInstallerFiles()
 	cd ${working_dir}/ && rm -rf UWC/
 }
 
+changeTopicLen()
+{
+	sed -i 's/#define SIZE 500/#define SIZE 1000/g' ${working_dir}/common/libs/ConfigManager/c/src/env_config.c
+	if [ "$?" -ne "0" ]; then
+		echo "${RED}Failed to set dev mode."
+		echo "${GREEN}Kinldy set topic leg to 1000 in EIS"
+		return 1
+	else
+		echo "${GREEN}Topic length is set to 1000 characters.${NC}"
+	fi
+}
+
 # Internal function calls to setup uwc containers
 verifyDirectory
 checkrootUser
 setHostIP
 configureRTUPorts
 createDockerVolumeDir
+changeTopicLen
 addUWCContainersInEIS
 copyInstallerFiles
 changeFilePermissions
 
 cd "${working_dir}"
-exit 0
