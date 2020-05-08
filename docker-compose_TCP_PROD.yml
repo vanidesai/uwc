@@ -21,6 +21,7 @@ services:
       args:
           UBUNTU_IMAGE_VERSION: ${UBUNTU_IMAGE_VERSION}
           EIS_VERSION: ${EIS_VERSION}
+          HOST_TIME_ZONE: ${HOST_TIME_ZONE}
     image: ${DOCKER_REGISTRY}ia_eisbase:${EIS_VERSION}
 
   ## Define ia_common service
@@ -39,14 +40,18 @@ services:
 
   #----End: EIS Base Images---- -- This Base images must be included for building any EIS servcies ----
 
-  # Define ETCD UI service - must be included to view ETCD data over web UI
+  ## Define ETCD UI service - must be included to view ETCD data over web UI
   ia_etcd_ui:
+    depends_on:
+      - ia_common
     build:
       context: $PWD/../EtcdUI
       dockerfile: $PWD/../EtcdUI/Dockerfile
       args:
         ETCD_KEEPER_VERSION: ${ETCD_KEEPER_VERSION}
         EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+    read_only: true
     image: ${DOCKER_REGISTRY}ia_etcd_ui:${EIS_VERSION}
     container_name: ia_etcd_ui
     hostname: ia_etcd_ui
@@ -55,6 +60,12 @@ services:
     environment:
       AppName: "EtcdUi"
       DEV_MODE: ${DEV_MODE}
+      NGINX_PORT: 7071
+      CertType: "pem"
+      no_proxy: ${eis_no_proxy},${ETCD_HOST}
+      ETCD_HOST: ${ETCD_HOST}
+    volumes:
+      - "vol_etcd_keeper:/tmp/nginx"
     user: ${EIS_UID}
     secrets:
       - ca_etcd
@@ -83,6 +94,7 @@ services:
   modbus-tcp-master:
     depends_on:
       - ia_eisbase
+      - uwc_common
     build:
       context: $PWD/../modbus-master/
       dockerfile: $PWD/../modbus-master/Dockerfile
@@ -325,6 +337,13 @@ services:
       - ca_etcd
       - etcd_MQTT_Export_cert
       - etcd_MQTT_Export_key
+
+volumes:
+  vol_etcd_keeper:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
 
 secrets:
   ca_etcd:
