@@ -231,7 +231,7 @@ services:
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/MQTT-Export-App/Config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000" 
-      MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:1883"
+      MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:11883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "TCP1,RTU1"
