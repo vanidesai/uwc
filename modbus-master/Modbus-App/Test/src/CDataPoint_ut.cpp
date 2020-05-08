@@ -35,8 +35,6 @@ TEST_F(CDataPoint_ut, width_manatory_param)
 		{
 			const YAML::Node& points =  it.second;
 
-			int i = 0;
-			int Add_expected[] = {1, 2};
 			for (auto it1 : points)
 			{
               //if(counter==0){

@@ -69,20 +69,13 @@ TEST_F(CConfigManager_ut, display_thread_sched_attr_test)
 	char msg;
 	globalConfig::display_thread_sched_attr(&msg);
 
-	if(msg == NULL)
-		{
-			EXPECT_EQ(1, true);
-		}
-		else
-		{
-			EXPECT_EQ(0, false);
-		}
+	// Please check log for test result
 }
 
 TEST_F(CConfigManager_ut, set_thread_param_true)
 {
 	globalConfig::COperation a_OpsInfo;
-	globalConfig::eThreadScheduler a_eSched;
+	globalConfig::eThreadScheduler a_eSched = globalConfig::threadScheduler::UNKNOWN;
 	bool a_bIsOperation = true;
 	globalConfig::set_thread_sched_param(a_OpsInfo, 1, a_eSched, a_bIsOperation);
 }
@@ -90,14 +83,14 @@ TEST_F(CConfigManager_ut, set_thread_param_true)
 TEST_F(CConfigManager_ut, set_thread_param_false)
 {
 	globalConfig::COperation a_OpsInfo;
-	globalConfig::eThreadScheduler a_eSched;
+	globalConfig::eThreadScheduler a_eSched = globalConfig::threadScheduler::UNKNOWN;
 	bool a_bIsOperation = false;
 	globalConfig::set_thread_sched_param(a_OpsInfo, 1, a_eSched, a_bIsOperation);
 }
 
 TEST_F(CConfigManager_ut, setDefaultconfig_polling)
 {
-	globalConfig::eOperationType a_eOpType;
+	globalConfig::eOperationType a_eOpType = globalConfig::eOperationType::UNKNOWN_OPERATION;
 	globalConfig::setDefaultConfig(a_eOpType);
 }
 #endif

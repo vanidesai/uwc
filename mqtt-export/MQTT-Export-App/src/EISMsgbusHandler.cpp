@@ -28,15 +28,122 @@ std::mutex __PubctxMapLock;
 std::mutex __SubctxMapLock;
 
 /**
- * Prepare EIS contexts for msg bus and topics
- * @param topicType :[in] topic type sub/pub or create context
- * @return true/false based on success/failure
+ * Prepare pub or sub context for ZMQ communication
+ * @param a_bIsPub		:[in] flag to check for Pub or Sub
+ * @param msgbus_ctx	:[in] Common message bus context used for zmq communication
+ * @param a_sTopic		:[in] Topic for which pub or sub context needs to be created
+ * @param config		:[in] Config instance used for zmq library
+ * @return 	true : on success,
+ * 			false : on error
+ */
+bool CEISMsgbusHandler::prepareContext(bool a_bIsPub,
+		void* msgbus_ctx,
+		string a_sTopic,
+		config_t *config)
+{
+	bool bRetVal = false;
+	msgbus_ret_t retVal = MSG_SUCCESS;
+	publisher_ctx_t* pub_ctx = NULL;
+	recv_ctx_t* sub_ctx = NULL;
+
+	if(NULL == msgbus_ctx || NULL == config || a_sTopic.empty())
+	{
+		DO_LOG_ERROR("NULL pointers received while creating context for topic ::" + a_sTopic);
+		goto err;
+	}
+
+	if(a_bIsPub)
+	{
+		retVal = msgbus_publisher_new(msgbus_ctx, a_sTopic.c_str(), &pub_ctx);
+	}
+	else
+	{
+		retVal = msgbus_subscriber_new(msgbus_ctx, a_sTopic.c_str(), NULL, &sub_ctx);
+	}
+
+	if(retVal != MSG_SUCCESS)
+	{
+		/// cleanup
+		DO_LOG_ERROR("Failed to create publisher or subscriber for topic "+a_sTopic + " with error code:: "+std::to_string(retVal));
+		cout << "ERROR:: Failed to create publisher or subscriber for topic : "<< a_sTopic<< " with error code:: "<< std::to_string(retVal)<<endl;
+		goto err;
+	}
+	else
+	{
+		bRetVal = true;
+
+		stZmqContext objTempCtx;
+		objTempCtx.m_pContext = msgbus_ctx;
+		if(!insertCTX(a_sTopic, objTempCtx))
+		{
+			DO_LOG_ERROR("Failed to insert context for topic  : " + a_sTopic);
+			goto err;
+		}
+
+		if(a_bIsPub)
+		{
+			stZmqPubContext objTempPubCtx;
+			objTempPubCtx.m_pContext= pub_ctx;
+			if(!insertPubCTX(a_sTopic, objTempPubCtx))
+			{
+				DO_LOG_ERROR("Failed to insert pub context for topic  : " + a_sTopic);
+				goto err;
+			}
+		}
+		else
+		{
+			stZmqSubContext objTempSubCtx;
+			objTempSubCtx.m_pContext= sub_ctx;
+			if(!insertSubCTX(a_sTopic, objTempSubCtx))
+			{
+				DO_LOG_ERROR("Failed to insert sub context for topic  : " + a_sTopic);
+			}
+		}
+	}
+
+	return bRetVal;
+
+err:
+	// remove mgsbus context
+	removeCTX(a_sTopic);
+
+	/// free msg bus context
+	if(msgbus_ctx != NULL)
+	{
+		msgbus_destroy(msgbus_ctx);
+		msgbus_ctx = NULL;
+	}
+	if(NULL != pub_ctx && NULL != config)
+	{
+		msgbus_publisher_destroy(config, pub_ctx);
+	}
+	if(NULL != sub_ctx && NULL != config)
+	{
+		msgbus_recv_ctx_destroy(config, sub_ctx);
+	}
+
+	return false;
+}
+
+/**
+ * Prepare all EIS contexts for zmq communications based on topic configured in
+ * SubTopics or PubTopics section from docker-compose.yml file
+ * Following is the sequence of context creation
+ * 	1. Get the topic from SubTopics/PubTopics section
+ * 	2. Create msgbus config
+ * 	3. Create the msgbus context based on msgbus config
+ * 	4. Once msgbus context is successful then create pub and sub context for zmq publisher/subscriber
+ *
+ * @param topicType	:[in] topic type to create context for, value is either "sub" or "pub"
+ * @return 	true : on success,
+ * 			false : on error
  */
 bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 {
-	msgbus_ret_t retVal = MSG_SUCCESS;
 	bool retValue = false;
-	recv_ctx_t* sub_ctx = NULL;
+	char **head = NULL;
+	size_t topic_count = 0;
+	string topic = "";
 
 	if(!(topicType == "pub" || topicType == "sub"))
 	{
@@ -46,16 +153,82 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 	}
 	if(CfgManager::Instance().IsClientCreated())
 	{
-		std::vector<std::string> Topics;
+		char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
 
-		char** data = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
-
-		if(NULL != data)
+		if(NULL != ppcTopics)
 		{
-			while (*data != NULL)
+			// store the head node for string array
+			head = ppcTopics;
+			while (*ppcTopics != NULL)
 			{
-				Topics.push_back(*data);
-				data++;
+				++topic_count;
+
+				topic = *ppcTopics;
+
+				try
+				{
+					retValue = true;
+					config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+							CfgManager::Instance().getConfigClient(),
+							ppcTopics , topic_count, topicType.c_str());
+					if(config == NULL) {
+						DO_LOG_ERROR("Failed to get publisher message bus config ::" + topic);
+						std::cout << __func__ << ":" << __LINE__ << " Error : Failed to get publisher message bus config ::" + topic <<  std::endl;
+						continue;
+					}
+
+					void* msgbus_ctx = msgbus_initialize(config);
+					if(msgbus_ctx == NULL)
+					{
+						DO_LOG_ERROR("Failed to get message bus context with config for topic ::" + topic);
+						std::cout << __func__ << ":" << __LINE__ << " Error : Failed to get message bus context with config for topic ::" + topic <<  std::endl;
+						config_destroy(config);
+						continue;
+					}
+
+					if(topicType == "pub")
+					{
+						std::cout << "Topic for ZMQ Publish is :: "<< topic <<  endl;
+						prepareContext(true, msgbus_ctx, topic, config);
+					}
+					else
+					{
+						std::size_t pos = topic.find('/');
+						if (std::string::npos != pos)
+						{
+							std::string subTopic(topic.substr(pos + 1));
+							std::cout << __func__ << " Context created and stored for config for topic :: " << subTopic << std::endl;
+							std::cout << "Topic for ZMQ subscribe is :: "<< subTopic <<  endl;
+
+							/// add topic in list
+							CEISMsgbusHandler::Instance().insertSubTopicInList(subTopic);
+							prepareContext(false, msgbus_ctx, subTopic, config);
+						}
+					}
+				}
+				catch(exception &e)
+				{
+					DO_LOG_FATAL("Exception occurred for topic :" + topic + " with exception code:: " + e.what());
+					std::cout << __func__ << ":" << __LINE__ << "Exception occurred for topic :" + topic +
+							" with exception code:: " + e.what() << std::endl;
+					retValue = false;
+				}
+
+				// free used data
+				if(*ppcTopics)
+				{
+					free (*ppcTopics);
+					*ppcTopics = NULL;
+				}
+
+				// go to next topic
+				ppcTopics++;
+			}
+			// free base pointer
+			if(head)
+			{
+				free(head);
+				head = NULL;
 			}
 		}
 		else
@@ -63,158 +236,6 @@ bool CEISMsgbusHandler::prepareCommonContext(std::string topicType)
 			DO_LOG_ERROR("topic list is empty");
 			cout << "topic list is empty" << endl;
 			return false;
-		}
-
-		for (auto &topic : Topics)
-		{
-			try
-			{
-			retValue = true;
-			config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(CfgManager::Instance().getConfigClient(),
-					topic.c_str(), topicType.c_str());
-			if(config == NULL) {
-				DO_LOG_ERROR("Failed to get publisher message bus config ::" + topic);
-				std::cout << __func__ << ":" << __LINE__ << " Error : Failed to get publisher message bus config ::" + topic <<  std::endl;
-				continue;
-			}
-
-			void* msgbus_ctx = msgbus_initialize(config);
-			if(msgbus_ctx == NULL)
-			{
-				DO_LOG_ERROR("Failed to get message bus context with config for topic ::" + topic);
-				std::cout << __func__ << ":" << __LINE__ << " Error : Failed to get message bus context with config for topic ::" + topic <<  std::endl;
-				config_destroy(config);
-				continue;
-			}
-
-
-			if(topicType == "pub")
-			{
-				//app will publish data to zmq
-				publisher_ctx_t *pub_ctx = NULL;
-				msgbus_ret_t ret = msgbus_publisher_new(msgbus_ctx, topic.c_str(), &pub_ctx);
-
-				if(ret != MSG_SUCCESS)
-				{
-					DO_LOG_ERROR("Failed to initialize publisher errno: " + std::to_string(ret));
-					std::cout << __func__ << ":" << __LINE__ << " Error : Failed to initialize publisher errno: " + std::to_string(ret) <<  std::endl;
-
-					if(config != NULL)
-						config_destroy(config);
-
-					if(msgbus_ctx != NULL)
-						msgbus_destroy(msgbus_ctx);
-
-					continue;
-				}
-
-				// method to store msgbus_ctx as per the topic
-				stZmqContext objTempCtx;
-				objTempCtx.m_pContext = msgbus_ctx;
-
-				if(false == insertCTX(topic, objTempCtx))
-				{
-					DO_LOG_ERROR("Failed to insert context for topic  : " + topic);
-					std::cout << __func__ << ":" << __LINE__ << " Error : Failed to insert context for topic  : " + topic <<  std::endl;
-
-					if(config != NULL)
-						config_destroy(config);
-
-					if(msgbus_ctx != NULL)
-						msgbus_destroy(msgbus_ctx);
-
-					continue; //continue with next topic
-				}
-				DO_LOG_DEBUG("Context created and stored for config for topic :: " + topic);
-
-				stZmqPubContext objPubContext;
-				objPubContext.m_pContext = pub_ctx;
-
-				if(false == insertPubCTX(topic, objPubContext))
-				{
-					DO_LOG_ERROR("Failed to insert pub context for topic  : " + topic);
-					std::cout << __func__ << ":" << __LINE__ << " Error : Failed to insert pub context for topic  : " + topic <<  std::endl;
-					if(config != NULL)
-						config_destroy(config);
-
-					//remove msgbus context
-					removeCTX(topic);
-				}
-			}
-			else
-			{
-				std::size_t pos = topic.find('/');
-				if (std::string::npos != pos)
-				{
-					std::string subTopic(topic.substr(pos + 1));
-
-					DO_LOG_DEBUG("Cfg client is not connected");
-					retVal = msgbus_subscriber_new(msgbus_ctx, subTopic.c_str(), NULL, &sub_ctx);
-					if(retVal != MSG_SUCCESS)
-					{
-						DO_LOG_ERROR("Failed to create subscriber context. errno: " + std::to_string(retVal));
-						std::cout << __func__ << ":" << __LINE__ << " Error : Failed to create subscriber context. errno: " + std::to_string(retVal) <<  std::endl;
-
-						if(config != NULL)
-							config_destroy(config);
-
-						if(msgbus_ctx != NULL)
-							msgbus_destroy(msgbus_ctx);
-
-						continue;
-					}
-					else
-					{
-						std::cout << "Topic for ZMQ subscribe is :: "<< subTopic <<  endl;
-
-						// add topic in list
-						CEISMsgbusHandler::Instance().insertSubTopicInList(subTopic);
-
-						// method to store msgbus_ctx as per the topic
-						stZmqContext objTempCtx;
-						objTempCtx.m_pContext = msgbus_ctx;
-
-						if(false == insertCTX(subTopic, objTempCtx))
-						{
-							DO_LOG_ERROR("Failed to insert context for topic  : " + subTopic);
-							std::cout << __func__ << ":" << __LINE__ << " Error : Failed to insert context for topic  : " + subTopic <<  std::endl;
-
-							if(config != NULL)
-								config_destroy(config);
-
-							if(msgbus_ctx != NULL)
-								msgbus_destroy(msgbus_ctx);
-
-							continue; //continue with next topic
-						}
-						DO_LOG_DEBUG("Context created and stored for config for topic :: " + subTopic);
-
-						stZmqSubContext objTempSubCtx;
-						objTempSubCtx.m_pContext = sub_ctx;
-
-						if(false == insertSubCTX(subTopic, objTempSubCtx))
-						{
-							DO_LOG_DEBUG("Failed to insert sub context for topic  : " + subTopic);
-							if(config != NULL)
-								config_destroy(config);
-							//remove msgbus context
-							removeCTX(subTopic);
-						}
-					}
-				}
-			}
-			}
-			catch(exception &e)
-			{
-				DO_LOG_FATAL((string)e.what() +
-							" for topic:" +
-							topic);
-				std::cout << __func__ << ":" << __LINE__ << " Exception : ";
-				cout << e.what() << " for topic:" << topic;
-				cout<< std::endl;
-				retValue = false;
-			}
-
 		}
 	}
 	else

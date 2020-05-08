@@ -50,7 +50,34 @@ public:
 
 	void cleanup();
 
+	/**
+	 * Prepare all EIS contexts for zmq communications based on topic configured in
+	 * SubTopics or PubTopics section from docker-compose.yml file
+	 * Following is the sequence of context creation
+	 * 	1. Get the topic from SubTopics/PubTopics section
+	 * 	2. Create msgbus config
+	 * 	3. Create the msgbus context based on msgbus config
+	 * 	4. Once msgbus context is successful then create pub and sub context for zmq publisher/subscriber
+	 *
+	 * @param topicType	:[in] topic type to create context for, value is either "sub" or "pub"
+	 * @return 	true : on success,
+	 * 			false : on error
+	 */
 	bool prepareCommonContext(std::string topicType);
+
+	/**
+	 * Prepare pub or sub context for ZMQ communication
+	 * @param a_bIsPub		:[in] flag to check for Pub or Sub
+	 * @param msgbus_ctx	:[in] Common message bus context used for zmq communication
+	 * @param a_sTopic		:[in] Topic for which pub or sub context needs to be created
+	 * @param config		:[in] Config instance used for zmq library
+	 * @return 	true : on success,
+	 * 			false : on error
+	 */
+	bool prepareContext(bool a_bIsPub,
+			void* msgbus_ctx,
+			string a_sTopic,
+			config_t *config);
 
 	// function to get message bus context based on topic
 	bool getCTX(std::string a_sTopic, stZmqContext& msgbusContext);

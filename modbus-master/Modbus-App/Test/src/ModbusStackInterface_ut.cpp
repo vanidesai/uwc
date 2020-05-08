@@ -39,7 +39,6 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 
 	try
 	{
-		msg_envelope_t *msg = NULL;
 		stOnDemandRequest reqData;
 		stOnDemandRequest onDemandReqData ;
 		MbusAPI_t stMbusApiPram = {};
@@ -56,7 +55,6 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 		reqData.m_strWellhead = "test";
 		uint16_t uTxID = 20;
 
-		stMbusAppCallbackParams.m_au8MbusRXDataDataFields[260];
 		stMbusAppCallbackParams.m_lPriority = 1;
 		stMbusAppCallbackParams.m_objTimeStamps.tsReqRcvd.tv_nsec = 10;
 		stMbusAppCallbackParams.m_objTimeStamps.tsReqRcvd.tv_sec = 20;
@@ -69,7 +67,6 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 		stMbusAppCallbackParams.m_u8ExceptionExcCode = 1;
 		stMbusAppCallbackParams.m_u8ExceptionExcStatus = 1;
 		stMbusAppCallbackParams.m_u8FunctionCode = READ_COIL_STATUS;
-		stMbusAppCallbackParams.m_u8IpAddr[4];
 		stMbusAppCallbackParams.m_u8MbusRXDataLength = 100;
 		stMbusAppCallbackParams.m_u8UnitID = 0;
 		stMbusAppCallbackParams.u16Port = 0;
@@ -126,7 +123,6 @@ TEST_F(ModbusStackInterface_ut, AppCallback_null_ip)
 
 	try
 	{
-		msg_envelope_t *msg = NULL;
 		stOnDemandRequest reqData;
 		stOnDemandRequest onDemandReqData ;
 		uint16_t uTxID = 20;
@@ -297,7 +293,6 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadInReg)
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteSingleCoils)
 {
 
-	uint8_t temp = 0;
 
 	uint8_t retval = Modbus_Stack_API_Call(WRITE_SINGLE_COIL,
 			pstMbusApiPram,
@@ -309,8 +304,6 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteSingleCoils)
 
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteSingleReg)
 {
-
-	uint8_t temp = 0;
 
 	uint8_t retval = Modbus_Stack_API_Call(WRITE_SINGLE_REG,
 			pstMbusApiPram,

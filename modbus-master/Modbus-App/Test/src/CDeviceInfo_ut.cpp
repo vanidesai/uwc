@@ -221,7 +221,7 @@ try{
 			for( auto DataPoints_It : DataPoints)
 			{
 				network_info::CDataPoint::build(DataPoints_It, datapoint_obj);
-				int temp = Cdeviceinfo_obj.addDataPoint(datapoint_obj);
+				Cdeviceinfo_obj.addDataPoint(datapoint_obj);
 			}
 		}
 	}

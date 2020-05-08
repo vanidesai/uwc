@@ -156,6 +156,7 @@ TEST_F(ZmqHandler_ut, getCTX2)
 
 		//zmq_handler::stZmqContext &busCTX = zmqhandler.getCTX("PL0_flowmeter1");
 		zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("Modbus-TCP-Master_ReadRequest");
+		EXPECT_EQ(NULL, busCTX.m_pContext);
 
 
 	}
@@ -174,6 +175,7 @@ TEST_F(ZmqHandler_ut, getCTX3)
 	{
 		//zmq_handler::stZmqContext &busCTX = zmqhandler.getCTX("PL1_flowmeter2");
 		zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("Modbus-TCP-Master_PolledData");
+		EXPECT_NE(NULL, busCTX.m_pContext);
 
 	}
 	catch(std::exception &e)
@@ -190,6 +192,7 @@ TEST_F(ZmqHandler_ut, getCTX4)
 	{
 		//zmq_handler::stZmqContext &busCTX = zmqhandler.getCTX("PL1_flowmeter2_write");
 		zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("MQTT-Export/Modbus-TCP-Master_WriteRequest");
+		EXPECT_NE(NULL, busCTX.m_pContext);
 
 	}
 	catch(std::exception &e)
@@ -215,10 +218,11 @@ TEST_F(ZmqHandler_ut, getSubCtx)
 	try
 	{
 
-		bool bRes = zmq_handler::prepareCommonContext("fgdgrpub");
+		zmq_handler::prepareCommonContext("fgdgrpub");
 
 		busSubCTX = zmq_handler::getSubCTX("Modbus-TCP-Master_ReadRequest");
 		//EXPECT_EQ(1,1);
+		EXPECT_NE(NULL, busSubCTX.sub_ctx);
 
 	}
 	catch(std::exception &e)
@@ -241,7 +245,7 @@ TEST_F(ZmqHandler_ut, getPubCtx)
 	{
 
 		zmq_handler::insertPubCTX(topic, objTempPubCtx);
-		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(topic);
+		zmq_handler::getPubCTX(topic);
 		busPubCTX = zmq_handler::getPubCTX("Modbus-TCP-Master_ReadRequest");
 
 	}

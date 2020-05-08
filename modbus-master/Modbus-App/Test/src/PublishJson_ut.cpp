@@ -151,8 +151,10 @@ TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 
 		setenv("WRITE_RESPONSE_TOPIC", "PL_0", 1);
 		std::string topic = std::getenv("WRITE_RESPONSE_TOPIC");
-		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(topic);
+		zmq_handler::getCTX(topic);
 		uint8_t valv = PublishJsonHandler::instance().publishJson(NULL, NULL, NULL, topic);
+
+		EXPECT_EQ(false, valv);
 
 	}
 	catch(std::exception &e)
@@ -283,6 +285,7 @@ TEST_F(PublishJson_ut, element_exist_inJSON)
 	try
 	{
 		result = isElementExistInJson(root, a_sKeyName);
+		EXPECT_EQ(false, result);
 	}
 	catch(std::exception &e)
 	{

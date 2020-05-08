@@ -261,6 +261,22 @@ function cleanup()
 	docker rm -f ia_etcd mqtt_test_container > /dev/null 2>&1
 }
 
+eisProvision()
+{
+    if [ -d "${eis_working_dir}/provision/" ];then
+        cd "${eis_working_dir}/provision/"
+    else
+        echo "${RED}ERROR: ${eis_working_dir}/provision/ is not present.${NC}"
+        exit 1 # terminate and indicate error
+    fi
+
+    ./provision_eis.sh ../docker-compose.yml
+    check_for_errors "$?" "Provisioning is failed. Please check logs" \
+                    "${GREEN}Provisioning is done successfully.${NC}"
+    cd -
+    return 0
+}
+
 function runETCDContainer()
 {
 	cd $Current_Dir
@@ -268,13 +284,7 @@ function runETCDContainer()
 	docker ps -q --filter "name=ia_etcd" | grep -q . && docker stop ia_etcd && docker rm -f ia_etcd
 	docker ps -q --filter "name=ia_etcd_provision" | grep -q . && docker stop ia_etcd_provision && docker rm -f ia_etcd_provision
 	docker ps -q --filter "name=mqtt_test_container" | grep -q . && docker stop mqtt_test_container && docker rm -f mqtt_test_container
-	./02_provisionEIS.sh > /dev/null 2>&1
-	if [ "$?" -ne "0" ]; then
-		echo ${RED}"Provisioning is failed. ${NC}"
-		exit 1
-	else
-		echo ${GREEN}"Provisioning is Successfully done. ${NC}"
-	fi
+	eisProvision
 }
 
 

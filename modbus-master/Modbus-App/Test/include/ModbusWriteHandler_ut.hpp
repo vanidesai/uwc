@@ -31,6 +31,8 @@
 #include <semaphore.h>
 #include "ModbusOnDemandHandler.hpp"
 
+extern string onDemandHandler::getMsgElement(msg_envelope_t *a_Msg,
+		string a_sKey);
 
 class ModbusWriteHandler_ut : public ::testing::Test {
 protected:
@@ -59,7 +61,9 @@ public:
 	unsigned char  m_u8FunCode = 0;
 	unsigned char u8FunCode = READ_COIL_STATUS;
 	std::string strTopic = "";
-	MbusAPI_t stMbusApiPram = {};
+
+	MbusAPI_t stMbusApiPram;
+
 	eMbusAppErrorCode eFunRetType = APP_SUCCESS;
 
 	string strCommand, strValue, strWellhead, strVersion, strSourceTopic;

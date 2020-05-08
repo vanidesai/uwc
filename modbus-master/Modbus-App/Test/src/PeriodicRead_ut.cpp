@@ -39,7 +39,6 @@ extern eMbusAppErrorCode readPeriodicCallBack(stMbusAppCallbackParams_t *pstMbus
 
 /***Test:PeriodicRead_ut::handleResponse_NULLArgument_Exception()
   Execution should not hang when NULL pointer is passed as an argument.*/
-#if 0 //SPRINT13CHANGES
 TEST_F(PeriodicRead_ut, handleResponse_NULLArguments) {
 
 	pstException->m_u8ExcCode = 0;
@@ -49,7 +48,10 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLArguments) {
 	{
 		/*CPeriodicReponseProcessor::Instance().handleResponse(u8UnitID, u16TransacID, pu8IpAddr, u8FunCode, NULL,
 			u8numBytes, pu8data, u16StartAddress, u16Quantity,a_objStackTimestamps);*/
-		CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams, MBUS_CALLBACK_ONDEMAND_READ, "Response");
+		CPeriodicReponseProcessor::Instance().handleResponse(pstMbusAppCallbackParams,
+				MBUS_CALLBACK_ONDEMAND_READ,
+				"Response",
+				false);
 
 		EXPECT_EQ("", test_str);
 	}
@@ -61,7 +63,6 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLArguments) {
 	}
 
 }
-#endif
 
 #if 0
 // TESTS are commented for now only ....Need to modify again
@@ -435,7 +436,6 @@ Test: Behaviour of readPeriodicCallBack()
  */
 #endif
 
-#if 0 //SPRINT13CHANGES
 //TRhis test is should not be commented
 TEST_F(PeriodicRead_ut, isTxIDPresent_return)
 {
@@ -443,7 +443,7 @@ TEST_F(PeriodicRead_ut, isTxIDPresent_return)
 	try
 	{
 		//CRequestInitiator::instance().insertTxIDReqData(3, CRefDataForPolling_obj);
-		CRequestInitiator::instance().isTxIDPresent(3);
+		CRequestInitiator::instance().isTxIDPresent(3, false);
 		EXPECT_EQ(1, 1); //Programme doesnt hang
 
 	}
@@ -453,7 +453,6 @@ TEST_F(PeriodicRead_ut, isTxIDPresent_return)
 	}
 
 }
-#endif
 
 // This test should not be commented
 TEST_F(PeriodicRead_ut, timer_Start)
@@ -473,12 +472,11 @@ TEST_F(PeriodicRead_ut, timer_Stop)
 TC0013
 Test: Behaviour of removeTxIDReqData()
  */
-#if 0 //SPRINT13CHANGES
 TEST_F(PeriodicRead_ut, removeTxIDReqData_return) {
 
 	try
 	{
-		CRequestInitiator::instance().removeTxIDReqData(3);
+		CRequestInitiator::instance().removeTxIDReqData(3, false);
 		EXPECT_EQ(1, 1); //Programme doesnt hang
 
 	}
@@ -488,7 +486,6 @@ TEST_F(PeriodicRead_ut, removeTxIDReqData_return) {
 	}
 
 }
-#endif
 
 /******************************CTimeMapper::initTimerFunction****************************************
 TC0014
@@ -563,6 +560,7 @@ TEST_F(PeriodicRead_ut, get_Timer_freq)
 	{
 		uint32_t ulMinFreq = CTimeMapper::instance().getMinTimerFrequency();
 
+		EXPECT_EQ(100, ulMinFreq);
 	}
 	catch(std::exception &e)
 	{
@@ -606,16 +604,17 @@ TEST_F(PeriodicRead_ut, Response_cutoff)
 TEST_F(PeriodicRead_ut, readPeriodic_callback_true)
 {
 	bool isRTRequest = true;
-	uint8_t u8ReturnType = APP_SUCCESS;
+
 	uint16_t uTxID = 20;
 	if(true == isRTRequest)
 	{
-		u8ReturnType = readPeriodicRTCallBack(pstMbusAppCallbackParams, uTxID);
+		readPeriodicRTCallBack(pstMbusAppCallbackParams, uTxID);
+
 		EXPECT_EQ(true, isRTRequest);
 	}
 	else
 	{
-		u8ReturnType = readPeriodicCallBack(pstMbusAppCallbackParams, uTxID);
+		readPeriodicCallBack(pstMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(false, isRTRequest);
 	}
 }
@@ -624,16 +623,16 @@ TEST_F(PeriodicRead_ut, readPeriodic_callback_true)
 TEST_F(PeriodicRead_ut, readPeriodic_callback_true_NULL)
 {
 	bool isRTRequest = true;
-	uint8_t u8ReturnType = APP_SUCCESS;
 	uint16_t uTxID = 20;
+
 	if(true == isRTRequest)
 	{
-		u8ReturnType = readPeriodicRTCallBack(stMbusAppCallbackParams, uTxID);
+		readPeriodicRTCallBack(stMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(true, isRTRequest);
 	}
 	else
 	{
-		u8ReturnType = readPeriodicCallBack(stMbusAppCallbackParams, uTxID);
+		readPeriodicCallBack(stMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(false, isRTRequest);
 	}
 }
@@ -642,16 +641,16 @@ TEST_F(PeriodicRead_ut, readPeriodic_callback_true_NULL)
 TEST_F(PeriodicRead_ut, readPeriodic_callback_false)
 {
 	bool isRTRequest = false;
-	uint8_t u8ReturnType = APP_SUCCESS;
 	uint16_t uTxID = 20;
+
 	if(true == isRTRequest)
 	{
-		u8ReturnType = readPeriodicRTCallBack(pstMbusAppCallbackParams, uTxID);
+		readPeriodicRTCallBack(pstMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(true, isRTRequest);
 	}
 	else
 	{
-		u8ReturnType = readPeriodicCallBack(pstMbusAppCallbackParams, uTxID);
+		readPeriodicCallBack(pstMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(false, isRTRequest);
 	}
 }
@@ -659,16 +658,16 @@ TEST_F(PeriodicRead_ut, readPeriodic_callback_false)
 TEST_F(PeriodicRead_ut, readPeriodic_callback_false_NULL)
 {
 	bool isRTRequest = false;
-	uint8_t u8ReturnType = APP_SUCCESS;
 	uint16_t uTxID = 20;
+
 	if(true == isRTRequest)
 	{
-		u8ReturnType = readPeriodicRTCallBack(stMbusAppCallbackParams, uTxID);
+		readPeriodicRTCallBack(stMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(true, isRTRequest);
 	}
 	else
 	{
-		u8ReturnType = readPeriodicCallBack(stMbusAppCallbackParams, uTxID);
+		readPeriodicCallBack(stMbusAppCallbackParams, uTxID);
 		EXPECT_EQ(false, isRTRequest);
 	}
 }
@@ -751,7 +750,8 @@ TEST_F(PeriodicRead_ut, polled_point_list_true)
 	uint32_t uiRef;
 	try
 	{
-		std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef, true);
+		CTimeMapper::instance().getPolledPointList(uiRef, true);
+		// Verification is in progress
 	}
 	catch(std::exception &e)
 	{
@@ -764,7 +764,8 @@ TEST_F(PeriodicRead_ut, polled_point_list_false)
 	uint32_t uiRef;
 	try
 	{
-		std::vector<CRefDataForPolling>& a_vReqData = CTimeMapper::instance().getPolledPointList(uiRef, false);
+		CTimeMapper::instance().getPolledPointList(uiRef, false);
+		// Verification is in progress
 	}
 	catch(std::exception &e)
 	{

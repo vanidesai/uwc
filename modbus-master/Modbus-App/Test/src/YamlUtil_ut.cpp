@@ -34,7 +34,7 @@ TEST_F(YamlUtil_ut, ConvertIPStringToCharArray_ValidString)
 	{
 		CommonUtils::ConvertIPStringToCharArray(Test_Str, Arr);
 
-		for( int i = 0; i < sizeof(Arr); i++)
+		for( unsigned int i = 0; i < sizeof(Arr); i++)
 		{
 			EXPECT_EQ(ExpectedArr[i], Arr[i]);
 		}
