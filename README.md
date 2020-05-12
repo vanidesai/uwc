@@ -60,7 +60,7 @@ Please Note : Refer UWC user guide for more details.
 Execute below command on terminal to verify container status.
 sudo docker ps
 ```
-## Port for MQTT broker 
+## Port for MQTT broker for UWC
 ```
 MQTT broker uses 11883 port.
 ```
