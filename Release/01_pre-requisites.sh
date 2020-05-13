@@ -251,7 +251,7 @@ addUWCContainersInEIS()
     cd ${working_dir}/ && rm -rf UWC/
 
     # set execute permissions to all shell scripts
-    find . -type f -iname "*.sh" -exec chmod +x {} \;
+    cd ../ && find . -type f -iname "*.sh" -exec chmod 777 {} \;
 
     return 0
 }
