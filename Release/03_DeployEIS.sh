@@ -14,6 +14,7 @@ RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
 NC=$(tput sgr0)
+resume_insights="${HOME}/.resume_process"
 
 turtlecreek_dir1="$Current_Dir/../installer/installation"
 eis_working_dir="$Current_Dir/docker_setup"
@@ -175,9 +176,13 @@ deployUWC()
 function installTurtleCreek()
 {
     echo "${INFO}Started installation of turtleCreek${NC}"
+    if [ ! -f "${resume_insights}" ]; then
+        touch "${resume_insights}"
+    fi
     cd ${eis_working_dir}/../../installer/installation
     Current_Dir=${eis_working_dir}/../../installer/installation 
     export Current_Dir
+    export resume_insights
     ./src/turtlecreek/install.sh
     if [ "$?" -eq "0" ];then
 	echo "*****************************************************************"
@@ -186,6 +191,9 @@ function installTurtleCreek()
         echo "${INFO}Turtle installation is failed or aborted${NC}"
     fi
     echo "${INFO} Done. ${NC}"
+    if [ -f ${resume_insights} ]; then
+        rm -f ${resume_insights}
+    fi
 }
 
 verifyContainer()
