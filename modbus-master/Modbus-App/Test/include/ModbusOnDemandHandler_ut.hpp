@@ -34,7 +34,7 @@
 extern string onDemandHandler::getMsgElement(msg_envelope_t *a_Msg,
 		string a_sKey);
 
-class ModbusWriteHandler_ut : public ::testing::Test {
+class ModbusOnDemandHandler_ut : public ::testing::Test {
 protected:
 	virtual void SetUp();
 	virtual void TearDown();

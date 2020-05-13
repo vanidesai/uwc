@@ -19,8 +19,8 @@ CPP_SRCS += \
 ../Test/src/CWellSiteInfo_ut.cpp \
 ../Test/src/Logger_ut.cpp \
 ../Test/src/Main_ut.cpp \
+../Test/src/ModbusOnDemandHandler_ut.cpp \
 ../Test/src/ModbusStackInterface_ut.cpp \
-../Test/src/ModbusWriteHandler_ut.cpp \
 ../Test/src/PeriodicRead_ut.cpp \
 ../Test/src/PublishJson_ut.cpp \
 ../Test/src/YamlUtil_ut.cpp \
@@ -36,8 +36,8 @@ OBJS += \
 ./Test/src/CWellSiteInfo_ut.o \
 ./Test/src/Logger_ut.o \
 ./Test/src/Main_ut.o \
+./Test/src/ModbusOnDemandHandler_ut.o \
 ./Test/src/ModbusStackInterface_ut.o \
-./Test/src/ModbusWriteHandler_ut.o \
 ./Test/src/PeriodicRead_ut.o \
 ./Test/src/PublishJson_ut.o \
 ./Test/src/YamlUtil_ut.o \
@@ -53,8 +53,8 @@ CPP_DEPS += \
 ./Test/src/CWellSiteInfo_ut.d \
 ./Test/src/Logger_ut.d \
 ./Test/src/Main_ut.d \
+./Test/src/ModbusOnDemandHandler_ut.d \
 ./Test/src/ModbusStackInterface_ut.d \
-./Test/src/ModbusWriteHandler_ut.d \
 ./Test/src/PeriodicRead_ut.d \
 ./Test/src/PublishJson_ut.d \
 ./Test/src/YamlUtil_ut.d \

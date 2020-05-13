@@ -14,8 +14,8 @@ CPP_SRCS += \
 ../src/ConfigManager.cpp \
 ../src/Logger.cpp \
 ../src/Main.cpp \
-../src/ModbusStackInterface.cpp \
 ../src/ModbusOnDemandHandler.cpp \
+../src/ModbusStackInterface.cpp \
 ../src/NetworkInfo.cpp \
 ../src/PeriodicRead.cpp \
 ../src/PublishJson.cpp \
@@ -26,8 +26,8 @@ OBJS += \
 ./src/ConfigManager.o \
 ./src/Logger.o \
 ./src/Main.o \
-./src/ModbusStackInterface.o \
 ./src/ModbusOnDemandHandler.o \
+./src/ModbusStackInterface.o \
 ./src/NetworkInfo.o \
 ./src/PeriodicRead.o \
 ./src/PublishJson.o \
@@ -38,8 +38,8 @@ CPP_DEPS += \
 ./src/ConfigManager.d \
 ./src/Logger.d \
 ./src/Main.d \
-./src/ModbusStackInterface.d \
 ./src/ModbusOnDemandHandler.d \
+./src/ModbusStackInterface.d \
 ./src/NetworkInfo.d \
 ./src/PeriodicRead.d \
 ./src/PublishJson.d \

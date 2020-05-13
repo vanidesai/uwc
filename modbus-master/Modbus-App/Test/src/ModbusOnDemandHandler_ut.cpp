@@ -9,7 +9,7 @@
  ************************************************************************************/
 
 
-#include "../include/ModbusWriteHandler_ut.hpp"
+#include "../include/ModbusOnDemandHandler_ut.hpp"
 #include "ConfigManager.hpp"
 #include "cjson/cJSON.h"
 
@@ -21,18 +21,18 @@ extern int char2int(char input);
 
 
 //extern sem_t semaphoreWriteReq;
-void ModbusWriteHandler_ut::SetUp()
+void ModbusOnDemandHandler_ut::SetUp()
 {
 	// Setup code
 }
 
-void ModbusWriteHandler_ut::TearDown()
+void ModbusOnDemandHandler_ut::TearDown()
 {
 	// TearDown code
 }
 
 
-TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_InvServiceReq)
+TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvServiceReq)
 {
 
 	stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = true;
@@ -66,7 +66,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForWrite_InvServiceReq)
 }
 
 /* Invalid topic/msg */
-TEST_F(ModbusWriteHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
+TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
 {
 
 	stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
@@ -101,7 +101,7 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
 	}
 }
 
-TEST_F(ModbusWriteHandler_ut, jsonParserForOnDemandRequest_ValidIpJason)
+TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_ValidIpJason)
 {
 
 	stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
@@ -136,9 +136,9 @@ TEST_F(ModbusWriteHandler_ut, jsonParserForOnDemandRequest_ValidIpJason)
 	}
 }
 
-/*** Test:ModbusWriteHandler_ut::modWriteHandler_getInstance() Check the instance type returned by function ***/
+/*** Test:ModbusOnDemandHandler_ut::modWriteHandler_getInstance() Check the instance type returned by function ***/
 
-TEST_F(ModbusWriteHandler_ut, modWriteHandler_getInstance)
+TEST_F(ModbusOnDemandHandler_ut, modWriteHandler_getInstance)
 {
 
 
@@ -146,11 +146,11 @@ TEST_F(ModbusWriteHandler_ut, modWriteHandler_getInstance)
 }
 
 
-/**Test::ModbusWriteHandler_ut::createWriteListner_test()
+/**Test::ModbusOnDemandHandler_ut::createWriteListner_test()
     checks the behaviour of the createWriteListener() function for valid topic andtype of topic
  **/
 
-TEST_F(ModbusWriteHandler_ut, createWriteListner_test)
+TEST_F(ModbusOnDemandHandler_ut, createWriteListner_test)
 {
 
 	/*setenv("WRITE_RESPONSE_TOPIC", "PL_0", 1);
@@ -176,9 +176,9 @@ TEST_F(ModbusWriteHandler_ut, createWriteListner_test)
 
 
 
-/***Test ::ModbusWriteHandler_ut::subscribeDeviceListener()
+/***Test ::ModbusOnDemandHandler_ut::subscribeDeviceListener()
     Check the behaviour of subscribeDeviceListener() function***/
-TEST_F(ModbusWriteHandler_ut, subscribeDeviceListener_CallbaclNULL)
+TEST_F(ModbusOnDemandHandler_ut, subscribeDeviceListener_CallbaclNULL)
 {
 
 	globalConfig::COperation a_refOps;
@@ -208,7 +208,7 @@ TEST_F(ModbusWriteHandler_ut, subscribeDeviceListener_CallbaclNULL)
 
 }
 
-TEST_F(ModbusWriteHandler_ut, hex_to_bin)
+TEST_F(ModbusOnDemandHandler_ut, hex_to_bin)
 {
 
 	stMbusApiPram.m_lPriority = 1;
@@ -232,7 +232,7 @@ TEST_F(ModbusWriteHandler_ut, hex_to_bin)
 }
 
 
-TEST_F(ModbusWriteHandler_ut, hex_to_bin_test)
+TEST_F(ModbusOnDemandHandler_ut, hex_to_bin_test)
 {
 
 	stMbusApiPram.m_lPriority = 1;
@@ -259,7 +259,7 @@ TEST_F(ModbusWriteHandler_ut, hex_to_bin_test)
 
 
 
-TEST_F(ModbusWriteHandler_ut, char_2_int)
+TEST_F(ModbusOnDemandHandler_ut, char_2_int)
 {
 	hex2bin(tValue, stMbusApiPram.m_u16ByteCount, stMbusApiPram.m_pu8Data);
 	try
@@ -273,7 +273,7 @@ TEST_F(ModbusWriteHandler_ut, char_2_int)
 	}
 }
 
-TEST_F(ModbusWriteHandler_ut, validateInputJson_ValidJason)
+TEST_F(ModbusOnDemandHandler_ut, validateInputJson_ValidJason)
 {
 
 	try
@@ -292,7 +292,7 @@ TEST_F(ModbusWriteHandler_ut, validateInputJson_ValidJason)
 
 }
 
-TEST_F(ModbusWriteHandler_ut, validateInputJson_InValidJason)
+TEST_F(ModbusOnDemandHandler_ut, validateInputJson_InValidJason)
 {
 
 	try
@@ -312,7 +312,7 @@ TEST_F(ModbusWriteHandler_ut, validateInputJson_InValidJason)
 }
 
 #if 0 //SPRINT13CHANGES
-TEST_F(ModbusWriteHandler_ut, process_msg)
+TEST_F(ModbusOnDemandHandler_ut, process_msg)
 {
 	eMbusRequestType reqType = MBUS_REQUEST_NONE;
 	msg_envelope_t *g_msg = NULL;
@@ -353,7 +353,7 @@ TEST_F(ModbusWriteHandler_ut, process_msg)
 /********************FOR Sub****************************/
 
 
-TEST_F(ModbusWriteHandler_ut, thread_init_DValve_sub)
+TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_sub)
 {
 
 	std::string sRespTopic = "";
@@ -424,7 +424,7 @@ TEST_F(ModbusWriteHandler_ut, thread_init_DValve_sub)
 
 /****************** For Pub*****************/
 
-TEST_F(ModbusWriteHandler_ut, thread_init_DValve_pub)
+TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_pub)
 {
 	std::string sRespTopic = "";
 
@@ -505,7 +505,7 @@ TEST_F(ModbusWriteHandler_ut, thread_init_DValve_pub)
 
 /**********************************createErrorrespose()*****************************************/
 
-TEST_F(ModbusWriteHandler_ut, create_error_response_read)
+TEST_F(ModbusOnDemandHandler_ut, create_error_response_read)
 {
 
 	stMbusApiPram.m_lPriority = 1;
@@ -544,7 +544,7 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_read)
 
 }
 
-TEST_F(ModbusWriteHandler_ut, create_error_response_write)
+TEST_F(ModbusOnDemandHandler_ut, create_error_response_write)
 {
 
 	bool isWrite = false;
@@ -570,7 +570,7 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_write)
 
 }
 
-TEST_F(ModbusWriteHandler_ut, create_error_response_nonRT)
+TEST_F(ModbusOnDemandHandler_ut, create_error_response_nonRT)
 {
 	bool isWrite = true;
 	stOnDemandRequest reqData;
@@ -595,7 +595,7 @@ TEST_F(ModbusWriteHandler_ut, create_error_response_nonRT)
 
 }
 
-TEST_F(ModbusWriteHandler_ut, create_error_response)
+TEST_F(ModbusOnDemandHandler_ut, create_error_response)
 {
 	bool isWrite = false;
 	bool isRT = false;
@@ -621,7 +621,7 @@ TEST_F(ModbusWriteHandler_ut, create_error_response)
 
 }
 
-TEST_F(ModbusWriteHandler_ut, OnDemandInfoHandler_MbusAPI_tNULL)
+TEST_F(ModbusOnDemandHandler_ut, OnDemandInfoHandler_MbusAPI_tNULL)
 {
 	eMbusAppErrorCode eMbusAppErrorCode_variable;
 
@@ -635,7 +635,7 @@ TEST_F(ModbusWriteHandler_ut, OnDemandInfoHandler_MbusAPI_tNULL)
 
 }
 
-TEST_F(ModbusWriteHandler_ut, OnDemandInfoHandler_CallbackNULL)
+TEST_F(ModbusOnDemandHandler_ut, OnDemandInfoHandler_CallbackNULL)
 {
 	eMbusAppErrorCode eMbusAppErrorCode_variable;
 	MbusAPI_t MbusAPI_t_obj;
@@ -650,7 +650,7 @@ TEST_F(ModbusWriteHandler_ut, OnDemandInfoHandler_CallbackNULL)
 
 }
 
-TEST_F(ModbusWriteHandler_ut, getMsgElement_NULL)
+TEST_F(ModbusOnDemandHandler_ut, getMsgElement_NULL)
 {
 	string RetStr = onDemandHandler::Instance().getMsgElement(NULL, "app_seq");
 
@@ -658,7 +658,7 @@ TEST_F(ModbusWriteHandler_ut, getMsgElement_NULL)
 
 }
 
-TEST_F(ModbusWriteHandler_ut, processMsg_MsgEnvNULL)
+TEST_F(ModbusOnDemandHandler_ut, processMsg_MsgEnvNULL)
 {
 	string topic = "";
 	bool RetVal = onDemandHandler::Instance().processMsg(NULL,

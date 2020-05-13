@@ -528,4 +528,103 @@ TEST_F(ZmqHandler_ut, isNumber_notNumber)
 	EXPECT_EQ(0, result);
 }
 
+TEST_F(ZmqHandler_ut, prepareContext_NULLArg_msgbus_ctx)
+{
+	config_t config;
+
+	bool Res = zmq_handler::prepareContext(false,
+											NULL,
+											"TestStr",
+											&config);
+
+	EXPECT_EQ(false, Res);
+}
+
+TEST_F(ZmqHandler_ut, prepareContext_TopicEmpty)
+{
+	void* msgbus_ctx;
+	string topicType = "sub";
+
+	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+								CfgManager::Instance().getConfigClient(),
+								ppcTopics , 1, topicType.c_str());
+
+
+	msgbus_ctx = msgbus_initialize(config);
+
+	bool Res = zmq_handler::prepareContext(false,
+											msgbus_ctx,
+											"",
+											config);
+
+	EXPECT_EQ(false, Res);
+}
+
+TEST_F(ZmqHandler_ut, prepareContext_NULLArg_config)
+{
+	void* msgbus_ctx;
+	string topicType = "sub";
+
+	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+								CfgManager::Instance().getConfigClient(),
+								ppcTopics , 1, topicType.c_str());
+
+
+	msgbus_ctx = msgbus_initialize(config);
+
+	bool Res = zmq_handler::prepareContext(false,
+											msgbus_ctx,
+											"TestStr",
+											NULL);
+
+	EXPECT_EQ(false, Res);
+}
+
+TEST_F(ZmqHandler_ut, prepareContext_SubFails)
+{
+	void* msgbus_ctx;
+	string topicType = "sub";
+
+	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+								CfgManager::Instance().getConfigClient(),
+								ppcTopics , 1, topicType.c_str());
+
+
+	msgbus_ctx = msgbus_initialize(config);
+
+	bool Res = zmq_handler::prepareContext(false,
+											msgbus_ctx,
+											"TestStr",
+											config);
+
+	EXPECT_EQ(false, Res);
+}
+
+TEST_F(ZmqHandler_ut, prepareContext_PubFails)
+{
+	void* msgbus_ctx;
+	string topicType = "pub";
+
+	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+								CfgManager::Instance().getConfigClient(),
+								ppcTopics , 1, topicType.c_str());
+
+
+	msgbus_ctx = msgbus_initialize(config);
+
+	bool Res = zmq_handler::prepareContext(true,
+											msgbus_ctx,
+											"TestStr",
+											config);
+
+	EXPECT_EQ(false, Res);
+}
 

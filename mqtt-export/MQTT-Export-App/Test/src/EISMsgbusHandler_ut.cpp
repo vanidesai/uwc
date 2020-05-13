@@ -272,19 +272,103 @@ TEST_F(EISMsgbusHandler_ut, RemoveCtxt_CtxtNULL) {
 	EXPECT_EQ(false, retVal);
 }
 
-//TEST_F(EISMsgbusHandler_ut, RemoveCtxt_CtxtValid) {
-//
-//	bool retVal = true;
-//	stZmqContext context;
-//	string topic = "MQTT_Export_WrReq_RT";
-//
-//	if( true == CEISMsgbusHandler::Instance().getCTX(topic, context) )
-//	{
-//		CEISMsgbusHandler::Instance().removeCTX(topic);
-//		retVal = CEISMsgbusHandler::Instance().getCTX(topic, context);
-//	}
-//
-//	EXPECT_EQ(false, retVal);
-//
-//}
+TEST_F(EISMsgbusHandler_ut, prepareContext_NULLArg_msgbus_ctx)
+{
+	config_t config;
 
+	bool Res = CEISMsgbusHandler::Instance().prepareContext(false,
+											NULL,
+											"TestStr",
+											&config);
+
+	EXPECT_EQ(false, Res);
+}
+
+TEST_F(EISMsgbusHandler_ut, prepareContext_TopicEmpty)
+{
+	void* msgbus_ctx;
+	string topicType = "sub";
+
+	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+								CfgManager::Instance().getConfigClient(),
+								ppcTopics , 1, topicType.c_str());
+
+
+	msgbus_ctx = msgbus_initialize(config);
+
+	bool Res = CEISMsgbusHandler::Instance().prepareContext(false,
+											msgbus_ctx,
+											"",
+											config);
+
+	EXPECT_EQ(false, Res);
+}
+
+TEST_F(EISMsgbusHandler_ut, prepareContext_NULLArg_config)
+{
+	void* msgbus_ctx;
+	string topicType = "sub";
+
+	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+								CfgManager::Instance().getConfigClient(),
+								ppcTopics , 1, topicType.c_str());
+
+
+	msgbus_ctx = msgbus_initialize(config);
+
+	bool Res = CEISMsgbusHandler::Instance().prepareContext(false,
+											msgbus_ctx,
+											"TestStr",
+											NULL);
+
+	EXPECT_EQ(false, Res);
+}
+
+TEST_F(EISMsgbusHandler_ut, prepareContext_SubFails)
+{
+	void* msgbus_ctx;
+	string topicType = "sub";
+
+	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+								CfgManager::Instance().getConfigClient(),
+								ppcTopics , 1, topicType.c_str());
+
+
+	msgbus_ctx = msgbus_initialize(config);
+
+	bool Res = CEISMsgbusHandler::Instance().prepareContext(false,
+											msgbus_ctx,
+											"TestStr",
+											config);
+
+	EXPECT_EQ(false, Res);
+}
+
+TEST_F(EISMsgbusHandler_ut, prepareContext_PubFails)
+{
+	void* msgbus_ctx;
+	string topicType = "pub";
+
+	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+
+	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
+								CfgManager::Instance().getConfigClient(),
+								ppcTopics , 1, topicType.c_str());
+
+
+	msgbus_ctx = msgbus_initialize(config);
+
+
+	bool Res = CEISMsgbusHandler::Instance().prepareContext(true,
+											msgbus_ctx,
+											"TestStr",
+											config);
+
+	EXPECT_EQ(false, Res);
+}
