@@ -15,7 +15,7 @@ GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
 NC=$(tput sgr0)
 
-turtlecreek_dir="$Current_Dir/../installer/installation/src/turtlecreek"
+turtlecreek_dir1="$Current_Dir/../installer/installation"
 eis_working_dir="$Current_Dir/docker_setup"
 
 
@@ -175,14 +175,15 @@ deployUWC()
 function installTurtleCreek()
 {
     echo "${INFO}Started installation of turtleCreek${NC}"
-    cd ${turtlecreek_dir}
-    chmod +x *sh
-    ./install.sh
+    cd ${eis_working_dir}/../../installer/installation
+    Current_Dir=${eis_working_dir}/../../installer/installation 
+    export Current_Dir
+    ./src/turtlecreek/install.sh
     if [ "$?" -eq "0" ];then
 	echo "*****************************************************************"
         echo "${GREEN}TurtleCreek Installation is successful.${NC}"
     else
-        echo ""
+        echo "${INFO}Turtle installation is failed or aborted${NC}"
     fi
     echo "${INFO} Done. ${NC}"
 }
