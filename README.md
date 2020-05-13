@@ -38,31 +38,33 @@ The directory comprises of following:
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/uwc_common">uwc_common</a> :
   This directory contains common dockefiles for UWC
 
-## Steps to install UWC along with EIS Installer 
+## Install pre-requisites
 ```
-1. EdgeInsightsSoftware-v2.1-PV version of EIS should be available on deploy machine before deployment. 
+1. EdgeInsightsSoftware-v2.2-PV version of EIS should be available on deploy machine before deployment. 
 2. Copy files from "Release" diectory (e.g. all shell scripts, tar.gz file, etc.) into "EdgeInsightsSoftware-v2.2-PV/IEdgeInsights" directory. Please ensure that shell scripts have "execute" permission (sudo chmod +x <script name>).
 3. Open a terminal and go to EdgeInsightsSoftware-v2.2-PV/IEdgeInsights directory.
-4. Run below command on terminal to install all pre-requisites required to deploy UWC containers.
-sudo ./ConfigureUWC.sh 
+4. Uninstall previously deployed and running UWC containers, using "sudo ./04_uninstall_EIS.sh" command on terminal.
+5. Run below command on terminal to install all pre-requisites required to deploy UWC containers.
+sudo ./01_pre-requisites.sh
+```
+
+## Provision EIS
+```
+Execute below command on terminal for provisioning EIS.
+sudo ./02_provisionEIS.sh
 ```
 
 ## Build and Run all UWC containers
 ```
-Follow EIS installer process for further deployment.
-Go to EdgeInsightsSoftware-v2.2-PV/installer/installation and then execute setup.sh script.
+Execute below command on terminal for container deployment.
+sudo ./03_DeployEIS.sh
 
-Please Note : Refer UWC user guide for more details.
 ```
 
 ## Verify container status
 ```
 Execute below command on terminal to verify container status.
 sudo docker ps
-```
-## Port for MQTT broker for UWC
-```
-MQTT broker uses 11883 port.
 ```
 
 ## Steps to run unit test cases
@@ -83,16 +85,18 @@ MQTT broker uses 11883 port.
    Syntax - docker cp <container_name>:<file to copy from container> <file to be copied i.e. host directory>
 5. To check the IP address of machine, use "ifconfig" command.
 6. For Modbus RTU, to check attached COM port for serial communication, use "dmesg | grep tty" command.
-```
 
 ## Redirect docker logs to file including errors
-```
 docker logs modbus-tcp-container > docker.log 2>&1
 ```
 
 ## ETCD UI access (*Note : This is not required since we are not storing any configuration data for UWC containers in ETCD)
-```
 1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL. (username - root , password- eis123)
+
+## Steps to apply new configuration (i.e. YML files or docker-compose.yml)
+  Once YML files/docker-compose.yml are changed/Modified in /opt/intel/eis/uwc_data directory then execute following command to apply new configurations,
+ ```
+  sudo ./05_applyConfigChanges.sh
 ```
 
 ## Steps to create bundle out of sources - Optional 
@@ -100,3 +104,15 @@ docker logs modbus-tcp-container > docker.log 2>&1
 Execute below script to create UWC bundle for deployment.
 sudo ./create_uwc_package.sh
 ```
+
+## How to bring up/down UWC containers
+```
+cd EIS..../docker_setup
+export PWD=$(pwd)
+docker-compose down  - bring down all containers
+docker-compose up - bring up all containers
+
+## Notes
+*  If docker-compose.yml is modified then execute 03_DeployEIS.sh script for build and deployment of UWC containers.
+*  If previous containers are running on deploy machine, then stop those containers using 04_uninstall_EIS.sh script.
+
