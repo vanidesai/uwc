@@ -165,10 +165,30 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, con
 				msgbus_msg_envelope_put(msg, "tsPollingTime", ptPollingTS);
 			}
 
+			// Request retried timestamp
+			//msg_envelope_elem_body_t* ptRetryTS = msgbus_msg_envelope_new_string( (to_string(get_micros(a_objReqData->getTsForRetry()))).c_str() );
+			//msgbus_msg_envelope_put(msg, "tsRetry", ptRetryTS);
+
+			// Request retried count
+			msg_envelope_elem_body_t* ptRetrycount = msgbus_msg_envelope_new_string( (to_string(a_objReqData->getRetriedCount()).c_str() ));
+			msgbus_msg_envelope_put(msg, "ReqRetriedCount", ptRetrycount);
+
 			//msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
 
 			bIsByteSwap = a_objReqData->getDataPoint().getDataPoint().getAddress().m_bIsByteSwap;
 			bIsWordSwap = a_objReqData->getDataPoint().getDataPoint().getAddress().m_bIsWordSwap;
+
+			// Point data type
+			string aDataType = a_objReqData->getDataPoint().getDataPoint().getAddress().m_sDataType;
+			if(!aDataType.empty())
+			{
+				msg_envelope_elem_body_t* ptDataType = msgbus_msg_envelope_new_string(aDataType.c_str());
+				msgbus_msg_envelope_put(msg, "datatype", ptDataType);
+			}
+
+			// Persistence
+			msg_envelope_elem_body_t* ptPersistence = msgbus_msg_envelope_new_bool(a_objReqData->getDataPoint().getDataPoint().getPersistence());
+			msgbus_msg_envelope_put(msg, "persistence", ptPersistence);
 		}
 		else
 		{
@@ -345,9 +365,7 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, con
 		}
 
 		msg_envelope_elem_body_t* ptTimeStamp = msgbus_msg_envelope_new_string(sTimestamp.c_str());
-		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(sUsec.c_str());
 		msgbus_msg_envelope_put(msg, "timestamp", ptTimeStamp);
-		msgbus_msg_envelope_put(msg, "usec", ptUsec);
 	}
     catch(const std::exception& e)
 	{
@@ -386,35 +404,32 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 		{
 			if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 			{
-				if(true == PublishJsonHandler::instance().publishJson(g_msg, a_objReqData->getBusContext().m_pContext,
-						a_objReqData->getPubContext().m_pContext,
-						a_stResp.m_strResponseTopic))
-				{
-					DO_LOG_DEBUG("Msg published successfully");
-				}
 			}
 			else
 			{
 				common_Handler::removeReqData(a_stResp.u16TransacID);	/// removing request structure from map
-				zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(a_stResp.m_strResponseTopic);
-				zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(a_stResp.m_strResponseTopic);
-
-				PublishJsonHandler::instance().publishJson(g_msg, msgbus_ctx.m_pContext, pubCtx.m_pContext, a_stResp.m_strResponseTopic);
+			}
+			if(true == PublishJsonHandler::instance().publishJson(g_msg, a_stResp.m_strResponseTopic))
+			{
+				DO_LOG_DEBUG("Msg published successfully");
 			}
 
 #ifdef INSTRUMENTATION_LOG
-			msg_envelope_serialized_part_t* parts = NULL;
-			int num_parts = msgbus_msg_envelope_serialize(g_msg, &parts);
-			if(num_parts > 0)
+			if(NULL != g_msg)
 			{
-				if(NULL != parts[0].bytes)
+				msg_envelope_serialized_part_t* parts = NULL;
+				int num_parts = msgbus_msg_envelope_serialize(g_msg, &parts);
+				if(num_parts > 0)
 				{
-					std::string s(parts[0].bytes);
+					if(NULL != parts[0].bytes)
+					{
+						std::string s(parts[0].bytes);
 
-					DO_LOG_DEBUG("TxID:" + to_string(a_stResp.u16TransacID)
-									+ ", Msg: " + s);
+						DO_LOG_DEBUG("TxID:" + to_string(a_stResp.u16TransacID)
+										+ ", Msg: " + s);
+					}
+					msgbus_msg_envelope_serialize_destroy(parts, num_parts);
 				}
-				msgbus_msg_envelope_serialize_destroy(parts, num_parts);
 			}
 #endif
 		}
@@ -729,6 +744,13 @@ bool CPeriodicReponseProcessor::checkForRetry(struct stStackResponse &a_stStackR
 							CRequestInitiator::instance().getTxIDReqData(a_stStackResNode.u16TransacID, a_stStackResNode.m_bIsRT);
 					MbusAPI_t &refReq = oRef.getMBusReq();
 					pReqData = &refReq;
+
+					if(refReq.m_nRetry > 0)
+					{
+						struct timespec ts;
+						timespec_get(&ts, TIME_UTC);
+						oRef.flagRetry(ts);
+					}
 				}
 			}
 			else
@@ -1003,9 +1025,9 @@ eMbusAppErrorCode readPeriodicRTCallBack(stMbusAppCallbackParams_t *pstMbusAppCa
 }
 
 /**
- * Function to idnetify callback function based on operation typefor calling stack APIs
+ * Function to identify callback function based on operation type for calling stack APIs
  * @param callbackFunc :[out] callback function to be used for calling stack APIs
- * @param operationCallbackType: [in] operation type for which callbak funtion needs to be identified
+ * @param operationCallbackType: [in] operation type for which callback function needs to be identified
  * @return none
  */
 void CPeriodicReponseProcessor::getCallbackForRetry(void**callbackFunc, eMbusCallbackType operationCallbackType)
@@ -2364,10 +2386,10 @@ void PeriodicTimer::timer_stop(void)
  * @param a_objPt 		:[in] reference CRefDataForPolling object for copy constructor
  */
 CRefDataForPolling::CRefDataForPolling(const CRefDataForPolling &a_refPolling) :
-		m_objDataPoint{a_refPolling.m_objDataPoint}, m_objBusContext{a_refPolling.m_objBusContext}
-		, m_objPubContext{a_refPolling.m_objPubContext}, m_uiFuncCode{a_refPolling.m_uiFuncCode}
+		m_objDataPoint{a_refPolling.m_objDataPoint}, m_uiFuncCode{a_refPolling.m_uiFuncCode}
 		, m_bIsRespPosted{false}, m_bIsLastRespAvailable{false}
 		, m_stPollTsForReq{a_refPolling.m_stPollTsForReq}, m_stMBusReq{a_refPolling.m_stMBusReq}
+		, m_stRetryTs{0}, m_iReqRetriedCnt{0}
 {
 	m_oLastGoodResponse.m_sValue = "";
 	m_oLastGoodResponse.m_sLastUsec = "";
@@ -2376,13 +2398,12 @@ CRefDataForPolling::CRefDataForPolling(const CRefDataForPolling &a_refPolling) :
 /**
  * Constructor: It constructs data which is used for polling. This is one time activity.
  * @param CUniqueDataPoint	:[in] reference CUniqueDataPoint object
- * @param stZmqContext		:[in] reference to ZMQ bus context
- * @param stZmqPubContext	:[in] reference to pub topic context
  * @param uint8_t			:[in] function code for this point
  */
-CRefDataForPolling::CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, struct stZmqContext& a_objBusContext, struct stZmqPubContext& a_objPubContext, uint8_t a_uiFuncCode) :
-				m_objDataPoint{a_objDataPoint}, m_objBusContext{a_objBusContext}, m_objPubContext{a_objPubContext}, m_uiFuncCode{a_uiFuncCode}
+CRefDataForPolling::CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, uint8_t a_uiFuncCode) :
+				m_objDataPoint{a_objDataPoint}, m_uiFuncCode{a_uiFuncCode}
 				, m_bIsRespPosted{false}, m_bIsLastRespAvailable{false}, m_stPollTsForReq{0}, m_stMBusReq{0}
+				, m_stRetryTs{0}, m_iReqRetriedCnt{0}
 {
 	m_oLastGoodResponse.m_sValue = "";
 	m_oLastGoodResponse.m_sLastUsec = "";
@@ -2458,4 +2479,6 @@ void CRefDataForPolling::setDataForNewReq(uint16_t a_uTxID, struct timespec& a_t
 	m_uReqTxID.store(a_uTxID);
 	m_bIsRespPosted.store(false);
 	m_objDataPoint.setIsAwaitResp(true);
+	m_stRetryTs = {0};
+	m_iReqRetriedCnt = 0;
 }

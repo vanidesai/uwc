@@ -569,6 +569,24 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 				a_oData["polling"]["pollinterval"].as<std::uint32_t>();
 	}
 
+	if(0 != globalConfig::validateParam(a_oData["attributes"], "datatype", globalConfig::DT_STRING))
+	{
+		a_oCDataPoint.m_stAddress.m_sDataType = "";
+	}
+	else
+	{
+		a_oCDataPoint.m_stAddress.m_sDataType =  a_oData["attributes"]["datatype"].as<std::string>();
+	}
+
+	if(0 != globalConfig::validateParam(a_oData, "persistence", globalConfig::DT_BOOL))
+	{
+		a_oCDataPoint.m_bPersistence = false;
+	}
+	else
+	{
+		a_oCDataPoint.m_bPersistence = a_oData["persistence"].as<bool>();
+	}
+
 	// Check mandatory parameters
 	try
 	{

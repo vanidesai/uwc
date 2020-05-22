@@ -44,6 +44,7 @@ namespace network_info
 		eEndPointType m_eType;
 		bool m_bIsByteSwap;
 		bool m_bIsWordSwap;
+		std::string m_sDataType;
 	};
 	struct stPollingData
 	{
@@ -53,12 +54,14 @@ namespace network_info
 	class CDataPoint
 	{
 		std::string m_sId;
+		bool m_bPersistence;
 		struct stDataPointAddress m_stAddress;
 		struct stPollingData m_stPollingConfig;
 		static eEndPointType getPointType(const std::string&);
 		
 		public:
 		const std::string& getID() const {return m_sId;}
+		const bool& getPersistence() const {return m_bPersistence;}
 
 		const struct stDataPointAddress& getAddress() const { return m_stAddress;}
 		const struct stPollingData& getPollingConfig() const { return m_stPollingConfig;}
