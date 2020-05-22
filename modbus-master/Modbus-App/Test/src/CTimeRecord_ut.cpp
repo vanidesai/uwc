@@ -31,10 +31,10 @@ TEST_F(CTimeRecord_ut, time_record_available)
 
 	try
 	{
-		CRefDataForPolling CRefDataForPolling_obj1{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-		CRefDataForPolling CRefDataForPolling_obj2{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-		CRefDataForPolling CRefDataForPolling_obj3{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-		CRefDataForPolling CRefDataForPolling_obj4{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
+		CRefDataForPolling CRefDataForPolling_obj1{CUniqueDataPoint_obj, a_uiFuncCode};
+		CRefDataForPolling CRefDataForPolling_obj2{CUniqueDataPoint_obj, a_uiFuncCode};
+		CRefDataForPolling CRefDataForPolling_obj3{CUniqueDataPoint_obj, a_uiFuncCode};
+		CRefDataForPolling CRefDataForPolling_obj4{CUniqueDataPoint_obj, a_uiFuncCode};
 		CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj1};
 
 
@@ -57,20 +57,20 @@ TEST_F(CTimeRecord_ut, time_record_available)
 
 }
 
+
 /***CTimeRecord_ut::time_record_notavailable***/
 /*Test02 : This test for add function of class CTimeRecord is to check whether
-     the timer record is available or not and throws exception accordingly  (In this test the time record is not available)*/
-
+  the timer record is available or not and throws exception accordingly  (In this test the time record is not available)*/
 TEST_F(CTimeRecord_ut, time_record_notavailable)
 {
 
 	try
 	{
-		CRefDataForPolling CRefDataForPolling_obj1{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-		CRefDataForPolling CRefDataForPolling_obj2{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-		CRefDataForPolling CRefDataForPolling_obj3{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-		CRefDataForPolling CRefDataForPolling_obj4{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-		CRefDataForPolling CRefDataForPolling_obj5{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
+		CRefDataForPolling CRefDataForPolling_obj1{CUniqueDataPoint_obj, a_uiFuncCode};
+		CRefDataForPolling CRefDataForPolling_obj2{CUniqueDataPoint_obj, a_uiFuncCode};
+		CRefDataForPolling CRefDataForPolling_obj3{CUniqueDataPoint_obj, a_uiFuncCode};
+		CRefDataForPolling CRefDataForPolling_obj4{CUniqueDataPoint_obj, a_uiFuncCode};
+		CRefDataForPolling CRefDataForPolling_obj5{CUniqueDataPoint_obj, a_uiFuncCode};
 		CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj1};
 
 
@@ -98,23 +98,4 @@ TEST_F(CTimeRecord_ut, time_record_notavailable)
 
 
 }
-
-#if 0 //in progres
-TEST_F(CTimeRecord_ut, IntervalTimer_counter_test)
-{
-	uint32_t Interval;
-	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-	CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj};
-	Interval =  CTimeRecord_obj.getIntervalTimerCounter();
-}
-
-TEST_F(CTimeRecord_ut, CutoffIntervalTimerCounter_ut)
-{
-	uint32_t cutoff;
-	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj,a_BusContext, a_objPubContext, a_uiFuncCode};
-	CTimeRecord CTimeRecord_obj{U32_code, CRefDataForPolling_obj};
-	cutoff = CTimeRecord_obj.getCutoffIntervalTimerCounter();
-
-}
-#endif
 

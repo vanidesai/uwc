@@ -1227,7 +1227,7 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
 #endif
 	default:
 		speed = B9600;
-		standardInterframeDelay = 38500000/baudrate;
+		standardInterframeDelay = 38500000/9600;
 		printf("ERROR Unknown baud rate %d for %s (B9600 used)\n",
 				baudrate, portName);
 	}

@@ -554,6 +554,7 @@ TEST_F(PeriodicRead_ut, checkTimer_return)
 
 #endif
 
+
 TEST_F(PeriodicRead_ut, get_Timer_freq)
 {
 	try
@@ -567,6 +568,7 @@ TEST_F(PeriodicRead_ut, get_Timer_freq)
 		EXPECT_EQ("", (string)e.what());
 	}
 }
+
 
 #if 1
 TEST_F(PeriodicRead_ut, timer_Thread)

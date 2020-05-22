@@ -83,8 +83,7 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 	{
 		bRetVal = true;
 
-		stZmqContext objTempCtx;
-		objTempCtx.m_pContext = msgbus_ctx;
+		stZmqContext objTempCtx{msgbus_ctx};
 		zmq_handler::insertCTX(a_sTopic, objTempCtx);
 
 		if(a_bIsPub)
@@ -316,7 +315,7 @@ stZmqContext& zmq_handler::getCTX(std::string a_sTopic)
  * @param a_sTopic	:[in] topic for which to insert msgbus context
  * @param ctxRef	:[in] msgbus context
  */
-void zmq_handler::insertCTX(std::string a_sTopic, stZmqContext ctxRef)
+void zmq_handler::insertCTX(std::string a_sTopic, stZmqContext& ctxRef)
 {
 	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__ctxMapLock);

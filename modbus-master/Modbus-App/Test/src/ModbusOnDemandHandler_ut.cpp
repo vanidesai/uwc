@@ -101,6 +101,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
 	}
 }
 
+
 TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_ValidIpJason)
 {
 
@@ -135,6 +136,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_ValidIpJason)
 
 	}
 }
+
 
 /*** Test:ModbusOnDemandHandler_ut::modWriteHandler_getInstance() Check the instance type returned by function ***/
 
@@ -409,7 +411,7 @@ TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_sub)
 		zmq_handler::stZmqContext MsgbusCtx = zmq_handler::getCTX(topic);
 		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(topic);
 
-		PublishJsonHandler::instance().publishJson(g_msg, MsgbusCtx.m_pContext, pubCtx.m_pContext, topic);
+		PublishJsonHandler::instance().publishJson(g_msg, topic);
 
 	}
 
@@ -424,6 +426,7 @@ TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_sub)
 
 /****************** For Pub*****************/
 
+#if 1 //sprint 14 changes
 TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_pub)
 {
 	std::string sRespTopic = "";
@@ -478,7 +481,7 @@ TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_pub)
 		std::string topic = "Modbus-TCP-Master_ReadRequest";
 
 		//sRespTopic = PublishJsonHandler::instance(msgbusMgr, msgbusEnvelope).getSReadResponseTopic();
-		stZmqContext objTempCtx;
+		stZmqContext& objTempCtx  = zmq_handler::getCTX(topic);;
 		stZmqPubContext objTempPubCtx;
 		zmq_handler::insertCTX(topic, objTempCtx);
 		cout << "**************************************************** Publishing for topic :: " << topic << endl;
@@ -490,7 +493,7 @@ TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_pub)
 		cout << "**************************************************** Publishing for topic :: " << topic << endl;
 
 
-		PublishJsonHandler::instance().publishJson(g_msg, MsgbusCtx.m_pContext, pubCtx.m_pContext, topic);
+		PublishJsonHandler::instance().publishJson(g_msg, topic);
 
 	}
 
@@ -501,7 +504,7 @@ TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_pub)
 
 
 }
-
+#endif
 
 /**********************************createErrorrespose()*****************************************/
 

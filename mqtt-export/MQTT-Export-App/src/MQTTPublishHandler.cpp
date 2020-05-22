@@ -10,7 +10,6 @@
 
 #include "MQTTPublishHandler.hpp"
 #include "cjson/cJSON.h"
-//#include <semaphore.h>
 #include "Common.hpp"
 #include "ConfigManager.hpp"
 
@@ -43,7 +42,7 @@ CMQTTPublishHandler::CMQTTPublishHandler(std::string strPlBusUrl, std::string st
 			m_bIsFirst = true;
 		}
 
-		DO_LOG_DEBUG("MQTT initialized successfully");
+		DO_LOG_DEBUG("MQTT initialized successfully. QOS to be used: " + std::to_string(m_QOS));
 	}
 	catch (const std::exception &e)
 	{
@@ -107,6 +106,19 @@ bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic)
 {
 	try
 	{
+		// Check if topic is blank
+		if (true == a_sTopic.empty())
+		{
+			DO_LOG_ERROR("Empty topic. Message not processed");
+			return false;
+		}
+		// Check if message is blank
+		if (true == a_sMsg.empty())
+		{
+			DO_LOG_ERROR("Empty Message. No action for topic: " + a_sTopic);
+			return false;
+		}
+
 		if (true == m_bIsFirst)
 		{
 			connect();
@@ -132,21 +144,6 @@ bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic)
 		+ ", Msg: " + msgWithTimeStamp);
 #endif
 
-
-		// Check if topic is blank
-		if (true == a_sTopic.empty())
-		{
-			if (true == msgWithTimeStamp.empty())
-			{
-				DO_LOG_ERROR("Blank topic and blank Message");
-			}
-			else
-			{
-				DO_LOG_ERROR("Blank topic. Message not posted");
-			}
-			return false;
-		}
-
 #ifdef PERFTESTING
 		CMQTTPublishHandler::m_ui32PublishReq++;
 #endif
@@ -164,10 +161,10 @@ bool CMQTTPublishHandler::publish(std::string &a_sMsg, std::string &a_sTopic)
 			}
 		}
 
-		mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, msgWithTimeStamp, m_QOS, false);
+		mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, msgWithTimeStamp, this->m_QOS, false);
 
 		publisher.publish(pubmsg, nullptr, listener);
-		DO_LOG_DEBUG("Published message on MQTT broker successfully with QOS:"+ std::to_string(m_QOS));
+		DO_LOG_DEBUG("Published message on MQTT broker successfully with QOS:"+ std::to_string(this->m_QOS));
 
 		msgWithTimeStamp.clear();
 		msgWithTimeStamp = "";

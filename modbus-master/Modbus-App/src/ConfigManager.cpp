@@ -376,8 +376,12 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 
 	cout << "	operation priority :: " <<a_refOpration.getOperationPriority()<< endl;
 	cout << "	retries :: " <<a_refOpration.getRetries()<< endl;
+	cout << "	qos :: " <<a_refOpration.getQos()<< endl;
+
 	DO_LOG_INFO("operation priority :: " + to_string(a_refOpration.getOperationPriority()));
 	DO_LOG_INFO("retries :: " + to_string(a_refOpration.getRetries()));
+	DO_LOG_INFO("qos :: " + to_string(a_refOpration.getQos()));
+
 }
 
 /** Populate COperation data structures

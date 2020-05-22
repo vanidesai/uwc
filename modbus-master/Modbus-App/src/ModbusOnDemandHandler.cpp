@@ -765,7 +765,6 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg,
 {
 
 	MbusAPI_t stMbusApiPram = {};
-	struct onDemandmsg zmqMsg;
 	timespec_get(&stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS, TIME_UTC);
 	bool bRet = false;
 
@@ -846,8 +845,8 @@ void onDemandHandler::subscribeDeviceListener(const std::string stTopic,
 	globalConfig::display_thread_sched_attr(stTopic + " subscribeDeviceListener param :: ");
 	try
 	{
-		zmq_handler::stZmqContext msgbus_ctx = zmq_handler::getCTX(stTopic);
-		zmq_handler::stZmqSubContext stsub_ctx = zmq_handler::getSubCTX(stTopic);
+		zmq_handler::stZmqContext& msgbus_ctx = zmq_handler::getCTX(stTopic);
+		zmq_handler::stZmqSubContext& stsub_ctx = zmq_handler::getSubCTX(stTopic);
 
 		while((msgbus_ctx.m_pContext != NULL) && (NULL != stsub_ctx.sub_ctx)
 				&& (false == g_stopThread.load()))

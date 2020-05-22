@@ -20,22 +20,6 @@
 #include "cjson/cJSON.h"
 #include "PeriodicReadFeature.hpp"
 
-// Structure used for on-demand operation 
-struct onDemandmsg
-{
-	string app_seq;
-	string command;
-	string value;
-	string wellhead;
-	string version;
-	string sourcetopic;
-	string timestamp;
-	string usec;
-	string tsMsgRcvdFromMQTT;
-	string tsMsgPublishOnEIS;
-	struct timespec m_tsReqRcvd;
-};
-
 class onDemandHandler
 {
 	bool m_bIsWriteInitialized;

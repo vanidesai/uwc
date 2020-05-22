@@ -51,12 +51,9 @@ TEST_F(CUniqueDataPoint_ut, getID_return) {
 /*CWellSiteDevInfo::getWellSite() should return the object of class CWellSiteInfo,
   initialized with the value passed while calling constructor*/
 
-
+#if 1 //sprint 14 changes
 TEST_F(CUniqueDataPoint_ut, getWellSite_return) {
-	/*std::string path("/Device_Config/PL0.yml");
-	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
-	std::string sYamlStr(cEtcdValue);
-	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
+
 	baseNode = CommonUtils::loadYamlFile("PL0.yml");
 	try
 	{
@@ -85,7 +82,7 @@ TEST_F(CUniqueDataPoint_ut, getWellSite_return) {
 		EXPECT_EQ("name key not found", (string)e.what());
 	}
 }
-
+#endif
 
 /******************************CUniqueDataPoint::getWellSiteDev*****************************************/
 

@@ -21,8 +21,6 @@
 
 #include "Logger.hpp"
 
-std::mutex publishJsonMutex;
-
 using namespace zmq_handler;
 
 /**
@@ -47,31 +45,46 @@ PublishJsonHandler& PublishJsonHandler::instance()
 /**
  * Publish json
  * @param msg			:[in] message to publish
- * @param msgbus_ctx	:[in] msgbus context to publish on
- * @param pub_ctx		:[in] pub context
  * @param a_sTopic		:[in] topic on which to publish
  * @return 	true : on success,
  * 			false : on error
  */
-bool PublishJsonHandler::publishJson(msg_envelope_t* msg, void* msgbus_ctx, void* pub_ctx, const std::string a_sTopic)
+bool PublishJsonHandler::publishJson(msg_envelope_t* msg, const std::string &a_sTopic)
 {
-	if((NULL == msg) || (NULL == msgbus_ctx) || (NULL == pub_ctx))
+	if(NULL == msg)
 	{
-		DO_LOG_ERROR(": Failed to publish message - Input parameters are NULL");
+		DO_LOG_ERROR(": Failed to publish message - Input message is NULL");
 		return false;
 	}
-	std::lock_guard<std::mutex> lock(publishJsonMutex);
-
-	msgbus_ret_t ret;
 
 	DO_LOG_DEBUG("msg to publish :: Topic :: " + a_sTopic);
 
-	ret = msgbus_publisher_publish(msgbus_ctx, (publisher_ctx_t*)pub_ctx, msg);
+	zmq_handler::stZmqContext& msgbus_ctx = zmq_handler::getCTX(a_sTopic);
+	void* pub_ctx = zmq_handler::getPubCTX(a_sTopic).m_pContext;
+	if((NULL == msgbus_ctx.m_pContext) || (NULL == pub_ctx))
+	{
+		DO_LOG_ERROR(": Failed to publish message - context is NULL" + a_sTopic);
+		return false;
+	}
+
+	msgbus_ret_t ret;
+
+	{
+		std::lock_guard<std::mutex> lock(msgbus_ctx.m_mutex);
+		auto p1 = std::chrono::system_clock::now();
+		unsigned long uTime = (unsigned long)(std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count());
+		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string((to_string(uTime)).c_str());
+		if(NULL != ptUsec)
+		{
+			msgbus_msg_envelope_put(msg, "usec", ptUsec);
+		}
+		ret = msgbus_publisher_publish(msgbus_ctx.m_pContext, (publisher_ctx_t*)pub_ctx, msg);
+	}
+
 	if(ret != MSG_SUCCESS)
 	{
 		DO_LOG_ERROR(" Failed to publish message errno: " + std::to_string(ret));
 		return false;
 	}
-
 	return true;
 }

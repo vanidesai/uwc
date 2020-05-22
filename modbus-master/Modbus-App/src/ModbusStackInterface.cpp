@@ -195,8 +195,6 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 			case WRITE_SINGLE_REG:
 			{
 				DO_LOG_DEBUG("Write Single Register Request Received");
-				uint16_t u16OutData = 0;
-				memcpy_s(&u16OutData,sizeof(uint16_t),pstMbusApiPram->m_pu8Data,sizeof(uint16_t));
 				u8ReturnType = Modbus_Write_Single_Register(pstMbusApiPram->m_u16StartAddr,
 					*(uint16_t*)pstMbusApiPram->m_pu8Data,
 					pstMbusApiPram->m_u16TxId,

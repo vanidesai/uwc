@@ -102,6 +102,7 @@ TEST_F(CWellSiteInfo_ut, addDevice_return0) {
 	}
 }
 
+
 /* Test:CWellSiteInfo_ut::addDevice_returnMin2.***/
 /*CWellSiteInfo::addDevice() should
   return -2 if Network type mentioned in .yml file doesn't match with "g_eNetworkType"*/

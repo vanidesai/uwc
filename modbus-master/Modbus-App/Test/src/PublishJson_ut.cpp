@@ -144,6 +144,7 @@ TEST_F(PublishJson_ut, prepareCommonCTX_pub)
 
 /***Test:PublishJson_ut::publishJson_NULL_msgCTX() Gives exception when msgCTX is NULL ***/
 
+
 TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 {
 	try
@@ -152,7 +153,7 @@ TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 		setenv("WRITE_RESPONSE_TOPIC", "PL_0", 1);
 		std::string topic = std::getenv("WRITE_RESPONSE_TOPIC");
 		zmq_handler::getCTX(topic);
-		uint8_t valv = PublishJsonHandler::instance().publishJson(NULL, NULL, NULL, topic);
+		uint8_t valv = PublishJsonHandler::instance().publishJson(NULL, topic);
 
 		EXPECT_EQ(false, valv);
 
@@ -232,26 +233,20 @@ TEST_F(PublishJson_ut, publishJson_valid_arguments)
 /*** Test:PublishJson_ut::publishJson_valid_arguments and pub topic***/
 /* Null msg */
 
-
 TEST_F(PublishJson_ut, publishJson_null_msg)
 {
 
-	stZmqContext objTempCtx;
-	stZmqPubContext objTempPubCtx;
-	msg_envelope_t *msg = NULL;
 	std::string topic = "Modbus-TCP-Master_ReadResponse";
 	std::string topicType = "pub";
+	msg_envelope_t *msg = NULL;
+
 
 
 	try
 	{
 		msg = msgbus_msg_envelope_new(CT_JSON);
 
-		objTempCtx = zmq_handler::getCTX("Modbus-TCP-Master_WriteResponse");
-		objTempPubCtx = zmq_handler::getPubCTX("Modbus-TCP-Master_WriteResponse");
-
-		//EXPECT_EQ(false, PublishJsonHandler::instance(msgbusMgr, msgbusEnvelope).publishJson(msg, objTempCtx.m_pContext, objTempPubCtx.m_pContext, topic));
-		EXPECT_EQ(true, PublishJsonHandler::instance().publishJson(msg, objTempCtx.m_pContext, objTempPubCtx.m_pContext, topic));
+		EXPECT_EQ(true, PublishJsonHandler::instance().publishJson(msg, topic));
 
 	}
 
@@ -261,14 +256,13 @@ TEST_F(PublishJson_ut, publishJson_null_msg)
 	}
 }
 
-
 /***Test:PublishJson_ut::publishJson_pub() checks for functionality with NULL argument***/
 /* NULL arguments */
 TEST_F(PublishJson_ut, publishJson_pub)
 {
 	try
 	{
-		EXPECT_EQ(false, PublishJsonHandler::instance().publishJson(NULL, NULL, NULL, "PL1_flowmeter2"));
+		EXPECT_EQ(false, PublishJsonHandler::instance().publishJson(NULL, "PL1_flowmeter2"));
 	}
 
 	catch(std::exception &e)

@@ -11,7 +11,6 @@
 #ifndef INCLUDE_INC_PERIODICREAD_HPP_
 #define INCLUDE_INC_PERIODICREAD_HPP_
 
-#include "ModbusContainerConfig.hpp"
 #include <semaphore.h>
 
 #include <list>

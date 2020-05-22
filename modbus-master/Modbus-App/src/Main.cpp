@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.4.5"
+#define APP_VERSION "0.0.4.7"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -69,15 +69,9 @@ void populatePollingRefData()
 		}
 		try
 		{
-			std::string sTopic = PublishJsonHandler::instance().getPolledDataTopic();
-
-			DO_LOG_DEBUG("Topic for context search: " + sTopic);
-
 			std::cout << iCount++ << ". Point to poll: " << a.getID() << ", RT: "
 					<< a.getDataPoint().getPollingConfig().m_bIsRealTime << ", Freq: "
 					<< a.getDataPoint().getPollingConfig().m_uiPollFreq << std::endl;
-			zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX(sTopic);
-			zmq_handler::stZmqPubContext &pubCTX = zmq_handler::getPubCTX(sTopic);
 
 			uint8_t uiFuncCode = 0;
 			switch(a.getDataPoint().getAddress().m_eType)
@@ -96,7 +90,7 @@ void populatePollingRefData()
 				break;
 			}
 
-			CRefDataForPolling objRefPolling{a, busCTX, pubCTX, uiFuncCode};
+			CRefDataForPolling objRefPolling{a, uiFuncCode};
 
 			CTimeMapper::instance().insert(a.getDataPoint().getPollingConfig().m_uiPollFreq, objRefPolling);
 

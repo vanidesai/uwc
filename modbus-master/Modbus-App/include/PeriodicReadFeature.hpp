@@ -238,8 +238,6 @@ struct stLastGoodResponse
 class CRefDataForPolling
 {
 	const network_info::CUniqueDataPoint& m_objDataPoint;
-	const struct zmq_handler::stZmqContext& m_objBusContext;
-	const struct zmq_handler::stZmqPubContext& m_objPubContext;
 
 	uint8_t m_uiFuncCode;
 
@@ -253,11 +251,13 @@ class CRefDataForPolling
 	std::atomic<uint16_t> m_uReqTxID;
 
 	MbusAPI_t m_stMBusReq;
+	struct timespec m_stRetryTs;
+	int m_iReqRetriedCnt;
 
 	CRefDataForPolling& operator=(const CRefDataForPolling&) = delete;	// Copy assign
 
 	public:
-	CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, struct stZmqContext& a_objBusContext, struct stZmqPubContext& a_objPubContext, uint8_t a_uiFuncCode);
+	CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, uint8_t a_uiFuncCode);
 
 	CRefDataForPolling(const CRefDataForPolling &);
 
@@ -274,8 +274,6 @@ class CRefDataForPolling
 	uint8_t getFunctionCode() {return m_uiFuncCode;}
 
 	const CUniqueDataPoint & getDataPoint() const {return m_objDataPoint;}
-	const struct stZmqContext & getBusContext() const {return m_objBusContext;}
-	const struct stZmqPubContext & getPubContext() const {return m_objPubContext;}
 
 	bool saveGoodResponse(const std::string& a_sValue, const std::string& a_sUsec);
 	stLastGoodResponse getLastGoodResponse();
@@ -288,6 +286,14 @@ class CRefDataForPolling
 
 	struct timespec getTimestampOfPollReq() const { return m_stPollTsForReq;};
 	void setTimestampOfPollReq(struct timespec& a_tsPoll) { m_stPollTsForReq = a_tsPoll;};
+
+	int getRetriedCount() const {return m_iReqRetriedCnt;};
+	struct timespec getTsForRetry() const {return m_stRetryTs;};
+	void flagRetry(struct timespec a_tsRetryDecided)
+	{
+		m_stRetryTs = a_tsRetryDecided;
+		++m_iReqRetriedCnt;
+	}
 
 	MbusAPI_t& getMBusReq() {return m_stMBusReq;};
 };

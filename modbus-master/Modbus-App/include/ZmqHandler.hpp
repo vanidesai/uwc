@@ -13,6 +13,7 @@
 
 #include <string>
 #include <map>
+#include <mutex>
 #include "cjson/cJSON.h"
 
 #include <eis/utils/thread_safe_queue.h>
@@ -27,6 +28,10 @@ namespace zmq_handler
 	struct stZmqContext 
 	{
 		void *m_pContext;
+		std::mutex m_mutex;
+
+		stZmqContext(void *a_pContext):m_pContext{a_pContext}, m_mutex{} {;};
+		stZmqContext(const stZmqContext &a_copy):m_pContext{a_copy.m_pContext}, m_mutex{} {;};
 	};
 	struct stZmqPubContext
 	{
@@ -71,7 +76,7 @@ namespace zmq_handler
 	stZmqContext& getCTX(std::string str_Topic);
 
 	/// function to insert new entry in map
-	void insertCTX(std::string, stZmqContext );
+	void insertCTX(std::string, stZmqContext& );
 
 	/// function to remove entry from the map once reply is sent
 	void removeCTX(std::string);
