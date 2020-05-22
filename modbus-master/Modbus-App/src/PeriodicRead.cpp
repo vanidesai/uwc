@@ -170,8 +170,8 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, con
 			//msgbus_msg_envelope_put(msg, "tsRetry", ptRetryTS);
 
 			// Request retried count
-			msg_envelope_elem_body_t* ptRetrycount = msgbus_msg_envelope_new_string( (to_string(a_objReqData->getRetriedCount()).c_str() ));
-			msgbus_msg_envelope_put(msg, "ReqRetriedCount", ptRetrycount);
+			//msg_envelope_elem_body_t* ptRetrycount = msgbus_msg_envelope_new_string( (to_string(a_objReqData->getRetriedCount()).c_str() ));
+			//msgbus_msg_envelope_put(msg, "ReqRetriedCount", ptRetrycount);
 
 			//msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
 
