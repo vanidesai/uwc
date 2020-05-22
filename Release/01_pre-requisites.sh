@@ -19,6 +19,8 @@ INFO=$(tput setaf 3)   # YELLOW (used for informative messages)
 
  # Variable to store user proxy provided by command line
 USER_PROXY=""
+DOCKER_REPO="deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+DOCKER_GPG_KEY="0EBFCD88"
 	
 
 eis_working_dir="$Current_Dir/docker_setup"
@@ -181,17 +183,16 @@ verifyDirectory()
     echo "${INFO}Verifying the directory...${NC}"    
     if [ ! -d ${working_dir}/docker_setup ]; then
     	echo "${RED}UWC installer files are not placed in right directory.${NC}"
-	echo "${GREEN}Copy UWC installer files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory and re-run this script.${NC}"
-	exit 1
+	    echo "${GREEN}Copy UWC installer files in <EIS>/IEdgeInsights directory and re-run this script.${NC}"
+	    exit 1
     fi
-    if [ ! -f UWC.tar.gz ] && [ ! f ${working_dir}/01_pre-requisites.sh ] && [ ! f ${working_dir}/02_provisionEIS.sh.sh ] && [ ! f ${working_dir}/03_DeployEIS.sh.sh ] &&  [ ! f ${working_dir}/04_uninstall_EIS.sh ]; then
-    	echo "${RED}UWC.tar.gz, 01_pre-requisites.sh, 02_provisionAndDeployEIS.sh, 03_uninstall_EIS.sh files are not present in required directory.${NC}"
-	echo "${GREEN}Copy all UWC installer files in EdgeInsightsSoftware-v2.1-Alpha/IEdgeInsights directory and re-run this script.${NC}"
-	exit 1
+    if [[ ! -f ${working_dir}/UWC.tar.gz ]]; then
+    	echo "${RED}UWC.tar.gz file is not present in current directory.${NC}"
+	    echo "${INFO}Kinldy copy all required UWC installer files in <EIS>/IEdgeInsights directory and re-run this script.${NC}"
+	    exit 1
     else
-	echo "${GREEN}UWC files are present in current directory${NC}"
+	    echo "${GREEN}UWC files are present in current directory${NC}"
     fi
-
 }
 
 # ----------------------------
@@ -418,6 +419,46 @@ dns_server_settings()
     return 0
 }
 
+del_file() 
+{
+    if [[ -f $1 ]]; then
+        rm -rf $1
+        if [[ $? -ne 0 ]]; then
+            clean_exit
+        fi
+    fi 
+}
+
+function uninstallDocker()
+{
+    # UNINSTALLING DOCKER 
+    echo -e "${INFO}---------------------------------------Uninstalling Docker---------------------------------------${NC}"
+    
+    dpkg --purge --force-all docker-ce docker-ce-cli containerd.io
+    apt-get purge -y docker docker.io 
+    
+    # Removing Docker GPG and removing the repository from sources
+    apt-key del $DOCKER_GPG_KEY
+    add-apt-repository --remove "$DOCKER_REPO"
+    echo -e "${GREEN}-------------------------------Docker uninstalled successfully-----------------------------------${NC}" 
+    
+    #Delete UWC config
+    echo -e "${INFO}---------------------------------------Removing UWC config-----------------------${NC}"
+    del_file /opt/intel/eis/uwc_data
+    del_file /opt/intel/eis/uwc_data/common_config
+    echo -e "${GREEN}-------------------------------Removed all UWC config------------------------------------${NC}"
+    
+    #RESET THE PROXY SETTING 
+    echo -e "${INFO}---------------------------------------Resetting proxy setting-----------------------------------${NC}"
+    del_file /etc/docker/daemon.json
+    del_file /etc/systemd/system/docker.service.d/http-proxy.conf
+    del_file /etc/systemd/system/docker.service.d/https-proxy.conf      
+    del_file $HOME/.docker/config.json
+    del_file /etc/systemd/system/docker.service.d
+    echo -e "${GREEN}-------------------------------Proxy setting reset to default------------------------------------${NC}"
+    rm -rf  /opt/intel
+}
+
 #------------------------------------------------------------------------------
 # proxy_settings
 #
@@ -539,6 +580,57 @@ docker_install()
     return 0
 }
 
+# function to validate version
+vercomp () {
+    if [[ $1 == $2 ]]
+    then
+        return 0
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            return 1
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            return 2
+        fi
+    done
+    return 0
+}
+
+# function to compare two versions
+testvercomp () {
+    vercomp $1 $2
+    case $? in
+        0) op='=';;
+        1) op='>';;
+        2) op='<';;
+    esac
+    if [[ $op != $3 ]]
+    then
+        #echo "VERSION MISMATCH: Expected '$3', Actual '$op', Arg1 '$1', Arg2 '$2'"
+        echo "${RED}VERSION MISMATCH: Expected '$2', Actual '$1'${NC}"
+	return 1
+    else
+        echo "${GREEN}Pass: '$1 $op $2'${NC}"
+	return 0
+    fi
+}
+
 #------------------------------------------------------------------
 # docker_compose_install
 #
@@ -551,7 +643,8 @@ docker_install()
 #------------------------------------------------------------------
 docker_compose_install()
 {
-    rm -rf /usr/local/bin/docker-compose
+    rm -rf $(which docker-compose)
+    pip uninstall -y docker-compose
     # Downloading docker-compose using curl utility.
     curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     if [ "$?" -eq "0" ];then
@@ -568,15 +661,17 @@ docker_compose_install()
 #Verifying docker-compose
 docker_compose_verify_installation()
 {
-
     echo "Verifying if docker_compose already exists."
-    docker-compose --version
-    installation_verification=$(echo $?)
-    if [ "$installation_verification" -eq "0" ]; then
-        echo "${GREEN}docker-compose is already installed ${NC}"
+    requiredver="1.24.0"
+    cur_v=$(echo $(docker-compose --version) | cut -d"n" -f 2 | cut -d"," -f 1) 
+    testvercomp $cur_v $requiredver "="
+    ret=$?
+    if [ "$ret" -eq 0 ]; then
+        echo "${GREEN}docker-compose is already installed, ${cur_v}${NC}"
     else
+        echo "${INFO}docker-compose is either not installed or old one${NC}"
+        echo "Required = "${requiredver}, "Present version = " ${cur_v}
         echo "${INFO}docker-compose needs to be Installed.${NC} "
-        echo "${GREEN}Installing docker-compose${NC}"
         docker_compose_install
     fi
     return 0
@@ -597,13 +692,17 @@ docker_compose_verify_installation()
 docker_verification_installation()
 {
     echo "Verifying if docker already exists."
-    docker --version
-    installation_verification=$(echo $?)
-    if [ "$installation_verification" -eq "0" ]; then
-        echo "${GREEN}Docker is already installed ${NC}"
+    requiredver="19.03.0"
+    cur_v=$(echo $(docker --version) | cut -d"n" -f 2 | cut -d"," -f 1) 
+    testvercomp $cur_v $requiredver ">"
+    ret=$?
+    if [ "$ret" -eq 0 ]; then
+        echo "${GREEN}docker is already installed, ${cur_v}${NC}"
     else
-        echo "${INFO}Docker needs to be Installed.${NC} "
-        echo "${GREEN}Installing Docker${NC}"
+        echo "${INFO}docker version is either not installed or old one${NC}"
+        echo "Required = "${requiredver}, "Present version = " ${cur_v}
+        echo "${INFO}docker needs to be Installed.${NC} "
+        uninstallDocker
         docker_install
     fi
 	validateUserInput "$@"

@@ -78,7 +78,8 @@ function uninstallDockerCompose()
 {
     # UNINSTALLING DOCKER-COMPOSE
     echo -e "${INFO}--------------------------------------Uninstalling Docker-compose--------------------------------${NC}"
-    sudo rm $(which docker-compose)
+    rm -rf $(which docker-compose)
+    pip3 uninstall -y docker-compose >>/dev/null
     echo -e "${SUCCESS}---------------------------Docker-compose uninstalled successfully-------------------------------${NC}"   
 }
 
@@ -88,6 +89,7 @@ function uninstallDocker()
     echo -e "${INFO}---------------------------------------Uninstalling Docker---------------------------------------${NC}"
     
     dpkg --purge --force-all docker-ce docker-ce-cli containerd.io
+    apt-get purge -y docker docker.io
     
     # Removing Docker GPG and removing the repository from sources
     apt-key del $DOCKER_GPG_KEY
@@ -150,6 +152,6 @@ uninstallContainers
 removeTurtleCreek
 uninstallDocker
 uninstallDockerCompose
-removeEISUser
+#removeEISUser
 echo ""
 echo -e "${GREEN}---------------------------------------Uninstallation Completed-----------------------------------${NC}"
