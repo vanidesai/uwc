@@ -709,6 +709,19 @@ docker_verification_installation()
     return 0
 }
 
+# fucntion used to change topic length in EIS
+changeTopicLen()
+{
+	sed -i 's/#define SIZE 500/#define SIZE 1000/g' ${working_dir}/common/libs/ConfigManager/c/src/env_config.c
+	if [ "$?" -ne "0" ]; then
+		echo "${RED}Failed to set topic len in EIS."
+		echo "${GREEN}Kinldy set topic leg to 1000 in EIS"
+		return 1
+	else
+		echo "${GREEN}Topic length is set to 1000 characters.${NC}"
+	fi
+}
+
 # Internal function calls to set up Insights
 verifyDirectory
 checkrootUser
@@ -719,6 +732,7 @@ docker_compose_verify_installation
 setHostIP
 configureRTUPorts
 createDockerVolumeDir
+changeTopicLen
 addUWCContainersInEIS
 changeFilePermissions
 
