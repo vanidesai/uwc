@@ -235,7 +235,7 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, con
 		//msg_envelope_elem_body_t* ptPriority =  msgbus_msg_envelope_new_string(to_string(a_stResp.m_lPriority).c_str());
 
 		msgbus_msg_envelope_put(msg, "version", ptVersion);
-		msgbus_msg_envelope_put(msg, "topic", ptTopic);
+		msgbus_msg_envelope_put(msg, "data_topic", ptTopic);
 		msgbus_msg_envelope_put(msg, "wellhead", ptWellhead);
 		msgbus_msg_envelope_put(msg, "metric", ptMetric);
 		msgbus_msg_envelope_put(msg, "realtime", ptRealTime);

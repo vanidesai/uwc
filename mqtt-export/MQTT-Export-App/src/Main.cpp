@@ -31,7 +31,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.4.7"
+#define APP_VERSION "0.0.4.8"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -
@@ -125,7 +125,7 @@ bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 
 	std::string revdTopic;
 	msg_envelope_elem_body_t* data;
-	msgbus_ret_t msgRet = msgbus_msg_envelope_get(msg, "topic", &data);
+	msgbus_ret_t msgRet = msgbus_msg_envelope_get(msg, "data_topic", &data);
 	if(msgRet != MSG_SUCCESS)
 	{
 		DO_LOG_ERROR("topic key not present in zmq message");
