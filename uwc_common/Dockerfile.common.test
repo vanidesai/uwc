@@ -18,25 +18,31 @@ FROM ia_common:$EIS_VERSION as common
 # Build Paho C Library
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
-COPY MQTTAsync.c /
-RUN git clone --branch v1.3.1 https://github.com/eclipse/paho.mqtt.c.git \
-    &&  rm -rf paho.mqtt.c/src/MQTTAsync.c && cp /MQTTAsync.c paho.mqtt.c/src \
+
+RUN git clone --branch v1.3.2 https://github.com/eclipse/paho.mqtt.c.git \
     &&	cd paho.mqtt.c \
     &&	mkdir build && cd build \
-    &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=ON \
-	-DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS=OFF .. \
+    &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=OFF \
+        -DPAHO_BUILD_SAMPLES:BOOL=OFF -DPAHO_BUILD_SHARED:BOOL=ON \
+        -DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS:BOOL=OFF .. \
     &&	make -s \
     &&	make install
 
 # Build Paho CPP Library
 FROM eisbase
 COPY --from=build-pahoc /usr/paho-c /usr/.
+COPY async_client.cpp /
+COPY async_client.h /
+COPY token.cpp /
 RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
+    && rm paho.mqtt.cpp/src/async_client.cpp && cp /async_client.cpp paho.mqtt.cpp/src/ \
+    && rm paho.mqtt.cpp/src/mqtt/async_client.h && cp /async_client.h paho.mqtt.cpp/src/mqtt/ \ 
+    && rm paho.mqtt.cpp/src/token.cpp && cp /token.cpp paho.mqtt.cpp/src/ \       
     && cd paho.mqtt.cpp \
     && mkdir build && cd build \
     && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_MQTT_C_PATH=/usr/paho-c \
 	-DCMAKE_INSTALL_PREFIX=/usr/paho-cpp  -DPAHO_BUILD_SAMPLES:BOOL=OFF \
-	-DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON  .. \
+	-DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON .. \
     && make -s \
     && make install
 
