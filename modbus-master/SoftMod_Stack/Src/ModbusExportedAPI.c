@@ -119,13 +119,13 @@ MODBUS_STACK_EXPORT uint8_t AppMbusMaster_StackInit()
 	thread_Create_t stThreadParam = { 0 };
 	g_bThreadExit = false;
 
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-
-	if(-1 == initTCPRespStructs())
+	if(-1 == initRespStructs())
 	{
 		printf("failed to init initTCPRespStructs\n");
 		eStatus = STACK_INIT_FAILED;
 	}
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	LivSerSesslist_Mutex = Osal_Mutex();
 	if(NULL == LivSerSesslist_Mutex)
 	{
@@ -199,7 +199,7 @@ MODBUS_STACK_EXPORT void AppMbusMaster_StackDeInit(void)
 		Osal_Close_Mutex(TransactionId_Mutex);
 	}*/
 	
-	#ifdef MODBUS_STACK_TCPIP_ENABLED
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	// Delete session list
 	if(0 != Osal_Wait_Mutex(LivSerSesslist_Mutex))
 	{
@@ -220,10 +220,12 @@ MODBUS_STACK_EXPORT void AppMbusMaster_StackDeInit(void)
 		{
 			OSAL_Delete_Message_Queue(pstTempLivSerSesslist->MsgQId);
 		}
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 		if(pstTempLivSerSesslist->m_i32sockfd)
 		{
 			close(pstTempLivSerSesslist->m_i32sockfd);
 		}
+#endif
 		OSAL_Free(pstTempLivSerSesslist);
 		pstTempLivSerSesslist = NULL;
 	}
@@ -233,10 +235,9 @@ MODBUS_STACK_EXPORT void AppMbusMaster_StackDeInit(void)
 	{
 		Osal_Close_Mutex(LivSerSesslist_Mutex);
 	}
+#endif
+	deinitRespStructs();
 
-	deinitTCPRespStructs();
-
-	#endif
 	/* update re-entrancy flag */
 	bDeInitStackFlag = false;
 	g_bThreadExit = false;

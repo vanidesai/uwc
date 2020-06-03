@@ -124,11 +124,13 @@ extern stDevConfig_t g_stModbusDevConfig;
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 int fd;
-extern Mutex_H LivSerSesslist_Mutex;
 uint32_t baud;
 
 /*To check blocking serial read*/
 int checkforblockingread(void);
+
+#else
+extern Mutex_H LivSerSesslist_Mutex;
 
 #endif
 
@@ -1036,17 +1038,24 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 
 		if(totalRead > 0)
 		{
-			u8ReturnType = DecodeRxPacket(ServerReplyBuff,pstMBusRequesPacket);
+			memcpy_s(pstMBusRequesPacket->m_u8RawResp, sizeof(pstMBusRequesPacket->m_u8RawResp),
+					ServerReplyBuff, sizeof(ServerReplyBuff));
+
+			pstMBusRequesPacket->m_state = RESP_RCVD_FROM_NETWORK;
+			addToRespQ(pstMBusRequesPacket);
+			//u8ReturnType = DecodeRxPacket(ServerReplyBuff,pstMBusRequesPacket);
 		}
 		else // totalRead = 0, means request timed out or recv failed
 		{
 			// If blocking result = 0, it means timeout has occurred
 			if (0 == iBlockingReadResult)
 			{
+				pstMBusRequesPacket->m_state = RESP_TIMEDOUT;
 				u8ReturnType = STACK_ERROR_RECV_TIMEOUT;
 			}
 			else
 			{
+				pstMBusRequesPacket->m_state = RESP_ERROR;
 				u8ReturnType = STACK_ERROR_RECV_FAILED;
 			}
 		}

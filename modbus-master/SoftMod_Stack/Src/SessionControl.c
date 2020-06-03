@@ -61,6 +61,7 @@ stLiveSerSessionList_t *pstSesCtlThdLstHead = NULL;
 
 //structure to tract timeout requests
 struct stTimeOutTracker g_oTimeOutTracker = {0};
+#endif
 
 //structure to hold data for message queue
 struct stIntDataForQ
@@ -68,7 +69,6 @@ struct stIntDataForQ
 	long m_lType;       /* message type, must be > 0 */
 	unsigned short m_iID;
 };
-#endif
 
 /**
  *
@@ -972,9 +972,16 @@ void* SessionControlThread(void* threadArg)
 		{
 			pstMBusReqPact = stScMsgQue.wParam;
 			u8ReturnType = Modbus_SendPacket(pstMBusReqPact, &fd);
-			ApplicationCallBackHandler(pstMBusReqPact, u8ReturnType);
-			//OSAL_Free(pstMBusReqPact);
-			freeReqNode(pstMBusReqPact);
+
+			pstMBusReqPact->m_u8ProcessReturn = u8ReturnType;
+			if(STACK_NO_ERROR == u8ReturnType)
+			{
+				//pstMBusReqPact->m_state = RESP_RCVD_FROM_NETWORK;
+			}
+			else
+			{
+				addToRespQ(pstMBusReqPact);
+			}
 		}
 		fflush(stdin);
 
@@ -988,12 +995,11 @@ void* SessionControlThread(void* threadArg)
 }
 #endif
 
-//when Modbus communication mode is TCP
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-
 //structure to store response for processsing
 struct stResProcessData g_stRespProcess;
 
+//when Modbus communication mode is TCP
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
  *
  * Description
@@ -1103,6 +1109,7 @@ void releaseFromTracker(stMbusPacketVariables_t *pstMBusRequesPacket)
 	pstTemp->m_iIsLocked = 0;
 }
 
+#endif
 /**
  *
  * Description
@@ -1193,6 +1200,7 @@ void* postResponseToApp(void* threadArg)
 	return NULL;
 }
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
  *
  * Description
@@ -1453,7 +1461,7 @@ int initTimeoutTrackerArray()
 	printf("Timeout tracker is configured\n");
 	return 0;
 }
-
+#endif
 /**
  *
  * Description
@@ -1465,7 +1473,7 @@ int initTimeoutTrackerArray()
  * @return [out] int  0 if function succeeds in initialization;
  * 					  -1 if function fails to initialize
  */
-int initTCPRespStructs()
+int initRespStructs()
 {
 	g_stRespProcess.m_i32RespMsgQueId = OSAL_Init_Message_Queue();
 
@@ -1479,12 +1487,13 @@ int initTCPRespStructs()
 	   //printf("initTCPRespStructs::Could not create unnamed semaphore\n");
 	   return -1;
 	}
-
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	if(0 > initTimeoutTrackerArray())
 	{
 		printf("Timeout tracker array init failed\n");
 		return -1;
 	}
+#endif
 
 	// Initiate response thread
 	{
@@ -1503,10 +1512,44 @@ int initTCPRespStructs()
 		}
 	}
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 	initEPollData();
+#endif
 	return 0;
 }
 
+/**
+ *
+ * Description
+ * This function de-initializes data structures related to response processing.
+ *
+ * @param none
+ *
+ * @return Nothing
+ */
+void deinitRespStructs()
+{
+	// 3 steps:
+	// Deinit response timeout mechanism
+	// Deinit epoll mechanism
+	// Deinit thread which posts responses to app
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+	deinitTimeoutTrackerArray();
+	deinitEPollData();
+#endif
+
+	// De-Initiate response thread
+	{
+		Osal_Thread_Terminate(g_stRespProcess.m_threadIdRespToApp);
+		sem_destroy(&g_stRespProcess.m_semaphoreResp);
+		if(g_stRespProcess.m_i32RespMsgQueId)
+		{
+			OSAL_Delete_Message_Queue(g_stRespProcess.m_i32RespMsgQueId);
+		}
+	}
+}
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
  *
  * Description
@@ -1531,37 +1574,6 @@ void deinitTimeoutTrackerArray()
 		free(g_oTimeOutTracker.m_pstArray);
 	}
 	g_oTimeOutTracker.m_iSize = 0;
-}
-
-/**
- *
- * Description
- * This function de-initializes data structures related to TCP response processing.
- *
- * @param none
- *
- * @return [out] int 0 if function succeeds;
- * 					-1 if function fails
- */
-void deinitTCPRespStructs()
-{
-	// 3 steps:
-	// Deinit response timeout mechanism
-	// Deinit epoll mechanism
-	// Deinit thread which posts responses to app
-	deinitTimeoutTrackerArray();
-
-	deinitEPollData();
-
-	// De-Initiate response thread
-	{
-		Osal_Thread_Terminate(g_stRespProcess.m_threadIdRespToApp);
-		sem_destroy(&g_stRespProcess.m_semaphoreResp);
-		if(g_stRespProcess.m_i32RespMsgQueId)
-		{
-			OSAL_Delete_Message_Queue(g_stRespProcess.m_i32RespMsgQueId);
-		}
-	}
 }
 
 /**

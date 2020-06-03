@@ -310,6 +310,8 @@ int getTimeoutTrackerCount();
  */
 void releaseFromTracker(stMbusPacketVariables_t *pstMBusRequesPacket);
 
+#endif
+
 struct stResProcessData {
 	sem_t m_semaphoreResp;
 
@@ -317,6 +319,7 @@ struct stResProcessData {
 	Thread_H m_threadIdRespToApp;
 };
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 /**
  *
  * Description

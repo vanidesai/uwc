@@ -17,6 +17,70 @@
 #include <netinet/in.h>
 #include <sys/epoll.h> // for epoll_create1(), epoll_ctl(), struct epoll_event
 
+//// Function declarations
+
+/**
+ *
+ * Description
+ * Initialize Response list data
+ *
+ * @param none
+ * @return int [out] 0 (if success)
+ * 					-1 (if failure)
+ */
+int initRespStructs();
+
+/**
+ *
+ * Description
+ * De-initialize data structures related to response processing.
+ *
+ * @param none
+ * @return Nothing
+ */
+void deinitRespStructs();
+
+/**
+ *
+ * Description
+ * Add msg to response queue for TCP and RTU
+ *
+ * @param a_pstReq [in] pointer to struct of type stMbusPacketVariables_t
+ * @return void [out] none
+ */
+void addToRespQ(stMbusPacketVariables_t *a_pstReq);
+
+/**
+ *
+ * Description
+ * Session control thread function
+ *
+ * @param threadArg [in] thread argument
+ * @return void 	[out] nothing
+ */
+void* SessionControlThread(void* threadArg);
+
+/**
+ * Description
+ * Function to decode received modbus data
+ *
+ * @param ServerReplyBuff [in] Input buffer
+ * @param pstMBusRequesPacket [in] Request packet
+ * @return uint8_t [out] respective error codes
+ *
+ */
+uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,
+		stMbusPacketVariables_t *pstMBusRequesPacket);
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
+typedef struct mesg_data
+{
+	long mesg_type;
+	/// data buffer
+	unsigned char m_readBuffer[MODBUS_DATA_LENGTH];
+}mesg_data_t;
+
 /**
  enum eClientSessionStatus
  @brief
@@ -72,7 +136,6 @@ typedef struct EpollTcpRecv
 	void *m_pNextElm;
 }stEpollTcpRecv_t;
 
-#ifdef MODBUS_STACK_TCPIP_ENABLED
 typedef struct TcpRecvData
 {
 	IP_Connect_t *m_pstConRef;
@@ -81,36 +144,6 @@ typedef struct TcpRecvData
 	int m_bytesToBeRead;
 	unsigned char m_readBuffer[MODBUS_DATA_LENGTH];
 }stTcpRecvData_t;
-
-typedef struct mesg_data
-{
-	long mesg_type;
-	/// data buffer
-	unsigned char m_readBuffer[MODBUS_DATA_LENGTH];
-}mesg_data_t;
-
-//// Function declarations
-
-/**
- *
- * Description
- * Initialize request list data
- *
- * @param none
- * @return int [out] 0 (if success)
- * 					-1 (if failure)
- */
-int initTCPRespStructs();
-
-/**
- *
- * Description
- * De-initialize data structures related to TCP response processing.
- *
- * @param none
- * @return Nothing
- */
-void deinitTCPRespStructs();
 
 /**
  *
@@ -131,18 +164,6 @@ bool initEPollData();
  * @return int 0 for success, -1 for error
  */
 int addReqToList(stMbusPacketVariables_t *pstMBusRequesPacket);
-
-//void removeReqFromListWithLock(stMbusPacketVariables_t *pstMBusRequesPacket);
-
-/**
- *
- * Description
- * Add msg to response queue
- *
- * @param a_pstReq [in] pointer to struct of type stMbusPacketVariables_t
- * @return void [out] none
- */
-void addToRespQ(stMbusPacketVariables_t *a_pstReq);
 
 /**
  *
@@ -200,17 +221,7 @@ void Mark_Sock_Fail(IP_Connect_t *stIPConnect);
  */
 void* ServerSessTcpAndCbThread(void* threadArg);
 
-#endif
-
-/**
- *
- * Description
- * Session control thread function
- *
- * @param threadArg [in] thread argument
- * @return void 	[out] nothing
- */
-void* SessionControlThread(void* threadArg);
+void deinitTimeoutTrackerArray();
 
 /**
  *
@@ -222,14 +233,6 @@ void* SessionControlThread(void* threadArg);
  */
 void* EpollRecvThread();
 
-/**
- * Description
- * Function to decode received modbus data
- *
- * @param ServerReplyBuff [in] Input buffer
- * @param pstMBusRequesPacket [in] Request packet
- * @return uint8_t [out] respective error codes
- *
- */
-uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBusRequesPacket);
+#endif
+
 #endif /* INC_SESSIONCONTROL_H_ */
