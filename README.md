@@ -21,6 +21,8 @@ The directory comprises of following:
   This directory contains the mqtt container sources and docker file for building the container.  
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/scada-rtu">scada-rtu</a> :
   This directory contains the scada-rtu sources and docker file for building the container.
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/ControlLoop">ControlLoop</a> :
+  This directory contains the ControlLoop test app sources and docker file for building the container.
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Others">Others</a> :
   This directory contains configurations for ETCD required during provisioning
 * <a href="https://github.impcloud.net/uwc/UWC-Core/blob/master/docker-compose.yml">docker-compose.yml</a> :
