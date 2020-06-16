@@ -201,7 +201,7 @@ void globalConfig::set_thread_sched_param(const COperation a_OpsInfo,
 	}
 	else
 	{
-		DO_LOG_ERROR("thread priority to set to: " + std::to_string(iThreadPriority));
+		DO_LOG_INFO("thread priority to set to: " + std::to_string(iThreadPriority));
 	}
 	//end of set priority for current thread
 }
