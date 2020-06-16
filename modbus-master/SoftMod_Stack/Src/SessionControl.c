@@ -25,8 +25,6 @@ extern stDevConfig_t g_stModbusDevConfig;
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 
-extern int fd;
-
 #endif
 
 //Linux message queue ID
@@ -34,11 +32,11 @@ int32_t i32MsgQueIdSC = 0;
 //flag to check whether to exit the current thread or continue
 extern bool g_bThreadExit;
 
+//pointer to session list
+stLiveSerSessionList_t *pstSesCtlThdLstHead = NULL;
+
 //if Modbus stack communicates with Modbus slave device using TCP mode
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-
-//Mutex for synchronization of session list
-extern Mutex_H LivSerSesslist_Mutex;
 
 //array of structures containing socket descriptors the have been registered with epoll
 //and data to be read from
@@ -55,9 +53,6 @@ Thread_H EpollRecv_ThreadId = 0;
 
 //handle of mutex to synchronize epoll data
 Mutex_H EPollMutex;
-
-//pointer to session list
-stLiveSerSessionList_t *pstSesCtlThdLstHead = NULL;
 
 //structure to tract timeout requests
 struct stTimeOutTracker g_oTimeOutTracker = {0};
@@ -237,229 +232,6 @@ void freeReqNode(stMbusPacketVariables_t* a_pobjReq)
 }
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-/**
- *
- * Description
- * This function is a thread routine for session control thread
- *
- * @param threadArg [in] void* thread arguments to start thread
- *
- * @return void 	[out] nothing
- */
-void* SessionControlThread(void* threadArg)
-{
-	int32_t i32MsgQueIdSC = 0;
-	Linux_Msg_t stScMsgQue = { 0 };
-	uint8_t u8NewDevEntryFalg=0;
-	stLiveSerSessionList_t *pstLivSerSesslist = NULL;
-	stLiveSerSessionList_t *pstTempLivSerSesslist = NULL;
-	stMbusPacketVariables_t *pstMBusReqPact = NULL;
-	Post_Thread_Msg_t stPostThreadMsg = { 0 };
-	thread_Create_t stThreadParam = { 0 };
-
-	i32MsgQueIdSC = *((int32_t *)threadArg);
-
-	// set thread priority
-	set_thread_sched_param();
-
-	//while (NULL != threadArg)
-	while(false == g_bThreadExit)
-	{
-		memset(&stScMsgQue,00,sizeof(stScMsgQue));
-		memset(&stPostThreadMsg,00,sizeof(stPostThreadMsg));
-		if(OSAL_Get_Message(&stScMsgQue, i32MsgQueIdSC))
-		{
-			u8NewDevEntryFalg = 0;
-			pstMBusReqPact = stScMsgQue.wParam;
-			pstMBusReqPact->m_lPriority = stScMsgQue.mtype;
-
-			// addressed review comment
-			if(0 != Osal_Wait_Mutex(LivSerSesslist_Mutex))
-			{
-				// fail to lock mutex
-				continue;
-			}
-			pstLivSerSesslist = pstSesCtlThdLstHead;
-			if(NULL == pstLivSerSesslist)
-			{
-				pstSesCtlThdLstHead = OSAL_Malloc(sizeof(stLiveSerSessionList_t));
-				if(NULL == pstSesCtlThdLstHead)
-				{
-					ApplicationCallBackHandler(pstMBusReqPact,
-							STACK_ERROR_MALLOC_FAILED);
-
-					// addressed review comment
-					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
-					{
-						// fail to unlock mutex
-						// Wait for next request
-						//continue;
-					}
-
-					freeReqNode(pstMBusReqPact);
-					continue;
-				}
-				else
-				{
-					pstLivSerSesslist = pstSesCtlThdLstHead;
-					pstLivSerSesslist->m_pNextElm = NULL;
-					u8NewDevEntryFalg = 1;
-				}
-			}
-			else
-			{
-				while(NULL != pstLivSerSesslist)
-				{
-					pstTempLivSerSesslist = pstLivSerSesslist;
-
-					if(NULL != pstLivSerSesslist)
-					{
-						if(pstMBusReqPact->m_u8IpAddr[0] == pstLivSerSesslist->m_u8IpAddr[0] &&
-								pstMBusReqPact->m_u8IpAddr[1] == pstLivSerSesslist->m_u8IpAddr[1] &&
-								pstMBusReqPact->m_u8IpAddr[2] == pstLivSerSesslist->m_u8IpAddr[2] &&
-								pstMBusReqPact->m_u8IpAddr[3] == pstLivSerSesslist->m_u8IpAddr[3] &&
-								pstMBusReqPact->u16Port == pstLivSerSesslist->m_u16Port)
-						{
-							break;
-						}
-						else
-						{
-							pstLivSerSesslist = pstLivSerSesslist->m_pNextElm;
-						}
-					}
-				}
-
-				if(NULL == pstLivSerSesslist)
-				{
-					pstTempLivSerSesslist->m_pNextElm = OSAL_Malloc(sizeof(stLiveSerSessionList_t));
-					if(NULL == pstTempLivSerSesslist->m_pNextElm )
-					{
-						ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_MALLOC_FAILED);
-						// addressed review comment
-						if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
-						{
-							// fail to unlock mutex
-							// Wait for next request
-							//continue;
-						}
-						freeReqNode(pstMBusReqPact);
-						continue;
-					}
-					pstLivSerSesslist = pstTempLivSerSesslist->m_pNextElm;
-					pstLivSerSesslist->m_pNextElm = NULL;
-					u8NewDevEntryFalg = 1;
-				}
-			}
-
-			if(u8NewDevEntryFalg )
-			{
-
-				memcpy_s(pstLivSerSesslist->m_u8IpAddr,sizeof(pstLivSerSesslist->m_u8IpAddr),
-										pstMBusReqPact->m_u8IpAddr,sizeof(pstMBusReqPact->m_u8IpAddr));
-				pstLivSerSesslist->MsgQId = OSAL_Init_Message_Queue();
-
-				if(-1 == pstLivSerSesslist->MsgQId)
-				{
-					printf("failed to create msg queue\n");
-					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_CREATE);
-
-					// addressed review comment
-					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
-					{
-						// fail to unlock mutex
-						// Wait for next request
-						///continue;
-					}
-					freeReqNode(pstMBusReqPact);
-					continue;
-				}
-				pstLivSerSesslist->m_i32sockfd = 0;
-
-				pstLivSerSesslist->m_u16Port = pstMBusReqPact->u16Port;
-				stPostThreadMsg.idThread = pstLivSerSesslist->MsgQId;
-				stPostThreadMsg.lParam = pstMBusReqPact;
-				stPostThreadMsg.wParam = pstLivSerSesslist;
-				stPostThreadMsg.MsgType = pstMBusReqPact->m_lPriority;
-
-				if(!OSAL_Post_Message(&stPostThreadMsg))
-				{
-					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_SEND);
-					// addressed review comment
-					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
-					{
-						// fail to unlock mutex
-						// Wait for next request
-						//continue;
-					}
-					freeReqNode(pstMBusReqPact);
-					continue;
-				}
-
-				stThreadParam.dwStackSize = 0;
-				stThreadParam.lpStartAddress = ServerSessTcpAndCbThread;
-				stThreadParam.lpParameter = &pstLivSerSesslist->MsgQId;
-				stThreadParam.lpThreadId = &pstLivSerSesslist->m_ThreadId;
-
-				pstLivSerSesslist->m_ThreadId = Osal_Thread_Create(&stThreadParam);
-				if(-1 == pstLivSerSesslist->m_ThreadId)
-				{
-					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_THREAD_CREATE);
-					// addressed review comment
-					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
-					{
-						// fail to unlock mutex
-						// Wait for next request
-						//continue;
-					}
-					freeReqNode(pstMBusReqPact);
-					continue;
-				}
-			}
-			else
-			{
-				stPostThreadMsg.idThread = pstLivSerSesslist->MsgQId;
-				stPostThreadMsg.lParam = pstMBusReqPact;
-				stPostThreadMsg.wParam = pstLivSerSesslist;
-				stPostThreadMsg.MsgType = pstMBusReqPact->m_lPriority;
-
-				if(!OSAL_Post_Message(&stPostThreadMsg))
-				{
-					ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_SEND);
-					// addressed review comment
-					if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
-					{
-						// fail to unlock mutex
-						// Wait for next request
-						//continue;
-					}
-					freeReqNode(pstMBusReqPact);
-					continue;
-				}
-			}
-			// addressed review comment
-			if(0 != Osal_Release_Mutex (LivSerSesslist_Mutex))
-			{
-				// fail to unlock mutex
-				continue;
-			}
-		}
-		else
-		{
-			ApplicationCallBackHandler(pstMBusReqPact, STACK_ERROR_QUEUE_RECIVE);
-			freeReqNode(pstMBusReqPact);
-			continue;
-		}
-		fflush(stdin);
-
-		/// check for thread exit
-		if(g_bThreadExit)
-		{
-			break;
-		}
-	}
-	return NULL;
-}
-
 /**
  *
  * Description
@@ -960,18 +732,38 @@ void* SessionControlThread(void* threadArg)
 	int32_t i32MsgQueIdSC = 0;
 	Linux_Msg_t stScMsgQue = { 0 };
 	stMbusPacketVariables_t *pstMBusReqPact = NULL;
+	stRTUConnectionData_t stRTUConnectionData = {};
 	uint8_t u8ReturnType = 0;
-	i32MsgQueIdSC = *((int32_t *)threadArg);
+	stLiveSerSessionList_t pstLivSerSesslist;
 
+	pstLivSerSesslist = *((stLiveSerSessionList_t *)threadArg);
+	i32MsgQueIdSC = pstLivSerSesslist.MsgQId;
 
-	//while (NULL != threadArg)
+	stRTUConnectionData.m_fd = -1;
 	while(false == g_bThreadExit)
 	{
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
 		if(OSAL_Get_Message(&stScMsgQue, i32MsgQueIdSC))
 		{
-			pstMBusReqPact = stScMsgQue.wParam;
-			u8ReturnType = Modbus_SendPacket(pstMBusReqPact, &fd);
+			pstMBusReqPact = stScMsgQue.lParam;
+			// Check if connection is established
+			if(stRTUConnectionData.m_fd == -1)
+			{
+				int ret = initSerialPort(&stRTUConnectionData,
+								pstLivSerSesslist.m_portName,
+								pstLivSerSesslist.m_baudrate,
+								pstLivSerSesslist.m_parity);
+				if(-1 == ret)
+				{
+					stRTUConnectionData.m_fd = -1;
+					pstMBusReqPact->m_u8ProcessReturn = STACK_ERROR_SERIAL_PORT_ERROR;
+					printf("Failed to initialize serial port for RTU. File descriptor is set to :: %d\n",stRTUConnectionData.m_fd);
+					addToRespQ(pstMBusReqPact);
+					continue;
+				}
+			}
+			u8ReturnType = Modbus_SendPacket(pstMBusReqPact, stRTUConnectionData,
+					pstLivSerSesslist.m_lInterframeDelay, pstLivSerSesslist.m_lrespTimeout);
 
 			pstMBusReqPact->m_u8ProcessReturn = u8ReturnType;
 			if(STACK_NO_ERROR == u8ReturnType)
@@ -1692,24 +1484,35 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 
 	Linux_Msg_t stScMsgQue = { 0 };
 	uint8_t u8ReturnType = 0;
-	//stLiveSerSessionList_t *pstLivSerSesslist = NULL;
 	stMbusPacketVariables_t *pstMBusRequesPacket = NULL;
 	int32_t i32MsgQueIdSSTC = 0;
 	int32_t i32RetVal = 0;
-	//int32_t i32sockfd = 0;
 	IP_Connect_t stIPConnect;
+	IP_address_t stTempIpAdd = {0};
+
+	stLiveSerSessionList_t pstLivSerSesslist;
+
+	pstLivSerSesslist = *((stLiveSerSessionList_t *)threadArg);
+	i32MsgQueIdSSTC = pstLivSerSesslist.MsgQId;
 
 	stIPConnect.m_bIsAddedToEPoll = false;
 	stIPConnect.m_sockfd = 0;
 	stIPConnect.m_retryCount = 0;
 	stIPConnect.m_lastConnectStatus = SOCK_NOT_CONNECTED;
 
-	i32MsgQueIdSSTC = *((int32_t *)threadArg);
+	memset(&stIPConnect.m_servAddr, '0', sizeof(stIPConnect.m_servAddr));
+
+	stTempIpAdd.s_un.s_un_b.IP_1 = pstLivSerSesslist.m_u8IpAddr[0];
+	stTempIpAdd.s_un.s_un_b.IP_2 = pstLivSerSesslist.m_u8IpAddr[1];
+	stTempIpAdd.s_un.s_un_b.IP_3 = pstLivSerSesslist.m_u8IpAddr[2];
+	stTempIpAdd.s_un.s_un_b.IP_4 = pstLivSerSesslist.m_u8IpAddr[3];
+	stIPConnect.m_servAddr.sin_addr.s_addr = stTempIpAdd.s_un.s_addr;
+	stIPConnect.m_servAddr.sin_port = htons(pstLivSerSesslist.m_u16Port);
+	stIPConnect.m_servAddr.sin_family = AF_INET;
 
 	// set thread priority
 	set_thread_sched_param();
 
-	//while (NULL != threadArg)
 	while(false == g_bThreadExit)
 	{
 		memset(&stScMsgQue,00,sizeof(stScMsgQue));
@@ -1718,8 +1521,8 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 
 		if(i32RetVal > 0)
 		{
-			//pstLivSerSesslist = stScMsgQue.wParam;
 			pstMBusRequesPacket = stScMsgQue.lParam;
+
 			if(NULL != pstMBusRequesPacket)
 			{
 				u8ReturnType = Modbus_SendPacket(pstMBusRequesPacket, &stIPConnect);

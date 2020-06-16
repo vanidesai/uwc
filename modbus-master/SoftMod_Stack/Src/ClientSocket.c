@@ -116,21 +116,12 @@ static uint16_t crc16(uint8_t *buffer, uint16_t buffer_length)
 }
 #endif //#ifndef MODBUS_STACK_TCPIP_ENABLED
 
-// variable to store Standard interframe gap delay
-long standardInterframeDelay = 0;
-
 // global variable to store stack configurations
 extern stDevConfig_t g_stModbusDevConfig;
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
-int fd;
-uint32_t baud;
-
 /*To check blocking serial read*/
-int checkforblockingread(void);
-
-#else
-extern Mutex_H LivSerSesslist_Mutex;
+int checkforblockingread(int fd, long a_lRespTimeout);
 
 #endif
 
@@ -869,20 +860,20 @@ uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,stMbusPacketVariables_t *pstMBus
  * This function adds socket descriptor in select() to check for blocking read calls.
  * The socket is read from Modbus stack configuration.
  *
- * @param None
- * @param None
+ *@param fd						[in] file descriptor
+ *@param a_lRespTimeout			[in] response timeout used in case of request timeout
  * @return uint8_t [out] 0 in case of function fails and sets ERRNO to error,
  * 						 Non-zero integer which is equal to the number of ready descriptors.
  *
  *
  */
-int checkforblockingread(void)
+int checkforblockingread(int fd, long a_lRespTimeout)
 {
 	fd_set rset;
 	struct timeval tv;
 	//wait upto 1 seconds
 	tv.tv_sec = 0;
-	tv.tv_usec = g_stModbusDevConfig.m_lResponseTimeout;
+	tv.tv_usec = a_lRespTimeout;//g_stModbusDevConfig.m_lResponseTimeout;
 	FD_ZERO(&rset);
 
 	// If fd is not set correctly.
@@ -911,8 +902,10 @@ int checkforblockingread(void)
  *
  * @param pstMBusRequesPacket 	[in] stMbusPacketVariables_t * pointer to structure containing
  * 								   	 request for Modbus slave device
- * @param sfd 					[in] int32_t * pointer to socket descriptor of Modbus slave device
- * 									 on which to send this request
+ * @param rtuConnectionData 	[in] stRTUConnectionData_t structure containing the fd and interframe delay
+ *
+ *@param a_lInterframeDelay		[in] interframe delay apart from standard baudrate
+ *@param a_lRespTimeout			[in] response timeout used in case of request timeout
  *
  * @return uint8_t 			[out] STACK_NO_ERROR in case of success;
  * 								  STACK_ERROR_SEND_FAILED if function fails to send the request
@@ -923,7 +916,10 @@ int checkforblockingread(void)
  *								  data from socket descriptor
  *
  */
-uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *sfd)
+uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
+		stRTUConnectionData_t rtuConnectionData,
+		long a_lInterframeDelay,
+		long a_lRespTimeout)
 {
 	uint8_t u8ReturnType = STACK_NO_ERROR;
 	uint8_t recvBuff[TCP_MODBUS_ADU_LENGTH];
@@ -931,7 +927,6 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 	uint16_t crc;
 	uint8_t ServerReplyBuff[TCP_MODBUS_ADU_LENGTH];
 	int totalRead = 0;
-	//int numToRead = sizeof(ServerReplyBuff);
 	uint16_t numToRead = 0;
 	int iBlockingReadResult = 0;
 
@@ -951,15 +946,13 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 
 		recvBuff[pstMBusRequesPacket->m_stMbusTxData.m_u16Length++] = (crc & 0xFF00) >> 8;
 		recvBuff[pstMBusRequesPacket->m_stMbusTxData.m_u16Length++] = (crc & 0x00FF);
-		tcflush(fd, TCIOFLUSH);
+
+		tcflush(rtuConnectionData.m_fd, TCIOFLUSH);
 
 		// Multiple Slave issue: Adding Frame delay between two packets 
-		//usleep(g_lInterframeDelay);
-		//usleep(standardInterframeDelay);
-		sleep_micros(g_stModbusDevConfig.m_lInterframedelay);
-		sleep_micros(standardInterframeDelay);
+		sleep_micros(a_lInterframeDelay + rtuConnectionData.m_interframeDelay);
 
-		bytes = write(fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
+		bytes = write(rtuConnectionData.m_fd,recvBuff,(pstMBusRequesPacket->m_stMbusTxData.m_u16Length));
 		if(bytes <= 0)
 		{
 			u8ReturnType = STACK_ERROR_SEND_FAILED;
@@ -1004,10 +997,10 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
 		}
 
 		while(numToRead > 0){
-			iBlockingReadResult = checkforblockingread();
+			iBlockingReadResult = checkforblockingread(rtuConnectionData.m_fd, a_lRespTimeout);
 			if(iBlockingReadResult > 0)
 			{
-				bytes = read(fd, &ServerReplyBuff[totalRead], numToRead);
+				bytes = read(rtuConnectionData.m_fd, &ServerReplyBuff[totalRead], numToRead);
 				totalRead += bytes;
 				numToRead -= bytes;
 
@@ -1070,17 +1063,22 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,int32_t *
  * This function initiates a serial port according to baud rate for a Modbus slave
  * communicating using RTU mode.
  *
- * @param portName 	[in] uint8_t serial port number to initialize for specified baud rate
- * @param baudrate 	[in] uint32_t baud rate to compare with the Modbus slave device's baud rate
- * @param parity 	[in] uint8_t parity to set for this Modbus slave device communication
+ * @param pstRTUConnectionData 	[out] stRTUConnectionData_t* Structure containing fd and interfram delay. These values wil
+ * 										be created and assigned here based on port name and baudrate.
+ * @param portName 				[in] uint8_t serial port number to initialize for specified baud rate
+ * @param baudrate 				[in] uint32_t baud rate to compare with the Modbus slave device's baud rate
+ * @param parity 				[in] uint8_t parity to set for this Modbus slave device communication
  *
- * @return int 		[out] -1 if function fails to open the specified port or fails to set
- * 							the baud rate for the port or fails to set attributes of the port;
- * 						  Non-zero file descriptor integer in case if function succeeds to
- * 						  	initiate and set configuration of the port.
+ * @return int 					[out] -1 if function fails to open the specified port or fails to set
+ * 										the baud rate for the port or fails to set attributes of the port;
+ * 						  				Non-zero file descriptor integer in case if function succeeds to
+ * 						  				initiate and set configuration of the port.
  *
  */
-MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, eParity  parity)
+MODBUS_STACK_EXPORT int initSerialPort(stRTUConnectionData_t* pstRTUConnectionData,
+										uint8_t *portName,
+										uint32_t baudrate,
+										eParity  parity)
 {
 	struct termios tios;
 	speed_t speed;
@@ -1097,17 +1095,17 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
 	flags = O_RDWR | O_NOCTTY | O_NDELAY | O_EXCL;
 	//flags = O_RDWR | O_NOCTTY | O_NDELAY | O_SYNC;
 
-		fd = open((const char*)portName, flags);
+	pstRTUConnectionData->m_fd = open((const char*)portName, flags);
 
-		if (fd == -1) {
-			//printf("ERROR Can't open the device %s (%s)\n",
-				//	portName, strerror(errno));
-			return -1;
-		}
+	if (pstRTUConnectionData->m_fd == -1) {
+		//printf("ERROR Can't open the device %s (%s)\n",
+		//	portName, strerror(errno));
+		return -1;
+	}
 
 	/* Save */
 	// tcgetattr(fd, &old_tios);
-	tcgetattr(fd, &tios);
+	tcgetattr(pstRTUConnectionData->m_fd, &tios);
 
 
 	/* C_ISPEED     Input baud (new interface)
@@ -1116,127 +1114,127 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
 	switch (baudrate) {
 	case 110:
 		speed = B110;
-		standardInterframeDelay = 38500000/baudrate;
+		pstRTUConnectionData->m_interframeDelay = 38500000/baudrate;
 		break;
 	case 300:
 		speed = B300;
-		standardInterframeDelay = 38500000/baudrate;
+		pstRTUConnectionData->m_interframeDelay = 38500000/baudrate;
 		break;
 	case 600:
 		speed = B600;
-		standardInterframeDelay = 38500000/baudrate;
+		pstRTUConnectionData->m_interframeDelay = 38500000/baudrate;
 		break;
 	case 1200:
 		speed = B1200;
-		standardInterframeDelay = 38500000/baudrate;
+		pstRTUConnectionData->m_interframeDelay = 38500000/baudrate;
 		break;
 	case 2400:
 		speed = B2400;
-		standardInterframeDelay = 38500000/baudrate;
+		pstRTUConnectionData->m_interframeDelay = 38500000/baudrate;
 		break;
 	case 4800:
 		speed = B4800;
-		standardInterframeDelay = 38500000/baudrate;
+		pstRTUConnectionData->m_interframeDelay = 38500000/baudrate;
 		break;
 	case 9600:
 		speed = B9600;
-		standardInterframeDelay = 38500000/baudrate;
+		pstRTUConnectionData->m_interframeDelay = 38500000/baudrate;
 		break;
 	case 19200:
 		speed = B19200;
-		standardInterframeDelay = 38500000/baudrate;
+		pstRTUConnectionData->m_interframeDelay = 38500000/baudrate;
 		break;
 	case 38400:
 		speed = B38400;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #ifdef B57600
 	case 57600:
 		speed = B57600;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B115200
 	case 115200:
 		speed = B115200;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B230400
 	case 230400:
 		speed = B230400;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B460800
 	case 460800:
 		speed = B460800;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B500000
 	case 500000:
 		speed = B500000;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B576000
 	case 576000:
 		speed = B576000;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B921600
 	case 921600:
 		speed = B921600;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B1000000
 	case 1000000:
 		speed = B1000000;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B1152000
 	case 1152000:
 		speed = B1152000;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B1500000
 	case 1500000:
 		speed = B1500000;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B2500000
 	case 2500000:
 		speed = B2500000;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B3000000
 	case 3000000:
 		speed = B3000000;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B3500000
 	case 3500000:
 		speed = B3500000;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 #ifdef B4000000
 	case 4000000:
 		speed = B4000000;
-		standardInterframeDelay = 1750;
+		pstRTUConnectionData->m_interframeDelay = 1750;
 		break;
 #endif
 	default:
 		speed = B9600;
-		standardInterframeDelay = 38500000/9600;
+		pstRTUConnectionData->m_interframeDelay = 38500000/9600;
 		printf("ERROR Unknown baud rate %d for %s (B9600 used)\n",
 				baudrate, portName);
 	}
@@ -1244,8 +1242,8 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
 	/* Set the baud rate */
 	if ((cfsetispeed(&tios, speed) < 0) ||
 			(cfsetospeed(&tios, speed) < 0)) {
-		close(fd);
-		fd = -1;
+		close(pstRTUConnectionData->m_fd);
+		pstRTUConnectionData->m_fd = -1;
 		return -1;
 	}
 
@@ -1425,12 +1423,12 @@ MODBUS_STACK_EXPORT int initSerialPort(uint8_t *portName, uint32_t baudrate, ePa
 	tios.c_cc[VMIN] = 0;
 	tios.c_cc[VTIME] = 0;
 
-	if (tcsetattr(fd, TCSANOW, &tios) < 0) {
-		close(fd);
-		fd = -1;
+	if (tcsetattr(pstRTUConnectionData->m_fd, TCSANOW, &tios) < 0) {
+		close(pstRTUConnectionData->m_fd);
+		pstRTUConnectionData->m_fd = -1;
 		return -1;
 	}
-	return fd;
+	return pstRTUConnectionData->m_fd;
 }
 
 #endif
@@ -1515,8 +1513,6 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 	int32_t sockfd = 0;
 	uint8_t u8ReturnType = STACK_NO_ERROR;
 	uint8_t recvBuff[260];
-	struct sockaddr_in serv_addr;
-	IP_address_t stTempIpAdd = {0};
 	long arg;
 	int res = 0;
 
@@ -1575,17 +1571,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket, IP_Conne
 			arg |= O_NONBLOCK;
 			fcntl(sockfd, F_SETFL, arg);
 
-			memset(&serv_addr, '0', sizeof(serv_addr));
-
-			stTempIpAdd.s_un.s_un_b.IP_1 = pstMBusRequesPacket->m_u8IpAddr[0];
-			stTempIpAdd.s_un.s_un_b.IP_2 = pstMBusRequesPacket->m_u8IpAddr[1];
-			stTempIpAdd.s_un.s_un_b.IP_3 = pstMBusRequesPacket->m_u8IpAddr[2];
-			stTempIpAdd.s_un.s_un_b.IP_4 = pstMBusRequesPacket->m_u8IpAddr[3];
-			serv_addr.sin_addr.s_addr = stTempIpAdd.s_un.s_addr;
-			serv_addr.sin_port = htons(pstMBusRequesPacket->u16Port);
-
-			serv_addr.sin_family = AF_INET;
-			res = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+			res = connect(sockfd, (struct sockaddr *)&a_pstIPConnect->m_servAddr, sizeof(a_pstIPConnect->m_servAddr));
 
 			if (res < 0)
 			{

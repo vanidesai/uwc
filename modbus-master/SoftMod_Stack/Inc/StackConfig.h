@@ -223,7 +223,9 @@ typedef struct _stMbusPacketVariables
 	struct _stMbusPacketVariables *__prev;
 #else
 	/** Received destination address */
-	uint8_t	m_u8ReceivedDestination;	
+	uint8_t	m_u8ReceivedDestination;
+	long m_lInterframeDealy;
+	long m_lRespTimeout;
 #endif
 	/** Holds the unit id  */
 	uint8_t m_u8FunctionCode;
@@ -253,6 +255,12 @@ struct stReqManager {
 	stMbusPacketVariables_t m_objReqArray[MAX_REQUESTS];
 	Mutex_H m_mutexReqArray;
 };
+
+typedef struct RTUConnectionData
+{
+	int m_fd;
+	long m_interframeDelay;
+}stRTUConnectionData_t;
 
 typedef enum ThreadScheduler
 {
@@ -441,14 +449,36 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
 #else
 /**
  * Description
- * Send modbus packet on network
+ * This function sends request to Modbus slave device using RTU communication mode. The function
+ * prepares CRC depending on the request to send and buffer in which to receive response from
+ * the Modbus slave device. It then fills up the transaction data, then sleeps for the nano-seconds
+ * of frame delay. After sleep, it writes the request on the socket to Modbus slave device. Function
+ * then captures the current time as time stamp when request was sent on the Modbus slave device.
+ * Then it waits for the select() to notify about the incoming response. Depending on the function code
+ * (operation to perform on Modbus slave device), it reads data from the socket descriptor. Once the
+ * complete response is read, function gets the current time as time stamp when response is received.
+ * After this, it decodes the response received from Modbus slave device and fills up appropriate
+ * structures to send the response to ModbusApp.
  *
- * @param pstMBusRequesPacket [in] pointer to request packet struct of type stMbusPacketVariables_t
- * @param a_pstIPConnect [in] pointer to socket struct of type IP_Connect_t
+ * @param pstMBusRequesPacket 	[in] stMbusPacketVariables_t * pointer to structure containing
+ * 								   	 request for Modbus slave device
+ * @param rtuConnectionData 	[in] stRTUConnectionData_t structure containing the fd and interframe delay
  *
- * @return uint8_t [out] respective error codes
+ *@param a_lInterframeDelay		[in] interframe delay apart from standard baudrate
+ *@param a_lRespTimeout			[in] response timeout used in case of request timeout
  *
- */uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
-		int32_t *pi32sockfd);
+ * @return uint8_t 			[out] STACK_NO_ERROR in case of success;
+ * 								  STACK_ERROR_SEND_FAILED if function fails to send the request
+ * 								  to Modbus slave device
+ * 								  STACK_ERROR_RECV_TIMEOUT if select() fails to notify of incoming
+ * 								  response
+ *								  STACK_ERROR_RECV_FAILED in case if function fails to read
+ *								  data from socket descriptor
+ *
+ */
+uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
+		stRTUConnectionData_t rtuConnectionData,
+		long a_lInterframeDelay,
+		long a_lRespTimeout);
 #endif
 #endif /* STACKCONFIG_H_ */

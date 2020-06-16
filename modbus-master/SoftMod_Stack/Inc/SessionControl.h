@@ -72,15 +72,6 @@ void* SessionControlThread(void* threadArg);
 uint8_t DecodeRxPacket(uint8_t *ServerReplyBuff,
 		stMbusPacketVariables_t *pstMBusRequesPacket);
 
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-
-typedef struct mesg_data
-{
-	long mesg_type;
-	/// data buffer
-	unsigned char m_readBuffer[MODBUS_DATA_LENGTH];
-}mesg_data_t;
-
 /**
  enum eClientSessionStatus
  @brief
@@ -116,10 +107,29 @@ typedef struct LiveSerSessionList
 	uint16_t m_u16TxID;
 #else
 	uint8_t m_u8ReceivedDestination;
+	uint8_t m_portName[100];
+	uint32_t m_baudrate;
+	eParity m_parity;
+	long m_lInterframeDelay;
+	long m_lrespTimeout;
 #endif
 	void *m_pNextElm;
 }stLiveSerSessionList_t;
 
+/*typedef struct RTUConnectionData
+{
+	int m_fd;
+	long m_interframeDelay;
+}stRTUConnectionData_t;*/
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+
+typedef struct mesg_data
+{
+	long mesg_type;
+	/// data buffer
+	unsigned char m_readBuffer[MODBUS_DATA_LENGTH];
+}mesg_data_t;
 
 typedef struct EpollTcpRecv
 {
