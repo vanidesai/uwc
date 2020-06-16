@@ -56,20 +56,25 @@ check_for_errors()
     return 0
 }
 
-# ----------------------------
-# Set dev mode to true
-# ----------------------------
-setHostIP()
+# function to set dev node based on deployment mode
+setDevMode()
 {
    echo "${INFO}Setting dev mode...${NC}"    
-   sed -i 's/DEV_MODE=true/DEV_MODE=false/g' $working_dir/docker_setup/.env
+   sed -i "s/$1/$2/g" $working_dir/docker_setup/.env
    if [ "$?" -ne "0" ]; then
 	echo "${RED}Failed to set dev mode."
 	echo "${GREEN}Kinldy set DEV_MODE to false manualy in .env file and then re--run this script"
 	exit 1
    else
-	echo "${GREEN}Dev Mode is set.${NC}"
+	echo "${GREEN}Dev Mode is set to $2 ${NC}"
    fi
+}
+
+# ----------------------------
+# Set host ip to localhost
+# ----------------------------
+setHostIP()
+{
    echo "${INFO}Setting HOST_IP to 127.0.0.1 in .env file of EIS..${NC}"
    if grep -Fxq 'HOST_IP=127.0.0.1' $working_dir/docker_setup/.env
    then
@@ -224,6 +229,41 @@ createDockerVolumeDir()
     fi
 }
 
+# function to copy docker-compose.yml as per the deployment mode 
+function copyDeployComposeFile()
+{
+    DEPLOY_MODE=$(grep UWC_DEPLOY_MODE ../docker_setup/.env | cut -d '=' -f 2-)
+    if [ -z "$DEPLOY_MODE" ]; then
+        echo "Deployment mode is set to default i.e. IPC_PROD"
+    else
+        echo "Deployment mode is set to = " $DEPLOY_MODE
+    fi
+    
+    case $DEPLOY_MODE in
+      IPC_PROD)
+            cp docker-compose.yml ../docker_setup/docker-compose.yml
+            setDevMode "DEV_MODE=true" "DEV_MODE=false"
+        ;;
+      IPC_DEV)
+            cp docker-compose_IPC_DEV.yml ../docker_setup/docker-compose.yml
+            setDevMode "DEV_MODE=false" "DEV_MODE=true"
+        ;;
+      TCP_PROD)
+            cp docker-compose_TCP_PROD.yml ../docker_setup/docker-compose.yml
+            setDevMode "DEV_MODE=true" "DEV_MODE=false"
+        ;;
+      TCP_DEV)
+            cp docker-compose_TCP_DEV.yml ../docker_setup/docker-compose.yml
+            setDevMode "DEV_MODE=false" "DEV_MODE=true"
+        ;;
+      *)
+            # set default mode to ipc prod
+            cp docker-compose.yml ../docker_setup/docker-compose.yml
+            setDevMode "DEV_MODE=true" "DEV_MODE=false"
+        ;;
+    esac 
+}
+
 # ----------------------------
 # Copying UWC Containers in EIS
 # ----------------------------
@@ -233,17 +273,17 @@ addUWCContainersInEIS()
     rm -rf UWC/ && mkdir UWC
     tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
     cd UWC
-    cp -r modbus-master/ MQTT/ uwc_common/ mqtt-export/ ../
-    cp docker-compose.yml ../docker_setup/docker-compose.yml
+    cp -r modbus-master/ MQTT/ scada-rtu/ uwc_common/ mqtt-export/ ../
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp Others/Config/UWC/Global_Config.yml /opt/intel/eis/uwc_data/common_config/Global_Config.yml
+    copyDeployComposeFile
     copy_verification=$(echo $?)
     if [ "$copy_verification" -eq "0" ]; then
         echo "${GREEN}UWC containers are successfully copied ${NC}"
     else
         echo "${RED}failed to copy UWC containers.${NC}"
-	return 1
+	    return 1
     fi
     echo "${GREEN}>>>>>${NC}"
 	echo "${GREEN}************************* This script is sucessfully executed ***************************************************"
