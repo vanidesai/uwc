@@ -6,4 +6,4 @@ file:
   description: "Common device group file for TCP and RTU devices"
 devicegrouplist: 
 - "Device_group1.yml"
-#- "Device_group2.yml"
+- "Device_group2.yml"
