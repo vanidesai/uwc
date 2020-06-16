@@ -75,6 +75,21 @@ Execute below command on terminal to verify container status.
 sudo docker ps
 ```
 
+## Steps to deploy other modes of deployments
+```
+Following zmq modes are available for deployment,
+    1. IPC_PROD – This is default mode for deployment. i.e. IPC communication with production mode
+    2. IPC_DEV – IPC mode with developer mode. (i.e. without security)
+    3. TCP_PROD – TCP communication with secured mode.
+    4. TCP_DEV – TCP communication with non-secure mode.
+Steps:
+    1. Add UWC_DEPLOY_MODE= <Mode of deployment mentioned above> in <EIS>/<docker_setup>/.env file.
+    2. Run 01_pre-requisites.sh, 02_provisionEIS.sh, 03_DeployEIS.sh scripts for further deployment.
+    3. For verification use “docker ps” command 
+
+Please Note: If nothing is specified in .env file, default mode will be deployed. (i.e. IPC_PROD mode)
+```
+
 ## Steps to run unit test cases
 ```
 1. Installed all the pre-requisites mentioned in ##Install pre-requisites section
@@ -106,21 +121,6 @@ docker logs modbus-tcp-container > docker.log 2>&1
  ```
   sudo ./05_applyConfigChanges.sh
 ```
-## Steps to deploy other modes of deployments
-```
-Following zmq modes are available for deployment,
-    1. IPC_PROD – This is default mode for deployment. i.e. IPC communication with production mode
-    2. IPC_DEV – IPC mode with developer mode. (i.e. without security)
-    3. TCP_PROD – TCP communication with secured mode.
-    4. TCP_DEV – TCP communication with non-secure mode.
-Steps:
-    1. Add UWC_DEPLOY_MODE= <Mode of deployment mentioned above> in <EIS>/<docker_setup>/.env file.
-    2. Run 01_pre-requisites.sh, 02_provisionEIS.sh, 03_DeployEIS.sh scripts for further deployment.
-    3. For verification use “docker ps” command 
-
-Please Note: If nothing is specified in .env file, default mode will be deployed. (i.e. IPC_PROD mode)
-```
-
 ## Steps to create bundle out of sources - Optional 
 ```
 Execute below script to create UWC bundle for deployment.
