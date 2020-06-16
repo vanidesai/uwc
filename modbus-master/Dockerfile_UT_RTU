@@ -44,8 +44,8 @@ COPY --from=uwc_test_common /usr/yaml/include/yaml-cpp /Modbus-App/include/
 COPY --from=uwc_test_common /usr/yaml/lib* /Modbus-App/lib/
 
 RUN cp /Modbus-App/lib/* /usr/local/lib/
-RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Release/src/subdir.mk 
-RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Release/src/utils/subdir.mk 
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Build.test/src/subdir.mk 
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Build.test/src/utils/subdir.mk 
 RUN cd /Modbus-App/Build.test \
     &&	export LD_LIBRARY_PATH='/Modbus-App/lib:/usr/local/lib\
     :/bin/yaml-cpp/lib' \
