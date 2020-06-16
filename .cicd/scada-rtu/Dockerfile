@@ -29,11 +29,46 @@ COPY --from=uwc_common /EIS/log4cpp/build/lib/* /SCADA-RTU-APP/lib/
 COPY --from=uwc_common /EIS/tahu/client_libraries/c/lib/libtahu.so /SCADA-RTU-APP/lib/
 COPY --from=uwc_common /EIS/tahu/client_libraries/c/include/* /SCADA-RTU-APP/include/tahu/
 
+
+RUN mkdir kw10 ; \
+       export http_proxy="http://proxy-chain.intel.com:911"; \
+       export https_proxy="http://proxy-chain.intel.com:911"; \
+       export all_proxy="http://proxy-chain.intel.com:911"; \
+
+       dpkg --add-architecture i386 ;\
+       apt-get update -y ;\
+       apt-get install lsb-core -y ;\
+       apt-get install libc6:i386 libgcc1:i386 -y ;\
+       apt-get install lib32tinfo5 -y ;\
+       apt-get install libncursesw:i386 -y ;\
+       apt-get install libnuma1 -y ;\
+
+       adduser --disabled-password --no-create-home --gecos "" hadi ;\
+       chown -R hadi kw10 ; \
+       su hadi -c "echo Hadi is here*******"; \
+       wget https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW12.3/Linux/kw-server-installer.12.3.0.819.linux64.sh ;\
+       chmod 755 kw-server-installer.12.3.0.819.linux64.sh ;\
+       su hadi -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /kw10 --license-server kwlic.intel.com:7500" ;\
+       ls kw10 ;
+
+RUN  ls -la ~
+RUN  mkdir .klocwork ;
+ADD  ltoken .klocwork/
+
+RUN mv .klocwork ~
+RUN ls -la ~/.klocwork
+
 # build sources
 RUN cd /SCADA-RTU-APP/Release \
     &&	export LD_LIBRARY_PATH='/SCADA-RTU-APP/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
-    &&	make clean all -s
+    &&	/kw10/bin/kwinject make clean all -s
+
+RUN cd /SCADA-RTU-APP/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
+       /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
+       cp test.log tables_UWC/build.log ;\
+       cp parse_errors.log tables_UWC/parse_errors.log ;\
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
 
 # Build scada-rtu container service
 FROM ia_common:$EIS_VERSION as scada-rtu-service
