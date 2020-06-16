@@ -249,6 +249,7 @@ createTestDir()
 	mkdir -p unit_test_reports/modbus-tcp-master
 	mkdir -p unit_test_reports/modbus-rtu-master
 	mkdir -p unit_test_reports/mqtt-export
+	mkdir -p unit_test_reports/scada-rtu
 	chown -R $SUDO_USER:$SUDO_USER unit_test_reports
 	cd "${eis_working_dir}"
 }

@@ -10,16 +10,26 @@
 
 ARG EIS_VERSION
 FROM ia_eisbase:$EIS_VERSION as eisbase
-LABEL description="MQTT Export Application"
+LABEL description="Common library container"
 ARG EIS_UID
 
 FROM ia_common:$EIS_VERSION as common
+
+# Build tahu library
+FROM eisbase as build-tahu
+COPY tahu.c /
+
+RUN apt-get update && apt-get install -y libmosquitto-dev \
+    &&  git clone --branch v0.5.8 https://github.com/eclipse/tahu \
+    &&  rm -rf tahu/client_libraries/c/src/tahu.c && cp /tahu.c tahu/client_libraries/c/src \
+    &&  cd tahu/client_libraries/c \
+    &&	make -s
 
 # Build Paho C Library
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
 
-RUN git clone --branch v1.3.2 https://github.com/eclipse/paho.mqtt.c.git \
+RUN git clone --branch v1.3.4 https://github.com/eclipse/paho.mqtt.c.git \
     &&	cd paho.mqtt.c \
     &&	mkdir build && cd build \
     &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=OFF \
@@ -31,6 +41,8 @@ RUN git clone --branch v1.3.2 https://github.com/eclipse/paho.mqtt.c.git \
 # Build Paho CPP Library
 FROM eisbase
 COPY --from=build-pahoc /usr/paho-c /usr/.
+COPY --from=build-tahu /EIS/tahu /EIS/tahu
+
 COPY async_client.cpp /
 COPY async_client.h /
 COPY token.cpp /
