@@ -29,15 +29,6 @@
 extern std::atomic<bool> g_stopThread;
 /// reference if to store request data
 
-/// patterns to be used to find on-demand topic strings
-/// topic syntax -
-/// for non-RT topic for read - <topic_name>__RdReq
-/// for RT topic read RT - <topic_name>__RdReq_RT
-#define READ	 	"_RdReq"
-#define READ_RT 	"_RdReq_RT"
-#define WRITE 		"_WrReq"
-#define WRITE_RT 	"_WrReq_RT"
-
 /**
  * Constructor
  */
@@ -408,6 +399,8 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 		try
 		{
 			addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
+			a_stMbusApiPram.m_i32Ctx = mpp.at(stTopic).getWellSiteDev().getCtxInfo();
+
 		}
 		catch(const std::out_of_range& oor)
 		{
@@ -555,9 +548,7 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 		bool& a_bIsRT)
 {
 	bool bRet = true;
-	if(std::string::npos != topic.find(READ,
-			topic.length() - std::string(READ).length(),
-			std::string(READ).length()))
+	if(regExFun(topic, READ_REQ))
 	{
 		operation = globalConfig::CGlobalConfig::getInstance().
 				getOpOnDemandReadConfig().getNonRTConfig();
@@ -576,9 +567,7 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 		a_bIsWriteReq = false;
 		a_bIsRT = false;
 	}
-	else if(std::string::npos != topic.find(READ_RT,
-			topic.length() - std::string(READ_RT).length(),
-			std::string(READ_RT).length()))
+	else if(regExFun(topic, READ_REQ_RT))
 	{
 		operation = globalConfig::CGlobalConfig::getInstance().
 				getOpOnDemandReadConfig().getRTConfig();
@@ -599,9 +588,7 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 		// set realtime to true
 		a_bIsRT = true;
 	}
-	else if(std::string::npos != topic.find(WRITE,
-			topic.length() - std::string(WRITE).length(),
-			std::string(WRITE).length()))
+	else if(regExFun(topic, WRITE_REQ))
 	{
 		operation = globalConfig::CGlobalConfig::getInstance().
 				getOpOnDemandWriteConfig().getNonRTConfig();
@@ -621,9 +608,7 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
 
 		a_bIsRT = false;
 	}
-	else if(std::string::npos != topic.find(WRITE_RT,
-			topic.length() - std::string(WRITE_RT).length(),
-			std::string(WRITE_RT).length()))
+	else if(regExFun(topic, WRITE_REQ_RT))
 	{
 		operation = globalConfig::CGlobalConfig::getInstance().
 				getOpOnDemandWriteConfig().getRTConfig();
@@ -723,15 +708,16 @@ string onDemandHandler::getMsgElement(msg_envelope_t *a_Msg,
 	// get the value
 	msgbus_ret_t msgRet = msgbus_msg_envelope_get(a_Msg, a_sKey.c_str(), &data);
 
-#ifdef INSTRUMENTATION_LOG
-	DO_LOG_DEBUG(a_sKey +":" +data->body.string);
-#endif
 	if(msgRet != MSG_SUCCESS)
 	{
 		DO_LOG_ERROR(a_sKey + " key not present in message: ");
 	}
 	else
 	{
+#ifdef INSTRUMENTATION_LOG
+	DO_LOG_DEBUG(a_sKey +":" +data->body.string);
+#endif
+
 		// Since all the parameters are in string format, hence string is returned
 		// If any other parameter is added with different data types in JSON payload then return value needs to changed
 		if(MSG_ENV_DT_STRING == data->type)

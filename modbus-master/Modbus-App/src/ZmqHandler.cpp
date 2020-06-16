@@ -19,6 +19,7 @@
 #include <string.h>
 #include <vector>
 #include <fstream>
+#include <functional>
 #include "ConfigManager.hpp"
 
 #include "Logger.hpp"
@@ -38,6 +39,82 @@ namespace
 	std::map<std::string, stZmqPubContext> g_mapPubContextMap;
 }
 
+// lamda function to return true if given key matches the given pattern
+std::function<bool(std::string, std::string)> regExFun = [](std::string a_sTopic, std::string a_sKeyToFind) ->bool {
+	if(std::string::npos != a_sTopic.find(a_sKeyToFind.c_str(),
+			a_sTopic.length() - std::string(a_sKeyToFind).length(),
+			std::string(a_sKeyToFind).length()))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+};
+
+/**
+ * Set the topic name as per specified patterns
+ * @param a_sTopic		:[in] Topic for which pub or sub context needs to be created
+ * @return 	true : on success,
+ * 			false : on error
+ */
+bool zmq_handler::setTopicForOperation(std::string a_sTopic)
+{
+	bool bRet = true;
+	if(regExFun(a_sTopic, READ_RES))
+	{
+		PublishJsonHandler::instance().setSReadResponseTopic(a_sTopic);
+		cout << "read Res topic = " << a_sTopic << endl;
+		DO_LOG_INFO("read res topic = " + a_sTopic);
+	}
+	else if(regExFun(a_sTopic, READ_RES_RT))
+	{
+		PublishJsonHandler::instance().setSReadResponseTopicRT(a_sTopic);
+		cout << "read Res RT topic = " << a_sTopic << endl;
+		DO_LOG_INFO("read res RT topic = " + a_sTopic);
+	}
+	else if(regExFun(a_sTopic, WRITE_RES))
+	{
+		PublishJsonHandler::instance().setSWriteResponseTopic(a_sTopic);
+		cout << "write res topic = " << a_sTopic << endl;
+		DO_LOG_INFO("write res topic = " + a_sTopic);
+	}
+	else if(regExFun(a_sTopic, WRITE_RES_RT))
+	{
+		PublishJsonHandler::instance().setSWriteResponseTopicRT(a_sTopic);
+		cout << "write res RT topic = " << a_sTopic << endl;
+		DO_LOG_INFO("write res RT topic = " + a_sTopic);
+	}
+	else if(regExFun(a_sTopic, POLLDATA))
+	{
+		PublishJsonHandler::instance().setPolledDataTopic(a_sTopic);
+		cout << "poll topic = " << a_sTopic << endl;
+		DO_LOG_INFO("poll topic = " + a_sTopic);
+	}
+	else if(regExFun(a_sTopic, POLLDATA_RT))
+	{
+		PublishJsonHandler::instance().setPolledDataTopicRT(a_sTopic);
+		cout << "poll topic RT = " << a_sTopic << endl;
+		DO_LOG_INFO("poll topic RT = " + a_sTopic);
+	}
+	else if(regExFun(a_sTopic, READ_REQ) or
+			regExFun(a_sTopic, READ_REQ_RT) or
+			regExFun(a_sTopic, WRITE_REQ) or
+			regExFun(a_sTopic, WRITE_REQ_RT))
+	{
+		// Do nothing it just to check the correct pattern
+	}
+	else
+	{
+		DO_LOG_ERROR("Invalid topic name in SubTopics/PubTopics. hence ignoring :: " + a_sTopic);
+		cout << "Invalid topic name in SubTopics/PubTopics. hence ignoring :: " << a_sTopic << endl;
+		DO_LOG_ERROR("Kindly specify correct topic name as per specification :: " + a_sTopic);
+		cout << "Kindly specify correct topic name as per specification :: " << a_sTopic << endl;
+		bRet = false;
+	}
+	return bRet;
+}
 /**
  * Prepare pub or sub context for ZMQ communication
  * @param a_bIsPub		:[in] flag to check for Pub or Sub
@@ -82,6 +159,10 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 	else
 	{
 		bRetVal = true;
+		if(!setTopicForOperation(a_sTopic))
+		{
+			goto err;
+		}
 
 		stZmqContext objTempCtx{msgbus_ctx};
 		zmq_handler::insertCTX(a_sTopic, objTempCtx);
@@ -96,6 +177,7 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 		{
 			stZmqSubContext objTempSubCtx;
 			objTempSubCtx.sub_ctx= sub_ctx;
+			PublishJsonHandler::instance().insertSubTopicInList(a_sTopic);
 			zmq_handler::insertSubCTX(a_sTopic, objTempSubCtx);
 		}
 	}
@@ -106,12 +188,6 @@ err:
 	// remove mgsbus context
 	removeCTX(a_sTopic);
 
-	/// free msg bus context
-	if(msgbus_ctx != NULL)
-	{
-		msgbus_destroy(msgbus_ctx);
-		msgbus_ctx = NULL;
-	}
 	if(NULL != pub_ctx && NULL != config)
 	{
 		msgbus_publisher_destroy(config, pub_ctx);
@@ -119,6 +195,12 @@ err:
 	if(NULL != sub_ctx && NULL != config)
 	{
 		msgbus_recv_ctx_destroy(config, sub_ctx);
+	}
+	/// free msg bus context
+	if(msgbus_ctx != NULL)
+	{
+		msgbus_destroy(msgbus_ctx);
+		msgbus_ctx = NULL;
 	}
 
 	return false;
@@ -204,7 +286,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 							std::cout << "Topic for ZMQ subscribe is :: "<< subTopic <<  endl;
 
 							/// add topic in list
-							PublishJsonHandler::instance().insertSubTopicInList(subTopic);
+							//PublishJsonHandler::instance().insertSubTopicInList(subTopic);
 							prepareContext(false, msgbus_ctx, subTopic, config);
 						}
 					}

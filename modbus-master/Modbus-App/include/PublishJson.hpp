@@ -41,11 +41,8 @@ class PublishJsonHandler
 	std::string m_sWriteResponseTopic_RT;
 
 	// topic for subscription
-	std::string m_sReadRequestTopic;
-	std::string m_sWriteRequestTopic;
-	std::string m_sReadRequestTopic_RT;
-	std::string m_sWriteRequestTopic_RT;
 	std::string m_siteListFileName;
+	std::string m_snetworkType;
 	uint32_t u32CutoffIntervalPercentage;
 	std::vector<std::string> subTopicList;
 
@@ -91,38 +88,6 @@ public:
 	}
 
 	/**
-	 * get read request topic
-	 * @return read request topic
-	 */
-	const std::string& getSReadRequestTopic() const {
-		return m_sReadRequestTopic;
-	}
-
-	/**
-	 * set read request topic
-	 * @param sReadRequestTopic :[in] topic to set
-	 */
-	void setSReadRequestTopic(const std::string &sReadRequestTopic) {
-		m_sReadRequestTopic = sReadRequestTopic;
-	}
-
-	/**
-	 * get read request topic for realtime
-	 * @return read request topic
-	 */
-	const std::string& getSReadRequestTopicRT() const {
-		return m_sReadRequestTopic_RT;
-	}
-
-	/**
-	 * set read request topic for realtime
-	 * @param sReadRequestTopic :[in] topic to set
-	 */
-	void setSReadRequestTopicRT(const std::string &sReadRequestTopic) {
-		m_sReadRequestTopic_RT = sReadRequestTopic;
-	}
-
-	/**
 	 * get read response topic
 	 * @return read response topic
 	 */
@@ -152,38 +117,6 @@ public:
 	 */
 	void setSReadResponseTopicRT(const std::string &sReadResponseTopic) {
 		m_sReadResponseTopic_RT = sReadResponseTopic;
-	}
-
-	/**
-	 * get write request topic
-	 * @return write request topic
-	 */
-	const std::string& getSWriteRequestTopic() const {
-		return m_sWriteRequestTopic;
-	}
-
-	/**
-	 * set write request topic
-	 * @param sWriteRequestTopic :[in] write request topic to set
-	 */
-	void setSWriteRequestTopic(const std::string &sWriteRequestTopic) {
-		m_sWriteRequestTopic = sWriteRequestTopic;
-	}
-
-	/**
-	 * get write request topic
-	 * @return write request topic
-	 */
-	const std::string& getSWriteRequestTopicRT() const {
-		return m_sWriteRequestTopic_RT;
-	}
-
-	/**
-	 * set write request topic
-	 * @param sWriteRequestTopic :[in] write request topic to set
-	 */
-	void setSWriteRequestTopicRT(const std::string &sWriteRequestTopic) {
-		m_sWriteRequestTopic_RT = sWriteRequestTopic;
 	}
 
 	/**
@@ -297,6 +230,14 @@ public:
 
 	void setCutoffIntervalPercentage(uint32_t cutoffIntervalPercentage) {
 		u32CutoffIntervalPercentage = cutoffIntervalPercentage;
+	}
+
+	const std::string& getnetworkType() const {
+		return m_snetworkType;
+	}
+
+	void setnetworkType(const std::string &mSnetworkType) {
+		m_snetworkType = mSnetworkType;
 	}
 };
 

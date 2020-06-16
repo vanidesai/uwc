@@ -48,7 +48,7 @@ bool convertYamlToList(YAML::Node &node, std::vector<std::string>& a_slist)
 	{
 		for (auto it : node)
 		{
-			if(it.second.IsSequence() && it.first.as<std::string>() == "wellsitelist")
+			if(it.second.IsSequence() && it.first.as<std::string>() == "devicegrouplist")
 			{
 				const YAML::Node& list =  it.second;
 

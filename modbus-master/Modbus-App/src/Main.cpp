@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.4.8"
+#define APP_VERSION "0.0.5.0"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -181,64 +181,167 @@ bool CommonUtils::readEnvVariable(const char *pEnvVarName, string &storeVal)
 bool CommonUtils::readCommonEnvVariables()
 {
 	bool bRetVal = false;
-	std::list<std::string> topicList{"PolledData", "PolledData_RT", "ReadResponse", "ReadResponse_RT", "WriteResponse",
-		"WriteResponse_RT", "ReadRequest", "ReadRequest_RT", "WriteRequest", "WriteRequest_RT", "SITE_LIST_FILE_NAME", "DEV_MODE"};
-
+	string devMode;
+	std::list<std::string> topicList{"DEVICES_GROUP_LIST_FILE_NAME", "DEV_MODE", "NETWORK_TYPE"};
 	std::map <std::string, std::string> envTopics;
 
-	for (auto &topic : topicList)
+	try
 	{
-		std::string envVar = "";
-		bRetVal = readEnvVariable(topic.c_str(), envVar);
-		if(!bRetVal)
+		for (auto &topic : topicList)
 		{
-			return false;
+			std::string envVar = "";
+			bRetVal = readEnvVariable(topic.c_str(), envVar);
+			if(!bRetVal)
+			{
+				//return false;
+				bRetVal = true;
+			}
+			else
+			{
+				envTopics.emplace(topic, envVar);
+			}
+		}
+
+		if(envTopics.find("DEVICES_GROUP_LIST_FILE_NAME") != envTopics.end())
+		{
+			PublishJsonHandler::instance().setSiteListFileName(envTopics.at("DEVICES_GROUP_LIST_FILE_NAME"));
+		}
+		if(envTopics.find("NETWORK_TYPE") != envTopics.end())
+		{
+			PublishJsonHandler::instance().setnetworkType(envTopics.at("NETWORK_TYPE"));
+		}
+		if(envTopics.find("DEV_MODE") != envTopics.end())
+		{
+			devMode = envTopics.at("DEV_MODE");
+		}
+
+		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
+
+		if (devMode == "TRUE")
+		{
+			PublishJsonHandler::instance().setDevMode(true);
+			DO_LOG_INFO("DEV_MODE is set to true");
+			cout << "DEV_MODE is set to true\n";
+
+		}
+		else if (devMode == "FALSE")
+		{
+			PublishJsonHandler::instance().setDevMode(false);
+			DO_LOG_INFO("DEV_MODE is set to false");
+			cout << "DEV_MODE is set to false\n";
 		}
 		else
 		{
-			envTopics.emplace(topic, envVar);
+			/// default set to false
+			DO_LOG_ERROR("Invalid value for DEV_MODE env variable");
+			DO_LOG_INFO("Set the dev mode to default (i.e. true)");
+			cout << "DEV_MODE is set to default false\n";
 		}
 	}
-
-	PublishJsonHandler::instance().setPolledDataTopic(envTopics.at("PolledData"));
-	PublishJsonHandler::instance().setPolledDataTopicRT(envTopics.at("PolledData_RT"));
-	PublishJsonHandler::instance().setSReadResponseTopic(envTopics.at("ReadResponse"));
-	PublishJsonHandler::instance().setSReadResponseTopicRT(envTopics.at("ReadResponse_RT"));
-	PublishJsonHandler::instance().setSWriteResponseTopic(envTopics.at("WriteResponse"));
-	PublishJsonHandler::instance().setSWriteResponseTopicRT(envTopics.at("WriteResponse_RT"));
-	PublishJsonHandler::instance().setSReadRequestTopic(envTopics.at("ReadRequest"));
-	PublishJsonHandler::instance().setSReadRequestTopicRT(envTopics.at("ReadRequest_RT"));
-	PublishJsonHandler::instance().setSWriteRequestTopic(envTopics.at("WriteRequest"));
-	PublishJsonHandler::instance().setSWriteRequestTopicRT(envTopics.at("WriteRequest_RT"));
-	PublishJsonHandler::instance().setSiteListFileName(envTopics.at("SITE_LIST_FILE_NAME"));
-
-
-	string devMode = envTopics.at("DEV_MODE");
-	transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
-
-	if (devMode == "TRUE")
+	catch (std::exception &e)
 	{
-		PublishJsonHandler::instance().setDevMode(true);
-		DO_LOG_INFO("DEV_MODE is set to true");
-		cout << "DEV_MODE is set to true\n";
-
-	}
-	else if (devMode == "FALSE")
-	{
-		PublishJsonHandler::instance().setDevMode(false);
-		DO_LOG_INFO("DEV_MODE is set to false");
-		cout << "DEV_MODE is set to false\n";
-	}
-	else
-	{
-		/// default set to false
-		DO_LOG_ERROR("Invalid value for DEV_MODE env variable");
-		DO_LOG_INFO("Set the dev mode to default (i.e. true)");
-		cout << "DEV_MODE is set to default false\n";
+		DO_LOG_ERROR("Error while reading env. variable. "+ std::string(e.what()));
+		bRetVal = false;
 	}
 
 	return bRetVal;
 }
+
+/**
+ * Populate device contexts
+ */
+void setDevContexts()
+{
+	DO_LOG_DEBUG("Start");
+
+	using network_info::eNetworkType;
+	using network_info::CWellSiteDevInfo;
+	using network_info::CWellSiteInfo;
+	// 1. Set context for each device - TCP and RTU
+	// 2. For RTU, for each network context is obtained and then set in each RTU device.
+	// 3. For TCP, for each device, a different context is set.
+	auto &siteList = network_info::getWellSiteList();
+	for(auto &site: siteList)
+	{
+		auto &listDev = site.second.getDevices();
+		for(auto &dev : listDev)
+		{
+			if(network_info::eNetworkType::eTCP == dev.getAddressInfo().m_NwType)
+			{
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+				int iCtx = 0;
+				/// create context for unique ip-address and port number.
+				stCtxInfo objCtxInfo{0};
+				unsigned char	u8IpAddr[4];
+				CommonUtils::ConvertIPStringToCharArray(dev.getAddressInfo().m_stTCP.m_sIPAddress, &(u8IpAddr[0]));
+
+				objCtxInfo.u16Port = dev.getAddressInfo().m_stTCP.m_ui16PortNumber;
+				objCtxInfo.pu8SerIpAddr = u8IpAddr;
+				eStackErrorCode retValue = getTCPCtx(&iCtx, &objCtxInfo);
+				if(STACK_NO_ERROR != retValue)
+				{
+					std::cout << dev.getID() << ": Unable to create context. Error: " << retValue << std::endl;
+					DO_LOG_ERROR(dev.getID() + ": Unable to create context. Error: " + to_string(retValue));
+				}
+				else
+				{
+					dev.setCtxInfo(iCtx);
+					DO_LOG_INFO(dev.getID() + ": Context is set");
+				}
+#endif
+			}
+			else
+			{
+#ifndef MODBUS_STACK_TCPIP_ENABLED
+				eParity parity = eNone;
+				const string sParity = dev.getRTUNwInfo().getParity();
+				int iRTUCTX;
+				if(!(sParity.empty() && dev.getRTUNwInfo().getPortName().empty()) && dev.getRTUNwInfo().getBaudRate() > 0)
+				{
+					if(sParity == "N" || sParity == "n" ||
+							sParity == "E" || sParity == "e" ||
+							sParity == "O" || sParity == "o")
+					{
+						parity = (sParity == "N" || sParity == "n") ? eNone : (sParity == "O" || sParity == "o") ? eOdd : eEven;
+					}
+					else
+					{
+						DO_LOG_ERROR("Set Parity is wrong for RTU. Set correct parity N/E/O");
+						std::cout << "Set Parity \"" << sParity << "\" is wrong for RTU. Set correct parity N/E/O" << endl;
+						exit(1);
+					}
+					stCtxInfo objCtxInfo{0};
+					objCtxInfo.m_eParity = parity;
+					objCtxInfo.m_lInterframeDelay = dev.getRTUNwInfo().getInterframeDelay();
+					objCtxInfo.m_lRespTimeout = dev.getRTUNwInfo().getResTimeout();
+					objCtxInfo.m_u32baudrate = dev.getRTUNwInfo().getBaudRate();
+					objCtxInfo.m_u8PortName = (uint8_t*)((dev.getRTUNwInfo().getPortName()).c_str());
+
+					eStackErrorCode retValue = getRTUCtx(&iRTUCTX, &objCtxInfo);
+
+					if(STACK_NO_ERROR != retValue)
+					{
+						std::cout << "RTU: Unable to create context. Error: " << retValue << std::endl;
+						DO_LOG_ERROR("RTU: Unable to create context. Error: " + to_string(retValue));
+
+						return;
+					}
+					dev.setCtxInfo(iRTUCTX);
+					DO_LOG_INFO(dev.getID() + ": Context is set");
+				}
+				else
+				{
+					std::cout << "RTU: configuration is not proper." << std::endl;
+					DO_LOG_ERROR("RTU: configuration is not proper.");
+				}
+#endif
+			}
+		}
+	}
+
+	DO_LOG_DEBUG("End");
+}
+
 /**
  *
  * DESCRIPTION
@@ -285,7 +388,6 @@ int main(int argc, char* argv[])
 		{
 			DO_LOG_ERROR("Required env variables are not set.");
 			std::cout << "Required common env variables are not set.\n";
-			exit(1);
 		}
 
 		string cutOff;
@@ -304,113 +406,85 @@ int main(int argc, char* argv[])
 		std::cout << "Cutoff is set to: "
 				<< PublishJsonHandler::instance().getCutoffIntervalPercentage() << std::endl;
 
-#ifndef MODBUS_STACK_TCPIP_ENABLED
-
-		string sPortName, sBaudrate, sParity;
-		eParity parity;
-		if (!((CommonUtils::readEnvVariable("PORT_NAME", sPortName)) &&
-				(CommonUtils::readEnvVariable("BAUD_RATE", sBaudrate)) &&
-				(CommonUtils::readEnvVariable("PARITY", sParity))))
+		// Initializing all the pub/sub topic base context for ZMQ
+		if(const char* pcPubTopic = std::getenv("PubTopics"))
 		{
-			DO_LOG_ERROR("Required environment variables are not found for RTU");
-			std::cout << "Required environment variables are not found for RTU" << endl;
-			exit(1);
-		}
-		else
-		{
-			DO_LOG_INFO("Required environment variables are found for RTU");
-		}
+			DO_LOG_INFO("List of topic configured for Pub are :: " + std::string(pcPubTopic));
 
-		if(sParity == "N" || sParity == "n" ||
-				sParity == "E" || sParity == "e" ||
-				sParity == "O" || sParity == "o")
-		{
-			parity = (sParity == "N" || sParity == "n") ? eNone : (sParity == "O" || sParity == "o") ? eOdd : eEven;
-		}
-		else
-		{
-			DO_LOG_ERROR("Set Parity is wrong for RTU. Set correct parity N/E/O");
-			std::cout << "Set Parity \"" << sParity << "\" is wrong for RTU. Set correct parity N/E/O" << endl;
-			exit(1);
-		}
-		cout << "********************************************************************"<<endl;
-		cout << "Modbus RTU container is running with below configuration.."<<endl;
-		cout<<"Baud rate = "<< stoi(sBaudrate)<< endl;
-		cout<<"Port Name = "<< sPortName<< endl;
-		cout<<"Parity = "<< sParity << endl;
-		cout << "********************************************************************"<<endl;
-
-		DO_LOG_INFO("Modbus RTU container is running with below configuration..");
-
-		DO_LOG_INFO("Baud rate = " + sBaudrate + " \n" +
-				"Port Name = " + sPortName + " \n" + "Parity = " + sParity + " \n");
-
-		int fd;
-		long l_serialPortOpenDelay;
-		std::string s_serialPortOpenDelay;
-		std::string::size_type sz;   // alias of size_t
-		if(CommonUtils::readEnvVariable("SERIAL_PORT_RETRY_INTERVAL", s_serialPortOpenDelay))
-		{
-			l_serialPortOpenDelay = std::stol (s_serialPortOpenDelay, &sz);
-		}
-		else
-		{
-			l_serialPortOpenDelay = 60; //Default delay 01 min
-		}
-
-		do{
-			fd = initSerialPort((uint8_t*)(sPortName.c_str()),
-					stoi(sBaudrate),
-					parity);
-			if(fd < 0)
+			bool bRes = zmq_handler::prepareCommonContext("pub");
+			if(!bRes)
 			{
-				cout << "Failed to initialize serial port for RTU."<<endl;
-				cout << "Connect the RTU device to serial port"<<endl;
-				//cout << "Container will restart until the serial port is connected."<<endl;
-				DO_LOG_ERROR("Failed to initialize serial port for RTU.");
-
-				DO_LOG_ERROR("File descriptor is set to ::" + to_string(fd));
-
-				cout << "Error:: File descriptor is set to :: " << fd << endl;
-				cout << "Attempting to Open Serial Port again :: " << endl;
-				//return -1;
+				DO_LOG_ERROR("Context creation failed for pub topic ");
 			}
-			else
+		}
+		if(const char* pcSubTopic = std::getenv("SubTopics"))
+		{
+			DO_LOG_INFO("List of topic configured for Sub are :: " + std::string(pcSubTopic));
+
+			bool bRetVal = zmq_handler::prepareCommonContext("sub");
+			if(!bRetVal)
 			{
-				cout << "Initialize serial port for RTU is successful"<<endl;
-				DO_LOG_INFO("File descriptor is set to ::" + to_string(fd));
-				cout << "File descriptor is set to :: " << fd << endl;
+				DO_LOG_ERROR("Context creation failed for sub topic ");
 			}
-			sleep(l_serialPortOpenDelay);
-		}while(fd < 0);
+		}
+
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+		/// store the yaml files in data structures
+		//network_info::buildNetworkInfo(true);
+
+		// Setting RTU mode
+		if(!PublishJsonHandler::instance().getSiteListFileName().empty())
+		{
+			network_info::buildNetworkInfo(PublishJsonHandler::instance().getnetworkType(),
+					PublishJsonHandler::instance().getSiteListFileName());
+			DO_LOG_INFO("Modbus container application is set to TCP mode");
+			cout << "Modbus container application is set to TCP mode.." << endl;
+		}
+		else
+		{
+			cout << "Devices group list is not present\n";
+			DO_LOG_INFO("Devices group list is not present");
+		}
+
+#else
+
+		// Setting RTU mode
+		if(!PublishJsonHandler::instance().getSiteListFileName().empty())
+		{
+			network_info::buildNetworkInfo(PublishJsonHandler::instance().getnetworkType(),
+					PublishJsonHandler::instance().getSiteListFileName());
+			DO_LOG_INFO("Modbus container application is set to RTU mode");
+			cout << "Modbus container application is set to RTU mode.." << endl;
+		}
+		else
+		{
+			cout << "Devices group list is not present\n";
+			DO_LOG_INFO("Devices group list is not present");
+		}
+
 #endif
 
-		// Setup signal handlers
+		// set TCP/RTU context.
+		setDevContexts();
 
-		long iResponseTimeout, iInterframeDelay;
-		std::string sResponseTimeout, sInterframeDelay;
-		std::string::size_type sizeVar;   // alias of size_t
-		if(CommonUtils::readEnvVariable("RESPONSE_TIMEOUT_MS", sResponseTimeout))
+		// get interframe delay and response timeout
+		long lInterfameDelay = 0, lRespTimeout = 80;
+		auto &siteList = network_info::getWellSiteList();
+		for(auto &site: siteList)
 		{
-			iResponseTimeout = std::stol (sResponseTimeout, &sizeVar);
+			auto &listDev = site.second.getDevices();
+			for(auto &dev : listDev)
+			{
+				if(network_info::eNetworkType::eTCP == dev.getAddressInfo().m_NwType)
+				{
+					lInterfameDelay = dev.getTcpMasterInfo().m_lInterframeDelay;
+					lRespTimeout = dev.getTcpMasterInfo().m_lResTimeout;
+				}
+			}
 		}
-		else
-		{
-			iResponseTimeout = 80; //Default response time
-		}
-
-		if(CommonUtils::readEnvVariable("INTERFRAME_DELAY_MS", sInterframeDelay))
-		{
-			iInterframeDelay = std::stol (sInterframeDelay, &sizeVar);
-		}
-		else
-		{
-			iInterframeDelay = 0; //Default interframe delay
-		}
-
 		stDevConfig_t stDevConf;
-		stDevConf.m_lInterframedelay = iInterframeDelay;
-		stDevConf.m_lResponseTimeout = iResponseTimeout;
+		stDevConf.m_lInterframedelay = lInterfameDelay;
+		stDevConf.m_lResponseTimeout = lRespTimeout;
 		if(STACK_NO_ERROR != AppMbusMaster_SetStackConfigParam(&stDevConf))
 		{
 			std::cout << "Error: Exiting. Failed to set stack  config parameters"<< std::endl;
@@ -437,41 +511,6 @@ int main(int argc, char* argv[])
 			std::cout << "\nSuccess :: modbus stack initialization successful" << std::endl;
 			DO_LOG_INFO("modbus stack initialization successful");
 		}
-
-		// Initializing all the pub/sub topic base context for ZMQ
-		if(const char* pcPubTopic = std::getenv("PubTopics"))
-		{
-			DO_LOG_INFO("List of topic configured for Pub are :: " + std::string(pcPubTopic));
-
-			bool bRes = zmq_handler::prepareCommonContext("pub");
-			if(!bRes)
-			{
-				DO_LOG_ERROR("Context creation failed for pub topic ");
-			}
-		}
-		if(const char* pcSubTopic = std::getenv("SubTopics"))
-		{
-			DO_LOG_INFO("List of topic configured for Sub are :: " + std::string(pcSubTopic));
-
-			bool bRetVal = zmq_handler::prepareCommonContext("sub");
-			if(!bRetVal)
-			{
-				DO_LOG_ERROR("Context creation failed for sub topic ");
-			}
-		}
-
-#ifdef MODBUS_STACK_TCPIP_ENABLED
-		/// store the yaml files in data structures
-		network_info::buildNetworkInfo(true);
-		DO_LOG_INFO("Modbus container application is set to TCP mode");
-		cout << "Modbus container application is set to TCP mode.." << endl;
-#else
-
-		// Setting RTU mode
-		network_info::buildNetworkInfo(false);
-		DO_LOG_INFO("Modbus container application is set to RTU mode");
-		cout << "Modbus container application is set to RTU mode.." << endl;
-#endif
 
 		if(false == onDemandHandler::Instance().isWriteInitialized())
 		{

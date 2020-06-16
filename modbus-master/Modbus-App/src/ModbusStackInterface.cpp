@@ -126,11 +126,17 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 		MbusAPI_t *pstMbusApiPram,
 		void* vpCallBackFun)
 {
-	string temp; /// temporary string for logging
 	uint8_t u8ReturnType = APP_SUCCESS;
 
 	if(pstMbusApiPram != NULL)
 	{
+		// Check if context is proper:
+		if(-1 == pstMbusApiPram->m_i32Ctx)
+		{
+			// return some error here
+			return APP_ERROR_INVALID_CTX;
+		}
+
 		switch ((eModbusFuncCode_enum)u8FunCode)
 		{
 			case READ_COIL_STATUS:
@@ -139,9 +145,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
-					pstMbusApiPram->m_u8IpAddr,
-					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_i32Ctx,
 					vpCallBackFun);
 			break;
 			case READ_INPUT_STATUS:
@@ -150,9 +155,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
-					pstMbusApiPram->m_u8IpAddr,
-					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_i32Ctx,
 					vpCallBackFun);
 			break;
 			case READ_HOLDING_REG:
@@ -161,9 +165,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
-					pstMbusApiPram->m_u8IpAddr,
-					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_i32Ctx,
 					vpCallBackFun);
 			break;
 			case READ_INPUT_REG:
@@ -172,9 +175,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 					pstMbusApiPram->m_u16Quantity,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
-					pstMbusApiPram->m_u8IpAddr,
-					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_i32Ctx,
 					vpCallBackFun);
 			break;
 			case WRITE_SINGLE_COIL:
@@ -185,9 +187,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 						*pu16OutData,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
-					pstMbusApiPram->m_u8IpAddr,
-					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_i32Ctx,
 					vpCallBackFun);
 			}
 			break;
@@ -199,9 +200,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 					*(uint16_t*)pstMbusApiPram->m_pu8Data,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_u8DevId,
-					pstMbusApiPram->m_u8IpAddr,
-					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_i32Ctx,
 					vpCallBackFun);
 			}
 			break;
@@ -212,9 +212,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_pu8Data,
 					pstMbusApiPram->m_u8DevId,
-					pstMbusApiPram->m_u8IpAddr,
-					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_i32Ctx,
 					vpCallBackFun);
 			break;
 			case WRITE_MULTIPLE_REG:
@@ -224,9 +223,8 @@ uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 					pstMbusApiPram->m_u16TxId,
 					pstMbusApiPram->m_pu8Data,
 					pstMbusApiPram->m_u8DevId,
-					pstMbusApiPram->m_u8IpAddr,
-					pstMbusApiPram->m_u16Port,
 					pstMbusApiPram->m_lPriority,
+					pstMbusApiPram->m_i32Ctx,
 					vpCallBackFun);
 			break;
 

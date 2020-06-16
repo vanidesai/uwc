@@ -13,6 +13,7 @@
 
 #include <string>
 #include <map>
+#include <functional>
 #include <mutex>
 #include "cjson/cJSON.h"
 
@@ -22,6 +23,27 @@
 #include <eis/msgbus/msgbus.h>
 #include <eis/config_manager/env_config.h>
 #include <eis/config_manager/config_manager.h>
+
+/// patterns to be used to find on-demand topic strings
+/// topic syntax -
+/// for non-RT topic for read - <topic_name>__RdReq
+/// for RT topic read RT - <topic_name>__RdReq_RT
+#define READ_REQ	 	"RdReq"
+#define READ_REQ_RT 	"_RdReq_RT"
+
+#define READ_RES	"_RdResp"
+#define READ_RES_RT	"_RdResp_RT"
+
+#define WRITE_REQ 		"_WrReq"
+#define WRITE_REQ_RT 	"_WrReq_RT"
+
+#define WRITE_RES 	"_WrResp"
+#define WRITE_RES_RT "_WrResp_RT"
+
+#define POLLDATA	"PolledData"
+#define POLLDATA_RT	"PolledData_RT"
+
+extern std::function<bool(std::string, std::string)> regExFun;
 
 namespace zmq_handler 
 {
@@ -71,6 +93,9 @@ namespace zmq_handler
 			void* msgbus_ctx,
 			std::string a_sTopic,
 			config_t *config);
+
+	/// function to set topic for different operations
+	bool setTopicForOperation(std::string a_sTopic);
 
 	/// function to get message bus context based on topic
 	stZmqContext& getCTX(std::string str_Topic);

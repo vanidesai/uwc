@@ -185,10 +185,6 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, con
 				msg_envelope_elem_body_t* ptDataType = msgbus_msg_envelope_new_string(aDataType.c_str());
 				msgbus_msg_envelope_put(msg, "datatype", ptDataType);
 			}
-
-			// Persistence
-			msg_envelope_elem_body_t* ptPersistence = msgbus_msg_envelope_new_bool(a_objReqData->getDataPoint().getDataPoint().getPersistence());
-			msgbus_msg_envelope_put(msg, "persistence", ptPersistence);
 		}
 		else
 		{
@@ -413,6 +409,10 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 			{
 				DO_LOG_DEBUG("Msg published successfully");
 			}
+			else
+			{
+				DO_LOG_ERROR("Failed to publish msg on EIS");
+			}
 
 #ifdef INSTRUMENTATION_LOG
 			if(NULL != g_msg)
@@ -437,6 +437,7 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 	catch(const std::exception& e)
 	{
 		DO_LOG_FATAL(e.what());
+		cout << "Exception :: " << std::string(e.what()) << " " << "Tx ID:: " << a_stResp.u16TransacID << std::endl;
 	}
 
 	if(NULL != g_msg)
@@ -471,6 +472,17 @@ bool CPeriodicReponseProcessor::postDummyBADResponse(CRefDataForPolling& a_objRe
 		stResp.m_stException.m_u8ExcStatus = m_stException.m_u8ExcStatus;
 		stResp.m_operationType = MBUS_CALLBACK_POLLING;
 		stResp.m_u8FunCode = a_objReqData.getFunctionCode();
+
+		// fill the topic as per realtime and non-realtime
+		if(a_objReqData.getDataPoint().getRTFlag())
+		{
+			stResp.m_strResponseTopic = PublishJsonHandler::instance().getPolledDataTopicRT();
+		}
+		else
+		{
+			stResp.m_strResponseTopic = PublishJsonHandler::instance().getPolledDataTopic();
+		}
+
 		//Set polling frequency as priority
 		//stResp.m_lPriority = a_objReqData.getDataPoint().getDataPoint().getPollingConfig().m_uiPollFreq;
 
@@ -923,7 +935,6 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
  * @return none
  */
 void CPeriodicReponseProcessor::handleResponse(stMbusAppCallbackParams_t *pstMbusAppCallbackParams,
-												//eMbusResponseType respType,
 												eMbusCallbackType operationCallbackType,
 												string strResponseTopic,
 												bool a_bIsRT)
@@ -2412,6 +2423,7 @@ CRefDataForPolling::CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, u
 	m_stMBusReq.m_u16StartAddr = m_objDataPoint.getDataPoint().getAddress().m_iAddress;
 	m_stMBusReq.m_u16Quantity = m_objDataPoint.getDataPoint().getAddress().m_iWidth;
 	m_stMBusReq.m_u16ByteCount = m_objDataPoint.getDataPoint().getAddress().m_iWidth;
+	m_stMBusReq.m_i32Ctx = m_objDataPoint.getWellSiteDev().getCtxInfo();
 
 	// Coil and discrete input are single bytes. All others are 2 byte registers
 	if((network_info::eEndPointType::eCoil != m_objDataPoint.getDataPoint().getAddress().m_eType) &&

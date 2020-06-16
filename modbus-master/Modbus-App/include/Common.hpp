@@ -67,6 +67,7 @@ typedef struct MbusAPI
 	/** Holds the Mse Timeout  */
 	//uint32_t m_u32mseTimeout;
 	int m_nRetry;
+	int32_t m_i32Ctx;
 	stOnDemandRequest m_stOnDemandReqData;
 }MbusAPI_t;
 
@@ -89,6 +90,7 @@ typedef enum MbusAppErrorCode
 	APP_ERROR_UNKNOWN_SERVICE_REQUEST,
 	APP_ERROR_POINT_IS_NOT_WRITABLE,
 	APP_INTERNAL_ERORR,
+	APP_ERROR_INVALID_CTX,
 	APP_ERROR_CODE_MAX
 }eMbusAppErrorCode;
 
