@@ -85,6 +85,7 @@ services:
       Log4cppPropsFile: "/Modbus-App/Config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
       MY_APP_ID: 1
+      NETWORK_TYPE: TCP
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
@@ -92,25 +93,15 @@ services:
       PubTopics: "TCP_PolledData,TCP_PolledData_RT,TCP_RdResp,TCP_RdResp_RT,TCP_WrResp,TCP_WrResp_RT"
       SubTopics: "MQTT_Export/MQTT_Export_RdReq,MQTT_Export/MQTT_Export_RdReq_RT,MQTT_Export/MQTT_Export_WrReq,MQTT_Export/MQTT_Export_WrReq_RT"
       # non-realtime topics
-      PolledData: "TCP_PolledData"
-      ReadResponse: "TCP_RdResp"
-      WriteResponse: "TCP_WrResp"
       TCP_PolledData_cfg: "zmq_tcp,127.0.0.1:6000"
       TCP_RdResp_cfg: "zmq_tcp,127.0.0.1:6001"
       TCP_WrResp_cfg: "zmq_tcp,127.0.0.1:6002"
-      ReadRequest: "MQTT_Export_RdReq"
-      WriteRequest: "MQTT_Export_WrReq"
       MQTT_Export_RdReq_cfg: "zmq_tcp,127.0.0.1:6003"
       MQTT_Export_WrReq_cfg: "zmq_tcp,127.0.0.1:6004"
       # realtime topics
-      PolledData_RT: "TCP_PolledData_RT"
-      ReadResponse_RT: "TCP_RdResp_RT"
-      WriteResponse_RT: "TCP_WrResp_RT"
       TCP_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:6005"
       TCP_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:6006"
       TCP_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:6007"
-      ReadRequest_RT: "MQTT_Export_RdReq_RT"
-      WriteRequest_RT: "MQTT_Export_WrReq_RT"
       MQTT_Export_RdReq_RT_cfg: "zmq_tcp,127.0.0.1:6008"
       MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:6009"
     volumes:
@@ -145,6 +136,7 @@ services:
       ZMQ_RECV_HWM: "1000"
       SERIAL_PORT_RETRY_INTERVAL: 1
       MY_APP_ID: 2
+      NETWORK_TYPE: RTU
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
@@ -152,25 +144,15 @@ services:
       PubTopics: "RTU_PolledData,RTU_RdResp,RTU_WrResp,RTU_PolledData_RT,RTU_RdResp_RT,RTU_WrResp_RT"
       SubTopics: "MQTT_Export/MQTT_Export_RdReq,MQTT_Export/MQTT_Export_WrReq,MQTT_Export/MQTT_Export_RdReq_RT,MQTT_Export/MQTT_Export_WrReq_RT"
       # non-realtime topics
-      PolledData: "RTU_PolledData"
-      ReadResponse: "RTU_RdResp"
-      WriteResponse: "RTU_WrResp"
       RTU_PolledData_cfg: "zmq_tcp,127.0.0.1:6010"
       RTU_RdResp_cfg: "zmq_tcp,127.0.0.1:6011"
       RTU_WrResp_cfg: "zmq_tcp,127.0.0.1:6012"
-      ReadRequest: "MQTT_Export_RdReq"
-      WriteRequest: "MQTT_Export_WrReq"
       MQTT_Export_RdReq_cfg: "zmq_tcp,127.0.0.1:6003"
       MQTT_Export_WrReq_cfg: "zmq_tcp,127.0.0.1:6004"
       # realtime topics
-      PolledData_RT: "RTU_PolledData_RT"
-      ReadResponse_RT: "RTU_RdResp_RT"
-      WriteResponse_RT: "RTU_WrResp_RT"
       RTU_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:6013"
       RTU_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:6014"
       RTU_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:6015"
-      ReadRequest_RT: "MQTT_Export_RdReq_RT"
-      WriteRequest_RT: "MQTT_Export_WrReq_RT"
       MQTT_Export_RdReq_RT_cfg: "zmq_tcp,127.0.0.1:6008"
       MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:6009"
     volumes:
@@ -293,6 +275,7 @@ services:
       DATA_POINT: "Flow"
       REPORTING_DURATION: "10000"
       DEVICE_NAME: "flowmeter"
+      NETWORK_TYPE: ALL
     logging:
         driver: "json-file"
         options:
