@@ -41,7 +41,8 @@ TEST_F(CDataPoint_ut, width_manatory_param)
 				try
 				{
 
-				CDataPoint_obj.build(it1, CDataPoint_obj);
+				CDataPoint_obj.build(it1, CDataPoint_obj,
+						globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
                 id=CDataPoint_obj.getID();
 				m_Address = CDataPoint_obj.getAddress();
 				//EXPECT_EQ(Add_expected[i++], m_Address.m_iAddress);
@@ -76,7 +77,8 @@ TEST_F(CDataPoint_ut, eType_coil)
 				try
 				{
 
-					CDataPoint_obj.build(it1, CDataPoint_obj);
+					CDataPoint_obj.build(it1, CDataPoint_obj,
+							globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
 					id=CDataPoint_obj.getID();
 					m_Address = CDataPoint_obj.getAddress();
 					if(m_Address.m_eType == network_info::eEndPointType::eCoil)
@@ -111,7 +113,8 @@ TEST_F(CDataPoint_ut, eType_Holiding_register)
 			{
 				try
 				{
-					CDataPoint_obj.build(it1, CDataPoint_obj);
+					CDataPoint_obj.build(it1, CDataPoint_obj,
+							globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
 					id=CDataPoint_obj.getID();
 					m_Address = CDataPoint_obj.getAddress();
 					if(m_Address.m_eType == network_info::eEndPointType::eHolding_Register)
@@ -154,7 +157,8 @@ TEST_F(CDataPoint_ut, eType_Discrete_Input)
 				try
 				{
 
-					CDataPoint_obj.build(it1, CDataPoint_obj);
+					CDataPoint_obj.build(it1, CDataPoint_obj,
+							globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
 					id=CDataPoint_obj.getID();
 					m_Address = CDataPoint_obj.getAddress();
 					if(m_Address.m_eType == network_info::eEndPointType::eDiscrete_Input)
@@ -200,8 +204,8 @@ TEST_F(CDataPoint_ut, eType_input_register)
 				//if(counter==0){
 				try
 				{
-
-					CDataPoint_obj.build(it1, CDataPoint_obj);
+					CDataPoint_obj.build(it1, CDataPoint_obj,
+							globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
 					id=CDataPoint_obj.getID();
 					m_Address = CDataPoint_obj.getAddress();
 					if(m_Address.m_eType == network_info::eEndPointType::eInput_Register)

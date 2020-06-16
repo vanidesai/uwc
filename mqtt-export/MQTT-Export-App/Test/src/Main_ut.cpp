@@ -250,7 +250,7 @@ TEST_F(Main_ut, processMsg_NULLMsg)
 	EXPECT_EQ(false, RetVal);
 }
 
-TEST_F(Main_ut, processMsg_EmptyTopic)
+TEST_F(Main_ut, processMsg_TopicNotPresentInZMQmsg)
 {
 	msg_envelope_t *msg = NULL;
 
@@ -269,31 +269,9 @@ TEST_F(Main_ut, processMsg_EmptyTopic)
 
 	bool RetVal = processMsg(msg, mqttPublisher);
 
-	EXPECT_EQ(true, RetVal);
+	EXPECT_EQ(false, RetVal);
 }
 
-
-TEST_F(Main_ut, processMsg_ValArg)
-{
-	msg_envelope_t *msg = NULL;
-
-	msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
-	msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string("TestStr");
-	msg_envelope_elem_body_t* ptTopic = msgbus_msg_envelope_new_string("TestStr_Topic");
-
-	msg = msgbus_msg_envelope_new(CT_JSON);
-	msgbus_msg_envelope_put(msg, "version", ptVersion);
-	msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
-	msgbus_msg_envelope_put(msg, "topic", ptTopic);
-
-	string topic = "MQTT_Export_RdReq";
-	CMQTTPublishHandler mqttPublisher(CCommon::getInstance().getStrMqttExportURL().c_str(), topic.c_str(), 0);
-
-
-	bool RetVal = processMsg(msg, mqttPublisher);
-
-	EXPECT_EQ(true, RetVal);
-}
 
 TEST_F(Main_ut, publishEISMsg_Suc)
 {

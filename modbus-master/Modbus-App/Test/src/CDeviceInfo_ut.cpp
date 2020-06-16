@@ -220,7 +220,8 @@ try{
 
 			for( auto DataPoints_It : DataPoints)
 			{
-				network_info::CDataPoint::build(DataPoints_It, datapoint_obj);
+				network_info::CDataPoint::build(DataPoints_It, datapoint_obj,
+						globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
 				Cdeviceinfo_obj.addDataPoint(datapoint_obj);
 			}
 		}

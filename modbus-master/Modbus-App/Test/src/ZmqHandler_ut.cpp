@@ -370,7 +370,7 @@ TEST_F(ZmqHandler_ut, buildNettest)
 	try
 	{
 		cout<<"****** Setting TCP mode ******"<<endl;
-		network_info::buildNetworkInfo(true);
+		network_info::buildNetworkInfo(PublishJsonHandler::instance().getnetworkType(), PublishJsonHandler::instance().getSiteListFileName());
 	}
 	catch(std::exception &e)
 	{
@@ -381,7 +381,7 @@ TEST_F(ZmqHandler_ut, buildNettest)
 	try
 	{
 		cout<<"****** Setting RTUs mode ******"<<endl;
-		network_info::buildNetworkInfo(false);
+		network_info::buildNetworkInfo(PublishJsonHandler::instance().getnetworkType());
 	}
 	catch(std::exception &e)
 	{

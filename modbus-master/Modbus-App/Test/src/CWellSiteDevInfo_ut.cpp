@@ -129,7 +129,7 @@ TEST_F(CWellSiteDevInfo_ut, build_NoId)
 
 	try
 	{
-		baseNode = CommonUtils::loadYamlFile("PL0.yml");
+		baseNode = CommonUtils::loadYamlFile("Device_group1.yml");
 		for( auto test : baseNode)
 		{
 			const YAML::Node& list = test.second;
@@ -160,7 +160,7 @@ CWellSiteDevInfo::build should throw an exception.
 TEST_F(CWellSiteDevInfo_ut, build_WrongProtocol)
 {
 
-	baseNode = CommonUtils::loadYamlFile("PL0.yml");
+	baseNode = CommonUtils::loadYamlFile("Device_group1.yml");
 	for( auto test : baseNode)
 	{
 		if(test.second.IsSequence() && test.first.as<std::string>() == "devicelist")
@@ -200,7 +200,7 @@ TEST_F(CWellSiteDevInfo_ut, build_ForMissingField)
 	std::string sYamlStr(cEtcdValue);
 	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
 
-	baseNode = CommonUtils::loadYamlFile("PL1.yml");
+	baseNode = CommonUtils::loadYamlFile("Device_group2.yml");
 	for( auto test : baseNode)
 	{
 		if(test.second.IsSequence() && test.first.as<std::string>() == "devicelist")
@@ -232,7 +232,7 @@ TEST_F(CWellSiteDevInfo_ut, build_ForMissingField_iPadd_TCP)
 {
 
 
-	baseNode = CommonUtils::loadYamlFile("PL1.yml");
+	baseNode = CommonUtils::loadYamlFile("Device_group2.yml");
 
 
 	for( auto test : baseNode)

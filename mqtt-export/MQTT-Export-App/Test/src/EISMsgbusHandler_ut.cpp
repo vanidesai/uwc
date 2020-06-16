@@ -103,7 +103,7 @@ TEST_F(EISMsgbusHandler_ut, prepareCommonContext_sub)
 TEST_F(EISMsgbusHandler_ut, getCTX_ValidTopic) {
 
 	stZmqContext msgbusContext;
-	string topic = "TCP1_RdResp"; //topic exists
+	string topic = "MQTT_Export_WrReq"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getCTX(topic, msgbusContext);
 
 	EXPECT_EQ(true, retVal);
@@ -144,7 +144,7 @@ TEST_F(EISMsgbusHandler_ut, getPubCTX_InvTopic) {
 TEST_F(EISMsgbusHandler_ut, getSubCTX_ValTopic) {
 
 	stZmqSubContext subContext;
-	string topic = "TCP1_RdResp"; //topic exists
+	string topic = "RTU_RdResp"; //topic exists
 	bool retVal = CEISMsgbusHandler::Instance().getSubCTX(topic, subContext);
 
 	EXPECT_EQ(true, retVal);

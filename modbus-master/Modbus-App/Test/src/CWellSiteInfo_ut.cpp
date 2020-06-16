@@ -72,7 +72,7 @@ TEST_F(CWellSiteInfo_ut, addDevice_return0) {
 		std::string sYamlStr(cEtcdValue);
 		YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
 
-		baseNode = CommonUtils::loadYamlFile("PL0.yml");
+		baseNode = CommonUtils::loadYamlFile("Device_group1.yml");
 
 		for (auto test : baseNode)
 		{
@@ -150,7 +150,7 @@ TEST_F(CWellSiteInfo_ut, addDevice_returnMin1) {
 		std::string sYamlStr(cEtcdValue);
 		YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
 
-		baseNode = CommonUtils::loadYamlFile("PL0.yml");
+		baseNode = CommonUtils::loadYamlFile("Device_group1.yml");
 
 
 		for (auto test : baseNode)

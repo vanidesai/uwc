@@ -54,7 +54,7 @@ TEST_F(CUniqueDataPoint_ut, getID_return) {
 #if 1 //sprint 14 changes
 TEST_F(CUniqueDataPoint_ut, getWellSite_return) {
 
-	baseNode = CommonUtils::loadYamlFile("PL0.yml");
+	baseNode = CommonUtils::loadYamlFile("Device_group1.yml");
 	try
 	{
 
@@ -96,7 +96,7 @@ TEST_F(CUniqueDataPoint_ut, getWellSiteDev_return) {
 	const char *cEtcdValue  = CfgManager::Instance().getETCDValuebyKey(path.c_str());
 	std::string sYamlStr(cEtcdValue);
 	YAML::Node baseNode = CommonUtils::loadFromETCD(sYamlStr);*/
-	baseNode = CommonUtils::loadYamlFile("PL0.yml");
+	baseNode = CommonUtils::loadYamlFile("Device_group1.yml");
 	try
 	{
 
