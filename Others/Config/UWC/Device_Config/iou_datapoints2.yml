@@ -1,0 +1,114 @@
+---
+file:
+  version: "1.0.0"
+  author: "Intel"
+  date: "Sun Sep 1 13:34:13 PDT 2019"
+  description: "Data for Demo IOUnit data points"
+datapoints:
+- id: "D1"
+  persistence: true
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 1
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D2"
+  persistence: true
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 2
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D3"
+  persistence: true
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 3
+    width: 1
+    datatype: "INT16"    
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D4"
+  persistence: true
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 4
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+    
+- id: "D5"
+  persistence: true
+  persistence: true
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 5
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D6"
+  persistence: true
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 6
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D7"
+  persistence: true
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 7
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D8"
+  persistence: true
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 8
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D9"
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 9
+    width: 1
+  polling:
+    pollinterval: 0
+    realtime: false
+
+- id: "D10"
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 10
+    width: 1
+  polling:
+    pollinterval: 0
+    realtime: false

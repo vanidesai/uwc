@@ -1,0 +1,13 @@
+---
+file:
+    version: "1.0.0"
+    author: "Intel"
+    date: "Sun Sep 1 13:34:13 PDT 2019"
+    description: "RTU Network information for network 2"
+baudrate: 19200
+parity: "E"
+com_port_name: "/dev/ttyS1"
+
+# inter-frame delay and response timeout values are in Millisecond
+interframe_delay: 1
+response_timeout: 80

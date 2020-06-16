@@ -1,0 +1,10 @@
+---
+file:
+    version: "1.0.0"
+    author: "Intel"
+    date: "Sun Sep 1 13:34:13 PDT 2019"
+    description: "TCP master config parameter file"
+
+# inter-frame delay and response timeout values are in Millisecond
+interframe_delay: 1
+response_timeout: 80

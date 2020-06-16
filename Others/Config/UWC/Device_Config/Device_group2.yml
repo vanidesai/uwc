@@ -1,0 +1,23 @@
+---
+file:
+  version: "1.0.0"
+  author: "Intel"
+  date: "Sun Sep 1 13:34:13 PDT 2019"
+  description: "Device group 2"
+id: "PL1"
+description: "Device group 2"
+devicelist:
+
+- deviceinfo: "iou_device1.yml"
+  id: "iou2"
+  protocol:
+    protocol: "PROTOCOL_RTU"
+    slaveid: '10'
+  rtu_master_network_info: "rtu_network2.yml"
+
+- deviceinfo: "iou_device2.yml"
+  id: "iou3"
+  protocol:
+    protocol: "PROTOCOL_RTU"
+    slaveid: '20'
+  rtu_master_network_info: "rtu_network2.yml"
