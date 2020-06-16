@@ -35,6 +35,10 @@ The directory comprises of following:
   This file is used to deploy UWC containers in TCP with PROD mode.
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_unit_test.yml">docker-compose_unit_test.yml</a> :
   This file is used to run unit test cases
+  
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_ControlLoopApp.yml">docker-compose_ControlLoopApp.yml</a> :
+  This file is used to deploy control loop test app
+  
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Release">Release</a> :
   This directory contains UWC bundle for deployement
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/create_uwc_package.sh">create_uwc_package.sh</a> :
