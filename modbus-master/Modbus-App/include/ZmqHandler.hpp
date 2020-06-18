@@ -54,6 +54,7 @@ namespace zmq_handler
 
 		stZmqContext(void *a_pContext):m_pContext{a_pContext}, m_mutex{} {;};
 		stZmqContext(const stZmqContext &a_copy):m_pContext{a_copy.m_pContext}, m_mutex{} {;};
+		stZmqContext& operator=(const stZmqContext &a_copy)=delete;
 	};
 	struct stZmqPubContext
 	{

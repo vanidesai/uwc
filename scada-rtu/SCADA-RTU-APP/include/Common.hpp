@@ -226,8 +226,7 @@ public:
 		}
 		catch(exception &ex)
 		{
-			DO_LOG_FATAL("Environment variable ReportingDuration is not set properly");
-			std::cout << "Environment variable ReportingDuration is not set properly, exiting" << endl;
+			std::cout << "Environment variable ReportingDuration is not set properly, " << ex.what() << endl;
 			exit(1);
 		}
 	}
@@ -266,7 +265,6 @@ public:
 	std::string getDBirthTopic()
 	{
 		std::string topic(SPARKPLUG_TOPIC);
-		//topic.append("/DBIRTH/" + getStrAppName() + "/" + getDeviceName());
 		topic.append("/DBIRTH/" + getStrAppName() + "/");
 
 		return topic;

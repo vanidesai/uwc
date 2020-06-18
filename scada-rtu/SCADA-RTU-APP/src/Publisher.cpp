@@ -187,6 +187,11 @@ bool CPublisher::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_ddata_
 		// The binary_buffer must be large enough to hold the contents of the binary payload
 		size_t buffer_length = 1024;
 		uint8_t *binary_buffer = (uint8_t *)malloc(buffer_length * sizeof(uint8_t));
+		if(binary_buffer == NULL)
+		{
+			DO_LOG_ERROR("Failed to allocate new memory");
+			return false;
+		}
 		size_t message_length = encode_payload(&binary_buffer, buffer_length, &a_ddata_payload);
 
 		std::cout << "Publishing message for SCADA...\n";
@@ -197,7 +202,10 @@ bool CPublisher::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_ddata_
 		m_publisher.publish(pubmsg, nullptr, m_listener);
 
 		// Free the memory
-		free(binary_buffer);
+		if(binary_buffer != NULL)
+		{
+			free(binary_buffer);
+		}
 		return true;
 	}
 	catch(exception& ex)

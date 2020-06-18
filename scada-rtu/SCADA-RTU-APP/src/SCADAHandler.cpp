@@ -69,6 +69,11 @@ void CSCADAHandler::prepareNodeDeathMsg()
 
 	size_t buffer_length = 1024;
 	uint8_t *binary_buffer = (uint8_t *)malloc(buffer_length * sizeof(uint8_t));
+	if(binary_buffer == NULL)
+	{
+		DO_LOG_ERROR("Failed to allocate new memory");
+		return;
+	}
 	size_t message_length = encode_payload(&binary_buffer, buffer_length, &ndeath_payload);
 
 	// Publish the DDATA on the appropriate topic
@@ -77,7 +82,10 @@ void CSCADAHandler::prepareNodeDeathMsg()
 	//connect options for async m_subscriber
 	m_subscriberConopts.set_will_message(pubmsg);
 
-	free(binary_buffer);
+	if(binary_buffer != NULL)
+	{
+		free(binary_buffer);
+	}
 	free_payload(&ndeath_payload);
 }
 
@@ -131,12 +139,14 @@ bool CSCADAHandler::subscribeToTopics()
 	try
 	{
 		//test topic
-		vMqttTopics.push_back(CCommon::getInstance().getScadaTopicToSubscribe());
-
-		for (auto topic : vMqttTopics)
+		string strScadaTopic = CCommon::getInstance().getScadaTopicToSubscribe();
+		if(strScadaTopic.empty())
 		{
-			m_subscriber.subscribe(topic , 0, nullptr, m_listener);
+			DO_LOG_ERROR("Scada topic to subscribe is empty");
+			return false;
 		}
+
+		m_subscriber.subscribe(strScadaTopic, 0, nullptr, m_listener);
 
 		std::cout << __func__ << ":" << __LINE__ << "SCADAHandler subscribed topics with MQTT broker" << std::endl;
 	}
@@ -246,18 +256,21 @@ void CSCADAHandler::publish_node_birth()
 	org_eclipse_tahu_protobuf_Payload nbirth_payload;
 	get_next_payload(&nbirth_payload);
 
-	nbirth_payload.uuid = (char*)malloc((strlen("MyUUID")+1) * sizeof(char));
-	strcpy(nbirth_payload.uuid, CCommon::getInstance().getStrAppName().c_str());
+	string strAppName = CCommon::getInstance().getStrAppName();
+	if(strAppName.empty())
+	{
+		DO_LOG_ERROR("App name is empty");
+		return;
+	}
+
+	nbirth_payload.uuid = (char*) strAppName.c_str();
 
 	// Add getNBirthTopicsome device metrics
-
-	string scadaRTUName = CCommon::getInstance().getStrAppName();
-	add_simple_metric(&nbirth_payload, "Name", true, 10, METRIC_DATA_TYPE_STRING, false, false, false, scadaRTUName.c_str(), scadaRTUName.length());
+	add_simple_metric(&nbirth_payload, "Name", true, 10, METRIC_DATA_TYPE_STRING, false, false, false, strAppName.c_str(), strAppName.length());
 
 	std::cout << "Publishing nbirth message ..." << endl;
 	CPublisher::instance().publishSparkplugMsg(nbirth_payload, CCommon::getInstance().getNBirthTopic());
 
-	// Free the memory
-	free(nbirth_payload.uuid);
+	nbirth_payload.uuid = NULL;
 	free_payload(&nbirth_payload);
 }

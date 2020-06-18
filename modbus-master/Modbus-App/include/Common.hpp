@@ -138,10 +138,10 @@ void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
 bool getReqData(unsigned short seqno, MbusAPI_t& reqData);
 
 /// function to insert new entry in map
-bool insertReqData(unsigned short, MbusAPI_t);
+bool insertReqData(unsigned short, MbusAPI_t&);
 
 /// function to update map value
-bool updateReqData(unsigned short, MbusAPI_t);
+bool updateReqData(unsigned short, MbusAPI_t&);
 
 /// function to remove entry from the map
 void removeReqData(unsigned short);

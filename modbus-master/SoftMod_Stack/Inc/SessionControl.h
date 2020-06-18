@@ -107,7 +107,7 @@ typedef struct LiveSerSessionList
 	uint16_t m_u16TxID;
 #else
 	uint8_t m_u8ReceivedDestination;
-	uint8_t m_portName[100];
+	uint8_t m_portName[256];
 	uint32_t m_baudrate;
 	eParity m_parity;
 	long m_lInterframeDelay;

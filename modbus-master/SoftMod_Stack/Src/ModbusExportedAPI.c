@@ -572,10 +572,9 @@ uint8_t InputParameterVerification(uint16_t u16StartCoilOrReg, uint16_t u16Numbe
  * @param u16NumOfcoils [in] uint16_t number of coils to read from specified Modbus slave device
  * @param u16TransacID 	[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 		[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 	[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port		[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority		[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							 and faster the execution.
+ * @param i32Ctx 		[in] int32_t TCP/RTU context
  * @param pFunCallBack 	[in] void* callback function pointer pointing to a ModbusApp function
  * 							 which should get executed after success/failure of the operation.
  *
@@ -653,11 +652,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
 
 	pstMBusRequesPacket->m_u16Quantity = u16NumOfcoils;
 
-	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+	/*if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		freeReqNode(pstMBusRequesPacket);
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
-	}
+	}*/
 
 	pstMBusRequesPacket->m_lPriority = lPriority;
 	stPostThreadMsg.idThread = i32Ctx;
@@ -693,10 +692,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Coils(uint16_t u16StartCoil,
  * @param u16NumOfDI 	[in] uint16_t number of discrete inputs to read from specified Modbus slave device
  * @param u16TransacID 	[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 		[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 	[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port		[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority		[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							 and faster the execution.
+ * @param i32Ctx 		[in] int32_t TCP/RTU context
  * @param pFunCallBack 	[in] void* callback function pointer pointing to a ModbusApp function
  * 							 which should get executed after success/failure of the operation.
  *
@@ -773,11 +771,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
 
 	pstMBusRequesPacket->m_u16Quantity = u16NumOfDI;
 
-	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+	/*if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		freeReqNode(pstMBusRequesPacket);
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
-	}
+	}*/
 
 	pstMBusRequesPacket->m_lPriority = lPriority;
 	stPostThreadMsg.idThread = i32Ctx;
@@ -814,10 +812,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Discrete_Inputs(uint16_t u16StartDI,
  * @param u16NumberOfRegisters 	[in] uint16_t number of registers to read from specified Modbus slave device
  * @param u16TransacID 			[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 				[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 			[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port				[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority				[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							 		 and faster the execution.
+ * @param i32Ctx 				[in] int32_t TCP/RTU context
  * @param pFunCallBack 			[in] void* callback function pointer pointing to a ModbusApp function
  * 							 		 which should get executed after success/failure of the operation.
  *
@@ -893,11 +890,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
 
 	pstMBusRequesPacket->m_u16Quantity = u16NumberOfRegisters;
 
-	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+	/*if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		freeReqNode(pstMBusRequesPacket);
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
-	}
+	}*/
 
 	pstMBusRequesPacket->m_lPriority = lPriority;
 	stPostThreadMsg.idThread = i32Ctx;
@@ -933,10 +930,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Holding_Registers(uint16_t u16StartReg,
  * @param u16NumberOfRegisters 	[in] uint16_t number of registers to read from specified Modbus slave device
  * @param u16TransacID 			[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 				[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 			[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port				[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority				[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							         and faster the execution.
+ * @param i32Ctx 				[in] int32_t TCP/RTU context
  * @param pFunCallBack 			[in] void* callback function pointer pointing to a ModbusApp function
  * 							 		 which should get executed after success/failure of the operation.
  *
@@ -1015,11 +1011,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
 
 	pstMBusRequesPacket->m_u16Quantity = u16NumberOfRegisters;
 
-	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+	/*if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		freeReqNode(pstMBusRequesPacket);
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
-	}
+	}*/
 
 	pstMBusRequesPacket->m_lPriority = lPriority;
 	stPostThreadMsg.idThread = i32Ctx;
@@ -1055,10 +1051,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Input_Registers(uint16_t u16StartReg,
  * @param u16OutputVal 		[in] uint16_t value to write in the coil
  * @param u16TransacID 		[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 			[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 		[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port			[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority			[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							 	 and faster the execution.
+ * @param i32Ctx 			[in] int32_t TCP/RTU context
  * @param pFunCallBack 		[in] void* callback function pointer pointing to a ModbusApp function
  * 							 	 which should get executed after success/failure of the operation.
  *
@@ -1132,11 +1127,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
 	pstMBusRequesPacket->m_u8ReceivedDestination = u8UnitId;
 #endif
 
-	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+	/*if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		freeReqNode(pstMBusRequesPacket);
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
-	}
+	}*/
 
 	pstMBusRequesPacket->m_lPriority = lPriority;
 	stPostThreadMsg.idThread = i32Ctx;
@@ -1172,10 +1167,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Coil(uint16_t u16StartCoil,
  * @param u16RegOutputVal 	[in] uint16_t value to write for specified register
  * @param u16TransacID 		[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 			[in] uint8_t Modbus slave device ID[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 		[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port			[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority			[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							 	 and faster the execution.
+ * @param i32Ctx 			[in] int32_t TCP/RTU context
  * @param pFunCallBack 		[in] void* callback function pointer pointing to a ModbusApp function
  * 							 	 which should get executed after success/failure of the operation.
  *
@@ -1248,11 +1242,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
 #ifndef MODBUS_STACK_TCPIP_ENABLED
 	pstMBusRequesPacket->m_u8ReceivedDestination = u8UnitId;
 #endif
-	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+	/*if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		freeReqNode(pstMBusRequesPacket);
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
-	}
+	}*/
 
 	pstMBusRequesPacket->m_lPriority = lPriority;
 	stPostThreadMsg.idThread = i32Ctx;
@@ -1290,10 +1284,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Single_Register(uint16_t u16StartReg,
  * @param pu8OutputVal 		[in] uint8_t* value to write for specified coils
  * @param u16TransacID 		[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 			[in] uint8_t Modbus slave device ID[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 		[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port			[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority			[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							 	 and faster the execution.
+ * @param i32Ctx 			[in] int32_t TCP/RTU context
  * @param pFunCallBack 		[in] void* callback function pointer pointing to a ModbusApp function
  * 							 	 which should get executed after success/failure of the operation.
  *
@@ -1423,10 +1416,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Coils(uint16_t u16Startcoil,
  * @param u16TransacID 		[in] uint16_t ID of the request sent to the Modbus slave device
  * @param pu8OutputVal 		[in] uint8_t* value to be write
  * @param u8UnitId 			[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 		[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port			[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority			[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							 	 and faster the execution.
+ * @param i32Ctx 			[in] int32_t TCP/RTU context
  * @param pFunCallBack 		[in] void* callback function pointer pointing to a ModbusApp function
  * 							 	 which should get executed after success/failure of the operation.
  *
@@ -1499,11 +1491,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
 
 	while(u16NumOfReg > 0 && NULL != pu16OutputVal)
 	{
-		if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+		/*if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 		{
 			freeReqNode(pstMBusRequesPacket);
 			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
-		}
+		}*/
 		stEndianess.u16word = *pu16OutputVal;
 		pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 					stEndianess.stByteOrder.u8SecondByte;
@@ -1563,10 +1555,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_Multiple_Register(uint16_t u16StartReg,
  * @param pstFileRecord     [in] pointer to file records which are to be used for reading file records
  * @param u16TransacID 		[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 			[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 		[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port			[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority			[in] long Priority to be assigned to this request. Lower the number,
  * 								 higher the priority and faster the execution.
+ * @param i32Ctx 			[in] int32_t TCP/RTU context
  * @param pFunCallBack 		[in] void* callback function pointer pointing to a ModbusApp function
  * 							 	 which should get executed after success/failure of the operation.
  *
@@ -1741,10 +1732,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_File_Record(uint8_t u8byteCount,
  * @param pstFileRecord     [in] pointer to file records to be written
  * @param u16TransacID 		[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 			[in] uint8_t Modbus slave device ID[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 		[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port			[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority			[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							 	 and faster the execution.
+ * @param i32Ctx 			[in] int32_t TCP/RTU context
  * @param pFunCallBack 		[in] void* callback function pointer pointing to a ModbusApp function
  * 							 	 which should get executed after success/failure of the operation.
  *
@@ -1932,10 +1922,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Write_File_Record(uint8_t u8ReqDataLen,
  * @param pu8OutputVal 		[in] uint8_t* value to be read-write
  * @param u16TransacID 		[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 			[in] uint8_t Modbus slave device ID[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 		[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port			[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority			[in] long Priority to be assigned to this request. Lower the number, higher the priority
  * 							 	 and faster the execution.
+ * @param i32Ctx 			[in] int32_t TCP/RTU context
  * @param pFunCallBack 		[in] void* callback function pointer pointing to a ModbusApp function
  * 							 	 which should get executed after success/failure of the operation.
  *
@@ -2045,11 +2034,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
 
 	while(u16NoOfWriteReg > 0 && NULL != pu8OutputVal)
 	{
-		if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+		/*if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 		{
 			freeReqNode(pstMBusRequesPacket);
 			return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
-		}
+		}*/
 		stEndianess.u16word = *pu16OutputVal;
 		pstMBusRequesPacket->m_stMbusTxData.m_au8DataFields[u16PacketIndex++] =
 					stEndianess.stByteOrder.u8SecondByte;
@@ -2118,10 +2107,9 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Write_Registers(uint16_t u16ReadRegAddre
  * @param u8ObjectId 		[in] uint8_t object id
  * @param u16TransacID 		[in] uint16_t ID of the request sent to the Modbus slave device
  * @param u8UnitId 			[in] uint8_t Modbus slave device ID
- * @param pu8SerIpAddr 		[in] uint8_t* IP address of the Modbus slave device
- * @param u16Port			[in] uint16_t Port number on which to communicate with the Modbus slave device
  * @param lPriority			[in] long Priority to be assigned to this request. Lower the number,
  * 								 higher the priority and faster the execution.
+ * @param i32Ctx 			[in] int32_t TCP/RTU context
  * @param pFunCallBack 		[in] void* callback function pointer pointing to a ModbusApp function
  * 							 	 which should get executed after success/failure of the operation.
  * @return uint8_t		[out] STACK_ERROR_INVALID_INPUT_PARAMETER in case of error in parameters
@@ -2217,11 +2205,11 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	pstMBusRequesPacket->m_u8ReceivedDestination = u8UnitId;
 #endif
 
-	if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
+	/*if(u16PacketIndex >= TCP_MODBUS_ADU_LENGTH)
 	{
 		freeReqNode(pstMBusRequesPacket);
 		return STACK_ERROR_PACKET_LENGTH_EXCEEDED;
-	}
+	}*/
 
 	pstMBusRequesPacket->m_lPriority = lPriority;
 	stPostThreadMsg.idThread = i32Ctx;
@@ -2236,6 +2224,175 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	}
 
 	return u8ReturnType;
+}
+
+/**
+ *
+ * Description
+ * getCtx function
+ * This function gets called from ModbusApp to get the Context for TCP/RTU Communication
+ *
+ * @param pCtxInfo			[in] Combined structure for port, baudrate, parity, interframe delay
+ * 							response timeout
+ * @param pCtx 			    [out] int32_t* Context for TCP or RTu for communication
+ * @return eStackErrorCode	[out] MODBUS_STACK_EXPORT in case of error in parameters
+ * 									  received from ModbusApp
+ *
+ */
+MODBUS_STACK_EXPORT eStackErrorCode getCtx(int32_t *pCtx, stCtxInfo *pCtxInfo)
+{
+	eStackErrorCode retError = STACK_NO_ERROR;
+	thread_Create_t stThreadParam = { 0 };
+	Thread_H threadId;
+	stLiveSerSessionList_t *pstLivSerSesslist = NULL;
+	uint8_t u8NewDevEntryFalg = 0;
+	int nPortNameLen = 0;
+
+	if(NULL == pCtx || NULL == pCtxInfo)
+	{
+		return STACK_ERROR_INVALID_INPUT_PARAMETER;
+	}
+
+#ifndef MODBUS_STACK_TCPIP_ENABLED
+	nPortNameLen = strlen((const char*)pCtxInfo->m_u8PortName);
+	if(nPortNameLen > MODBUS_DATA_LENGTH)
+	{
+		return STACK_ERROR_PORT_NAME_LENGTH_EXCEEDED;
+	}
+#endif
+
+	// Assign default value
+	*pCtx = -1;
+	
+	do
+	{
+		// Loop through the list to check if context is already obtained for given parameters
+		pstLivSerSesslist = pstSesCtlThdLstHead;
+		while(NULL != pstLivSerSesslist)
+		{
+			if(NULL != pstLivSerSesslist)
+			{
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+				if(pCtxInfo->pu8SerIpAddr[0] == pstLivSerSesslist->m_u8IpAddr[0] &&
+						pCtxInfo->pu8SerIpAddr[1] == pstLivSerSesslist->m_u8IpAddr[1] &&
+						pCtxInfo->pu8SerIpAddr[2] == pstLivSerSesslist->m_u8IpAddr[2] &&
+						pCtxInfo->pu8SerIpAddr[3] == pstLivSerSesslist->m_u8IpAddr[3] &&
+						pCtxInfo->u16Port == pstLivSerSesslist->m_u16Port)
+				{
+					*pCtx = pstLivSerSesslist->MsgQId;
+					retError = STACK_NO_ERROR;
+					break;
+				}
+#else
+				// Check if port name is same
+				if(strncmp((char*)pCtxInfo->m_u8PortName, (char*)pstLivSerSesslist->m_portName, sizeof(pstLivSerSesslist->m_portName)) == 0)
+				{
+					// Check if other parameters are same
+					if((pCtxInfo->m_u32baudrate == pstLivSerSesslist->m_baudrate &&
+						pCtxInfo->m_eParity == pstLivSerSesslist->m_parity))
+					{
+						// Context is already available for given configuration
+						*pCtx = pstLivSerSesslist->MsgQId;
+						retError = STACK_NO_ERROR;
+						break;
+					}
+					else
+					{
+						// Port name is same. But other configuration is wrong
+						retError = STACK_ERROR_SERIAL_PORT_ALREADY_IN_USE;
+						break;
+					}
+				}
+#endif
+				else
+				{
+					pstLivSerSesslist = pstLivSerSesslist->m_pNextElm;
+				}
+			}
+		}
+		
+		// This configuration is found for the first time.
+		// To be processed for new context
+		if(NULL == pstLivSerSesslist)
+		{
+			pstLivSerSesslist = OSAL_Malloc(sizeof(stLiveSerSessionList_t));
+			if(NULL == pstLivSerSesslist)
+			{
+				retError = STACK_ERROR_MALLOC_FAILED;
+			}
+			else
+			{
+				pstLivSerSesslist->m_pNextElm = pstSesCtlThdLstHead;
+				pstSesCtlThdLstHead = pstLivSerSesslist;
+				u8NewDevEntryFalg = 1;
+			}
+		}
+		
+		if(u8NewDevEntryFalg)
+		{
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+			pstLivSerSesslist->m_u8IpAddr[0] = pCtxInfo->pu8SerIpAddr[0];
+			pstLivSerSesslist->m_u8IpAddr[1] = pCtxInfo->pu8SerIpAddr[1];
+			pstLivSerSesslist->m_u8IpAddr[2] = pCtxInfo->pu8SerIpAddr[2];
+			pstLivSerSesslist->m_u8IpAddr[3] = pCtxInfo->pu8SerIpAddr[3];
+			pstLivSerSesslist->m_u16Port = pCtxInfo->u16Port;
+#else
+			strncpy_s((char*)pstLivSerSesslist->m_portName, sizeof(pstLivSerSesslist->m_portName),
+					(const char*)pCtxInfo->m_u8PortName, nPortNameLen);
+			pstLivSerSesslist->m_baudrate = pCtxInfo->m_u32baudrate;
+			pstLivSerSesslist->m_parity = pCtxInfo->m_eParity;
+			pstLivSerSesslist->m_lInterframeDelay = (pCtxInfo->m_lInterframeDelay) * 1000; // convert to usec
+			pstLivSerSesslist->m_lrespTimeout = (pCtxInfo->m_lRespTimeout) * 1000; // convert to usec
+#endif
+			pstLivSerSesslist->MsgQId = OSAL_Init_Message_Queue();	// generating message Queue id
+			if(-1 == pstLivSerSesslist->MsgQId)
+			{
+				retError = STACK_ERROR_QUEUE_CREATE;
+			}
+			else
+			{
+				stThreadParam.dwStackSize = 0;
+#ifdef MODBUS_STACK_TCPIP_ENABLED
+				stThreadParam.lpStartAddress = ServerSessTcpAndCbThread;
+#else
+				stThreadParam.lpStartAddress = SessionControlThread;
+#endif
+				stThreadParam.lpParameter = (void*)pstLivSerSesslist;
+				stThreadParam.lpThreadId = &SessionControl_ThreadId;
+
+				threadId = Osal_Thread_Create(&stThreadParam);
+				if(0 == threadId)
+				{
+					retError = STACK_ERROR_THREAD_CREATE;
+					OSAL_Delete_Message_Queue(pstLivSerSesslist->MsgQId);
+				}
+				else
+				{
+					retError = STACK_NO_ERROR;
+					*pCtx = pstLivSerSesslist->MsgQId;
+				}
+			}
+		}
+	} while(0);
+	
+	// Check if any error occurred
+	if(retError != STACK_NO_ERROR)
+	{
+		// Check if memory to be released
+		if((NULL != pstLivSerSesslist) && u8NewDevEntryFalg)
+		{
+			// Appropraitely set the head of list
+			if(pstSesCtlThdLstHead == pstLivSerSesslist)
+			{
+				pstSesCtlThdLstHead = pstSesCtlThdLstHead->m_pNextElm;
+			}
+			// Free the node
+			OSAL_Free(pstLivSerSesslist);
+			pstLivSerSesslist = NULL;
+		}
+	}
+
+	return retError;
 }
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
@@ -2254,99 +2411,7 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
  */
 MODBUS_STACK_EXPORT eStackErrorCode getTCPCtx(int *tcpCtx, stCtxInfo *pCtxInfo)
 {
-	eStackErrorCode retError = STACK_NO_ERROR;
-	thread_Create_t stThreadParam = { 0 };
-	Thread_H threadId;
-	stLiveSerSessionList_t *pstLivSerSesslist = NULL;
-	stLiveSerSessionList_t *pstTempLivSerSesslist = NULL;
-	uint8_t u8NewDevEntryFalg=0;
-
-	if(NULL == tcpCtx || NULL == pCtxInfo)
-	{
-		return STACK_ERROR_INVALID_INPUT_PARAMETER;
-	}
-
-	pstLivSerSesslist = pstSesCtlThdLstHead;
-	if(NULL == pstLivSerSesslist)
-	{
-		pstSesCtlThdLstHead = OSAL_Malloc(sizeof(stLiveSerSessionList_t));
-		if(NULL == pstSesCtlThdLstHead)
-		{
-			retError = STACK_ERROR_MALLOC_FAILED;
-		}
-		else
-		{
-			pstLivSerSesslist = pstSesCtlThdLstHead;
-			pstLivSerSesslist->m_pNextElm = NULL;
-			u8NewDevEntryFalg = 1;
-		}
-	}
-	else
-	{
-		while(NULL != pstLivSerSesslist)
-		{
-			pstTempLivSerSesslist = pstLivSerSesslist;
-
-			if(NULL != pstLivSerSesslist)
-			{
-				if(pCtxInfo->pu8SerIpAddr[0] == pstLivSerSesslist->m_u8IpAddr[0] &&
-						pCtxInfo->pu8SerIpAddr[1] == pstLivSerSesslist->m_u8IpAddr[1] &&
-						pCtxInfo->pu8SerIpAddr[2] == pstLivSerSesslist->m_u8IpAddr[2] &&
-						pCtxInfo->pu8SerIpAddr[3] == pstLivSerSesslist->m_u8IpAddr[3] &&
-						pCtxInfo->u16Port == pstLivSerSesslist->m_u16Port)
-				{
-					*tcpCtx = pstLivSerSesslist->MsgQId;
-					break;
-				}
-				else
-				{
-					pstLivSerSesslist = pstLivSerSesslist->m_pNextElm;
-				}
-			}
-		}
-
-		if(NULL == pstLivSerSesslist)
-		{
-			pstTempLivSerSesslist->m_pNextElm = OSAL_Malloc(sizeof(stLiveSerSessionList_t));
-			if(NULL == pstTempLivSerSesslist->m_pNextElm )
-			{
-				retError = STACK_ERROR_MALLOC_FAILED;
-			}
-			pstLivSerSesslist = pstTempLivSerSesslist->m_pNextElm;
-			pstLivSerSesslist->m_pNextElm = NULL;
-			u8NewDevEntryFalg = 1;
-		}
-	}
-
-	if(u8NewDevEntryFalg)
-	{
-		pstLivSerSesslist->m_u8IpAddr[0] = pCtxInfo->pu8SerIpAddr[0];
-		pstLivSerSesslist->m_u8IpAddr[1] = pCtxInfo->pu8SerIpAddr[1];
-		pstLivSerSesslist->m_u8IpAddr[2] = pCtxInfo->pu8SerIpAddr[2];
-		pstLivSerSesslist->m_u8IpAddr[3] = pCtxInfo->pu8SerIpAddr[3];
-		pstLivSerSesslist->m_u16Port = pCtxInfo->u16Port;
-
-		pstLivSerSesslist->MsgQId = OSAL_Init_Message_Queue();	// generating message Queue id
-		if(-1 == pstLivSerSesslist->MsgQId)
-		{
-			retError = STACK_ERROR_QUEUE_CREATE;
-		}
-
-		*tcpCtx = pstLivSerSesslist->MsgQId;
-
-		stThreadParam.dwStackSize = 0;
-		stThreadParam.lpStartAddress = ServerSessTcpAndCbThread;
-		stThreadParam.lpParameter = (void*)pstLivSerSesslist;
-		stThreadParam.lpThreadId = &SessionControl_ThreadId;
-
-		threadId = Osal_Thread_Create(&stThreadParam);
-		if(0 == threadId)
-		{
-			retError = STACK_ERROR_THREAD_CREATE;
-		}
-	}
-
-	return retError;
+	return getCtx(tcpCtx, pCtxInfo);
 }
 #else
 /**
@@ -2364,97 +2429,6 @@ MODBUS_STACK_EXPORT eStackErrorCode getTCPCtx(int *tcpCtx, stCtxInfo *pCtxInfo)
  */
 MODBUS_STACK_EXPORT eStackErrorCode getRTUCtx(int32_t *rtuCtx, stCtxInfo *pCtxInfo)
 {
-	eStackErrorCode retError = STACK_NO_ERROR;
-	thread_Create_t stThreadParam = { 0 };
-	Thread_H threadId;
-	stLiveSerSessionList_t *pstLivSerSesslist = NULL;
-	stLiveSerSessionList_t *pstTempLivSerSesslist = NULL;
-	uint8_t u8NewDevEntryFalg=0;
-
-	if(NULL == rtuCtx || NULL == pCtxInfo)
-	{
-		return STACK_ERROR_INVALID_INPUT_PARAMETER;
-	}
-
-	pstLivSerSesslist = pstSesCtlThdLstHead;
-	if(NULL == pstLivSerSesslist)
-	{
-		pstSesCtlThdLstHead = OSAL_Malloc(sizeof(stLiveSerSessionList_t));
-		if(NULL == pstSesCtlThdLstHead)
-		{
-			retError = STACK_ERROR_MALLOC_FAILED;
-		}
-		else
-		{
-			pstLivSerSesslist = pstSesCtlThdLstHead;
-			pstLivSerSesslist->m_pNextElm = NULL;
-			u8NewDevEntryFalg = 1;
-		}
-	}
-	else
-	{
-		while(NULL != pstLivSerSesslist)
-		{
-			pstTempLivSerSesslist = pstLivSerSesslist;
-
-			if(NULL != pstLivSerSesslist)
-			{
-				if((strncmp((char*)pCtxInfo->m_u8PortName, (char*)pstLivSerSesslist->m_portName, sizeof(pstLivSerSesslist->m_portName)) == 0 &&
-						pCtxInfo->m_u32baudrate == pstLivSerSesslist->m_baudrate ) ||
-						strncmp((char*)pCtxInfo->m_u8PortName, (char*)pstLivSerSesslist->m_portName, sizeof(pstLivSerSesslist->m_portName)) == 0)
-				{
-					*rtuCtx = pstLivSerSesslist->MsgQId;
-					break;
-				}
-				else
-				{
-					pstLivSerSesslist = pstLivSerSesslist->m_pNextElm;
-				}
-			}
-		}
-
-		if(NULL == pstLivSerSesslist)
-		{
-			pstTempLivSerSesslist->m_pNextElm = OSAL_Malloc(sizeof(stLiveSerSessionList_t));
-			if(NULL == pstTempLivSerSesslist->m_pNextElm )
-			{
-				retError = STACK_ERROR_MALLOC_FAILED;
-			}
-			pstLivSerSesslist = pstTempLivSerSesslist->m_pNextElm;
-			pstLivSerSesslist->m_pNextElm = NULL;
-			u8NewDevEntryFalg = 1;
-		}
-	}
-
-	if(u8NewDevEntryFalg)
-	{
-		strncpy(pstLivSerSesslist->m_portName, pCtxInfo->m_u8PortName, sizeof(pstLivSerSesslist->m_portName));
-
-		pstLivSerSesslist->m_baudrate = pCtxInfo->m_u32baudrate;
-		pstLivSerSesslist->m_parity = pCtxInfo->m_eParity;
-		pstLivSerSesslist->m_lInterframeDelay = (pCtxInfo->m_lInterframeDelay) * 1000; // convert to usec
-		pstLivSerSesslist->m_lrespTimeout = (pCtxInfo->m_lRespTimeout) * 1000;
-
-		pstLivSerSesslist->MsgQId = OSAL_Init_Message_Queue();	// generating message Queue id
-		if(-1 == pstLivSerSesslist->MsgQId)
-		{
-			retError = STACK_ERROR_QUEUE_CREATE;
-		}
-		*rtuCtx = pstLivSerSesslist->MsgQId;
-
-		stThreadParam.dwStackSize = 0;
-		stThreadParam.lpStartAddress = SessionControlThread;
-		stThreadParam.lpParameter = (void*)pstLivSerSesslist;
-		stThreadParam.lpThreadId = &SessionControl_ThreadId;
-
-		threadId = Osal_Thread_Create(&stThreadParam);
-		if(0 == threadId)
-		{
-			retError = STACK_ERROR_THREAD_CREATE;
-			OSAL_Delete_Message_Queue(pstLivSerSesslist->MsgQId);
-		}
-	}
-
-	return retError;
+	return getCtx(rtuCtx, pCtxInfo);
 }
 #endif

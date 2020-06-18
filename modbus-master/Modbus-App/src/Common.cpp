@@ -177,7 +177,7 @@ bool common_Handler::getReqData(unsigned short seqno, MbusAPI_t& reqData)
  * @return 	true : on success,
  * 			false : on error
  */
-bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t reqData)
+bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t& reqData)
 {
 	//DO_LOG_DEBUG("Start: ");
 	bool bRet = true;
@@ -205,7 +205,7 @@ bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t reqData)
  * @return 	true : on success,
  * 			false : on error
  */
-bool common_Handler::updateReqData(unsigned short seqno, MbusAPI_t reqData)
+bool common_Handler::updateReqData(unsigned short seqno, MbusAPI_t& reqData)
 {
 	DO_LOG_DEBUG("Start: ");
 	bool bRet = true;
