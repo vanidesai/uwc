@@ -336,7 +336,7 @@ services:
     restart: unless-stopped
     ulimits:
      rtprio:
-       soft: "99"  these are the maximum values of priorites to be used inside the container application
+       soft: "99" # these are the maximum values of priorites to be used inside the container application
        hard: "99"
     environment:
       AppName: "SCADA-RTU"
@@ -359,7 +359,6 @@ services:
       - ca_etcd
       - etcd_SCADA-RTU_cert
       - etcd_SCADA-RTU_key
-
 
 volumes:
   vol_uwc_socket:
