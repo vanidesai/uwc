@@ -22,8 +22,8 @@ The directory comprises of following:
 1. EdgeInsightsSoftware-v2.2-PV version of EIS should be available on deploy machine before deployment. 
 2. Copy files from "Release" diectory (e.g. all shell scripts, tar.gz file, etc.) into "EdgeInsightsSoftware-v2.2-PV/IEdgeInsights" directory. Please ensure that shell scripts have "execute" permission (sudo chmod +x <script name>).
 3. Open a terminal and go to EdgeInsightsSoftware-v2.2-PV/IEdgeInsights directory.
-4. Open docker-compose.yml file and go to section "scada-rtu" at line number 321 and uncomment the entire section (till line number 361)
-and save the file
+4. Open docker-compose.yml file and go to section "scada-rtu". Then uncomment the entire "scada-rtu" section ( line numbers 321 to 361), and also uncomment certicates for scada-rtu (line numbers 396 to 399). Then save the file.
+5. Open docker-compose_unit_test.yml file and go to section "scada-rtu-test". Then uncomment entire section (line numbers 245 to 279).
 5. Run below commands on terminal to deploy all UWC containers.
 a)Provision for EIS, run below command:
 sudo ./02_provisionEIS.sh

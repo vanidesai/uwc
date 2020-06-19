@@ -381,7 +381,7 @@ secrets:
     file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
   etcd_MQTT_Export_key:
     file: provision/Certificates/MQTT_Export/MQTT_Export_client_key.pem
-  etcd_SCADA-RTU_cert:
-    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_certificate.pem
-  etcd_SCADA-RTU_key:
-    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_key.pem
+#  etcd_SCADA-RTU_cert:
+#    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_certificate.pem
+#  etcd_SCADA-RTU_key:
+#    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_key.pem
