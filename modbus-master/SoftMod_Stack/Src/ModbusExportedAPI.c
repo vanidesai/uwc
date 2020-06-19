@@ -2246,7 +2246,6 @@ MODBUS_STACK_EXPORT eStackErrorCode getCtx(int32_t *pCtx, stCtxInfo *pCtxInfo)
 	Thread_H threadId;
 	stLiveSerSessionList_t *pstLivSerSesslist = NULL;
 	uint8_t u8NewDevEntryFalg = 0;
-	int nPortNameLen = 0;
 
 	if(NULL == pCtx || NULL == pCtxInfo)
 	{
@@ -2254,7 +2253,7 @@ MODBUS_STACK_EXPORT eStackErrorCode getCtx(int32_t *pCtx, stCtxInfo *pCtxInfo)
 	}
 
 #ifndef MODBUS_STACK_TCPIP_ENABLED
-	nPortNameLen = strlen((const char*)pCtxInfo->m_u8PortName);
+	int nPortNameLen = strlen((const char*)pCtxInfo->m_u8PortName);
 	if(nPortNameLen > MODBUS_DATA_LENGTH)
 	{
 		return STACK_ERROR_PORT_NAME_LENGTH_EXCEEDED;
