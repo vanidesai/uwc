@@ -305,50 +305,43 @@ services:
       - "vol_uwc_socket:${SOCKET_DIR}"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
 
-  scada-rtu:
-    depends_on:
-      - ia_eisbase
-      - uwc_common
-    build:
-      context: $PWD/../scada-rtu/
-      dockerfile: $PWD/../scada-rtu/Dockerfile
-      args:
-        EIS_VERSION: ${EIS_VERSION}
-        EIS_UID: ${EIS_UID}
-        EIS_USER_NAME: ${EIS_USER_NAME}
-    image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
-    container_name: scada-rtu
-    hostname: scada-rtu
-    network_mode: host
-    restart: unless-stopped
-    ulimits:
-     rtprio:
-       soft: "99" # these are the maximum values of priorites to be used inside the container application
-       hard: "99"
-    environment:
-      AppName: "SCADA-RTU"
-      DEV_MODE: ${DEV_MODE}
-      no_proxy: ${no_proxy}
-      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
-      MQTT_URL: "tcp://127.0.0.1:11883"
-      CertType: "zmq"
-      PROFILING_MODE: ${PROFILING_MODE}
-      MQTT_PUBLISH_TOPIC: "/flowmeter/PL0/Flow/read"
-      SCADA_TOPIC: "spBv1.0/Sparkplug B Devices/DDATA/SCADA_RTU/flowmeter"
-      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
-      DATA_POINT: "Flow"
-      REPORTING_DURATION: "10000"
-      DEVICE_NAME: "flowmeter"
-      NETWORK_TYPE: ALL
-    logging:
-        driver: "json-file"
-        options:
-            max-file: "3"
-            max-size: "10m"
-    user: ${EIS_UID}
-    volumes:
-      - "vol_uwc_socket:${SOCKET_DIR}"
-      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+#  scada-rtu:
+#    depends_on:
+#      - ia_eisbase
+#      - uwc_common
+#    build:
+#      context: $PWD/../scada-rtu/
+#      dockerfile: $PWD/../scada-rtu/Dockerfile
+#      args:
+#        EIS_VERSION: ${EIS_VERSION}
+#        EIS_UID: ${EIS_UID}
+#        EIS_USER_NAME: ${EIS_USER_NAME}
+#    image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
+#    container_name: scada-rtu
+#    hostname: scada-rtu
+#    network_mode: host
+#    restart: unless-stopped
+#    ulimits:
+#     rtprio:
+#       soft: "99" # these are the maximum values of priorites to be used inside the container application
+#       hard: "99"
+#    environment:
+#      AppName: "SCADA-RTU"
+#      DEV_MODE: ${DEV_MODE}
+#      no_proxy: ${no_proxy}
+#      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+#      MQTT_URL: "tcp://127.0.0.1:11883"
+#      CertType: "zmq"
+#      PROFILING_MODE: ${PROFILING_MODE}
+#    logging:
+#        driver: "json-file"
+#        options:
+#            max-file: "3"
+#            max-size: "10m"
+#    user: ${EIS_UID}
+#    volumes:
+#      - "vol_uwc_socket:${SOCKET_DIR}"
+#      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
 
 volumes:
   vol_uwc_socket:

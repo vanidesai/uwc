@@ -269,13 +269,6 @@ services:
       MQTT_URL: "tcp://127.0.0.1:11883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      MQTT_PUBLISH_TOPIC: "/flowmeter/PL0/Flow/read"
-      SCADA_TOPIC: "spBv1.0/Sparkplug B Devices/DDATA/SCADA_RTU/flowmeter"
-      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
-      DATA_POINT: "Flow"
-      REPORTING_DURATION: "10000"
-      DEVICE_NAME: "flowmeter"
-      NETWORK_TYPE: ALL
     logging:
         driver: "json-file"
         options:
