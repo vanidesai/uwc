@@ -7,3 +7,4 @@ file:
 devicegrouplist: 
 - "Device_group1.yml"
 - "Device_group2.yml"
+- "Device_group3.yml"

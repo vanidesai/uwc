@@ -4,7 +4,7 @@ file:
     author: "Intel"
     date: "Sun Sep 1 13:34:13 PDT 2019"
     description: "RTU Network information for network 1"
-baudrate: 9600
+baudrate: 115200
 parity: "N"
 com_port_name: "/dev/ttyS0"
 

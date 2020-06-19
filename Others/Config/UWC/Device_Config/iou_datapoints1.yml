@@ -6,7 +6,6 @@ file:
   description: "Data for Demo IOUnit data points"
 datapoints:
 - id: "D1"
-  persistence: true
   attributes:
     type: "HOLDING_REGISTER"
     addr: 1
@@ -17,7 +16,6 @@ datapoints:
     realtime: false
 
 - id: "D2"
-  persistence: true
   attributes:
     type: "HOLDING_REGISTER"
     addr: 2
@@ -28,7 +26,6 @@ datapoints:
     realtime: false
 
 - id: "D3"
-  persistence: true
   attributes:
     type: "HOLDING_REGISTER"
     addr: 3
@@ -39,7 +36,6 @@ datapoints:
     realtime: false
 
 - id: "D4"
-  persistence: true
   attributes:
     type: "HOLDING_REGISTER"
     addr: 4
@@ -51,8 +47,6 @@ datapoints:
 
     
 - id: "D5"
-  persistence: true
-  persistence: true
   attributes:
     type: "HOLDING_REGISTER"
     addr: 5
@@ -63,7 +57,6 @@ datapoints:
     realtime: false
 
 - id: "D6"
-  persistence: true
   attributes:
     type: "HOLDING_REGISTER"
     addr: 6
@@ -74,7 +67,6 @@ datapoints:
     realtime: false
 
 - id: "D7"
-  persistence: true
   attributes:
     type: "HOLDING_REGISTER"
     addr: 7
@@ -85,7 +77,6 @@ datapoints:
     realtime: false
 
 - id: "D8"
-  persistence: true
   attributes:
     type: "HOLDING_REGISTER"
     addr: 8

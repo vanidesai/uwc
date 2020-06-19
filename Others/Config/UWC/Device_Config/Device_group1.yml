@@ -17,7 +17,7 @@ devicelist:
   tcp_master_info: "tcp_master_info.yml"
 
 - deviceinfo: "iou_device.yml"
-  id: "iou1"
+  id: "iou"
   protocol:
     protocol: "PROTOCOL_RTU"
     slaveid: '10'

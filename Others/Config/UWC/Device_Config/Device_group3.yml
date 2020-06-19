@@ -4,13 +4,13 @@ file:
   author: "Intel"
   date: "Sun Sep 1 13:34:13 PDT 2019"
   description: "Device group 2"
-id: "PL1"
+id: "PL2"
 description: "Device group 2"
 devicelist:
 
-- deviceinfo: "iou_device1.yml"
+- deviceinfo: "iou_device2.yml"
   id: "iou"
   protocol:
     protocol: "PROTOCOL_RTU"
-    slaveid: '10'
+    slaveid: '20'
   rtu_master_network_info: "rtu_network2.yml"

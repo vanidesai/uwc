@@ -5,63 +5,92 @@ file:
   date: "Sun Sep 1 13:34:13 PDT 2019"
   description: "Data for Demo IOUnit data points"
 datapoints:
-- id: "Arrival"
-  attributes:
-    type: "DISCRETE_INPUT"
-    addr: 2048
-    width: 1
-  polling:
-    pollinterval: 1000
-    realtime: true
-
-
-- id: "AValve"
+- id: "D1"
   attributes:
     type: "HOLDING_REGISTER"
-    addr: 640
+    addr: 1
     width: 1
+    datatype: "INT16"
   polling:
     pollinterval: 1000
-    realtime: true
+    realtime: false
 
-
-- id: "DValve"
+- id: "D2"
   attributes:
-    type: "COIL"
-    addr: 2048
+    type: "HOLDING_REGISTER"
+    addr: 2
     width: 1
+    datatype: "INT16"
   polling:
     pollinterval: 1000
-    realtime: true
+    realtime: false
 
-
-- id: "TubingPressure"
+- id: "D3"
   attributes:
-    type: "INPUT_REGISTER"
-    addr: 1025
+    type: "HOLDING_REGISTER"
+    addr: 3
     width: 1
+    datatype: "INT16"    
   polling:
     pollinterval: 1000
-    realtime: true
+    realtime: false
 
-
-- id: "CasingPressure"
+- id: "D4"
   attributes:
-    type: "INPUT_REGISTER"
-    addr: 1024
+    type: "HOLDING_REGISTER"
+    addr: 4
     width: 1
+    datatype: "INT16"
   polling:
     pollinterval: 1000
-    realtime: true
+    realtime: false
 
-
-- id: "KeepAlive"
+    
+- id: "D5"
   attributes:
-    type: "COIL"
-    addr: 3073
+    type: "HOLDING_REGISTER"
+    addr: 5
     width: 1
+    datatype: "INT16"
   polling:
     pollinterval: 1000
-    realtime: true
+    realtime: false
 
- 
+- id: "D6"
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 6
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D7"
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 7
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D8"
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 8
+    width: 1
+    datatype: "INT16"
+  polling:
+    pollinterval: 1000
+    realtime: false
+
+- id: "D10"
+  attributes:
+    type: "HOLDING_REGISTER"
+    addr: 10
+    width: 1
+  polling:
+    pollinterval: 0
+    realtime: false
