@@ -31,11 +31,6 @@ private:
 	std::string m_strAppName;
 	std::string m_strMqttURL;
 	std::string m_siteListFileName;
-	std::string m_mqttPublishTopic;
-	std::string m_ScadaTopicSubscribe;
-	std::string m_DataPoint;
-	std::string m_DeviceName;
-	int m_ReportingDuration;
 	bool m_devMode;
 
 public:
@@ -134,104 +129,6 @@ public:
 	}
 
 	/**
-	 * get topic on which to publish messages for MQTT-Export
-	 * @return topic
-	 */
-	const std::string& getMqttPublishTopic() const
-	{
-		return m_mqttPublishTopic;
-	}
-
-	/**
-	 * set topic on which to publish messages for MQTT-Export
-	 * @param strMqttPublishTopic	:[in] topic to set
-	 */
-	void setMqttPublishTopic(const std::string &strMqttPublishTopic)
-	{
-		m_mqttPublishTopic = strMqttPublishTopic;
-	}
-
-	/**
-	 * get topic on which to subscribe for messages from SCADA
-	 * @return SCADA topic
-	 */
-	const std::string& getScadaTopicToSubscribe() const
-	{
-		return m_ScadaTopicSubscribe;
-	}
-
-	/**
-	 * set topic on which to subscribe for messages from SCADA
-	 * @param strScadaTopicSubscribe :[in] SCADA topic name
-	 */
-	void setScadaTopicToSubscribe(const std::string & strScadaTopicSubscribe)
-	{
-		m_ScadaTopicSubscribe = strScadaTopicSubscribe;
-	}
-
-	/**
-	 * get data point on which to send messages for SCADA
-	 * @return data point
-	 */
-	const std::string& getDataPoint() const
-	{
-		return m_DataPoint;
-	}
-
-	/**
-	 * set data point on which to send messages for SCADA
-	 * @param strDataPoint :[in] data point name
-	 */
-	void setDataPoint(const std::string & strDataPoint)
-	{
-		m_DataPoint = strDataPoint;
-	}
-
-	/**
-	 * get data point on which to send messages for SCADA
-	 * @return data point
-	 */
-	const std::string& getDeviceName() const
-	{
-		return m_DeviceName;
-	}
-
-	/**
-	 * set device name
-	 * @param strDeviceName :[in] device name
-	 */
-	void setDeviceName(const std::string & strDeviceName)
-	{
-		m_DeviceName = strDeviceName;
-	}
-
-	/**
-	 * get data point on which to send messages for SCADA
-	 * @return data point
-	 */
-	int getReportingDuration() const
-	{
-		return m_ReportingDuration;
-	}
-
-	/**
-	 * set data point on which to send messages for SCADA
-	 * @param strDataPoint :[in] data point name
-	 */
-	void setReportingDuration(const std::string & strReportingDuration)
-	{
-		try
-		{
-			m_ReportingDuration = std::stoi(strReportingDuration);
-		}
-		catch(exception &ex)
-		{
-			std::cout << "Environment variable ReportingDuration is not set properly, " << ex.what() << endl;
-			exit(1);
-		}
-	}
-
-	/**
 	 * Return topic in sparkplug format to set in will message
 	 * in mqtt subscriber
 	 * @return death topic in string
@@ -253,32 +150,6 @@ public:
 	{
 		std::string topic(SPARKPLUG_TOPIC);
 		topic.append("/NBIRTH/" + getStrAppName());
-
-		return topic;
-	}
-
-	/**
-	 * Return topic in sparkplug format to send as device birth
-	 * to SCADA
-	 * @return dbirth topic in string
-	 */
-	std::string getDBirthTopic()
-	{
-		std::string topic(SPARKPLUG_TOPIC);
-		topic.append("/DBIRTH/" + getStrAppName() + "/");
-
-		return topic;
-	}
-
-	/**
-	 * Return topic in sparkplug format to send as DDATA
-	 * to SCADA
-	 * @return ddata topic in string
-	 */
-	std::string getDDataTopic()
-	{
-		std::string topic(SPARKPLUG_TOPIC);
-		topic.append("/DDATA/" + getStrAppName() + "/" + getDeviceName());
 
 		return topic;
 	}

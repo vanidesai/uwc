@@ -100,85 +100,8 @@ bool CMQTTHandler::connect()
  */
 bool CMQTTHandler::subscribeToTopics()
 {
-	//get list of topics from topic mapper
-	std::vector<std::string> vMqttTopics;
-
-	try
-	{
-		vMqttTopics.push_back("/+/+/+/readResponse");
-		vMqttTopics.push_back("/+/+/+/writeResponse");
-		for (auto &topic : vMqttTopics)
-		{
-			if(! topic.empty())
-			{
-				DO_LOG_DEBUG("MQTT handler subscribing topic : " + topic);
-				std::cout << __func__ << ":" << __LINE__ << "MQTT handler subscribing topic : " << topic << endl;
-				m_subscriber.subscribe(topic, m_QOS, nullptr, m_listener);
-			}
-		}
-
-		std::cout << __func__ << ":" << __LINE__ << "MQTT handler subscribed topics with MQTT broker" << std::endl;
-	}
-	catch(exception &ex)
-	{
-		DO_LOG_FATAL(ex.what());
-		std::cout << __func__ << ":" << __LINE__ << "CMQTTHandler Exception : " << ex.what() << std::endl;
-		return false;
-	}
-
-	DO_LOG_DEBUG("MQTT handler subscribed topics with MQTT broker");
-
+	//will be added later
 	return true;
-}
-
-/**
-* parse message to retrieve QOS and topic names
-* @param json :[in] message from which to retrieve real-time
-* @param mqttMsgRecvd :[out] fill on the parsed information in this structure
-* @return true/false based on success/failure
-*/
-bool CMQTTHandler::parseMsg(const char *json, QMgr::stMqttMsg& mqttMsgRecvd)
-{
-	bool bRetVal = false;
-
-	cJSON *root = cJSON_Parse(json);
-	try
-	{
-		if (NULL == root)
-		{
-			DO_LOG_ERROR("Message received from MQTT could not be parsed in json format");
-			return bRetVal;
-		}
-
-		//json has needed values, fill in map
-		cJSON *param = root->child;
-		while(param)
-		{
-			if(cJSON_IsString(param))
-			{
-				DO_LOG_DEBUG((std::string)(param->string) + " : " + param->valuestring);
-
-				mqttMsgRecvd.m_datapoint_key_val.insert(pair<string, string>((std::string)param->string, param->valuestring));
-			}
-			else
-			{
-				throw string("Invalid JSON");
-			}
-			param = param->next;
-		}
-
-		bRetVal = true;
-	}
-	catch (std::exception &ex)
-	{
-		DO_LOG_FATAL(ex.what());
-		bRetVal = false;
-	}
-
-	if (NULL != root)
-		cJSON_Delete(root);
-
-	return bRetVal;
 }
 
 /**
@@ -188,54 +111,8 @@ bool CMQTTHandler::parseMsg(const char *json, QMgr::stMqttMsg& mqttMsgRecvd)
  */
 bool CMQTTHandler::pushMsgInQ(mqtt::const_message_ptr msg)
 {
-	bool bRet = true;
-	try
-	{
-		QMgr::stMqttMsg stNewMsg;
-
-		//fill up the data
-		stNewMsg.m_mqttTopic = msg->get_topic();
-		//parse information in key-value pair and store
-		parseMsg(msg->get_payload().c_str(), stNewMsg);
-
-		//parse device name
-		//stNewMsg.m_strDataPoint = "/flowmeter/PL0/Flow";
-		//stNewMsg.m_strDevice = "flowmeter";
-		vector<string> splitTopic;
-
-		string s = msg->get_topic();
-		cout << "topic received : " << s << endl;
-		size_t pos = 0;
-		std::string delimiter = "/";
-		std::string token;
-		while ((pos = s.find(delimiter)) != std::string::npos)
-		{
-		    token = s.substr(0, pos);
-		    //std::cout <<"*** " << token << std::endl;
-		    splitTopic.push_back(token);
-		    s.erase(0, pos + delimiter.length());
-		}
-/*		std::cout <<"*** device " << splitTopic[1] << std::endl;
-		std::cout <<"*** site " << splitTopic[2] << std::endl;
-		std::cout <<"*** data point " << splitTopic[3] << std::endl;*/
-
-		stNewMsg.m_strDevice = splitTopic[1];
-		stNewMsg.m_strSite = splitTopic[2];
-		stNewMsg.m_strDataPoint = splitTopic[3];
-
-		stNewMsg.m_mqttMsg = msg;
-
-		QMgr::getMqtt().pushMsg(stNewMsg);
-
-		DO_LOG_DEBUG("Pushed MQTT message in queue");
-		bRet = true;
-	}
-	catch (const std::exception &e)
-	{
-		DO_LOG_FATAL(e.what());
-		bRet = false;
-	}
-	return bRet;
+	///will be added later
+	return true;
 }
 
 /**

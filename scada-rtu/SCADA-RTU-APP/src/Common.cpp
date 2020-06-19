@@ -69,8 +69,7 @@ bool CCommon::readCommonEnvVariables()
 	{
 		bool bRetVal = false;
 
-		std::list<std::string> topicList{"AppName", "MQTT_URL", "DEV_MODE", "DEVICES_GROUP_LIST_FILE_NAME",
-			"MQTT_PUBLISH_TOPIC", "SCADA_TOPIC", "DATA_POINT", "REPORTING_DURATION", "DEVICE_NAME"};
+		std::list<std::string> topicList{"AppName", "MQTT_URL", "DEV_MODE"};
 
 		std::map <std::string, std::string> envTopics;
 
@@ -90,12 +89,6 @@ bool CCommon::readCommonEnvVariables()
 
 		setStrAppName(envTopics.at("AppName"));
 		setStrMqttURL(envTopics.at("MQTT_URL"));
-		setSiteListFileName(envTopics.at("DEVICES_GROUP_LIST_FILE_NAME"));
-		setMqttPublishTopic(envTopics.at("MQTT_PUBLISH_TOPIC"));
-		setScadaTopicToSubscribe(envTopics.at("SCADA_TOPIC"));
-		setDataPoint(envTopics.at("DATA_POINT"));
-		setReportingDuration(envTopics.at("REPORTING_DURATION"));
-		setDeviceName(envTopics.at("DEVICE_NAME"));
 
 		string devMode = envTopics.at("DEV_MODE");
 		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);

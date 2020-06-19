@@ -79,7 +79,13 @@ namespace
 		DO_LOG_DEBUG(" Start: Reading site_list.yaml");
 		try
 		{
-			YAML::Node Node = CommonUtils::loadYamlFile(CCommon::getInstance().getSiteListFileName());
+			string strDeviceListFile = CCommon::getInstance().getSiteListFileName();
+			if(strDeviceListFile.empty())
+			{
+				DO_LOG_ERROR("Device list file is empty");
+				return false;
+			}
+			YAML::Node Node = CommonUtils::loadYamlFile(strDeviceListFile);
 			CommonUtils::convertYamlToList(Node, g_sWellSiteFileList);
 		}
 		catch(YAML::Exception &e)

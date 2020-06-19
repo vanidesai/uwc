@@ -120,7 +120,7 @@ void CScadaCallback::connection_lost(const std::string& cause)
  */
 void CScadaCallback::connected(const std::string& cause)
 {
-	CSCADAHandler::instance().subscribeToTopics();
+	DO_LOG_DEBUG("SCADA-RTU Connected with the MQTT broker");
 }
 
 /**
@@ -130,6 +130,4 @@ void CScadaCallback::connected(const std::string& cause)
  */
 void CScadaCallback::message_arrived(mqtt::const_message_ptr msg)
 {
-	//add this message to queue - call a function
-	CSCADAHandler::instance().pushMsgInQ(msg);
 }

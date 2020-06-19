@@ -9,9 +9,6 @@
  ************************************************************************************/
 
 #include "SCADAHandler.hpp"
-#include <iterator>
-#include <vector>
-#include "cjson/cJSON.h"
 
 int iScadaQOS = 0;
 
@@ -129,40 +126,6 @@ CSCADAHandler& CSCADAHandler::instance()
 }
 
 /**
- * Subscribe with MQTT broker for topics for on-demand operations
- * @return true/false based on success/failure
- */
-bool CSCADAHandler::subscribeToTopics()
-{
-	std::vector<std::string> vMqttTopics;
-
-	try
-	{
-		//test topic
-		string strScadaTopic = CCommon::getInstance().getScadaTopicToSubscribe();
-		if(strScadaTopic.empty())
-		{
-			DO_LOG_ERROR("Scada topic to subscribe is empty");
-			return false;
-		}
-
-		m_subscriber.subscribe(strScadaTopic, 0, nullptr, m_listener);
-
-		std::cout << __func__ << ":" << __LINE__ << "SCADAHandler subscribed topics with MQTT broker" << std::endl;
-	}
-	catch(exception &ex)
-	{
-		DO_LOG_FATAL(ex.what());
-		std::cout << __func__ << ":" << __LINE__ << "SCADAHandler Exception : " << ex.what() << std::endl;
-		return false;
-	}
-
-	DO_LOG_DEBUG("SCADAHandler subscribed topics with MQTT broker");
-
-	return true;
-}
-
-/**
  * Connect m_subscriber with MQTT broker
  * @return true/false based on success/failure
  */
@@ -191,32 +154,6 @@ bool CSCADAHandler::connectSubscriber()
 	DO_LOG_DEBUG("SCADA m_subscriber connected successfully with MQTT broker");
 
 	return bFlag;
-}
-
-/**
- * Push message in message queue to send on EIS
- * @param msg :[in] reference of message to push in queue
- * @return true/false based on success/failure
- */
-bool CSCADAHandler::pushMsgInQ(mqtt::const_message_ptr msg)
-{
-	bool bRet = true;
-	try
-	{
-		QMgr::stMqttMsg scadaMsgRecvd;
-		scadaMsgRecvd.m_mqttMsg = msg;
-
-		QMgr::getScada().pushMsg(scadaMsgRecvd);
-
-		DO_LOG_DEBUG("Pushed SCADA message in queue");
-		bRet = true;
-	}
-	catch (const std::exception &e)
-	{
-		DO_LOG_FATAL(e.what());
-		bRet = false;
-	}
-	return bRet;
 }
 
 /**

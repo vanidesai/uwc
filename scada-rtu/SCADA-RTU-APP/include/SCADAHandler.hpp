@@ -30,49 +30,9 @@ extern "C"
 //
 
 using namespace std;
-using namespace network_info;
 
 // Declarations used for MQTT
 #define SUBSCRIBERID								"SCADA_SUBSCRIBER"
-
-//structure to hold data point repository to keep track of modified values
-enum class ePointType
-{
-	eCoil,
-	eHolding_Register,
-	eInput_Register,
-	eDiscrete_Input
-};
-struct stDataPointInfo
-{
-	int m_iAddress;
-	int m_iWidth;
-	ePointType m_eType;
-	bool m_bIsByteSwap;
-	bool m_bIsWordSwap;
-	std::string m_sDataType;
-};
-struct stDataPointRepo
-{
-	string m_device;
-	string m_dataPoint;
-	string m_site;
-	mqtt::const_message_ptr m_message;
-	std::map<std::string, std::string> m_datapoint_key_val;
-	stDataPointInfo m_stDataPointInfo;
-	bool m_isUpdated;
-
-	bool isChanged()
-	{
-		return m_isUpdated;
-	}
-
-	void updateCurrentVal(stDataPointRepo& newVal )
-	{
-		//compare and replace if required
-		//update flag accordingly
-	}
-};
 
 class CSCADAHandler
 {
@@ -85,9 +45,6 @@ class CSCADAHandler
 
 	CScadaCallback m_scadaSubscriberCB;
 	CMQTTActionListener m_listener;
-
-	std::mutex m_mutexDataPoint;
-	std::map<string, std::map<string, stDataPointRepo>> m_deviceDataPoints;
 
 	// Default constructor
 	CSCADAHandler(std::string strPlBusUrl, int iQOS);
@@ -105,13 +62,8 @@ class CSCADAHandler
 	void publish_node_birth();
 public:
 
- 	bool subscribeToTopics();
-
 	~CSCADAHandler();
 	static CSCADAHandler& instance(); //function to get single instance of this class
- 	bool isMsgArrived(mqtt::const_message_ptr& msg);
-
-	bool pushMsgInQ(mqtt::const_message_ptr msg);
 	void cleanup();
 };
 
