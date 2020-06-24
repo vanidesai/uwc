@@ -12,9 +12,7 @@
 #include "ConfigManager.hpp"
 #include <iterator>
 #include <vector>
-#include <future>
 
-#include "MQTTHandler.hpp"
 #include "SCADAHandler.hpp"
 #include "Publisher.hpp"
 
@@ -22,16 +20,11 @@
 #include <gtest/gtest.h>
 #endif
 
-struct stFuture
-{
-	std::future<bool> m_fut;
-	std::future_status m_bStatus;
-};
 vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.0.2"
+#define APP_VERSION "0.0.5.3"
 
 /**
  * Function to keep running this application and check NBIRTH and NDEATH messages

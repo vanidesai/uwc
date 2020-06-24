@@ -16,18 +16,6 @@
 /**
  * A callback class for use with the main MQTT client.
  */
-class CSubscriberCallback : public virtual mqtt::callback
-{
-public:
-	void connection_lost(const std::string& cause) override;
-	void connected(const std::string& cause) override;
-	void message_arrived(mqtt::const_message_ptr msg) override;
-};
-
-
-/**
- * A callback class for use with the main MQTT client.
- */
 class CScadaCallback : public virtual mqtt::callback
 {
 public:

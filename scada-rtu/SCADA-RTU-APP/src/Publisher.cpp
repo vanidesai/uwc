@@ -185,7 +185,7 @@ bool CPublisher::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_ddata_
 	{
 		// Encode the payload into a binary format so it can be published in the MQTT message.
 		// The binary_buffer must be large enough to hold the contents of the binary payload
-		size_t buffer_length = 1024;
+		size_t buffer_length =  9216; // 100 data points take around 8513 bytes
 		uint8_t *binary_buffer = (uint8_t *)malloc(buffer_length * sizeof(uint8_t));
 		if(binary_buffer == NULL)
 		{
@@ -193,8 +193,15 @@ bool CPublisher::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_ddata_
 			return false;
 		}
 		size_t message_length = encode_payload(&binary_buffer, buffer_length, &a_ddata_payload);
-
-		std::cout << "Publishing message for SCADA...\n";
+		if(message_length == 0)
+		{
+			DO_LOG_ERROR("Failed to encode payload");
+			if(binary_buffer != NULL)
+			{
+				free(binary_buffer);
+			}
+			return false;
+		}
 
 		// Publish the DDATA on the appropriate topic
 		mqtt::message_ptr pubmsg = mqtt::make_message(a_topic, (void*)binary_buffer, message_length, 0, false);

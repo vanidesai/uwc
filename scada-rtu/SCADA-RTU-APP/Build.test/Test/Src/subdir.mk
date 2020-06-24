@@ -10,20 +10,29 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../Test/Src/Main_ut.cpp 
+../Test/Src/Main_ut.cpp \
+../Test/Src/MqttHandler_ut.cpp \
+../Test/Src/NetworkInfo_ut.cpp \
+../Test/Src/Publisher_ut.cpp 
 
 OBJS += \
-./Test/Src/Main_ut.o 
+./Test/Src/Main_ut.o \
+./Test/Src/MqttHandler_ut.o \
+./Test/Src/NetworkInfo_ut.o \
+./Test/Src/Publisher_ut.o 
 
 CPP_DEPS += \
-./Test/Src/Main_ut.d 
+./Test/Src/Main_ut.d \
+./Test/Src/MqttHandler_ut.d \
+./Test/Src/NetworkInfo_ut.d \
+./Test/Src/Publisher_ut.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
 Test/Src/%.o: ../Test/Src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -std=c++11 -DUNIT_TEST -I../$(PROJECT_DIR)/include -I../$(PROJECT_DIR)/include/yaml-cpp -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/include/tahu -I/home/user/paho.mqtt.c/src -I/usr/local/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++11 -DUNIT_TEST -DSCADA_RTU -I../$(PROJECT_DIR)/include -I../$(PROJECT_DIR)/include/yaml-cpp -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/include/tahu -I/home/user/paho.mqtt.c/src -I/usr/local/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

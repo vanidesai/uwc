@@ -29,6 +29,7 @@ namespace network_info
 	{
 		eTCP,
 		eRTU,
+		eALL
 	};
 	enum class eEndPointType
 	{
@@ -54,6 +55,7 @@ namespace network_info
 	class CDataPoint
 	{
 		std::string m_sId;
+		bool m_bIsInput;
 		struct stDataPointAddress m_stAddress;
 		struct stPollingData m_stPollingConfig;
 		static eEndPointType getPointType(const std::string&);
@@ -64,7 +66,12 @@ namespace network_info
 		const struct stDataPointAddress& getAddress() const { return m_stAddress;}
 		const struct stPollingData& getPollingConfig() const { return m_stPollingConfig;}
 
-		static void build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint);
+		static void build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint, bool a_bDefaultRealTime);
+
+		bool isInputPoint() const
+		{
+			return m_bIsInput;
+		}
 	};
 	
 	class CDeviceInfo
@@ -85,22 +92,84 @@ namespace network_info
 		uint16_t m_ui16PortNumber;
 		unsigned int m_uiUnitID;
 	};
+
+	struct stTCPMasterInfo
+	{
+		long m_lInterframeDelay;
+		long m_lResTimeout;
+	};
+
 	struct stRTUAddrInfo
 	{
 		unsigned int m_uiSlaveId;
 	};
+
 	struct stModbusAddrInfo
 	{
-		eNetworkType a_NwType;
+		eNetworkType m_NwType;
 		struct stTCPAddrInfo m_stTCP;
 		struct stRTUAddrInfo m_stRTU;
 	};
 	
+	/**
+	 *
+	 * Class to maintain RTU network information
+	 */
+	class CRTUNetworkInfo
+	{
+		std::string m_sPortName;
+		std::string m_sParity;
+		int m_iBaudRate;
+		long m_lInterframeDelay;
+		long m_lResTimeout;
+
+	public:
+		CRTUNetworkInfo()
+		{
+			m_sPortName = "";
+			m_sParity = "";
+			m_iBaudRate = 0;
+			m_lInterframeDelay = 0;
+			m_lResTimeout = 80;
+		}
+
+		int getBaudRate() const
+		{
+			return m_iBaudRate;
+		}
+
+		const std::string& getParity() const
+		{
+			return m_sParity;
+		}
+
+		const std::string& getPortName() const
+		{
+			return m_sPortName;
+		}
+
+		static void buildRTUNwInfo(CRTUNetworkInfo &a_oNwInfo,
+				std::string a_fileName);
+
+		long getInterframeDelay() const
+		{
+			return m_lInterframeDelay;
+		}
+
+		long getResTimeout() const
+		{
+			return m_lResTimeout;
+		}
+	};
+
 	class CWellSiteDevInfo
 	{
+		mutable int32_t m_iCtx;
 		std::string m_sId;
 		struct stModbusAddrInfo m_stAddress;
+		struct stTCPMasterInfo m_stTCPMasterInfo;
 		class CDeviceInfo m_oDev;
+		class CRTUNetworkInfo m_rtuNwInfo;
 		
 		struct CDeviceInfo& getDevInfo1() {return m_oDev;}
 
@@ -110,8 +179,15 @@ namespace network_info
 		const struct stModbusAddrInfo& getAddressInfo() const {return m_stAddress;}
 		const struct CDeviceInfo& getDevInfo() const {return m_oDev;}
 
+		const CRTUNetworkInfo& getRTUNwInfo() const {return m_rtuNwInfo;}
+		const int32_t getCtxInfo() const {return m_iCtx;}
+		void setCtxInfo(int a_iCtx) const {m_iCtx = a_iCtx;}
+
 		static void build(const YAML::Node& a_oData, CWellSiteDevInfo &a_oWellSiteDevInfo);
 
+		const struct stTCPMasterInfo& getTcpMasterInfo() const {
+			return m_stTCPMasterInfo;
+		}
 	};
 	
 	class CWellSiteInfo
@@ -164,7 +240,7 @@ namespace network_info
 		bool getRTFlag() const { return m_bIsRT; }
 };
 
-	void buildNetworkInfo(bool a_bIsTCP);
+	void buildNetworkInfo(string a_strNetworkType, string DeviceListFile);
 	const std::map<std::string, CWellSiteInfo>& getWellSiteList();
 	const std::map<std::string, CUniqueDataPoint>& getUniquePointList();
 	bool validateIpAddress(const string &ipAddress);

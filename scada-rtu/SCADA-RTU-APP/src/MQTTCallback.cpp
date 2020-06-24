@@ -10,42 +10,6 @@
 #include "MQTTCallback.hpp"
 
 #include "SCADAHandler.hpp"
-#include "MQTTHandler.hpp"
-/**
- * This is a callback function which gets called when subscriber is disconnected from MQTT broker
- * @param cause :[in] cause of connection lost
- * @return None
- */
-void CSubscriberCallback::connection_lost(const std::string& cause)
-{
-	DO_LOG_ERROR("MQTT Connection lost");
-
-	if (!cause.empty())
-	{
-		DO_LOG_ERROR("MQTT Connection lost cause:  " + cause);
-	}
-}
-
-/**
- * This is a callback function which gets called when subscriber is connected with MQTT broker
- * @param cause :[in]
- * @return None
- */
-void CSubscriberCallback::connected(const std::string& cause)
-{
-	CMQTTHandler::instance().subscribeToTopics();
-}
-
-/**
- * This is a callback function which gets called when a message is arrived on subscriber
- * @param msg :[in] pointer to message arriving at subscriber
- * @return None
- */
-void CSubscriberCallback::message_arrived(mqtt::const_message_ptr msg)
-{
-	CMQTTHandler::instance().pushMsgInQ(msg);
-}
-
 /**
  * This is a callback function which gets called when subscriber fails to send/receive
  * @param tok :[in] failed message token

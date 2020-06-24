@@ -27,12 +27,13 @@ using namespace CommonUtils;
 // This is true for SPRINT 1
 #define CONFIGFILES_IN_DOCKER_VOLUME
 
-// Unnamed namespace to define globals
-namespace
+// Unnamed namespace to define globals 
+namespace  
 {
 	eNetworkType g_eNetworkType{eNetworkType::eTCP};
 	std::atomic<bool> g_bIsStarted{false};
 	std::map<std::string, CWellSiteInfo> g_mapYMLWellSite;
+	std::map<std::string, CRTUNetworkInfo> g_mapRTUNwInfo;
 	std::map<std::string, CUniqueDataPoint> g_mapUniqueDataPoint;
 	std::vector<std::string> g_sErrorYMLs;
 	unsigned short g_usTotalCnt{0};
@@ -65,7 +66,7 @@ namespace
 		DO_LOG_DEBUG("End");
 	}
 
-
+	
 	#ifdef CONFIGFILES_IN_DOCKER_VOLUME
 	std::vector<std::string> g_sWellSiteFileList;
 
@@ -74,18 +75,12 @@ namespace
 	 * @return 	true : on success,
 	 * 			false : on error
 	 */
-	bool _getWellSiteList()
+	bool _getWellSiteList(string a_strSiteListFileName)
 	{
 		DO_LOG_DEBUG(" Start: Reading site_list.yaml");
 		try
 		{
-			string strDeviceListFile = CCommon::getInstance().getSiteListFileName();
-			if(strDeviceListFile.empty())
-			{
-				DO_LOG_ERROR("Device list file is empty");
-				return false;
-			}
-			YAML::Node Node = CommonUtils::loadYamlFile(strDeviceListFile);
+			YAML::Node Node = CommonUtils::loadYamlFile(a_strSiteListFileName);
 			CommonUtils::convertYamlToList(Node, g_sWellSiteFileList);
 		}
 		catch(YAML::Exception &e)
@@ -151,10 +146,18 @@ int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 	DO_LOG_DEBUG(" Start: To add DataPoint - " +
 				a_oDevice.getID());
 	// Check network type
-	if (g_eNetworkType != a_oDevice.getAddressInfo().a_NwType)
+	if (g_eNetworkType != a_oDevice.getAddressInfo().m_NwType)
 	{
 		// Device type and network type are not matching.
-		return -2;
+
+		if(g_eNetworkType == eNetworkType::eALL)
+		{
+			//
+		}
+		else
+		{
+			return -2;
+		}
 	}
 	
 	// Search whether given device name is already present
@@ -255,6 +258,60 @@ bool network_info::validateIpAddress(const string &ipAddress)
 }
 
 /**
+ * build network information for RTU network
+ * SAMPLE YML to read is mentioned in device group file
+ * E.g baud rate, port, parity
+ * @param a_oData			:[in] YAML data node to read from
+ * @param a_oNwInfo:[in] Data structure to be updated
+ */
+void CRTUNetworkInfo::buildRTUNwInfo(CRTUNetworkInfo &a_oNwInfo,
+		std::string a_fileName)
+{
+	try
+	{
+		YAML::Node node;
+		std::map<std::string, CRTUNetworkInfo>::iterator itr =
+				g_mapRTUNwInfo.find(a_fileName);
+
+		if(itr != g_mapRTUNwInfo.end())
+		{
+			// element already exist in map
+			a_oNwInfo = g_mapRTUNwInfo.at(a_fileName);
+		}
+		else
+		{
+			node = CommonUtils::loadYamlFile(a_fileName);
+			a_oNwInfo.m_iBaudRate = atoi(node["baudrate"].as<string>().c_str());
+			a_oNwInfo.m_sPortName = node["com_port_name"].as<std::string>();
+			a_oNwInfo.m_sParity = node["parity"].as<std::string>();
+			a_oNwInfo.m_lInterframeDelay = node["interframe_delay"].as<long>();
+			a_oNwInfo.m_lResTimeout = node["response_timeout"].as<long>();
+			g_mapRTUNwInfo.emplace(a_fileName, a_oNwInfo);
+		}
+
+		DO_LOG_INFO("RTU network info parameters...");
+		DO_LOG_INFO(" baudrate = " + to_string(a_oNwInfo.getBaudRate()));
+		DO_LOG_INFO(" com_port_name = " + a_oNwInfo.getPortName());
+		DO_LOG_INFO(" parity = " + a_oNwInfo.getParity());
+		DO_LOG_INFO(" interframe_delay = " + to_string(a_oNwInfo.getInterframeDelay()));
+		DO_LOG_INFO(" response_timeout = " + to_string(a_oNwInfo.getResTimeout()));
+
+
+		cout << "RTU network info parameters..." << endl;
+		cout << " baudrate = " + to_string(a_oNwInfo.getBaudRate()) << endl;
+		cout << " com_port_name = " + a_oNwInfo.getPortName() << endl;
+		cout << " parity = " +  a_oNwInfo.getParity() << endl;
+		cout << " interframe_delay = " +  to_string(a_oNwInfo.getInterframeDelay()) << endl;
+		cout << " response_timeout = " +  to_string(a_oNwInfo.getResTimeout()) << endl;
+
+	}
+	catch (YAML::Exception& e)
+	{
+		DO_LOG_ERROR("Incorrect configurations is given for RTU network info :: " + std::string(e.what()));
+	}
+}
+
+/**
  * build well site device info to store device specific parameters mentioned in YAML file
  * SAMPLE YML to read is PL0, PL1,..etc..
  * E.g protocol, ipaddress, port, unitid, slaveid
@@ -270,6 +327,8 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 	{
 		for (auto it : a_oData)
 		{
+			// Default value is incorrect context
+			a_oWellSiteDevInfo.setCtxInfo(-1);
 			if(it.first.as<std::string>() == "id")
 			{
 				a_oWellSiteDevInfo.m_sId = it.second.as<std::string>();
@@ -279,6 +338,23 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 				bIsIdPresent = true;
 				continue;
 			}
+
+			if(it.first.as<std::string>() == "rtu_master_network_info")
+			{
+				CRTUNetworkInfo::buildRTUNwInfo(a_oWellSiteDevInfo.m_rtuNwInfo,
+						it.second.as<std::string>());
+			}
+
+			// read tcp master info 
+			if(it.first.as<std::string>() == "tcp_master_info")
+			{
+				YAML::Node node = CommonUtils::loadYamlFile(it.second.as<std::string>());
+				a_oWellSiteDevInfo.m_stTCPMasterInfo.m_lInterframeDelay =
+						node["interframe_delay"].as<long>();
+				a_oWellSiteDevInfo.m_stTCPMasterInfo.m_lResTimeout =
+						node["response_timeout"].as<long>();
+			}
+
 			if(it.first.as<std::string>() == "protocol" && it.second.IsMap())
 			{
 				std::map<std::string, std::string > tempMap;
@@ -291,9 +367,8 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 					{
 						a_oWellSiteDevInfo.m_stAddress.m_stRTU.m_uiSlaveId = atoi(tempMap.at("slaveid").c_str());
 
-						a_oWellSiteDevInfo.m_stAddress.a_NwType = network_info::eNetworkType::eRTU;
+						a_oWellSiteDevInfo.m_stAddress.m_NwType = network_info::eNetworkType::eRTU;
 						bIsProtocolPresent = true;
-						//temp.append(tempMap.at("port").c_str());
 						DO_LOG_INFO(" : RTU protocol: ");
 					}
 					catch(exception &e)
@@ -333,7 +408,7 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 						}
 
 						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber = atoi(tempMap.at("port").c_str());
-						a_oWellSiteDevInfo.m_stAddress.a_NwType = network_info::eNetworkType::eTCP;
+						a_oWellSiteDevInfo.m_stAddress.m_NwType = network_info::eNetworkType::eTCP;
 						a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_uiUnitID = atoi(tempMap.at("unitid").c_str());
 						bIsProtocolPresent = true;
 
@@ -436,7 +511,7 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 						for (auto it1 : points)
 						{
 							CDataPoint objCDataPoint;
-							CDataPoint::build(it1, objCDataPoint);
+							CDataPoint::build(it1, objCDataPoint, globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
 							if(0 == a_oCDeviceInfo.addDataPoint(objCDataPoint))
 							{
 								DO_LOG_INFO("Added point with id: " +
@@ -544,7 +619,7 @@ bool network_info:: isNumber(string s)
  * @param a_oData		:[in] YAML node to read from
  * @param a_oCDataPoint	:[in] data structure to store read values
  */
-void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint)
+void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint, bool a_bDefaultRealTime)
 {
 	DO_LOG_DEBUG(" Start");
 	// First check optional parameters
@@ -556,7 +631,7 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 	{
 		/* if realtime flag is missing in data points yml file then default value will be used
 		 from global configuration */
-		a_oCDataPoint.m_stPollingConfig.m_bIsRealTime = false;
+		a_oCDataPoint.m_stPollingConfig.m_bIsRealTime = a_bDefaultRealTime;
 	}
 	else
 	{
@@ -580,6 +655,15 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 	else
 	{
 		a_oCDataPoint.m_stAddress.m_sDataType =  a_oData["attributes"]["datatype"].as<std::string>();
+	}
+
+	if(0 != globalConfig::validateParam(a_oData["attributes"], "isinput", globalConfig::DT_BOOL))
+	{
+		a_oCDataPoint.m_bIsInput = true;
+	}
+	else
+	{
+		a_oCDataPoint.m_bIsInput =  a_oData["attributes"]["isinput"].as<bool>();
 	}
 
 	// Check mandatory parameters
@@ -664,12 +748,10 @@ void printWellSite(CWellSiteInfo a_oWellSite)
  * Build network info based on network type
  * if network type is TCP then this function will read all TCP devices and store it
  * in associated data structures and vice versa for RTU
- * @param a_bIsTCP	:[in] In case of TCP container this flag will be set to true and false in case of RTU
  */
-void network_info::buildNetworkInfo(bool a_bIsTCP)
+void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteListFileName)
 {
-	DO_LOG_DEBUG(" Start: is it TCP ? " +
-				std::to_string(a_bIsTCP));
+	DO_LOG_DEBUG(" Start");
 
 	// Check if this function is already called once. If yes, then exit
 	if(true == g_bIsStarted)
@@ -683,13 +765,24 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 	g_bIsStarted = true;
 	
 	// Set the network type TCP or RTU
-	if(false == a_bIsTCP)
+	transform(a_strNetworkType.begin(), a_strNetworkType.end(), a_strNetworkType.begin(), ::toupper);
+
+	if(a_strNetworkType == "TCP")
+	{
+		g_eNetworkType = eNetworkType::eTCP;
+	}
+	else if(a_strNetworkType == "RTU")
 	{
 		g_eNetworkType = eNetworkType::eRTU;
 	}
+	else if(a_strNetworkType == "ALL")
+	{
+		g_eNetworkType = eNetworkType::eALL;
+	}
 	else
 	{
-		g_eNetworkType = eNetworkType::eTCP;
+		DO_LOG_ERROR("Invalid parameter set for Network Type");
+		return;
 	}
 
 	std::cout << "Network set as: " << (int)g_eNetworkType << std::endl;
@@ -702,7 +795,7 @@ void network_info::buildNetworkInfo(bool a_bIsTCP)
 	//DO_LOG_INFO(" Config files are kept in a docker volume");
 	
 	// get list of well sites
-	if(false == _getWellSiteList())
+	if(false == _getWellSiteList(a_strSiteListFileName))
 	{
 		DO_LOG_ERROR(" Site-list could not be obtained");
 		return;

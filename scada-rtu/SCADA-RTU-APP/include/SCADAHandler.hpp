@@ -14,7 +14,6 @@
 #include <mqtt/async_client.h>
 #include "MQTTCallback.hpp"
 #include "Common.hpp"
-#include "QueueMgr.hpp"
 #include "Logger.hpp"
 #include "Publisher.hpp"
 #include "NetworkInfo.hpp"
@@ -30,6 +29,7 @@ extern "C"
 //
 
 using namespace std;
+using namespace network_info;
 
 // Declarations used for MQTT
 #define SUBSCRIBERID								"SCADA_SUBSCRIBER"
@@ -46,6 +46,8 @@ class CSCADAHandler
 	CScadaCallback m_scadaSubscriberCB;
 	CMQTTActionListener m_listener;
 
+	std::map<string, std::map<string, CUniqueDataPoint>> m_deviceDataPoints;
+
 	// Default constructor
 	CSCADAHandler(std::string strPlBusUrl, int iQOS);
 
@@ -60,10 +62,15 @@ class CSCADAHandler
 	void prepareNodeDeathMsg();
 	void publish_births();
 	void publish_node_birth();
+	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, CUniqueDataPoint>& a_dataPoints, string& a_siteName);
+	void publish_device_birth(string a_deviceName, std::map<string, CUniqueDataPoint>& a_dataPointInfo);
+	bool initDataPoints();
+	void populateDataPoints();
+
 public:
 
 	~CSCADAHandler();
-	static CSCADAHandler& instance(); //function to get single instance of this class
+	static CSCADAHandler& instance();
 	void cleanup();
 };
 

@@ -22,13 +22,14 @@ The directory comprises of following:
 1. EdgeInsightsSoftware-v2.2-PV version of EIS should be available on deploy machine before deployment. 
 2. Copy files from "Release" diectory (e.g. all shell scripts, tar.gz file, etc.) into "EdgeInsightsSoftware-v2.2-PV/IEdgeInsights" directory. Please ensure that shell scripts have "execute" permission (sudo chmod +x <script name>).
 3. Open a terminal and go to EdgeInsightsSoftware-v2.2-PV/IEdgeInsights directory.
-4. Open docker-compose.yml file and go to section "scada-rtu". Then uncomment the entire "scada-rtu" section ( line numbers 321 to 361), and also uncomment certicates for scada-rtu (line numbers 396 to 399). Then save the file.
-5. Open docker-compose_unit_test.yml file and go to section "scada-rtu-test". Then uncomment entire section (line numbers 245 to 279).
+4. Open docker-compose.yml file and go to section "scada-rtu". Then uncomment the entire "scada-rtu" section ( line numbers 328 to 370), and also uncomment certicates for scada-rtu (line numbers 405 to 408). Then save the file.
+5. Open docker-compose_unit_test.yml file and go to section "scada-rtu-test". Then uncomment entire section (line numbers 245 to 282).
 5. Run below commands on terminal to deploy all UWC containers.
 a)Provision for EIS, run below command:
 sudo ./02_provisionEIS.sh
 b)Then, deploy all the containers:
 sudo ./03_DeployEIS.sh
+
 ```
 
 ## Verify container status
@@ -50,6 +51,15 @@ cd EIS..../docker_setup
 export PWD=$(pwd)
 docker start scada-rtu  - to start the scada-rtu container
 docker stop scada-rtu  - to stop the scada-rtu container
+```
+
+## How to capture Scada-rtu messages
+```
+The scada-rtu uses non-secure mode only to publish message on MQTT broker. So, to capture the messages user needs to configure parameter "MQTT_URL" in docker-compose.yml file at line no. 355. User can assign any non-secure MQTT broker URL to this parameter.
+e.g.
+   MQTT_URL: "tcp://127.0.0.1:1883"
+
+To set scada-rtu container in unit testing mode, please assign MQTT broker URL in same way as above line number 271.
 ```
 
 ## SparkPlug Messages 
@@ -76,7 +86,35 @@ Message:
   "uuid": "SCADA-RTU"
 }
 
-2. NDEATH Message
+2. DBIRTH Message
+DBIRTH is device birth message. This message gets published after NBIRTH message.
+The message publishes information about a device along with its data-points, in SparkPlug encoded format.
+In topic name, mac address appears as edge-node-id e.g. RBOX510-00. Instead of 00, actual MAC address gets added. In
+case if no MAC address is found, 00 gets added.
+ 
+Following is sample contents in simplified JSON format:
+Topic: spBv1.0/UWC nodes/DBIRTH/SCADA_RTU/RBOX510-00/flowmeter/PL0
+Message:
+{
+      "name": "Inputs/DP2",
+      "dataType": "String",
+      "properties": {
+        "Site info name": {
+          "type": "String",
+          "value": "PL0"
+        },
+        "Pollinterval": {
+          "type": "UInt32",
+          "value": 1000
+        },
+        "Realtime": {
+          "type": "Boolean",
+          "value": false
+        }
+      }
+}
+
+3. NDEATH Message
 
 NDEATH is Node-Death.
 Whenever SCADA-RTU module’s connection with MQTT broker breaks, the MQTT broker publishes this message. The message is published in SparkPlug encoded format.

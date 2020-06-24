@@ -1,0 +1,10 @@
+---
+file:
+  version: "1.0.0"
+  author: "Intel"
+  date: "Sun Sep 1 13:34:13 PDT 2019"
+  description: "Common device group file for TCP and RTU devices"
+devicegrouplist: 
+- "Device_group1.yml"
+- "Device_group2.yml"
+- "Device_group3.yml"

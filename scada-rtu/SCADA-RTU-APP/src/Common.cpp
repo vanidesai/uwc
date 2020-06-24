@@ -9,7 +9,10 @@
 ************************************************************************************/
 
 #include "Common.hpp"
-
+#include <iterator>
+#include <iostream>
+#include <fstream>
+#include <bits/stdc++.h>
 /**
  * Constructor initializes CCommon instance and retrieves common environment variables
  * @param None
@@ -18,11 +21,57 @@
  */
 CCommon::CCommon()
 {
+	setScadaRTUIds();
 
 	if(false == readCommonEnvVariables())
 	{
 		std::cout << "Error while reading common environment variables, exiting application" << std::endl;
 		exit(-1);
+	}
+}
+
+void CCommon::setScadaRTUIds()
+{
+	// load global configuration for container real-time setting
+	bool bRetVal = globalConfig::loadGlobalConfigurations();
+	if(!bRetVal)
+	{
+		DO_LOG_INFO("Global configuration is set with some default parameters");
+		cout << "\nGlobal configuration is set with some default parameters\n\n";
+	}
+	else
+	{
+		DO_LOG_INFO("Global configuration is set successfully");
+		cout << "\nGlobal configuration for container real-time is set successfully\n\n";
+	}
+
+	m_strGroupId = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getGroupId();
+	if(m_strGroupId.empty())
+	{
+		std::cout << "Group id for scada-rtu is not set, exiting application" << std::endl;
+		exit(-1);
+	}
+
+	const stEdgeNodeId& stEdgeNodeId = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getObjEdgeNodeId();
+	if(stEdgeNodeId.m_stGenUniquename == true)
+	{
+		if(stEdgeNodeId.m_stNodeName.empty())
+		{
+			std::cout << "Edge node id name is not set for scada-rtu, exiting application" << std::endl;
+			exit(-1);
+		}
+		//generate name with MAC address
+		m_strEdgeNodeID.assign(stEdgeNodeId.m_stNodeName);
+		m_strEdgeNodeID.append("-");
+
+		string strInterfaceName = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getInterfaceName();
+		if(strInterfaceName.empty())
+		{
+			std::cout << "Edge node id name is not set for scada-rtu, exiting application" << std::endl;
+			exit(-1);
+		}
+
+		m_strEdgeNodeID.append(getMACAddress(strInterfaceName));
 	}
 }
 
@@ -69,7 +118,8 @@ bool CCommon::readCommonEnvVariables()
 	{
 		bool bRetVal = false;
 
-		std::list<std::string> topicList{"AppName", "MQTT_URL", "DEV_MODE"};
+		std::list<std::string> topicList{"AppName", "MQTT_URL", "DEV_MODE",
+			"NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME"};
 
 		std::map <std::string, std::string> envTopics;
 
@@ -89,6 +139,8 @@ bool CCommon::readCommonEnvVariables()
 
 		setStrAppName(envTopics.at("AppName"));
 		setStrMqttURL(envTopics.at("MQTT_URL"));
+		setNetworkType(envTopics.at("NETWORK_TYPE"));
+		setSiteListFileName(envTopics.at("DEVICES_GROUP_LIST_FILE_NAME"));
 
 		string devMode = envTopics.at("DEV_MODE");
 		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
@@ -122,6 +174,28 @@ bool CCommon::readCommonEnvVariables()
 	return true;
 }
 
+/**
+ * Get MAC address of machine
+ * @param : [in] Interface name of which to find MAC address
+ * @return MAC address in string format
+ */
+string CCommon::getMACAddress(const string& a_strInterfaceName)
+{
+	ifstream iface("/sys/class/net/" + a_strInterfaceName + "/address");
+
+	string strMAC((istreambuf_iterator<char>(iface)), istreambuf_iterator<char>());
+
+	if (strMAC.length() > 0)
+	{
+		string hex = regex_replace(strMAC, std::regex("\n"), "");
+		//string hex1 = regex_replace(hex, std::regex("\n"), "");
+		return hex;
+	}
+	else
+	{
+		return "00";
+	}
+}
 /**
  * Destructor
  */

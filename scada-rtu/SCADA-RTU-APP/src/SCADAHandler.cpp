@@ -36,6 +36,9 @@ CSCADAHandler::CSCADAHandler(std::string strMqttURL, int iQOS) :
 
 		connectSubscriber();
 
+		//get values of all the data points and store in data points repository
+		initDataPoints();
+
         // Publish the NBIRTH and DBIRTH Sparkplug messages (Birth Certificates)
         publish_births();
 
@@ -61,7 +64,7 @@ void CSCADAHandler::prepareNodeDeathMsg()
 	get_next_payload(&ndeath_payload);
 
 	uint64_t badSeq_value = 0;
-	add_simple_metric(&ndeath_payload, "bdSeq", true, 10,
+	add_simple_metric(&ndeath_payload, "bdSeq", false, 0,
 			METRIC_DATA_TYPE_UINT64, false, false, false, &badSeq_value, sizeof(badSeq_value));
 
 	size_t buffer_length = 1024;
@@ -102,6 +105,104 @@ void CSCADAHandler::publish_births()
 
 	// Publish the NBIRTH
 	publish_node_birth();
+
+	// Publish the DBIRTH
+	for(auto &itrDevice : m_deviceDataPoints)
+	{
+		DO_LOG_DEBUG("Device : " + itrDevice.first);
+
+		publish_device_birth(itrDevice.first, itrDevice.second);
+	}
+}
+
+/**
+ * Prepare device birth messages to be published on SCADA system
+ * @param dbirth_payload :[out] reference of spark plug message payload in which to store birth messages
+ * @param a_dataPoints :[in] map of datapoints corresponding to the device
+ * @return true/false depending on the success/failure
+ */
+bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, CUniqueDataPoint>& a_dataPoints, string& a_siteName)
+{
+	try
+	{
+		for(auto &dataPoint : a_dataPoints)
+		{
+			a_siteName = dataPoint.second.getWellSite().getID();
+
+			string strDeviceName = "";
+			if(dataPoint.second.getDataPoint().isInputPoint() == true)//data point is input
+			{
+				strDeviceName.assign("Inputs/");
+			}
+			else
+			{
+				strDeviceName.assign("Outputs/");
+			}
+			strDeviceName.append(dataPoint.second.getDataPoint().getID());
+
+			org_eclipse_tahu_protobuf_Payload_Metric metric = org_eclipse_tahu_protobuf_Payload_Metric_init_default;
+			init_metric(&metric, strDeviceName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, true, "", 0);
+
+			org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
+
+			uint32_t iPollingInterval = dataPoint.second.getDataPoint().getPollingConfig().m_uiPollFreq;
+			add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, false, &iPollingInterval, sizeof(iPollingInterval));
+
+			bool bVal = dataPoint.second.getDataPoint().getPollingConfig().m_bIsRealTime;
+			add_property_to_set(&prop, "Realtime", PROPERTY_DATA_TYPE_BOOLEAN, false, &bVal, sizeof(bVal));
+
+			add_propertyset_to_metric(&metric, &prop);
+			add_metric_to_payload(&dbirth_payload, &metric);
+		}
+
+		add_simple_metric(&dbirth_payload, "Properties/Site info name", false, 0,
+				METRIC_DATA_TYPE_STRING, false, false, false, a_siteName.c_str(), a_siteName.size()+1);
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		std::cout << "Exception : " << ex.what() << endl;
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Publish device birth message on SCADA
+ * @param a_deviceName : [in] device for which to publish birth message
+ * @param a_dataPointInfo : [in] device info
+ * @return none
+ */
+void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, CUniqueDataPoint>& a_dataPointInfo)
+{
+	// Create the DBIRTH payload
+	org_eclipse_tahu_protobuf_Payload dbirth_payload;
+	get_next_payload(&dbirth_payload);
+
+	try
+	{
+		string strSiteName = "";
+
+		if(a_dataPointInfo.empty())
+		{
+			DO_LOG_ERROR("No data points are available to publish DBIRTH message");
+			return;
+		}
+
+		if(true == prepareDBirthMessage(dbirth_payload, a_dataPointInfo, strSiteName))
+		{
+			string strDBirthTopic = CCommon::getInstance().getDBirthTopic() + a_deviceName + "/" + strSiteName;
+
+			CPublisher::instance().publishSparkplugMsg(dbirth_payload, strDBirthTopic);
+		}
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		std::cout << " Exception : " << endl;
+	}
+	// Free the memory
+	free_payload(&dbirth_payload);
 }
 
 /**
@@ -190,9 +291,6 @@ CSCADAHandler::~CSCADAHandler()
 void CSCADAHandler::publish_node_birth()
 {
 	// Create the NBIRTH payload
-	org_eclipse_tahu_protobuf_Payload nbirth_payload;
-	get_next_payload(&nbirth_payload);
-
 	string strAppName = CCommon::getInstance().getStrAppName();
 	if(strAppName.empty())
 	{
@@ -200,14 +298,72 @@ void CSCADAHandler::publish_node_birth()
 		return;
 	}
 
+	org_eclipse_tahu_protobuf_Payload nbirth_payload;
+	get_next_payload(&nbirth_payload);
+
 	nbirth_payload.uuid = (char*) strAppName.c_str();
 
 	// Add getNBirthTopicsome device metrics
-	add_simple_metric(&nbirth_payload, "Name", true, 10, METRIC_DATA_TYPE_STRING, false, false, false, strAppName.c_str(), strAppName.length());
+	add_simple_metric(&nbirth_payload, "Name", false, 0,
+			METRIC_DATA_TYPE_STRING, false, false, false,
+			CCommon::getInstance().getEdgeNodeID().c_str(), CCommon::getInstance().getEdgeNodeID().size()+1);
 
 	std::cout << "Publishing nbirth message ..." << endl;
 	CPublisher::instance().publishSparkplugMsg(nbirth_payload, CCommon::getInstance().getNBirthTopic());
 
 	nbirth_payload.uuid = NULL;
 	free_payload(&nbirth_payload);
+}
+
+/**
+ * Populate data points from all the devices from all the sites
+ * and store in data points repository
+ * @param none
+ * @return none
+ */
+void CSCADAHandler::populateDataPoints()
+{
+	using network_info::CUniqueDataPoint;
+
+	const std::map<std::string, CUniqueDataPoint> &mapUniquePoint =
+			network_info::getUniquePointList();
+
+	for (auto &pt : mapUniquePoint)
+	{
+		string strDeviceName = pt.second.getWellSiteDev().getID();
+		string strDataPointName = pt.second.getID();
+
+		m_deviceDataPoints[strDeviceName].insert(std::make_pair(strDataPointName, pt.second));
+	}
+}
+
+/**
+ * Initialize data points repository reading data points
+ * from yaml file
+ * @param none
+ * @return true/false depending on success/failure
+ */
+bool CSCADAHandler::initDataPoints()
+{
+	try
+	{
+		string strNetWorkType = CCommon::getInstance().getNetworkType();
+		string strSiteListFileName = CCommon::getInstance().getSiteListFileName();
+
+		if(strNetWorkType.empty() || strSiteListFileName.empty())
+		{
+			DO_LOG_ERROR("Network type or device list file name is not present");
+			return false;
+		}
+
+		network_info::buildNetworkInfo(strNetWorkType, strSiteListFileName);
+
+		//fill up data points repository
+		populateDataPoints();
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+	}
+	return true;
 }

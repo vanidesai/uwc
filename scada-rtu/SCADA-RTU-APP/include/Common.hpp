@@ -14,11 +14,13 @@
 #include <string>
 #include <map>
 #include <algorithm>
+#include "Logger.hpp"
 #include "ConfigManager.hpp"
 
 using namespace std;
+using namespace globalConfig;
 
-#define SPARKPLUG_TOPIC "spBv1.0/Sparkplug B Devices"
+#define SPARKPLUG_TOPIC "spBv1.0/"
 
 class CCommon
 {
@@ -28,10 +30,17 @@ private:
 	CCommon(const CCommon & obj){}
 	CCommon& operator=(CCommon const&);
 
-	std::string m_strAppName;
-	std::string m_strMqttURL;
-	std::string m_siteListFileName;
+	string m_strAppName;
+	string m_strMqttURL;
+	string m_siteListFileName;
+	string m_strNodeConfPath;
+	string m_strNetworkType;
+	string m_strGroupId;
+	string m_strEdgeNodeID;
 	bool m_devMode;
+
+	void setScadaRTUIds();
+	string getMACAddress(const string& a_strInterfaceName);
 
 public:
 	~CCommon();
@@ -136,7 +145,8 @@ public:
 	std::string getDeathTopic()
 	{
 		std::string topic(SPARKPLUG_TOPIC);
-		topic.append("/NDEATH/" + getStrAppName());
+		topic.append(m_strGroupId);
+		topic.append("/NDEATH/" + getEdgeNodeID());
 
 		return topic;
 	}
@@ -149,9 +159,51 @@ public:
 	std::string getNBirthTopic()
 	{
 		std::string topic(SPARKPLUG_TOPIC);
-		topic.append("/NBIRTH/" + getStrAppName());
+		topic.append(m_strGroupId);
+		topic.append("/NBIRTH/" + getEdgeNodeID());
 
 		return topic;
+	}
+
+	/**
+	 * Return topic in sparkplug format to send as device birth
+	 * to SCADA
+	 * @return dbirth topic in string
+	 */
+	std::string getDBirthTopic()
+	{
+		std::string topic(SPARKPLUG_TOPIC);
+		topic.append(m_strGroupId);
+		topic.append("/DBIRTH/" + getEdgeNodeID() + "/");
+
+		return topic;
+	}
+
+	/**
+	 * Get edge node id of scada-rtu
+	 * @return edge node id of scada-rtu in string
+	 */
+	std::string getEdgeNodeID()
+	{
+		return m_strEdgeNodeID;
+	}
+
+	/**
+	 * get network type
+	 * @return network type in string (ALL, TCP or RTU)
+	 */
+	const std::string& getNetworkType() const
+	{
+		return m_strNetworkType;
+	}
+
+	/**
+	 * Set network type
+	 * @param strNodeConfPath	:[in] node configuration file path to set
+	 */
+	void setNetworkType(const std::string &strNetworkType)
+	{
+		m_strNetworkType = strNetworkType;
 	}
 };
 #endif
