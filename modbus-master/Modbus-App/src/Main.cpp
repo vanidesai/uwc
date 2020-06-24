@@ -36,7 +36,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.5.2"
+#define APP_VERSION "0.0.5.3"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
@@ -296,38 +296,39 @@ void setDevContexts()
 				eParity parity = eNone;
 				const string sParity = dev.getRTUNwInfo().getParity();
 				int iRTUCTX;
-				if(!(sParity.empty() && dev.getRTUNwInfo().getPortName().empty()) && dev.getRTUNwInfo().getBaudRate() > 0)
+				if(!(sParity.empty() && dev.getRTUNwInfo().getPortName().empty()) && dev.getRTUNwInfo().getBaudRate() >= 0)
 				{
-					if(sParity == "N" || sParity == "n" ||
+					if(!(sParity == "N" || sParity == "n" ||
 							sParity == "E" || sParity == "e" ||
-							sParity == "O" || sParity == "o")
-					{
-						parity = (sParity == "N" || sParity == "n") ? eNone : (sParity == "O" || sParity == "o") ? eOdd : eEven;
-					}
-					else
+							sParity == "O" || sParity == "o"))
 					{
 						DO_LOG_ERROR("Set Parity is wrong for RTU. Set correct parity N/E/O");
 						std::cout << "Set Parity \"" << sParity << "\" is wrong for RTU. Set correct parity N/E/O" << endl;
-						exit(1);
 					}
-					stCtxInfo objCtxInfo{0};
-					objCtxInfo.m_eParity = parity;
-					objCtxInfo.m_lInterframeDelay = dev.getRTUNwInfo().getInterframeDelay();
-					objCtxInfo.m_lRespTimeout = dev.getRTUNwInfo().getResTimeout();
-					objCtxInfo.m_u32baudrate = dev.getRTUNwInfo().getBaudRate();
-					objCtxInfo.m_u8PortName = (uint8_t*)((dev.getRTUNwInfo().getPortName()).c_str());
-
-					eStackErrorCode retValue = getRTUCtx(&iRTUCTX, &objCtxInfo);
-
-					if(STACK_NO_ERROR != retValue)
+					else
 					{
-						std::cout << "RTU: Unable to create context. Error: " << retValue << std::endl;
-						DO_LOG_ERROR("RTU: Unable to create context. Error: " + to_string(retValue));
+						parity = (sParity == "N" || sParity == "n") ? eNone : (sParity == "O" || sParity == "o") ? eOdd : eEven;
+						
+						stCtxInfo objCtxInfo{0};
+						objCtxInfo.m_eParity = parity;
+						objCtxInfo.m_lInterframeDelay = dev.getRTUNwInfo().getInterframeDelay();
+						objCtxInfo.m_lRespTimeout = dev.getRTUNwInfo().getResTimeout();
+						objCtxInfo.m_u32baudrate = dev.getRTUNwInfo().getBaudRate();
+						objCtxInfo.m_u8PortName = (uint8_t*)((dev.getRTUNwInfo().getPortName()).c_str());
 
-						return;
+						eStackErrorCode retValue = getRTUCtx(&iRTUCTX, &objCtxInfo);
+
+						if(STACK_NO_ERROR != retValue)
+						{
+							std::cout << "RTU: Unable to create context. Error: " << retValue << std::endl;
+							DO_LOG_ERROR("RTU: Unable to create context. Error: " + to_string(retValue));
+						}
+						else
+						{
+							dev.setCtxInfo(iRTUCTX);
+							DO_LOG_INFO(dev.getID() + ": Context is set");
+						}
 					}
-					dev.setCtxInfo(iRTUCTX);
-					DO_LOG_INFO(dev.getID() + ": Context is set");
 				}
 				else
 				{

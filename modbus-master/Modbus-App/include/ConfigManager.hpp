@@ -17,13 +17,16 @@
 #include <eis/config_manager/env_config.h>
 #include <eis/config_manager/config_manager.h>
 #include <iostream>
+#ifndef SCADA_RTU
 #include "PublishJson.hpp"
+#endif
 #include <yaml-cpp/yaml.h>
 
 #define DIR_PATH "/config"
 #define GLOBAL_CONFIG_FILE_PATH "/opt/intel/eis/uwc_data/common_config/Global_Config.yml"
 #define handle_error_en(en, msg) do { errno = en; perror(msg); } while (0)
 
+#ifndef SCADA_RTU
 class CfgManager {
 public:
 
@@ -83,6 +86,7 @@ private:
      */
 	CfgManager& operator=(CfgManager const&);
 };
+#endif
 
 namespace globalConfig
 {
@@ -92,6 +96,9 @@ namespace globalConfig
 #define DEFAULT_REALTIME false
 #define DEFAULT_RETRIES 0
 #define DEFAULT_QOS 0
+#define DEFAULT_GRP_ID "UWC Nodes"
+#define DEFAULT_NODE_NAME "SCADA RTU"
+#define DEFAULT_INTERFACE_NAME "eth0"
 
 /**
  * Enum of operation types and hierarchy
@@ -101,6 +108,7 @@ enum eOperationType
 	POLLING,       //!< POLLING
 	ON_DEMAND_READ,//!< ON_DEMAND_READ
 	ON_DEMAND_WRITE,//!< ON_DEMAND_WRITE
+	SPARKPLUG_OPS,	// Sparkplug operation
 	UNKNOWN_OPERATION
 };
 
@@ -132,6 +140,52 @@ enum eDataType
 	DT_UNSIGNED_INT,//!< DT_UNSIGNED_INT
 	DT_STRING,      //!< DT_STRING
 	DT_MAP          //!< DT_MAP
+};
+
+// structure used to store edge Node ID for scada RTU
+struct stEdgeNodeId
+{
+	std::string m_stNodeName;
+	bool m_stGenUniquename;
+};
+
+/**
+ * Class holds information about sparkplug operation
+ */
+class CSparkplugData
+{
+public:
+
+	// default constructor
+	CSparkplugData()
+	{
+		m_sGroupId = "";
+		m_sInterfaceName = "";
+		m_objEdgeNodeId = {};
+	}
+
+	static void buildSparkPlugInfo(const YAML::Node& a_baseNode,
+			CSparkplugData& a_refOpration);
+
+	const std::string& getGroupId() const
+	{
+		return m_sGroupId;
+	}
+
+	const struct stEdgeNodeId& getObjEdgeNodeId() const
+	{
+		return m_objEdgeNodeId;
+	}
+
+	const std::string& getInterfaceName() const
+	{
+		return m_sInterfaceName;
+	}
+
+private:
+	std::string m_sGroupId;
+	std::string m_sInterfaceName;
+	struct stEdgeNodeId m_objEdgeNodeId;
 };
 
 /**
@@ -264,6 +318,7 @@ class CGlobalConfig
 	COperationInfo m_OpPollingConfig;
 	COperationInfo m_OpOnDemandReadConfig;
 	COperationInfo m_OpOnDemandWriteConfig;
+	CSparkplugData m_SparkPlugInfo;
 
 	// Private constructor so that no objects can be created.
 	CGlobalConfig(){};
@@ -302,6 +357,15 @@ public:
 	COperationInfo& getOpOnDemandWriteConfig()
 	{
 		return m_OpOnDemandWriteConfig;
+	} 
+
+	/**
+	 * Get configuration of SparkPlug operation
+	 * @return reference to instance of SparkPlug operation class
+	 */
+	CSparkplugData& getSparkPlugInfo()
+	{
+		return m_SparkPlugInfo;
 	}
 };
 

@@ -1383,7 +1383,7 @@ void CRequestInitiator::initiateRequest(struct timespec &a_stPollTimestamp, std:
 			// Set data for this polling request
 			objReqData.setDataForNewReq(m_u16TxId, a_stPollTimestamp);
 
-			DO_LOG_INFO("Trying to send request for - Point: " + 
+			DO_LOG_DEBUG("Trying to send request for - Point: " + 
 						objReqData.getDataPoint().getID() +
 						", with TxID: " + to_string(m_u16TxId));
 
@@ -2436,12 +2436,6 @@ CRefDataForPolling::CRefDataForPolling(const CUniqueDataPoint &a_objDataPoint, u
 #ifdef MODBUS_STACK_TCPIP_ENABLED
 	// fill the unit ID
 	m_stMBusReq.m_u8DevId = m_objDataPoint.getWellSiteDev().getAddressInfo().m_stTCP.m_uiUnitID;
-	std::string sIPAddr{m_objDataPoint.getWellSiteDev().getAddressInfo().m_stTCP.m_sIPAddress};
-
-	CommonUtils::ConvertIPStringToCharArray(sIPAddr,m_stMBusReq.m_u8IpAddr);
-
-	/// fill tcp port
-	m_stMBusReq.m_u16Port = m_objDataPoint.getWellSiteDev().getAddressInfo().m_stTCP.m_ui16PortNumber;
 
 #else
 	m_stMBusReq.m_u8DevId = m_objDataPoint.getWellSiteDev().getAddressInfo().m_stRTU.m_uiSlaveId;

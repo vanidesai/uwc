@@ -11,6 +11,7 @@
 #include "ConfigManager.hpp"
 #include "Logger.hpp"
 
+#ifndef SCADA_RTU
 /** Constructor
 */
 CfgManager:: CfgManager()
@@ -61,6 +62,7 @@ bool CfgManager::IsClientCreated()
 	bool isClientCreated = (getConfigClient() !=NULL && getEnvClient() !=NULL)?true:false;
 	return isClientCreated;
 }
+#endif
 
 /** Returns the single instance of this class
  *
@@ -214,9 +216,17 @@ void globalConfig::setDefaultConfig(const enum eOperationType a_eOpType)
 {
 	/// set to default value based on operation type
 	YAML::Node defaultNode;
-	COperationInfo::buildOperationInfo(defaultNode,
-			globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig(),
-			a_eOpType);
+	if(a_eOpType == SPARKPLUG_OPS)
+	{
+		CSparkplugData::buildSparkPlugInfo(defaultNode,
+				globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo());
+	}
+	else
+	{
+		COperationInfo::buildOperationInfo(defaultNode,
+				globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig(),
+				a_eOpType);
+	}
 }
 
 /** Function to validate key in YAML file
@@ -416,6 +426,65 @@ void globalConfig::COperationInfo::buildOperationInfo(const YAML::Node& a_baseNo
 	Obj.build(a_baseNode, a_refOpInfo.getNonRTConfig(), false);
 }
 
+/** Populate CSparkplugData data structures
+ *
+ * @param : a_baseNode [in] : YAML node to read from
+ * @param : a_refOpInfo [in] : data structure to be fill
+ * @return: Nothing
+ */
+void globalConfig::CSparkplugData::buildSparkPlugInfo(const YAML::Node& a_baseNode,
+			CSparkplugData& a_refOpration)
+{
+
+	if (validateParam(a_baseNode, "group_id", DT_STRING) != 0)
+	{
+		a_refOpration.m_sGroupId = DEFAULT_GRP_ID;
+	}
+	else
+	{
+		a_refOpration.m_sGroupId = a_baseNode["group_id"].as<string>();
+	}
+
+	if (validateParam(a_baseNode, "interface_name", DT_STRING) != 0)
+	{
+		a_refOpration.m_sInterfaceName = DEFAULT_INTERFACE_NAME;
+	}
+	else
+	{
+		a_refOpration.m_sInterfaceName = a_baseNode["interface_name"].as<string>();
+	}
+	if (validateParam(a_baseNode["edge_node_id"], "nodeName", DT_STRING) != 0)
+	{
+		a_refOpration.m_objEdgeNodeId.m_stNodeName = DEFAULT_NODE_NAME;
+	}
+	else
+	{
+		a_refOpration.m_objEdgeNodeId.m_stNodeName =
+				a_baseNode["edge_node_id"]["nodeName"].as<string>();
+	}
+
+	if (validateParam(a_baseNode["edge_node_id"], "generateUniqueName", DT_STRING) != 0)
+	{
+		a_refOpration.m_objEdgeNodeId.m_stGenUniquename = true;
+	}
+	else
+	{
+		a_refOpration.m_objEdgeNodeId.m_stGenUniquename =
+				a_baseNode["edge_node_id"]["generateUniqueName"].as<bool>();
+	}
+
+	cout << "	group_id : " << a_refOpration.getGroupId() << endl;
+	DO_LOG_INFO("	group_id : " + a_refOpration.getGroupId());
+	cout << "	edge_node_id : " << endl;
+	DO_LOG_INFO("	edge_node_id : ");
+	cout << "		nodeName : " << a_refOpration.getObjEdgeNodeId().m_stNodeName << endl;
+	DO_LOG_INFO("		nodeName : " + a_refOpration.getObjEdgeNodeId().m_stNodeName);
+	cout << "		generateUniqueName : " << a_refOpration.getObjEdgeNodeId().m_stGenUniquename << endl;
+	DO_LOG_INFO("		generateUniqueName : " + to_string(a_refOpration.getObjEdgeNodeId().m_stGenUniquename));
+	cout << "	interface_name : " << a_refOpration.getInterfaceName() << endl;
+	DO_LOG_INFO("	interface_name : " + a_refOpration.getInterfaceName());
+
+}
 
 /** Read global configurations from YAML file (Global_Config.yml)
  *  global configuration is available in common_config dir from docker volume
@@ -434,6 +503,8 @@ bool globalConfig::loadGlobalConfigurations()
 	bool isPollingExist = false;
 	bool isOdReadExist = false;
 	bool isOdWriteExist = false;
+	bool isSparkPlugData = false;
+
 
 	try
 	{
@@ -485,6 +556,16 @@ bool globalConfig::loadGlobalConfigurations()
 						isOdWriteExist= true;
 						continue;
 					}
+					else if (key["SparkPlug_Operation"])
+					{
+						node = key["SparkPlug_Operation"];
+						cout << "For SparkPlug_Operation: >>>\n";
+						DO_LOG_INFO("For SparkPlug_Operation: >>>");
+						CSparkplugData::buildSparkPlugInfo(node,
+								globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo());
+						isSparkPlugData= true;
+						continue;
+					}
 				}
 			}
 		}
@@ -526,6 +607,15 @@ bool globalConfig::loadGlobalConfigurations()
 		cout << "Setting default config for On-Demand-Write >>>\n";
 		bRetVal = false;
 		setDefaultConfig(ON_DEMAND_WRITE);
+	}
+
+	if (!isSparkPlugData)
+	{
+		DO_LOG_ERROR("SparkPlug_Operation key is missing");
+		DO_LOG_INFO("Setting default config for SparkPlug_Operation >>>");
+		cout << "Setting default config for SparkPlug_Operation >>>\n";
+		bRetVal = false;
+		setDefaultConfig(SPARKPLUG_OPS);
 	}
 	return bRetVal;
 }

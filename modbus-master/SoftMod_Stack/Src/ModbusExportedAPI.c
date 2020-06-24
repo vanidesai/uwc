@@ -2226,6 +2226,37 @@ MODBUS_STACK_EXPORT uint8_t Modbus_Read_Device_Identification(uint8_t u8MEIType,
 	return u8ReturnType;
 }
 
+#ifndef MODBUS_STACK_TCPIP_ENABLED
+/**
+ *
+ * Description
+ * validateBaudRate function
+ * This function validate the baud rate used for RTU communication
+ *
+ * @param nBaudRate			[in] uint32_t Baud rate used for RTU communication
+ * @return bool				[out] true if success, false otherwise
+ *
+ */
+bool validateBaudRate(uint32_t nBaudRate)
+{
+	bool isValidBaudRate = false;
+
+	uint32_t arrBaudRate[] = {110,300,600,1200,2400,4800,9600,19200,38400,57600,115200,230400,460800,500000,576000,921600,1000000,1152000,1500000,2500000,3000000,3500000,4000000};
+	int len = sizeof(arrBaudRate)/sizeof(arrBaudRate[0]);
+
+	for(int index=0; index < len; ++index)
+	{
+		if(nBaudRate == arrBaudRate[index])
+		{
+			isValidBaudRate = true;
+			break;
+		}
+	}
+
+	return isValidBaudRate;
+}
+#endif
+
 /**
  *
  * Description
@@ -2257,6 +2288,11 @@ MODBUS_STACK_EXPORT eStackErrorCode getCtx(int32_t *pCtx, stCtxInfo *pCtxInfo)
 	if(nPortNameLen > MODBUS_DATA_LENGTH)
 	{
 		return STACK_ERROR_PORT_NAME_LENGTH_EXCEEDED;
+	}
+
+	if(!validateBaudRate(pCtxInfo->m_u32baudrate))
+	{
+		return STACK_ERROR_INVALID_BAUD_RATE;
 	}
 #endif
 

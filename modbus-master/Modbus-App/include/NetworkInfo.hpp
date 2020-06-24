@@ -55,6 +55,7 @@ namespace network_info
 	class CDataPoint
 	{
 		std::string m_sId;
+		bool m_bIsInput;
 		struct stDataPointAddress m_stAddress;
 		struct stPollingData m_stPollingConfig;
 		static eEndPointType getPointType(const std::string&);
@@ -66,6 +67,11 @@ namespace network_info
 		const struct stPollingData& getPollingConfig() const { return m_stPollingConfig;}
 
 		static void build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint, bool a_bDefaultRealTime);
+
+		bool isInputPoint() const
+		{
+			return m_bIsInput;
+		}
 	};
 	
 	class CDeviceInfo

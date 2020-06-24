@@ -19,7 +19,6 @@
 #include "yaml-cpp/yaml.h"
 #include "utils/YamlUtil.hpp"
 #include "ConfigManager.hpp"
-#include "PublishJson.hpp"
 
 using namespace network_info;
 using namespace CommonUtils;
@@ -656,6 +655,15 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 	else
 	{
 		a_oCDataPoint.m_stAddress.m_sDataType =  a_oData["attributes"]["datatype"].as<std::string>();
+	}
+
+	if(0 != globalConfig::validateParam(a_oData["attributes"], "isinput", globalConfig::DT_BOOL))
+	{
+		a_oCDataPoint.m_bIsInput = true;
+	}
+	else
+	{
+		a_oCDataPoint.m_bIsInput =  a_oData["attributes"]["isinput"].as<bool>();
 	}
 
 	// Check mandatory parameters

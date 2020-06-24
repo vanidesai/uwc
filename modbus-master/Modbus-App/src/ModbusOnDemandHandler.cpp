@@ -351,7 +351,8 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strVersion.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strTopic.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strMqttTime.empty()
-				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strEisTime.empty())
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strEisTime.empty()
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strAppSeq.empty())
 		{
 			isValidJson = true;
 
@@ -411,10 +412,7 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 
 		obj = mpp.at(stTopic).getDataPoint();
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-		string stIpAddress = addrInfo.m_stTCP.m_sIPAddress;
-		a_stMbusApiPram.m_u16Port = addrInfo.m_stTCP.m_ui16PortNumber;
 		a_stMbusApiPram.m_u8DevId = addrInfo.m_stTCP.m_uiUnitID;
-		CommonUtils::ConvertIPStringToCharArray(stIpAddress,&(a_stMbusApiPram.m_u8IpAddr[0]));
 #else
 		a_stMbusApiPram.m_u8DevId = addrInfo.m_stRTU.m_uiSlaveId;
 #endif

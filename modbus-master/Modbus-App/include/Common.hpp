@@ -55,8 +55,6 @@ struct stOnDemandRequest
 typedef struct MbusAPI
 {
 	unsigned char	m_u8DevId;
-	unsigned char	m_u8IpAddr[4];
-	uint16_t		m_u16Port;
 	unsigned short  m_u16TxId;
 	unsigned short  m_u16Quantity;
 	unsigned short  m_u16StartAddr;
