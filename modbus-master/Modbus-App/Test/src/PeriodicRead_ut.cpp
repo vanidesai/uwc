@@ -561,7 +561,7 @@ TEST_F(PeriodicRead_ut, get_Timer_freq)
 	{
 		uint32_t ulMinFreq = CTimeMapper::instance().getMinTimerFrequency();
 
-		EXPECT_EQ(100, ulMinFreq);
+		EXPECT_EQ(25, ulMinFreq);
 	}
 	catch(std::exception &e)
 	{

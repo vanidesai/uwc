@@ -20,6 +20,7 @@ void Main_ut::TearDown()
 	// TearDown code
 }
 
+#if 0 //In progress
 /****************************************************************/
 /* Test helper function:
  * Sets global variable g_shouldStop to true after 1 sec,
@@ -32,7 +33,7 @@ static void Set_g_shouldStop()
 }
 /****************************************************************/
 
-#if 0 //In progress
+
 /* updateDataPoints: ? */
 TEST_F(Main_ut, updateDataPoints_001)
 {
@@ -57,6 +58,7 @@ TEST_F(Main_ut, updateDataPoints_001)
 }
 #endif
 
+#if 0 // Function removed
 /* postMsgsToSCADA: success */
 TEST_F(Main_ut, postMsgsToSCADA_Success)
 {
@@ -109,3 +111,4 @@ TEST_F(Main_ut, TimerThread_001)
 
 	//EXPECT_EQ(false, Bool_Res);
 }
+#endif // Function removed

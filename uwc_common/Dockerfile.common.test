@@ -15,6 +15,19 @@ ARG EIS_UID
 
 FROM ia_common:$EIS_VERSION as common
 
+FROM ia_common:$EIS_VERSION as openssl-build
+ARG OPENSSL_DIR=openssl
+
+RUN mkdir -p ${OPENSSL_DIR} \
+    && cd ${OPENSSL_DIR} \
+    && wget https://www.openssl.org/source/openssl-1.1.1b.tar.gz \
+    && tar -xzvf openssl-1.1.1b.tar.gz \
+    && cd openssl-1.1.1b \
+    && ./config --prefix=/usr/ssl shared -fPIC \
+    && make depend \
+    && make -s \
+    && make install -s 
+
 # Build tahu library
 FROM eisbase as build-tahu
 COPY tahu.c /
@@ -29,10 +42,11 @@ RUN apt-get update && apt-get install -y libmosquitto-dev \
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
 
+COPY --from=openssl-build /usr/ssl /usr/
 RUN git clone --branch v1.3.4 https://github.com/eclipse/paho.mqtt.c.git \
     &&	cd paho.mqtt.c \
     &&	mkdir build && cd build \
-    &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=OFF \
+    &&	cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_STATIC:BOOL=OFF \
         -DPAHO_BUILD_SAMPLES:BOOL=OFF -DPAHO_BUILD_SHARED:BOOL=ON \
         -DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS:BOOL=OFF .. \
     &&	make -s \
@@ -42,6 +56,7 @@ RUN git clone --branch v1.3.4 https://github.com/eclipse/paho.mqtt.c.git \
 FROM eisbase
 COPY --from=build-pahoc /usr/paho-c /usr/.
 COPY --from=build-tahu /EIS/tahu /EIS/tahu
+COPY --from=openssl-build /usr/ssl /usr/ssl
 
 COPY async_client.cpp /
 COPY async_client.h /
@@ -52,8 +67,8 @@ RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
     && rm paho.mqtt.cpp/src/token.cpp && cp /token.cpp paho.mqtt.cpp/src/ \       
     && cd paho.mqtt.cpp \
     && mkdir build && cd build \
-    && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_MQTT_C_PATH=/usr/paho-c \
-	-DCMAKE_INSTALL_PREFIX=/usr/paho-cpp  -DPAHO_BUILD_SAMPLES:BOOL=OFF \
+    && cmake -DPAHO_WITH_SSL=TRUE -DPAHO_MQTT_C_PATH=/usr/paho-c \
+	-DCMAKE_INSTALL_PREFIX=/usr/paho-cpp -DOPENSSL_ROOT_DIR=/usr/ssl -DPAHO_BUILD_SAMPLES:BOOL=OFF \
 	-DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON .. \
     && make -s \
     && make install

@@ -17,7 +17,7 @@
 #include <vector>
 #include <future>
 
-#include "MQTTHandler.hpp"
+//#include "MQTTHandler.hpp"
 #include "SCADAHandler.hpp"
 #include "Publisher.hpp"
 
@@ -31,9 +31,9 @@ struct stFuture
 	std::future_status m_bStatus;
 };
 
-extern void updateDataPoints(QMgr::CQueueMgr& a_qMgr);
-extern bool processMsgToSendOnMqtt(QMgr::stMqttMsg a_mqttMsgToPublish);
-extern bool postMsgsToSCADA(QMgr::CQueueMgr& a_qMgr);
+//extern void updateDataPoints(QMgr::CQueueMgr& a_qMgr);
+//extern bool processMsgToSendOnMqtt(QMgr::stMqttMsg a_mqttMsgToPublish);
+//extern bool postMsgsToSCADA(QMgr::CQueueMgr& a_qMgr);
 extern bool isTaskComplete(stFuture &a_futures);
 extern void timerThread(uint32_t interval);
 
@@ -48,7 +48,7 @@ protected:
 
 public:
 	bool Bool_Res = false;
-	QMgr::stMqttMsg MqttMsg;
+//	QMgr::stMqttMsg MqttMsg;
 
 	stFuture stTask;
 
