@@ -1,5 +1,5 @@
 # Global YML configurations
-# UWC performs majorly 3 operations - polling, on-demand-write, on-demand-read
+# UWC performs majorly 4 operations - polling, on-demand-write, on-demand-read, SparkPlug_Operation
 # Based on realtime requirement, these operations are further classified into following sub-operations
 #	1. polling realtime
 #	2. polling non-realtime
@@ -8,7 +8,7 @@
 #	5. on-demand write realtime
 #	6. on-demand write non-realtime
 #
-# This file contains configuration to be used for these operations across UWC containers (e.g. TCP1, RTU1, MQTT-Export, etc.).
+# This file contains configuration to be used for these operations across UWC containers (e.g. TCP1, RTU1, MQTT-Export, scada-rtu, etc.).
 # Following fields are defined in this for all 3 major operations:
 # 	default_realtime: 
 #		values: true or false
@@ -42,6 +42,12 @@
 #	operation_priority: 1
 #	retries: 0
 #	qos: 0
+#
+# If incorrect values are specified for Sparkplug opearation, a default values (listed below) will be used:
+#       group_id: "UWC Nodes"
+#        edge_node_id:
+#              nodeName: "SCADA RTU"
+#              generateUniqueName: true
 #
 # If configuration parameter or section is missing for any of the sub-operation, then default values mentioned above will be used.
 #
@@ -78,4 +84,9 @@ Global:
               operation_priority: 3
               retries: 0
               qos: 0
-          
+        - SparkPlug_Operation:
+            group_id: "UWC nodes"
+            edge_node_id:
+              nodeName: "RBOX510"
+              generateUniqueName: true
+            interface_name: "eth0" 
