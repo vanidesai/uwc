@@ -246,6 +246,10 @@ services:
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
     user: ${EIS_UID}
+    secrets:
+      - ca_broker
+      - broker_cert
+      - broker_key
 
   mqtt-export:
     depends_on:
@@ -273,7 +277,7 @@ services:
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000" 
-      MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:11883"
+      MQTT_URL_FOR_EXPORT: "ssl://127.0.0.1:11883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "TCP,RTU"
@@ -317,6 +321,9 @@ services:
       - ca_etcd
       - etcd_MQTT_Export_cert
       - etcd_MQTT_Export_key
+      - ca_broker
+      - client_cert
+      - client_key
 
 #  scada-rtu:
 #    depends_on:
@@ -343,7 +350,9 @@ services:
 #      DEV_MODE: ${DEV_MODE}
 #      no_proxy: ${no_proxy}
 #      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
-#      MQTT_URL: "tcp://127.0.0.1:11883"
+#      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
+#      NETWORK_TYPE: "ALL"
+#      MQTT_URL: ""
 #      CertType: "zmq"
 #      PROFILING_MODE: ${PROFILING_MODE}
 #    logging:
@@ -353,8 +362,8 @@ services:
 #            max-size: "10m"
 #    user: ${EIS_UID}
 #    volumes:
-#      - "vol_uwc_socket:${SOCKET_DIR}"
-#      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+#     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+#     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
 #    secrets:
 #      - ca_etcd
 #      - etcd_SCADA-RTU_cert
@@ -397,3 +406,13 @@ secrets:
 #    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_certificate.pem
 #  etcd_SCADA-RTU_key:
 #    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_key.pem
+  ca_broker:
+    file: provision/Certificates/ca/ca_certificate.pem
+  broker_cert:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_server_certificate.pem
+  broker_key:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_server_key.pem
+  client_cert:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
+  client_key:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem

@@ -330,7 +330,9 @@ services:
 #      DEV_MODE: ${DEV_MODE}
 #      no_proxy: ${no_proxy}
 #      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
-#      MQTT_URL: "tcp://127.0.0.1:11883"
+#      MQTT_URL: ""
+#      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
+#      NETWORK_TYPE: "ALL"
 #      CertType: "zmq"
 #      PROFILING_MODE: ${PROFILING_MODE}
 #    logging:
@@ -340,8 +342,8 @@ services:
 #            max-size: "10m"
 #    user: ${EIS_UID}
 #    volumes:
-#      - "vol_uwc_socket:${SOCKET_DIR}"
-#      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+#     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+#     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
 
 volumes:
   vol_uwc_socket:
