@@ -15,8 +15,14 @@ ARG EIS_UID
 ARG EIS_USER_NAME
 
 FROM eisbase
+WORKDIR /
+
 RUN apt-get update && apt-get install -y mosquitto
 RUN mkdir -p /mosquitto/config /mosquitto/data /mosquitto/log
-COPY mosquitto.conf /etc/mosquitto/mosquitto.conf
+COPY mosquitto_prod.conf /etc/mosquitto/mosquitto_prod.conf
+COPY mosquitto_dev.conf /etc/mosquitto/mosquitto_dev.conf
 
-CMD ["mosquitto", "-c", "/etc/mosquitto/mosquitto.conf"]
+COPY mqtt_broker_start.sh /
+RUN chmod +x mqtt_broker_start.sh
+
+CMD ["./mqtt_broker_start.sh"]

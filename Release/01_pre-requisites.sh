@@ -274,6 +274,7 @@ addUWCContainersInEIS()
     tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
     cd UWC
     cp -r modbus-master/ MQTT/ scada-rtu/ uwc_common/ mqtt-export/ ../
+    cp Others/Config/UWC/x509_cert_config.json ../docker_setup/provision/config/
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp Others/Config/UWC/Global_Config.yml /opt/intel/eis/uwc_data/common_config/Global_Config.yml

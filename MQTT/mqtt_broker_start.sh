@@ -1,3 +1,4 @@
+#!/bin/bash
 ################################################################################
 # The source code contained or described herein and all documents related to
 # the source code ("Material") are owned by Intel Corporation. Title to the
@@ -8,7 +9,18 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ################################################################################
 
-USER_OBJS :=
+# Starting mosquitto service
+echo "Dev Mode is set to :: "$DEV_MODE
+echo ""
 
-LIBS := -lcjson -lyaml-cpp -llog4cpp -lpaho-mqtt3as -lpaho-mqttpp3 -lpthread -leisconfigmgr -leismsgenv -lssl -lcrypto -leisutils -leismsgbus 
-
+if [ "${DEV_MODE}" = "true" ]; then
+    echo "========================================"
+    echo "Running broker without TLS.."
+    echo "========================================"
+    mosquitto -c /etc/mosquitto/mosquitto_dev.conf
+else
+    echo "========================================"
+    echo "Running broker with TLS.."
+    echo "========================================"
+    mosquitto -c /etc/mosquitto/mosquitto_prod.conf
+fi
