@@ -9,9 +9,25 @@
 #*********************************************************************************
 
 ARG EIS_VERSION
-FROM uwc_common:$EIS_VERSION as uwc_common
+FROM ia_eisbase:$EIS_VERSION as eisbase
 LABEL description="MQTT Export Application"
+ARG EIS_UID
 
+FROM ia_common:$EIS_VERSION as common
+
+# Build Paho C Library
+FROM eisbase as build-pahoc
+RUN mkdir -p /usr/paho-c
+RUN git clone --branch v1.3.1 https://github.com/eclipse/paho.mqtt.c.git \
+    &&	cd paho.mqtt.c \
+    &&	mkdir build && cd build \
+    &&	cmake -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_STATIC:BOOL=ON \
+	-DCMAKE_INSTALL_PREFIX=/usr/paho-c -DBUILD_TESTS=OFF .. \
+    &&	make -s \
+    &&	make install
+
+
+# Build Paho CPP Library
 FROM eisbase as build-pahocpp
 COPY --from=build-pahoc /usr/paho-c /usr/.
 RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
@@ -49,23 +65,22 @@ RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
     && cd ../../
 
 # Build MQTT-Export application
-FROM ia_common:$EIS_VERSION as mqtt-export
+FROM eisbase as mqtt-export
 WORKDIR /
-
-# copy required dependencies
+COPY --from=common /usr/local/include /usr/local/include
+COPY --from=common /usr/local/lib /usr/local/lib
+COPY --from=common /usr/local/include/safe_* /usr/local/include/
 COPY MQTT-Export-App /MQTT-Export-App/. 
-COPY --from=uwc_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
-COPY --from=uwc_common /usr/yaml/lib/* /usr/local/lib/
-COPY --from=uwc_common /usr/paho-cpp/lib/lib* /MQTT-Export-App/lib/
-COPY --from=uwc_common /usr/lib/libpaho* /MQTT-Export-App/lib/
-COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
-COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
-COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
-COPY --from=uwc_common /usr/include/MQTT* /MQTT-Export-App/include/
-COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
-COPY --from=uwc_common /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
 
+COPY --from=build-yaml /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
+COPY --from=build-yaml /usr/yaml/lib/* /usr/local/lib/
 
+COPY --from=build-pahoc /usr/paho-c/lib/lib* /MQTT-Export-App/lib/
+COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* /MQTT-Export-App/lib/
+COPY --from=build-pahocpp /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
+COPY --from=build-pahoc /usr/paho-c/include/MQTT* /MQTT-Export-App/include/
+COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
+COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
 
 RUN mkdir kw10 ; \
        export http_proxy="http://proxy-chain.intel.com:911"; \
@@ -96,12 +111,10 @@ RUN mv .klocwork ~
 RUN ls -la ~/.klocwork
 
 
-# build sources
 RUN cd /MQTT-Export-App/Release \
     &&	export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
     &&	/kw10/bin/kwinject make clean all -s
-	
 
 
 RUN cd /MQTT-Export-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
@@ -109,40 +122,30 @@ RUN cd /MQTT-Export-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork
        cp test.log tables_UWC/build.log ;\
        cp parse_errors.log tables_UWC/parse_errors.log ;\
        /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
-	   
-
-
 
 
 # Build mqtt export container service
-FROM ia_common:$EIS_VERSION as mqtt-export-service
-
+FROM eisbase as mqtt-export-service
+COPY --from=common /usr/local/include /usr/local/include
+COPY --from=common /usr/local/lib /usr/local/lib
 WORKDIR /
-# creating base directories
 ENV APP_WORK_DIR /opt/intel/app/
-RUN mkdir -p /opt/intel/app \
-	&& mkdir -p /opt/intel/config \
-	&& mkdir -p /opt/intel/eis/uwc_data
-
+RUN mkdir -p /opt/intel/app
+RUN mkdir -p /opt/intel/config
 WORKDIR ${APP_WORK_DIR}
-
-# copy required dependencies
 COPY --from=mqtt-export /MQTT-Export-App/Release/MQTT_Export ${APP_WORK_DIR}
-COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
-COPY --from=uwc_common /usr/lib/libpaho* ${APP_WORK_DIR}
-COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
-COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
-COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
-COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
+COPY --from=build-yaml /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
+COPY --from=build-pahoc /usr/paho-c/lib/lib* ${APP_WORK_DIR}
+COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
+COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=mqtt-export /MQTT-Export-App/Config/log4cpp.properties /opt/intel/config
-
-# set permissions to working dir for eisuser
-RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
-   && chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR} \
-   && chmod -R 770 ${APP_WORK_DIR}
+RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
+RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
+RUN chmod -R 770 ${APP_WORK_DIR}
 
 #set the environment variable
 ENV LD_LIBRARY_PATH ${APP_WORK_DIR}:/usr/local/lib
+HEALTHCHECK CMD exit 0
 
 # Run the container
 CMD ./MQTT_Export
