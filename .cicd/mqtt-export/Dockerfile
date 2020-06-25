@@ -64,7 +64,7 @@ RUN ls -la ~/.klocwork
 RUN cd /MQTT-Export-App/Release \
     &&	export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
-    &&	make clean all -s
+    &&	/kw10/bin/kwinject make clean all -s
 	
 
 
