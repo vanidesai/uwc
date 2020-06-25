@@ -552,25 +552,29 @@ TEST_F(PeriodicRead_ut, checkTimer_return)
 	}
 }
 
-#endif
-
-
 TEST_F(PeriodicRead_ut, get_Timer_freq)
 {
 	try
 	{
 		uint32_t ulMinFreq = CTimeMapper::instance().getMinTimerFrequency();
 
+#ifdef MODBUS_STACK_TCPIP_ENABLED
 		EXPECT_EQ(25, ulMinFreq);
+#endif
+
+#ifndef MODBUS_STACK_TCPIP_ENABLED
+		EXPECT_EQ(100, ulMinFreq);
+#endif
+
 	}
+
 	catch(std::exception &e)
 	{
 		EXPECT_EQ("", (string)e.what());
 	}
 }
+#endif
 
-
-#if 1
 TEST_F(PeriodicRead_ut, timer_Thread)
 {
 	bool g_stopTimer = false;
@@ -579,10 +583,8 @@ TEST_F(PeriodicRead_ut, timer_Thread)
 	EXPECT_EQ(0, g_stopTimer);
 
 }
-#endif
 
 #if 0
-
 TEST_F(PeriodicRead_ut, Response_cutoff)
 {
 	zmq_handler::stZmqContext a_BusContext;
