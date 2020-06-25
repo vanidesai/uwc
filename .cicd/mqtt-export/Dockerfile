@@ -12,6 +12,42 @@ ARG EIS_VERSION
 FROM uwc_common:$EIS_VERSION as uwc_common
 LABEL description="MQTT Export Application"
 
+FROM eisbase as build-pahocpp
+COPY --from=build-pahoc /usr/paho-c /usr/.
+RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
+    && cd paho.mqtt.cpp \
+    && mkdir build && cd build \
+    && cmake -DPAHO_WITH_SSL=FALSE -DPAHO_MQTT_C_PATH=/usr/paho-c \
+	-DCMAKE_INSTALL_PREFIX=/usr/paho-cpp  -DPAHO_BUILD_SAMPLES:BOOL=OFF \
+	-DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON  .. \
+    && make -s \
+    && make install
+
+
+# Build log4cpp Library
+FROM eisbase as build-log4cpp
+
+RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
+    && tar -zxvf log4cpp-1.1.3.tar.gz \
+    && cd log4cpp && mkdir build \
+    && ./configure --enable-static=no --prefix=$PWD/build \
+    && make \
+    && make install
+
+# yaml build
+FROM eisbase as build-yaml
+
+RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
+    && cd yaml-cpp \
+    &&	mkdir build && cd build \
+    &&	cmake -DYAML_BUILD_SHARED_LIBS=ON ../ \
+    &&	make yaml-cpp \
+    &&	mkdir -p /usr/yaml \
+    &&  mkdir -p /usr/yaml/lib \
+    &&  cp lib* /usr/yaml/lib \
+    &&  cp -r ../include /usr/yaml \
+    && cd ../../
+
 # Build MQTT-Export application
 FROM ia_common:$EIS_VERSION as mqtt-export
 WORKDIR /
@@ -74,6 +110,9 @@ RUN cd /MQTT-Export-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork
        cp parse_errors.log tables_UWC/parse_errors.log ;\
        /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
 	   
+
+
+
 
 # Build mqtt export container service
 FROM ia_common:$EIS_VERSION as mqtt-export-service
