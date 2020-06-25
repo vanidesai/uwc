@@ -14,4 +14,4 @@ env
 ./SCADARTU_test > /reports/scada-rtu/SCADARTU_status.log 2>&1
 
 # Run GCovr command
-gcovr --html -e "../Test" -e "../include/utils" -e "../include/tahu" -e "../include/yaml-cpp" -e "../src/utils" --exclude-throw-branches -o /reports/scada-rtu/SCADARTU_Report.html -r .. .
+gcovr --html -e "../Test" -e "../include/utils" -e "../include/tahu" -e "../include/yaml-cpp" -e "../src/utils" -e "../include/log4cpp/Appender.hh" --exclude-throw-branches -o /reports/scada-rtu/SCADARTU_Report.html -r .. .

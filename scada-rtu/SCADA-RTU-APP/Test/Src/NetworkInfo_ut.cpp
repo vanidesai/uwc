@@ -79,7 +79,7 @@ TEST_F(NetworkInfo_ut, addDevice_NotPresent)
 			const YAML::Node& list = test.second;
 			for (auto nodes : list)
 			{
-				network_info::CWellSiteDevInfo::build(nodes, CWellSiteDevInfo_obj, false);
+				network_info::CWellSiteDevInfo::build(nodes, CWellSiteDevInfo_obj);
 
 				Int_Res = CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
 
@@ -104,7 +104,7 @@ TEST_F(NetworkInfo_ut, addDevice_Present)
 			const YAML::Node& list = test.second;
 			for (auto nodes : list)
 			{
-				network_info::CWellSiteDevInfo::build(nodes, CWellSiteDevInfo_obj, false);
+				network_info::CWellSiteDevInfo::build(nodes, CWellSiteDevInfo_obj);
 
 				Int_Res = CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
 				Int_Res = CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
@@ -123,7 +123,7 @@ TEST_F(NetworkInfo_ut, CWellSiteInfo_build_GetsID)
 {
 	YAML::Node a_oData = YAML::LoadFile("UT_Yml/Device_group1.yml");
 
-	network_info::CWellSiteInfo::build(a_oData, CWellSiteInfo_obj, false);
+	network_info::CWellSiteInfo::build(a_oData, CWellSiteInfo_obj);
 
 	EXPECT_EQ( "PL0", CWellSiteInfo_obj.getID() );
 
@@ -136,7 +136,7 @@ TEST_F(NetworkInfo_ut, CWellSiteInfo_build_NoID)
 
 	try
 	{
-		network_info::CWellSiteInfo::build(WrongNode, CWellSiteInfo_obj, false);
+		network_info::CWellSiteInfo::build(WrongNode, CWellSiteInfo_obj);
 		EXPECT_EQ(1, 2); //Fails; Throw shoud be executed
 	}
 	catch(YAML::Exception &e)
@@ -150,8 +150,8 @@ TEST_F(NetworkInfo_ut, CWellSiteInfo_build_DuplicateDevice)
 {
 	YAML::Node a_oData = YAML::LoadFile("UT_Yml/Device_group1.yml");
 
-	network_info::CWellSiteInfo::build(a_oData, CWellSiteInfo_obj, false);
-	network_info::CWellSiteInfo::build(a_oData, CWellSiteInfo_obj, false);
+	network_info::CWellSiteInfo::build(a_oData, CWellSiteInfo_obj);
+	network_info::CWellSiteInfo::build(a_oData, CWellSiteInfo_obj);
 
 	EXPECT_EQ( "PL0", CWellSiteInfo_obj.getID() );
 }
@@ -168,7 +168,7 @@ TEST_F(NetworkInfo_ut, CWellSiteDevInfo_build_NoIPaDDress)
 			const YAML::Node& list = test.second;
 			for (auto nodes : list)
 			{
-				network_info::CWellSiteDevInfo::build(nodes, CWellSiteDevInfo_obj, false);
+				network_info::CWellSiteDevInfo::build(nodes, CWellSiteDevInfo_obj);
 
 				EXPECT_EQ( "", CWellSiteDevInfo_obj.getAddressInfo().m_stTCP.m_sIPAddress );
 			}
