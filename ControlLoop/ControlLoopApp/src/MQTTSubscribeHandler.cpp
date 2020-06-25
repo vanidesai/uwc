@@ -31,6 +31,16 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
 		conopts.set_clean_session(true);
 		conopts.set_automatic_reconnect(1, 10);
 
+		// set the certificates if dev mode is false
+		if(false == CCommon::getInstance().isDevMode())
+		{
+			mqtt::ssl_options sslopts;
+			sslopts.set_trust_store("/run/secrets/ca_broker");
+			sslopts.set_key_store("/run/secrets/client_cert");
+			sslopts.set_private_key("/run/secrets/client_key");
+			sslopts.set_enable_server_cert_auth(true);
+			conopts.set_ssl(sslopts);
+		}
 		subscriber.set_callback(callback);
 
 		connectSubscriber();
