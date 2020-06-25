@@ -345,6 +345,9 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 	bool isValidJson = false;
 	try
 	{
+		/// Comparing sourcetopic for read/write request.
+		strSourceTopic = a_stMbusApiPram.m_stOnDemandReqData.m_strTopic;
+
 		/// to check all the values are present in request JSON.
 		if(!a_stMbusApiPram.m_stOnDemandReqData.m_strMetric.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strWellhead.empty()
@@ -357,9 +360,6 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_sTimestamp.empty())
 		{
 			isValidJson = true;
-
-			/// Comparing sourcetopic for read/write request.
-			strSourceTopic = a_stMbusApiPram.m_stOnDemandReqData.m_strTopic;
 
 			if(true == a_IsWriteReq)
 			{
@@ -382,7 +382,7 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 		if(!isValidJson)
 		{
 			DO_LOG_ERROR(" Invalid input json parameter or topic.");
-			return APP_ERROR_INVALID_INPUT_JSON;
+			eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
 		}
 
 		string strSearchString = "/", stTopic = "";
@@ -394,7 +394,7 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 		if(stTopic.empty())
 		{
 			DO_LOG_ERROR("Topic is not found in request json.");
-			return APP_ERROR_INVALID_INPUT_JSON;
+			eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
 		}
 
 		const std::map<std::string, network_info::CUniqueDataPoint>& mpp = network_info::getUniquePointList();
@@ -403,7 +403,6 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 		{
 			addrInfo = mpp.at(stTopic).getWellSiteDev().getAddressInfo();
 			a_stMbusApiPram.m_i32Ctx = mpp.at(stTopic).getWellSiteDev().getCtxInfo();
-
 		}
 		catch(const std::out_of_range& oor)
 		{
