@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 
 		if( false == CPublisher::instance().isPublisherConnected())
 		{
-			std::cout << "Publisher failed to connect with MQTt broker" << endl;
+			std::cout << "Publisher failed to connect with MQTT broker" << endl;
 			exit(-1);
 		}
 		CSCADAHandler::instance();

@@ -140,8 +140,22 @@ bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbir
 			}
 			strDeviceName.append(dataPoint.second.getDataPoint().getID());
 
-			org_eclipse_tahu_protobuf_Payload_Metric metric = org_eclipse_tahu_protobuf_Payload_Metric_init_default;
-			init_metric(&metric, strDeviceName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, true, "", 0);
+			uint64_t current_time = get_current_timestamp();
+
+			org_eclipse_tahu_protobuf_Payload_Metric metric = {NULL, false, 0, true, current_time , true,
+					METRIC_DATA_TYPE_STRING, false, 0, false, 0, false, true, false,
+					org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+					false, org_eclipse_tahu_protobuf_Payload_PropertySet_init_default, 0, {0}};
+
+			metric.name = (char*)malloc(strDeviceName.size());
+			if(metric.name == NULL)
+			{
+				DO_LOG_ERROR("Failed to allocate new memory");
+				return false;
+			};
+			strDeviceName.copy(metric.name, strDeviceName.size());
+			metric.name[strDeviceName.size()] = '\0';
+			metric.has_is_null = true;
 
 			org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
 
@@ -191,7 +205,7 @@ void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, C
 
 		if(true == prepareDBirthMessage(dbirth_payload, a_dataPointInfo, strSiteName))
 		{
-			string strDBirthTopic = CCommon::getInstance().getDBirthTopic() + a_deviceName + "/" + strSiteName;
+			string strDBirthTopic = CCommon::getInstance().getDBirthTopic() + a_deviceName;
 
 			CPublisher::instance().publishSparkplugMsg(dbirth_payload, strDBirthTopic);
 		}
@@ -333,7 +347,9 @@ void CSCADAHandler::populateDataPoints()
 		string strDeviceName = pt.second.getWellSiteDev().getID();
 		string strDataPointName = pt.second.getID();
 
-		m_deviceDataPoints[strDeviceName].insert(std::make_pair(strDataPointName, pt.second));
+		std::string sUniqueDev(pt.second.getWellSiteDev().getID() + SEPARATOR_CHAR + pt.second.getWellSite().getID());
+
+		m_deviceDataPoints[sUniqueDev].insert(std::make_pair(strDataPointName, pt.second));
 	}
 }
 
