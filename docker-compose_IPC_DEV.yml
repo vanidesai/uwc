@@ -22,6 +22,7 @@ services:
           UBUNTU_IMAGE_VERSION: ${UBUNTU_IMAGE_VERSION}
           EIS_VERSION: ${EIS_VERSION}
           HOST_TIME_ZONE: ${HOST_TIME_ZONE}
+    read_only: true
     image: ${DOCKER_REGISTRY}ia_eisbase:${EIS_VERSION}
 
   ## Define ia_common service
@@ -103,6 +104,9 @@ services:
     container_name: modbus-tcp-master
     hostname: modbus-tcp-master
     network_mode: host
+    read_only: true
+    tmpfs:
+      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -162,6 +166,9 @@ services:
     container_name: modbus-rtu-master
     hostname: modbus-rtu-master
     network_mode: host
+    read_only: true
+    tmpfs:
+      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -175,9 +182,6 @@ services:
       ZMQ_RECV_HWM: "1000"
       CUTOFF_INTERVAL_PERCENTAGE: 90
       SERIAL_PORT_RETRY_INTERVAL: 1
-      BAUD_RATE: 9600
-      PARITY: "E"
-      PORT_NAME: "/dev/ttyUSB0"
       MY_APP_ID: 2
       NETWORK_TYPE: RTU
       CertType: "zmq"
@@ -226,6 +230,7 @@ services:
     container_name: mqtt_container
     hostname: mqtt_container
     network_mode: host
+    read_only: true
     restart: unless-stopped
     logging:
         driver: "json-file"
@@ -320,6 +325,9 @@ services:
 #    container_name: scada-rtu
 #    hostname: scada-rtu
 #    network_mode: host
+#    read_only: true
+#    tmpfs:
+#      - /opt/intel/app/logs
 #    restart: unless-stopped
 #    ulimits:
 #     rtprio:

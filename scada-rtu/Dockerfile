@@ -42,6 +42,7 @@ WORKDIR /
 # creating base directories
 ENV APP_WORK_DIR /opt/intel/app/
 RUN mkdir -p /opt/intel/app \
+	&& mkdir -p /opt/intel/app/logs \
 	&& mkdir -p /opt/intel/config \
 	&& mkdir -p /opt/intel/eis/uwc_data
 

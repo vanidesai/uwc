@@ -22,6 +22,7 @@ services:
           UBUNTU_IMAGE_VERSION: ${UBUNTU_IMAGE_VERSION}
           EIS_VERSION: ${EIS_VERSION}
           HOST_TIME_ZONE: ${HOST_TIME_ZONE}
+    read_only: true
     image: ${DOCKER_REGISTRY}ia_eisbase:${EIS_VERSION}
 
   ## Define ia_common service
@@ -107,6 +108,9 @@ services:
     container_name: modbus-tcp-master
     hostname: modbus-tcp-master
     network_mode: host
+    read_only: true
+    tmpfs:
+      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -170,6 +174,9 @@ services:
     container_name: modbus-rtu-master
     hostname: modbus-rtu-master
     network_mode: host
+    read_only: true
+    tmpfs:
+      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -235,6 +242,7 @@ services:
     container_name: mqtt_container
     hostname: mqtt_container
     network_mode: host
+    read_only: true
     restart: unless-stopped
     logging:
         driver: "json-file"
@@ -266,6 +274,9 @@ services:
     container_name: mqtt-export
     hostname: mqtt-export
     network_mode: host
+    read_only: true
+    tmpfs:
+      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -325,49 +336,52 @@ services:
       - client_cert
       - client_key
 
-  scada-rtu:
-    depends_on:
-      - ia_eisbase
-      - uwc_common
-    build:
-      context: $PWD/../scada-rtu/
-      dockerfile: $PWD/../scada-rtu/Dockerfile
-      args:
-        EIS_VERSION: ${EIS_VERSION}
-        EIS_UID: ${EIS_UID}
-        EIS_USER_NAME: ${EIS_USER_NAME}
-    image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
-    container_name: scada-rtu
-    hostname: scada-rtu
-    network_mode: host
-    restart: unless-stopped
-    ulimits:
-     rtprio:
-       soft: "99" # these are the maximum values of priorites to be used inside the container application
-       hard: "99"
-    environment:
-      AppName: "SCADA-RTU"
-      DEV_MODE: ${DEV_MODE}
-      no_proxy: ${no_proxy}
-      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
-      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
-      NETWORK_TYPE: "ALL"
-      MQTT_URL: ""
-      CertType: "zmq"
-      PROFILING_MODE: ${PROFILING_MODE}
-    logging:
-        driver: "json-file"
-        options:
-            max-file: "3"
-            max-size: "10m"
-    user: ${EIS_UID}
-    volumes:
-     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
-     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-    secrets:
-      - ca_etcd
-      - etcd_SCADA-RTU_cert
-      - etcd_SCADA-RTU_key
+#  scada-rtu:
+#    depends_on:
+#      - ia_eisbase
+#      - uwc_common
+#    build:
+#      context: $PWD/../scada-rtu/
+#      dockerfile: $PWD/../scada-rtu/Dockerfile
+#      args:
+#        EIS_VERSION: ${EIS_VERSION}
+#        EIS_UID: ${EIS_UID}
+#        EIS_USER_NAME: ${EIS_USER_NAME}
+#    image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
+#    container_name: scada-rtu
+#    hostname: scada-rtu
+#    network_mode: host
+#    read_only: true
+#    tmpfs:
+#      - /opt/intel/app/logs
+#    restart: unless-stopped
+#    ulimits:
+#     rtprio:
+#       soft: "99" # these are the maximum values of priorites to be used inside the container application
+#       hard: "99"
+#    environment:
+#      AppName: "SCADA-RTU"
+#      DEV_MODE: ${DEV_MODE}
+#      no_proxy: ${no_proxy}
+#      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+#      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
+#      NETWORK_TYPE: "ALL"
+#      MQTT_URL: ""
+#      CertType: "zmq"
+#      PROFILING_MODE: ${PROFILING_MODE}
+#    logging:
+#        driver: "json-file"
+#        options:
+#            max-file: "3"
+#            max-size: "10m"
+#    user: ${EIS_UID}
+#    volumes:
+#     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+#     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+#    secrets:
+#      - ca_etcd
+#      - etcd_SCADA-RTU_cert
+#      - etcd_SCADA-RTU_key
 
 
 volumes:
@@ -402,10 +416,10 @@ secrets:
     file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
   etcd_MQTT_Export_key:
     file: provision/Certificates/MQTT_Export/MQTT_Export_client_key.pem
-  etcd_SCADA-RTU_cert:
-    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_certificate.pem
-  etcd_SCADA-RTU_key:
-    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_key.pem
+#  etcd_SCADA-RTU_cert:
+#    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_certificate.pem
+#  etcd_SCADA-RTU_key:
+#    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_key.pem
   ca_broker:
     file: provision/Certificates/ca/ca_certificate.pem
   broker_cert:
