@@ -35,18 +35,20 @@ void ModbusOnDemandHandler_ut::TearDown()
 TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvServiceReq)
 {
 
-	stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = true;
-	stMbusApiPram.m_stOnDemandReqData.m_isRT = true;
-	stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = true;
-	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_nsec = 21132323;
-	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_sec = 1;
-	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = "455";
-	stMbusApiPram.m_stOnDemandReqData.m_strEisTime = "2020-03-31 12:34:56";
-	stMbusApiPram.m_stOnDemandReqData.m_strMetric = "Test";
-	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = "2020-03-13 12:34:56";
-	stMbusApiPram.m_stOnDemandReqData.m_strTopic = "UnitTest";
-	stMbusApiPram.m_stOnDemandReqData.m_strVersion ="2.1";
-	stMbusApiPram.m_stOnDemandReqData.m_strWellhead = "test";
+	stMbusApiPram.m_stOnDemandReqData.m_isByteSwap				= true;
+	stMbusApiPram.m_stOnDemandReqData.m_isRT					= true;
+	stMbusApiPram.m_stOnDemandReqData.m_isWordSwap				= true;
+	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_nsec	= 21132323;
+	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_sec		= 1;
+	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq				= "455";
+	stMbusApiPram.m_stOnDemandReqData.m_strEisTime				= "2020-03-31 12:34:56";
+	stMbusApiPram.m_stOnDemandReqData.m_strMetric				= "Flow";
+	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime				= "2020-03-13 12:34:56";
+	stMbusApiPram.m_stOnDemandReqData.m_strTopic				= "/flowmeter/PL0/Flow/read";
+	stMbusApiPram.m_stOnDemandReqData.m_strVersion				= "2.1";
+	stMbusApiPram.m_stOnDemandReqData.m_strWellhead				= "PL0";
+	stMbusApiPram.m_stOnDemandReqData.m_sUsec					= "0";
+	stMbusApiPram.m_stOnDemandReqData.m_sTimestamp				= "0:0:0";
 
 	bool isWrite = false;
 
@@ -91,7 +93,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
 				16,
 				true);
 
-		EXPECT_EQ(APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
+		EXPECT_EQ(APP_ERROR_INVALID_INPUT_JSON, eFunRetType);
 	}
 
 	catch( exception &e)
@@ -101,31 +103,31 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
 	}
 }
 
-#if 0 //In progress (Fails in rtu)
+#if 0 // Fails in RTU
 TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_ValidIpJason)
 {
 
-	stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
-	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = "1234";
-	stMbusApiPram.m_stOnDemandReqData.m_strMetric =  "Flow";
-	stMbusApiPram.m_stOnDemandReqData.m_sValue = "0X00";
-	stMbusApiPram.m_stOnDemandReqData.m_strWellhead = "PL0";
-	stMbusApiPram.m_stOnDemandReqData.m_strVersion = "version";
-	stMbusApiPram.m_stOnDemandReqData.m_strTopic = "/flowmeter/PL0/Flow/read";
-	stMbusApiPram.m_stOnDemandReqData.m_sTimestamp = "2020-02-12 06:14:15";
-	stMbusApiPram.m_stOnDemandReqData.m_sUsec = "1581488055204186";
-	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = "2020-03-13 12:34:56";
-	stMbusApiPram.m_stOnDemandReqData.m_strEisTime = "2020-03-31 12:34:56";
-	stMbusApiPram.m_stOnDemandReqData.m_isRT = true;
-	stMbusApiPram.m_nRetry = 1;
-	stMbusApiPram.m_lPriority = 1;
+	stMbusApiPram.m_stOnDemandReqData.m_isByteSwap				= true;
+	stMbusApiPram.m_stOnDemandReqData.m_isRT					= true;
+	stMbusApiPram.m_stOnDemandReqData.m_isWordSwap				= true;
+	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_nsec	= 21132323;
+	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_sec		= 1;
+	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq				= "455";
+	stMbusApiPram.m_stOnDemandReqData.m_strEisTime				= "2020-03-31 12:34:56";
+	stMbusApiPram.m_stOnDemandReqData.m_strMetric				= "D1";
+	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime				= "2020-03-13 12:34:56";
+	stMbusApiPram.m_stOnDemandReqData.m_strTopic				= "/flowmeter/PL0/D1/read";
+	stMbusApiPram.m_stOnDemandReqData.m_strVersion				= "2.1";
+	stMbusApiPram.m_stOnDemandReqData.m_strWellhead				= "PL0";
+	stMbusApiPram.m_stOnDemandReqData.m_sUsec					= "0";
+	stMbusApiPram.m_stOnDemandReqData.m_sTimestamp				= "0:0:0";
 
 	try
 	{
 		eFunRetType = onDemandHandler::Instance().jsonParserForOnDemandRequest(stMbusApiPram,
 				m_u8FunCode,
 				16,
-				true);
+				false);
 
 		EXPECT_EQ(APP_SUCCESS, eFunRetType);
 	}
@@ -215,7 +217,7 @@ TEST_F(ModbusOnDemandHandler_ut, hex_to_bin)
 
 	stMbusApiPram.m_lPriority = 1;
 	stMbusApiPram.m_u16ByteCount = 2;
-//	stMbusApiPram.m_u16Port = 1234;
+	//	stMbusApiPram.m_u16Port = 1234;
 	stMbusApiPram.m_u16Quantity = 4;
 	stMbusApiPram.m_u16StartAddr = 60000;
 	stMbusApiPram.m_u16TxId = 23;
@@ -239,7 +241,7 @@ TEST_F(ModbusOnDemandHandler_ut, hex_to_bin_test)
 
 	stMbusApiPram.m_lPriority = 1;
 	stMbusApiPram.m_u16ByteCount = 2;
-//	stMbusApiPram.m_u16Port = 1234;
+	//	stMbusApiPram.m_u16Port = 1234;
 	stMbusApiPram.m_u16Quantity = 4;
 	stMbusApiPram.m_u16StartAddr = 564;
 	stMbusApiPram.m_u16TxId = 23;
@@ -513,7 +515,7 @@ TEST_F(ModbusOnDemandHandler_ut, create_error_response_read)
 
 	stMbusApiPram.m_lPriority = 1;
 	stMbusApiPram.m_u16ByteCount = 2;
-//	stMbusApiPram.m_u16Port = 1234;
+	//	stMbusApiPram.m_u16Port = 1234;
 	stMbusApiPram.m_u16Quantity = 4;
 	stMbusApiPram.m_u16StartAddr = 500;
 	stMbusApiPram.m_u16TxId = 23;

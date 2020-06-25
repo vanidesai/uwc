@@ -352,7 +352,9 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strTopic.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strMqttTime.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strEisTime.empty()
-				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strAppSeq.empty())
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strAppSeq.empty()
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_sUsec.empty()
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_sTimestamp.empty())
 		{
 			isValidJson = true;
 
@@ -380,7 +382,7 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 		if(!isValidJson)
 		{
 			DO_LOG_ERROR(" Invalid input json parameter or topic.");
-			eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+			return APP_ERROR_INVALID_INPUT_JSON;
 		}
 
 		string strSearchString = "/", stTopic = "";
@@ -392,7 +394,7 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 		if(stTopic.empty())
 		{
 			DO_LOG_ERROR("Topic is not found in request json.");
-			eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+			return APP_ERROR_INVALID_INPUT_JSON;
 		}
 
 		const std::map<std::string, network_info::CUniqueDataPoint>& mpp = network_info::getUniquePointList();
