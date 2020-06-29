@@ -121,16 +121,16 @@ void CSCADAHandler::publish_births()
  * @param a_dataPoints :[in] map of datapoints corresponding to the device
  * @return true/false depending on the success/failure
  */
-bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, CUniqueDataPoint>& a_dataPoints, string& a_siteName)
+bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, stDataPointRepo>& a_dataPoints, string& a_siteName)
 {
 	try
 	{
 		for(auto &dataPoint : a_dataPoints)
 		{
-			a_siteName = dataPoint.second.getWellSite().getID();
+			a_siteName = dataPoint.second.m_objUniquePoint.getWellSite().getID();
 
 			string strDeviceName = "";
-			if(dataPoint.second.getDataPoint().isInputPoint() == true)//data point is input
+			if(dataPoint.second.m_objUniquePoint.getDataPoint().isInputPoint() == true)//data point is input
 			{
 				strDeviceName.assign("Inputs/");
 			}
@@ -138,7 +138,7 @@ bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbir
 			{
 				strDeviceName.assign("Outputs/");
 			}
-			strDeviceName.append(dataPoint.second.getDataPoint().getID());
+			strDeviceName.append(dataPoint.second.m_objUniquePoint.getDataPoint().getID());
 
 			uint64_t current_time = get_current_timestamp();
 
@@ -159,10 +159,10 @@ bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbir
 
 			org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
 
-			uint32_t iPollingInterval = dataPoint.second.getDataPoint().getPollingConfig().m_uiPollFreq;
+			uint32_t iPollingInterval = dataPoint.second.m_objUniquePoint.getDataPoint().getPollingConfig().m_uiPollFreq;
 			add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, false, &iPollingInterval, sizeof(iPollingInterval));
 
-			bool bVal = dataPoint.second.getDataPoint().getPollingConfig().m_bIsRealTime;
+			bool bVal = dataPoint.second.m_objUniquePoint.getDataPoint().getPollingConfig().m_bIsRealTime;
 			add_property_to_set(&prop, "Realtime", PROPERTY_DATA_TYPE_BOOLEAN, false, &bVal, sizeof(bVal));
 
 			add_propertyset_to_metric(&metric, &prop);
@@ -187,7 +187,7 @@ bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbir
  * @param a_dataPointInfo : [in] device info
  * @return none
  */
-void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, CUniqueDataPoint>& a_dataPointInfo)
+void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, stDataPointRepo>& a_dataPointInfo)
 {
 	// Create the DBIRTH payload
 	org_eclipse_tahu_protobuf_Payload dbirth_payload;
@@ -344,12 +344,12 @@ void CSCADAHandler::populateDataPoints()
 
 	for (auto &pt : mapUniquePoint)
 	{
-		string strDeviceName = pt.second.getWellSiteDev().getID();
-		string strDataPointName = pt.second.getID();
+		stDataPointRepo stNewDataPoint(pt.second);
 
 		std::string sUniqueDev(pt.second.getWellSiteDev().getID() + SEPARATOR_CHAR + pt.second.getWellSite().getID());
 
-		m_deviceDataPoints[sUniqueDev].insert(std::make_pair(strDataPointName, pt.second));
+		 m_deviceDataPoints[sUniqueDev].insert(
+				 std::make_pair(stNewDataPoint.m_objUniquePoint.getDataPoint().getID(), stNewDataPoint));
 	}
 }
 

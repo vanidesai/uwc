@@ -25,8 +25,7 @@ CCommon::CCommon()
 
 	if(false == readCommonEnvVariables())
 	{
-		std::cout << "Error while reading common environment variables, exiting application" << std::endl;
-		exit(-1);
+		std::cout << "Error while reading common environment variables" << std::endl;
 	}
 }
 
@@ -49,26 +48,28 @@ void CCommon::setScadaRTUIds()
 	if(m_strGroupId.empty())
 	{
 		std::cout << "Group id for scada-rtu is not set, exiting application" << std::endl;
-		exit(-1);
+		return;
 	}
 
 	const stEdgeNodeId& stEdgeNodeId = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getObjEdgeNodeId();
+	if(stEdgeNodeId.m_stNodeName.empty())
+	{
+		std::cout << "Edge node id name is not set for scada-rtu, exiting application" << std::endl;
+		return;
+	}
+
+	m_strEdgeNodeID.assign(stEdgeNodeId.m_stNodeName);
+
 	if(stEdgeNodeId.m_stGenUniquename == true)
 	{
-		if(stEdgeNodeId.m_stNodeName.empty())
-		{
-			std::cout << "Edge node id name is not set for scada-rtu, exiting application" << std::endl;
-			exit(-1);
-		}
 		//generate name with MAC address
-		m_strEdgeNodeID.assign(stEdgeNodeId.m_stNodeName);
 		m_strEdgeNodeID.append("-");
 
 		string strInterfaceName = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getInterfaceName();
 		if(strInterfaceName.empty())
 		{
 			std::cout << "Edge node id name is not set for scada-rtu, exiting application" << std::endl;
-			exit(-1);
+			return;
 		}
 
 		m_strEdgeNodeID.append(getMACAddress(strInterfaceName));
@@ -188,7 +189,6 @@ string CCommon::getMACAddress(const string& a_strInterfaceName)
 	if (strMAC.length() > 0)
 	{
 		string hex = regex_replace(strMAC, std::regex("\n"), "");
-		//string hex1 = regex_replace(hex, std::regex("\n"), "");
 		return hex;
 	}
 	else

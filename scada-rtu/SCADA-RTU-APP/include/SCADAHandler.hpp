@@ -34,6 +34,19 @@ using namespace network_info;
 // Declarations used for MQTT
 #define SUBSCRIBERID								"SCADA_SUBSCRIBER"
 
+struct stDataPointRepo
+{
+	const CUniqueDataPoint& m_objUniquePoint;
+
+	stDataPointRepo& operator=(const stDataPointRepo&) = delete;
+
+	stDataPointRepo(const CUniqueDataPoint& uniqueDataPoint):m_objUniquePoint(uniqueDataPoint)
+	{
+
+	}
+};
+
+
 class CSCADAHandler
 {
 	int m_QOS;
@@ -46,7 +59,7 @@ class CSCADAHandler
 	CScadaCallback m_scadaSubscriberCB;
 	CMQTTActionListener m_listener;
 
-	std::map<string, std::map<string, CUniqueDataPoint>> m_deviceDataPoints;
+	std::map<string, std::map<string, stDataPointRepo>> m_deviceDataPoints;
 
 	// Default constructor
 	CSCADAHandler(std::string strPlBusUrl, int iQOS);
@@ -62,8 +75,8 @@ class CSCADAHandler
 	void prepareNodeDeathMsg();
 	void publish_births();
 	void publish_node_birth();
-	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, CUniqueDataPoint>& a_dataPoints, string& a_siteName);
-	void publish_device_birth(string a_deviceName, std::map<string, CUniqueDataPoint>& a_dataPointInfo);
+	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, stDataPointRepo>& a_dataPoints, string& a_siteName);
+	void publish_device_birth(string a_deviceName, std::map<string, stDataPointRepo>& a_dataPointInfo);
 	bool initDataPoints();
 	void populateDataPoints();
 
