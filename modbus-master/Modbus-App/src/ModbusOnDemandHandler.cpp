@@ -372,12 +372,16 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 				{
 					DO_LOG_ERROR(" Invalid input json parameter for write request");
 					eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+					isValidJson = false;
 				}
 			}
 
-			isValidJson = validateInputJson(strSourceTopic,
+			if(isValidJson)
+			{
+				isValidJson = validateInputJson(strSourceTopic,
 					a_stMbusApiPram.m_stOnDemandReqData.m_strWellhead,
 					a_stMbusApiPram.m_stOnDemandReqData.m_strMetric);
+			}
 		}
 		if(!isValidJson)
 		{
@@ -410,111 +414,115 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 
 			return APP_ERROR_UNKNOWN_SERVICE_REQUEST;
 		}
-
-		obj = mpp.at(stTopic).getDataPoint();
+		// Next section should be executed only if request is for this container and
+		// request is valid
+		if(APP_SUCCESS == eFunRetType)
+		{
+			obj = mpp.at(stTopic).getDataPoint();
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-		a_stMbusApiPram.m_u8DevId = addrInfo.m_stTCP.m_uiUnitID;
+			a_stMbusApiPram.m_u8DevId = addrInfo.m_stTCP.m_uiUnitID;
 #else
-		a_stMbusApiPram.m_u8DevId = addrInfo.m_stRTU.m_uiSlaveId;
+			a_stMbusApiPram.m_u8DevId = addrInfo.m_stRTU.m_uiSlaveId;
 #endif
-		a_stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
-		a_stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
+			a_stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
+			a_stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
 
-		a_stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
-		a_stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
+			a_stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
+			a_stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
 
-		network_info::eEndPointType eType = obj.getAddress().m_eType;
+			network_info::eEndPointType eType = obj.getAddress().m_eType;
 
-		/// to find function code of received requestS
-		switch(eType)
-		{
-		case network_info::eEndPointType::eCoil:
-			funcCode = a_IsWriteReq ? WRITE_SINGLE_COIL: READ_COIL_STATUS;
-			break;
-		case network_info::eEndPointType::eHolding_Register:
-			funcCode = a_IsWriteReq ? a_stMbusApiPram.m_u16Quantity == 1 ? WRITE_SINGLE_REG: WRITE_MULTIPLE_REG : READ_HOLDING_REG;
-			break;
-		case network_info::eEndPointType::eInput_Register:
-			funcCode = READ_INPUT_REG;
-			break;
-		case network_info::eEndPointType::eDiscrete_Input:
-			funcCode = READ_INPUT_STATUS;
-			break;
-		default:
-			DO_LOG_ERROR(" Invalid type in datapoint:: " + a_stMbusApiPram.m_stOnDemandReqData.m_strMetric);
-			break;
-		}
-
-		if(a_IsWriteReq && (funcCode == READ_INPUT_REG || funcCode == READ_INPUT_STATUS))
-		{
-			funcCode = MBUS_MAX_FUN_CODE;
-			return APP_ERROR_POINT_IS_NOT_WRITABLE;
-		}
-
-		if(WRITE_MULTIPLE_REG == funcCode)
-		{
-			a_stMbusApiPram.m_u16ByteCount = a_stMbusApiPram.m_u16Quantity*2;
-		}
-		else if(WRITE_MULTIPLE_COILS == funcCode)
-		{
-			uint8_t u8ByteCount = (0 != (a_stMbusApiPram.m_u16Quantity%8))
-															?((a_stMbusApiPram.m_u16Quantity/8)+1)
-																	:(a_stMbusApiPram.m_u16Quantity/8);
-
-			a_stMbusApiPram.m_u16ByteCount = (uint8_t)u8ByteCount;
-		}
-		else if(WRITE_SINGLE_COIL == funcCode ||
-				WRITE_SINGLE_REG == funcCode)
-		{
-			a_stMbusApiPram.m_u16ByteCount = MODBUS_SINGLE_REGISTER_LENGTH;
-		}
-
-		if(WRITE_SINGLE_COIL == funcCode)
-		{
-			// If value is 0x01, then write 0xFF00
-			if( (0 == strValue.compare("0x00")) ||
-					(0 == strValue.compare("0X00"))  ||
-					(0 == strValue.compare("00")))
+			/// to find function code of received requestS
+			switch(eType)
 			{
-				strValue = "0x0000";
+			case network_info::eEndPointType::eCoil:
+				funcCode = a_IsWriteReq ? WRITE_SINGLE_COIL: READ_COIL_STATUS;
+				break;
+			case network_info::eEndPointType::eHolding_Register:
+				funcCode = a_IsWriteReq ? a_stMbusApiPram.m_u16Quantity == 1 ? WRITE_SINGLE_REG: WRITE_MULTIPLE_REG : READ_HOLDING_REG;
+				break;
+			case network_info::eEndPointType::eInput_Register:
+				funcCode = READ_INPUT_REG;
+				break;
+			case network_info::eEndPointType::eDiscrete_Input:
+				funcCode = READ_INPUT_STATUS;
+				break;
+			default:
+				DO_LOG_ERROR(" Invalid type in datapoint:: " + a_stMbusApiPram.m_stOnDemandReqData.m_strMetric);
+				break;
 			}
-			else if( (0 == strValue.compare("0x01")) ||
-					(0 == strValue.compare("0X01")) ||
-					(0 == strValue.compare("01")))
+
+			if(a_IsWriteReq && (funcCode == READ_INPUT_REG || funcCode == READ_INPUT_STATUS))
 			{
-				strValue = "0xFF00";
+				funcCode = MBUS_MAX_FUN_CODE;
+				return APP_ERROR_POINT_IS_NOT_WRITABLE;
 			}
-			else
+
+			if(WRITE_MULTIPLE_REG == funcCode)
 			{
-				eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+				a_stMbusApiPram.m_u16ByteCount = a_stMbusApiPram.m_u16Quantity*2;
 			}
-		}
-		if(true == a_IsWriteReq && funcCode != WRITE_MULTIPLE_COILS)
-		{
-			if((true == obj.getAddress().m_bIsByteSwap || true == obj.getAddress().m_bIsWordSwap))
+			else if(WRITE_MULTIPLE_COILS == funcCode)
 			{
-				std::vector<uint8_t> tempVt;
-				int i = 0;
-				if( ('0' == strValue[0]) && (('X' == strValue[1]) || ('x' == strValue[1])) )
+				uint8_t u8ByteCount = (0 != (a_stMbusApiPram.m_u16Quantity%8))
+																?((a_stMbusApiPram.m_u16Quantity/8)+1)
+																		:(a_stMbusApiPram.m_u16Quantity/8);
+
+				a_stMbusApiPram.m_u16ByteCount = (uint8_t)u8ByteCount;
+			}
+			else if(WRITE_SINGLE_COIL == funcCode ||
+					WRITE_SINGLE_REG == funcCode)
+			{
+				a_stMbusApiPram.m_u16ByteCount = MODBUS_SINGLE_REGISTER_LENGTH;
+			}
+
+			if(WRITE_SINGLE_COIL == funcCode)
+			{
+				// If value is 0x01, then write 0xFF00
+				if( (0 == strValue.compare("0x00")) ||
+						(0 == strValue.compare("0X00"))  ||
+						(0 == strValue.compare("00")))
 				{
-					i = 2;
+					strValue = "0x0000";
 				}
-				int iLen = strValue.length();
-				while(i < iLen)
+				else if( (0 == strValue.compare("0x01")) ||
+						(0 == strValue.compare("0X01")) ||
+						(0 == strValue.compare("01")))
 				{
-					unsigned char byte1 = char2int(strValue[i])*16 + char2int(strValue[i+1]);
-					tempVt.push_back(byte1);
-					i = i+2;
+					strValue = "0xFF00";
 				}
-				strValue = common_Handler::swapConversion(tempVt,
-						!obj.getAddress().m_bIsByteSwap,
-						obj.getAddress().m_bIsWordSwap);
+				else
+				{
+					eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+				}
 			}
-			int retVal = hex2bin(strValue, a_stMbusApiPram.m_u16ByteCount, a_stMbusApiPram.m_pu8Data);
-			if(-1 == retVal)
+			if(true == a_IsWriteReq && funcCode != WRITE_MULTIPLE_COILS)
 			{
-				DO_LOG_FATAL("Invalid value in request json.");
-				eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+				if((true == obj.getAddress().m_bIsByteSwap || true == obj.getAddress().m_bIsWordSwap))
+				{
+					std::vector<uint8_t> tempVt;
+					int i = 0;
+					if( ('0' == strValue[0]) && (('X' == strValue[1]) || ('x' == strValue[1])) )
+					{
+						i = 2;
+					}
+					int iLen = strValue.length();
+					while(i < iLen)
+					{
+						unsigned char byte1 = char2int(strValue[i])*16 + char2int(strValue[i+1]);
+						tempVt.push_back(byte1);
+						i = i+2;
+					}
+					strValue = common_Handler::swapConversion(tempVt,
+							!obj.getAddress().m_bIsByteSwap,
+							obj.getAddress().m_bIsWordSwap);
+				}
+				int retVal = hex2bin(strValue, a_stMbusApiPram.m_u16ByteCount, a_stMbusApiPram.m_pu8Data);
+				if(-1 == retVal)
+				{
+					DO_LOG_FATAL("Invalid value in request json.");
+					eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
+				}
 			}
 		}
 	}

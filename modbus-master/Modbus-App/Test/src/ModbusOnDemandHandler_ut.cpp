@@ -93,7 +93,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
 				16,
 				true);
 
-		EXPECT_EQ(APP_ERROR_INVALID_INPUT_JSON, eFunRetType);
+		EXPECT_EQ(APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 	}
 
 	catch( exception &e)
