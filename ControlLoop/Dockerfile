@@ -22,6 +22,8 @@ COPY --from=uwc_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
 COPY --from=uwc_common /usr/yaml/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* /ControlLoopApp/lib/
 COPY --from=uwc_common /usr/lib/libpaho* /ControlLoopApp/lib/
+COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
+COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_common /usr/include/MQTT* /ControlLoopApp/include/
 COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /ControlLoopApp/include/log4cpp
@@ -49,6 +51,8 @@ WORKDIR ${APP_WORK_DIR}
 COPY --from=controlloop /ControlLoopApp/Release/ControlLoopApp ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/lib/libpaho* ${APP_WORK_DIR}
+COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
+COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=controlloop /ControlLoopApp/Config/log4cpp.properties /opt/intel/config
