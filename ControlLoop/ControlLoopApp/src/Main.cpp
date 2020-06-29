@@ -31,7 +31,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.4.5"
+#define APP_VERSION "0.0.5.4"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -
@@ -664,6 +664,7 @@ void analyzeControlLoopData(QMgr::CEISMsgQMgr& qMgr)
 	}
 	catch (const std::exception &e)
 	{
+		cout << "Exception occured while publishing data: "<<e.what() << endl;
 	}
 }
 
