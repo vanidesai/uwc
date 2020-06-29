@@ -8,12 +8,6 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
-//#include <iostream>
-//#include <thread>
-//#include <vector>
-//#include <iterator>
-//#include <semaphore.h>
-
 #include "Common.hpp"
 #include "QueueMgr.hpp"
 #include "MQTTSubscribeHandler.hpp"
@@ -31,7 +25,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.5.3"
+#define APP_VERSION "0.0.5.4"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -

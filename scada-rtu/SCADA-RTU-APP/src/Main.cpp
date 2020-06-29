@@ -24,7 +24,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.5.3"
+#define APP_VERSION "0.0.5.4"
 
 /**
  * Function to keep running this application and check NBIRTH and NDEATH messages
@@ -59,28 +59,38 @@ int main(int argc, char *argv[])
 		{
 			DO_LOG_ERROR("AppName Environment Variable is not set");
 			std::cout << __func__ << ":" << __LINE__ << " Error : AppName Environment Variable is not set" <<  std::endl;
+
 			return -1;
 		}
 
 		DO_LOG_INFO("SCADA RTU container app version is set to :: "+  std::string(APP_VERSION));
 		cout << "SCADA RTU container app version is set to :: "+  std::string(APP_VERSION) << endl;
 
-		cout << "MQTT URL : " << CCommon::getInstance().getStrMqttURL() << endl;
-
-		CPublisher::instance();
-
-		if( false == CPublisher::instance().isPublisherConnected())
+		if(CCommon::getInstance().getStrMqttURL().empty())
 		{
-			std::cout << "Publisher failed to connect with MQTT broker" << endl;
-			exit(-1);
+			cout << "MQTT_URL is empty in environment variables" << endl;
 		}
-		CSCADAHandler::instance();
+		else
+		{
+			cout << "MQTT URL : " << CCommon::getInstance().getStrMqttURL() << endl;
+
+			CPublisher::instance();
+
+			if( false == CPublisher::instance().isPublisherConnected())
+			{
+				std::cout << "Publisher failed to connect with MQTT broker" << endl;
+			}
+			else
+			{
+				CSCADAHandler::instance();
+			}
+		}
+
 
 #ifdef UNIT_TEST
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 #endif
-
 		//send messages for SCADA
 		g_vThreads.push_back(std::thread(updateDataPoints));
 
