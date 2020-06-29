@@ -1,8 +1,14 @@
 ################################################################################
-# Automatically-generated file. Do not edit!
+# The source code contained or described herein and all documents related to
+# the source code ("Material") are owned by Intel Corporation. Title to the
+# Material remains with Intel Corporation.
+#
+# No license under any patent, copyright, trade secret or other intellectual
+# property right is granted to or conferred upon you by disclosure or delivery of
+# the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ################################################################################
 
 USER_OBJS :=
 
-LIBS := -lyaml-cpp -lcjson -leisconfigmgr -leismsgenv -leisutils -leismsgbus -lpthread -lpaho-mqttpp3 -lpaho-mqtt3a -lpaho-mqtt3c -llog4cpp
+LIBS := -lcjson -lyaml-cpp -llog4cpp -lpaho-mqtt3as -lpaho-mqttpp3 -lpthread -leisconfigmgr -leismsgenv -lssl -lcrypto -leisutils -leismsgbus 
 
