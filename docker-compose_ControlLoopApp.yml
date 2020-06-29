@@ -108,8 +108,6 @@ services:
     hostname: modbus-tcp-master
     network_mode: host
     read_only: true
-    tmpfs:
-      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -185,8 +183,6 @@ services:
     hostname: modbus-rtu-master
     network_mode: host
     read_only: true
-    tmpfs:
-      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -200,9 +196,6 @@ services:
       ZMQ_RECV_HWM: "1000"
       CUTOFF_INTERVAL_PERCENTAGE: 90
       SERIAL_PORT_RETRY_INTERVAL: 1
-      BAUD_RATE: 9600
-      PARITY: "E"
-      PORT_NAME: "/dev/ttyUSB0"
       MY_APP_ID: 2
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
@@ -421,51 +414,6 @@ services:
       - client_cert
       - client_key
 
-#  scada-rtu:
-#    depends_on:
-#      - ia_eisbase
-#      - uwc_common
-#    build:
-#      context: $PWD/../scada-rtu/
-#      dockerfile: $PWD/../scada-rtu/Dockerfile
-#      args:
-#        EIS_VERSION: ${EIS_VERSION}
-#        EIS_UID: ${EIS_UID}
-#        EIS_USER_NAME: ${EIS_USER_NAME}
-#    image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
-#    container_name: scada-rtu
-#    hostname: scada-rtu
-#    network_mode: host
-#    restart: unless-stopped
-#    ulimits:
-#     rtprio:
-#       soft: "99" # these are the maximum values of priorites to be used inside the container application
-#       hard: "99"
-#    environment:
-#      AppName: "SCADA-RTU"
-#      DEV_MODE: ${DEV_MODE}
-#      no_proxy: ${no_proxy}
-#      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
-#      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
-#      NODE_CONFIGURATION_FILE: "Node_configuration.yml"
-#      NETWORK_TYPE: "ALL"
-#      MQTT_URL: ""
-#      CertType: "zmq"
-#      PROFILING_MODE: ${PROFILING_MODE}
-#    logging:
-#        driver: "json-file"
-#        options:
-#            max-file: "3"
-#            max-size: "10m"
-#    user: ${EIS_UID}
-#    volumes:
-#     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
-#     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-#    secrets:
-#      - ca_etcd
-#      - etcd_SCADA-RTU_cert
-#      - etcd_SCADA-RTU_key
-
 volumes:
   vol_uwc_socket:
     driver: local
@@ -502,10 +450,6 @@ secrets:
     file: provision/Certificates/ControlLoop/ControlLoop_client_certificate.pem
   etcd_ControlLoop_key:
     file: provision/Certificates/ControlLoop/ControlLoop_client_key.pem
-#  etcd_SCADA-RTU_cert:
-#    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_certificate.pem
-#  etcd_SCADA-RTU_key:
-#    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_key.pem
   ca_broker:
     file: provision/Certificates/ca/ca_certificate.pem
   broker_cert:
