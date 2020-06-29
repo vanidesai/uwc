@@ -35,8 +35,8 @@ To set scada-rtu container in unit testing mode, please assign MQTT broker URL i
 1. EdgeInsightsSoftware-v2.2-PV version of EIS should be available on deploy machine before deployment. 
 2. Copy files from "Release" diectory (e.g. all shell scripts, tar.gz file, etc.) into "EdgeInsightsSoftware-v2.2-PV/IEdgeInsights" directory. Please ensure that shell scripts have "execute" permission (sudo chmod +x <script name>).
 3. Open a terminal and go to EdgeInsightsSoftware-v2.2-PV/IEdgeInsights directory.
-4. Open docker-compose.yml file and go to section "scada-rtu". Then uncomment the entire "scada-rtu" section ( line numbers 328 to 370), and also uncomment certicates for scada-rtu (line numbers 405 to 408). Go to line no 355 and add MQTT broker URL (please refer section "Pre-requisite to capture Scada-rtu messages"). Then save the file.
-5. Open docker-compose_unit_test.yml file and go to section "scada-rtu-test". Then uncomment entire section (line numbers 245 to 282).
+4. Open docker-compose.yml file and go to section "scada-rtu". Then uncomment the entire "scada-rtu" section ( line numbers 336 to 380), and also uncomment certicates for scada-rtu (line numbers 415 to 418). Go to line no 364 and add MQTT broker URL (please refer section "Pre-requisite to capture Scada-rtu messages"). Then save the file.
+5. Open docker-compose_unit_test.yml file and go to section "scada-rtu-test". Then uncomment entire section (line numbers 245 to 283).
 6. Run below commands on terminal to deploy all UWC containers.
 a)Provision for EIS, run below command:
 sudo ./02_provisionEIS.sh
