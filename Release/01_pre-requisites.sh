@@ -215,7 +215,21 @@ createDockerVolumeDir()
         	echo "${RED}Failed to create docker volume directory${NC}"
 		exit 1;
 	fi
-    fi
+   fi
+	echo "${GREEN}Deleting old /opt/intel/eis/container_logs directory.${NC}"
+	rm -rf  /opt/intel/eis/container_logs
+	echo "${GREEN}Done..${NC}"
+	echo "${GREEN}Creating /opt/intel/eis/container_logs directory.${NC}"
+	mkdir -p /opt/intel/eis/container_logs/modbus-tcp-master
+	mkdir -p /opt/intel/eis/container_logs/modbus-rtu-master
+	mkdir -p /opt/intel/eis/container_logs/mqtt-export
+	mkdir -p /opt/intel/eis/container_logs/scada-rtu
+	if [ "$?" -eq "0" ]; then
+		echo "${GREEN}/opt/intel/eis/container_logs is sucessfully created. ${NC}"
+	else
+		echo "${RED}Failed to create docker volume directory${NC}"
+		exit 1;
+	fi
     if [ ! -d /opt/intel/eis/uwc_data/common_config ]; then
     	echo "${GREEN}common_config directory is not present in /opt/intel/eis/ directory.${NC}"
     	echo "${GREEN}Creating /opt/intel/eis/uwc_data/common_config directory.${NC}"

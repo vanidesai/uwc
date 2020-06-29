@@ -278,5 +278,6 @@ services:
 #            max-size: "10m"
 #    volumes:
 #      - "$PWD/unit_test_reports/scada-rtu:/reports/scada-rtu"
-#     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
-#     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+#      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+#      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+#      - "${EIS_INSTALL_PATH}/container_logs/scada-rtu:/opt/intel/app/logs"

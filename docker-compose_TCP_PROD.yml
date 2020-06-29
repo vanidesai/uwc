@@ -109,8 +109,6 @@ services:
     hostname: modbus-tcp-master
     network_mode: host
     read_only: true
-    tmpfs:
-      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -151,6 +149,7 @@ services:
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+      - "${EIS_INSTALL_PATH}/container_logs/modbus-tcp-master:/opt/intel/app/logs"
     user: ${EIS_UID}
     secrets:
       - ca_etcd
@@ -173,8 +172,6 @@ services:
     hostname: modbus-rtu-master
     network_mode: host
     read_only: true
-    tmpfs:
-      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -216,6 +213,7 @@ services:
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+      - "${EIS_INSTALL_PATH}/container_logs/modbus-rtu-master:/opt/intel/app/logs"
     user: ${EIS_UID}
     devices:
       - /dev:/dev
@@ -268,8 +266,6 @@ services:
     hostname: mqtt-export
     network_mode: host
     read_only: true
-    tmpfs:
-      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -320,6 +316,7 @@ services:
     user: ${EIS_UID}
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+      - "${EIS_INSTALL_PATH}/container_logs/mqtt-export:/opt/intel/app/logs"
     secrets:
       - ca_etcd
       - etcd_MQTT_Export_cert
@@ -344,8 +341,6 @@ services:
 #    hostname: scada-rtu
 #    network_mode: host
 #    read_only: true
-#    tmpfs:
-#      - /opt/intel/app/logs
 #    restart: unless-stopped
 #    ulimits:
 #     rtprio:
@@ -369,7 +364,8 @@ services:
 #    user: ${EIS_UID}
 #    volumes:
 #     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
-#     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+#     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_NSTALL_PATH}/uwc_data/common_config:ro"
+#     - "${EIS_INSTALL_PATH}/container_logs/scada-rtu:/opt/intel/app/logs"
 #    secrets:
 #      - ca_etcd
 #      - etcd_SCADA-RTU_cert

@@ -105,8 +105,6 @@ services:
     hostname: modbus-tcp-master
     network_mode: host
     read_only: true
-    tmpfs:
-      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -147,6 +145,7 @@ services:
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+      - "${EIS_INSTALL_PATH}/container_logs/modbus-tcp-master:/opt/intel/app/logs"
     user: ${EIS_UID}
 
   modbus-rtu-master:
@@ -165,8 +164,6 @@ services:
     hostname: modbus-rtu-master
     network_mode: host
     read_only: true
-    tmpfs:
-      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -208,6 +205,7 @@ services:
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+      - "${EIS_INSTALL_PATH}/container_logs/modbus-rtu-master:/opt/intel/app/logs"
     user: ${EIS_UID}
     devices:
       - /dev:/dev
@@ -243,6 +241,7 @@ services:
   mqtt-export:
     depends_on:
       - ia_eisbase
+      - uwc_common
     build:
       context: $PWD/../mqtt-export/
       dockerfile: $PWD/../mqtt-export/Dockerfile
@@ -255,8 +254,6 @@ services:
     hostname: mqtt-export
     network_mode: host
     read_only: true
-    tmpfs:
-      - /opt/intel/app/logs
     restart: unless-stopped
     ulimits:
      rtprio:
@@ -307,6 +304,7 @@ services:
     user: ${EIS_UID}
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+      - "${EIS_INSTALL_PATH}/container_logs/mqtt-export:/opt/intel/app/logs"
 
 #  scada-rtu:
 #    depends_on:
@@ -324,8 +322,6 @@ services:
 #    hostname: scada-rtu
 #    network_mode: host
 #    read_only: true
-#    tmpfs:
-#      - /opt/intel/app/logs
 #    restart: unless-stopped
 #    ulimits:
 #     rtprio:
@@ -350,6 +346,7 @@ services:
 #    volumes:
 #     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
 #     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+#     - "${EIS_INSTALL_PATH}/container_logs/scada-rtu:/opt/intel/app/logs"
 
 volumes:
   vol_etcd_keeper:
