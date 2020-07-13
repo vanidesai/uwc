@@ -38,7 +38,7 @@ RUN mkdir kw10 ; \
 
 RUN  ls -la ~
 RUN  mkdir .klocwork ;
-RUN  ls -la ;
+RUN  ls -la /var/;
 RUN  pwd ;
 RUN  git clone --single-branch --branch master https://a723339e75df0c7223b7c725a7c808da43fdad45@github.impcloud.net/uwc/UWC-Core.git \
      &&  cp UWC-Core/.cicd/Tahu/ltoken / ;
