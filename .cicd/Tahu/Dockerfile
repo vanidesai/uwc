@@ -41,6 +41,7 @@ RUN  cp UWC-Core/.cicd/Tahu/ltoken / ;
 RUN  rm -rf UWC-Core ;
 RUN  chmod 777 ltoken ;
 RUN  ls -la ;
+RUN  pwd ;
 ADD  ltoken .klocwork/
 
 RUN mv .klocwork ~
