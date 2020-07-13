@@ -71,7 +71,7 @@ RUN mkdir kw10 ; \
 RUN  ls -la ~
 RUN  mkdir .klocwork ;
 RUN  pwd ;
-RUN  ls la ;
+RUN  ls -la ;
 ADD  ltoken .klocwork/
 
 RUN mv .klocwork ~
