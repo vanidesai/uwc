@@ -40,7 +40,7 @@ RUN  mkdir .klocwork ;
 RUN  git clone --single-branch --branch master https://a723339e75df0c7223b7c725a7c808da43fdad45@github.impcloud.net/uwc/UWC-Core.git \
      &&  ls -la \
      &&  cp UWC-Core/.cicd/jbrzozoski_tahu_c/ltoken .klocwork/ ;
-	 &&  rm -rf UWC-Core ;
+     &&  rm -rf UWC-Core ;
      
    
 RUN  ls -la ;
