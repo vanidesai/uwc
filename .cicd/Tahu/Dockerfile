@@ -4,7 +4,6 @@
 FROM ubuntu:18.04
 RUN apt-get update && apt-get install -y git wget build-essential
 
-
 RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&  ls \
     &&  pwd \
@@ -39,15 +38,9 @@ RUN mkdir kw10 ; \
 
 RUN  ls -la ~
 RUN  mkdir .klocwork ;
-RUN  ls -la /var/lib/;
-RUN  pwd ;
-RUN  git clone --single-branch --branch master https://a723339e75df0c7223b7c725a7c808da43fdad45@github.impcloud.net/uwc/UWC-Core.git \
-     &&  cp UWC-Core/.cicd/Tahu/ltoken / ;
-RUN  ls -la /
-#RUN  for d in /var/lib/docker/tmp/; do cp ltoken "$d"; done ;
-RUN  ls -la /var/lib/docker/;
-ADD  /ltoken .klocwork/ ;
-RUN  rm -r UWC-Core ;
+
+ADD  ltoken .klocwork/ ;
+
 
 RUN mv .klocwork ~
 RUN ls -la ~/.klocwork
