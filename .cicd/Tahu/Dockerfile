@@ -1,4 +1,5 @@
-# Build tahu library
+
+&&  cp UWC-Core/.cicd/Tahu/ltoken ./ \# Build tahu library
 FROM ubuntu:18.04
 RUN apt-get update && apt-get install -y git wget build-essential
 
@@ -9,6 +10,7 @@ RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&  git clone --branch v0.5.8 https://github.com/eclipse/tahu \
     &&  git clone --single-branch --branch master https://a723339e75df0c7223b7c725a7c808da43fdad45@github.impcloud.net/uwc/UWC-Core.git \
     &&  cp UWC-Core/.cicd/Tahu/tahu.c ./ \
+    &&  cp UWC-Core/.cicd/Tahu/ltoken ./ \
     &&  rm -rf UWC-Core \
     &&  rm -rf tahu/client_libraries/c/src/tahu.c && cp /tahu.c tahu/client_libraries/c/src \
     &&  cd tahu/client_libraries/c \
@@ -36,10 +38,6 @@ RUN mkdir kw10 ; \
 
 RUN  ls -la ~
 RUN  mkdir .klocwork ;
-RUN  git clone --single-branch --branch master https://a723339e75df0c7223b7c725a7c808da43fdad45@github.impcloud.net/uwc/UWC-Core.git ;
-RUN  cp UWC-Core/.cicd/Tahu/ltoken / ;
-RUN  rm -rf UWC-Core ;
-RUN  chmod 777 ltoken ;
 RUN  ls -la ;
 RUN  pwd ;
 ADD  ltoken .klocwork/
