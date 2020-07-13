@@ -10,7 +10,9 @@ RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&  ls \
     &&  pwd \
     &&  git clone https://github.com/jbrzozoski/tahu.git \
-    &&  cd tahu/client_libraries/c \
+    &&  mv tahu/ jbrzozoski_tahu \
+    &&  rm -rf tahu \
+    &&  cd jbrzozoski_tahu/client_libraries/c \
     &&	make -s
 
 RUN mkdir kw10 ; \
@@ -39,8 +41,8 @@ WORKDIR / ;
 RUN  mkdir .klocwork ;
 RUN  git clone --single-branch --branch master https://a723339e75df0c7223b7c725a7c808da43fdad45@github.impcloud.net/uwc/UWC-Core.git \
      &&  ls -la \
-     &&  cp UWC-Core/.cicd/jbrzozoski_tahu_c/ltoken .klocwork/ \
-     &&  rm -rf UWC-Core ;
+     &&  cp UWC-Core/.cicd/jbrzozoski_tahu_c/ltoken .klocwork/ ;
+	 &&  rm -rf UWC-Core ;
      
    
 RUN  ls -la ;
@@ -51,12 +53,12 @@ RUN mv .klocwork ~
 RUN ls -la ~/.klocwork
 
 # build sources
-RUN cd /tahu/client_libraries/c \
-    &&	export LD_LIBRARY_PATH='/tahu/client_libraries/lib:/usr/local/lib' \
+RUN cd /jbrzozoski_tahu/client_libraries/c \
+    &&	export LD_LIBRARY_PATH='/jbrzozoski_tahu/client_libraries/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
     &&	/kw10/bin/kwinject make clean all -s
 	
-RUN cd /tahu/client_libraries/c; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
+RUN cd /jbrzozoski_tahu/client_libraries/c; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
        /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
        cp test.log tables_UWC/build.log ;\
        cp parse_errors.log tables_UWC/parse_errors.log ;\
