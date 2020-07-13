@@ -2,6 +2,8 @@
 
 # Build tahu library
 FROM ubuntu:18.04
+
+WORKDIR /
 RUN apt-get update && apt-get install -y git wget build-essential
 
 RUN apt-get update && apt-get install -y libmosquitto-dev \
@@ -16,7 +18,7 @@ RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&  cd tahu/client_libraries/c \
     &&	make -s
 
-WORKDIR /
+
 RUN mkdir kw10 ; \
        export http_proxy="http://proxy-chain.intel.com:911"; \
        export https_proxy="http://proxy-chain.intel.com:911"; \
@@ -36,6 +38,7 @@ RUN mkdir kw10 ; \
        chmod 755 kw-server-installer.12.3.0.819.linux64.sh ;\
        su hadi -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /kw10 --license-server kwlic.intel.com:7500" ;\
        ls kw10 ;
+
 
 RUN  ls -la ~
 RUN  mkdir .klocwork ;
