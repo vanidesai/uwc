@@ -9,15 +9,9 @@ RUN apt-get update && apt-get install -y git wget build-essential
 RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&  ls \
     &&  pwd \
-    &&  git clone --branch v0.5.8 https://github.com/eclipse/tahu \
-    &&  git clone --single-branch --branch master https://a723339e75df0c7223b7c725a7c808da43fdad45@github.impcloud.net/uwc/UWC-Core.git \
-    &&  cp UWC-Core/.cicd/Tahu/tahu.c ./ \
-    &&  cp UWC-Core/.cicd/Tahu/ltoken ./ \
-    &&  rm -rf UWC-Core \
-    &&  rm -rf tahu/client_libraries/c/src/tahu.c && cp /tahu.c tahu/client_libraries/c/src \
+    &&  git clone https://github.com/jbrzozoski/tahu.git \
     &&  cd tahu/client_libraries/c \
     &&	make -s
-
 
 RUN mkdir kw10 ; \
        export http_proxy="http://proxy-chain.intel.com:911"; \
