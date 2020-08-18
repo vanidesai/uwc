@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y git wget build-essential
 RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&  ls \
     &&  pwd \
-    &&  git clone https://github.com/jbrzozoski/tahu.git \
+    &&  git clone --branch develop https://github.com/eclipse/tahu \
     &&  cd tahu/client_libraries/c \
     &&	make -s
 
