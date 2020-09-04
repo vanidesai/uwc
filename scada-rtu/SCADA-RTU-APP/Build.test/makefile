@@ -46,19 +46,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: SCADARTU_test
+all: SCADARTU
 
 # Tool invocations
-SCADARTU_test: $(OBJS) $(USER_OBJS)
+SCADARTU: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L/usr/local/lib -L../$(PROJECT_DIR)/lib -ftest-coverage -fprofile-arcs -o "SCADARTU_test" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L/usr/local/lib -L../$(PROJECT_DIR)/lib -ftest-coverage -fprofile-arcs -o "SCADARTU" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) SCADARTU_test
+	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) SCADARTU
 	-@echo ' '
 
 .PHONY: all clean dependents

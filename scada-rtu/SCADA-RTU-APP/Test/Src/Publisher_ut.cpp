@@ -23,6 +23,6 @@ void Publisher_ut::TearDown()
 // publishMqttExportMsg: Successfully publish mqtt-export message
 TEST_F(Publisher_ut, publishMqttExportMsg_Sucess)
 {
-	EXPECT_EQ( true, CPublisher::instance().publishMqttExportMsg(msg, topic) );
+	EXPECT_EQ( true, CPublisher::instance().publishIntMqttMsg(msg, topic) );
 
 }

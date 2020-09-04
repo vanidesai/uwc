@@ -31,7 +31,7 @@ struct stFuture
 	std::future_status m_bStatus;
 };
 
-//extern void updateDataPoints(QMgr::CQueueMgr& a_qMgr);
+extern void updateDataPoints();
 //extern bool processMsgToSendOnMqtt(QMgr::stMqttMsg a_mqttMsgToPublish);
 //extern bool postMsgsToSCADA(QMgr::CQueueMgr& a_qMgr);
 extern bool isTaskComplete(stFuture &a_futures);

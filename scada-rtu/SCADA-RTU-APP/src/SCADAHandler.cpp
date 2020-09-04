@@ -465,18 +465,21 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 			string siteName = vParsedTopic[vParsedTopic.size()-1];
 
 			string strMsgTopic = "";
+			metricMap_t m_metricForMsg;
 
 			//depending on action, call the topic name
 			switch(itr.m_enAction)
 			{
 			case enMSG_BIRTH:
 				strMsgTopic = CCommon::getInstance().getDBirthTopic() + "/";
+				m_metricForMsg = itr.m_refSparkPlugDev.get().getMetrics();
 				break;
 			case enMSG_DEATH:
 				strMsgTopic = CCommon::getInstance().getDDeathTopic() + "/";
 				break;
 			case enMSG_DATA:
 				strMsgTopic = CCommon::getInstance().getDDataTopic() + "/";
+				m_metricForMsg = std::ref(itr.m_mapChangedMetrics);
 				break;
 			default:
 				DO_LOG_ERROR("Invalid message type received from internal MQTT broker");
@@ -485,9 +488,8 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 
 			strMsgTopic.append(strDeviceName);
 
-			//these are metrics/ data-points
 			//these shall be part of a single sparkplug msg
-			for (auto &itrMetric : itr.m_mapChangedMetrics)
+			for (auto &itrMetric : m_metricForMsg)
 			{
 				uint64_t current_time = get_current_timestamp();
 				string strMetricName = itrMetric.second.getName();

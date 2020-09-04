@@ -20,7 +20,7 @@ void Main_ut::TearDown()
 	// TearDown code
 }
 
-#if 0 //In progress
+
 /****************************************************************/
 /* Test helper function:
  * Sets global variable g_shouldStop to true after 1 sec,
@@ -37,7 +37,7 @@ static void Set_g_shouldStop()
 /* updateDataPoints: ? */
 TEST_F(Main_ut, updateDataPoints_001)
 {
-	if(-1 == sem_init(&( QMgr::getMqtt().m_semaphore ), 0, 0))
+	/*if(-1 == sem_init(&( QMgr::getMqtt().m_semaphore ), 0, 0))
 	{
 		cout<<endl<<"[ UT ]:     semaphore initialization failed!"<<endl;
 		exit(0);
@@ -45,9 +45,9 @@ TEST_F(Main_ut, updateDataPoints_001)
 	else
 	{
 		cout<<endl<<"[ UT ]:     semaphore initialization is successful"<<endl;
-	}
+	}*/
 
-	std::thread TestTarget( updateDataPoints, std::ref(QMgr::getMqtt()) );
+	std::thread TestTarget( updateDataPoints );
 	std::thread TestHelper(Set_g_shouldStop);
 
 	TestTarget.join();
@@ -56,59 +56,3 @@ TEST_F(Main_ut, updateDataPoints_001)
 	// Setting the value of "g_shouldStop back" to default value
 	g_shouldStop = false;
 }
-#endif
-
-#if 0 // Function removed
-/* postMsgsToSCADA: success */
-TEST_F(Main_ut, postMsgsToSCADA_Success)
-{
-	Bool_Res = postMsgsToSCADA(QMgr::getMqtt());
-
-	EXPECT_EQ(true, Bool_Res);
-}
-
-/* isTaskComplete: When status = ready */
-TEST_F(Main_ut, isTaskComplete_StatusReady)
-{
-	stTask.m_bStatus = future_status::ready;
-
-	Bool_Res = isTaskComplete(stTask);
-
-	EXPECT_EQ(true, Bool_Res);
-}
-
-/* isTaskComplete: When status = timeout */
-TEST_F(Main_ut, isTaskComplete_StatusTimeout)
-{
-	stTask.m_bStatus = future_status::timeout;
-
-	Bool_Res = isTaskComplete(stTask);
-
-	EXPECT_EQ(false, Bool_Res);
-}
-
-/* isTaskComplete: When status = deferred */
-TEST_F(Main_ut, isTaskComplete_StatusDeferred)
-{
-	stTask.m_bStatus = future_status::deferred;
-
-	Bool_Res = isTaskComplete(stTask);
-
-	EXPECT_EQ(false, Bool_Res);
-}
-
-/* About this test */
-TEST_F(Main_ut, TimerThread_001)
-{
-	std::thread TestTarget(timerThread, 10 );
-	std::thread TestHelper(Set_g_shouldStop);
-
-	TestHelper.join();
-	TestTarget.join();
-
-	// Setting the value of "g_shouldStop back" to default value
-	g_shouldStop = false;
-
-	//EXPECT_EQ(false, Bool_Res);
-}
-#endif // Function removed
