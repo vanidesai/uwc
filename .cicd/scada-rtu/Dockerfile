@@ -22,6 +22,8 @@ COPY --from=uwc_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
 COPY --from=uwc_common /usr/yaml/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* /SCADA-RTU-APP/lib/
 COPY --from=uwc_common /usr/lib/libpaho* /SCADA-RTU-APP/lib/
+COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
+COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_common /usr/include/MQTT* /SCADA-RTU-APP/include/
 COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /SCADA-RTU-APP/include/log4cpp
@@ -58,6 +60,7 @@ ADD  ltoken .klocwork/
 RUN mv .klocwork ~
 RUN ls -la ~/.klocwork
 
+
 # build sources
 RUN cd /SCADA-RTU-APP/Release \
     &&	export LD_LIBRARY_PATH='/SCADA-RTU-APP/lib:/usr/local/lib' \
@@ -69,7 +72,8 @@ RUN cd /SCADA-RTU-APP/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-j
        cp test.log tables_UWC/build.log ;\
        cp parse_errors.log tables_UWC/parse_errors.log ;\
        /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
-
+	   
+	   
 # Build scada-rtu container service
 FROM ia_common:$EIS_VERSION as scada-rtu-service
 
@@ -77,6 +81,7 @@ WORKDIR /
 # creating base directories
 ENV APP_WORK_DIR /opt/intel/app/
 RUN mkdir -p /opt/intel/app \
+	&& mkdir -p /opt/intel/app/logs \
 	&& mkdir -p /opt/intel/config \
 	&& mkdir -p /opt/intel/eis/uwc_data
 
@@ -89,6 +94,8 @@ COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/lib/libpaho* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
+COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
+COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /EIS/tahu/client_libraries/c/lib/libtahu.so ${APP_WORK_DIR}/lib/
 COPY --from=uwc_common /EIS/tahu/client_libraries/c/include/* ${APP_WORK_DIR}/include/tahu/
 COPY --from=scada-rtu /SCADA-RTU-APP/Config/log4cpp.properties /opt/intel/config
