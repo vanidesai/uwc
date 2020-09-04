@@ -17,14 +17,16 @@
 #include "Logger.hpp"
 #include "Publisher.hpp"
 #include "NetworkInfo.hpp"
+#include "SparkPlugDevMgr.hpp"
+
 //
-extern "C"
-{
-#include <tahu.h>
 #include <tahu.pb.h>
 #include <pb_decode.h>
 #include <pb_encode.h>
 #include <inttypes.h>
+extern "C"
+{
+#include <tahu.h>
 }
 //
 
@@ -34,13 +36,13 @@ using namespace network_info;
 // Declarations used for MQTT
 #define SUBSCRIBERID								"SCADA_SUBSCRIBER"
 
-struct stDataPointRepo
+struct stRealDevDataPointRepo
 {
 	const CUniqueDataPoint& m_objUniquePoint;
 
-	stDataPointRepo& operator=(const stDataPointRepo&) = delete;
+	stRealDevDataPointRepo& operator=(const stRealDevDataPointRepo&) = delete;
 
-	stDataPointRepo(const CUniqueDataPoint& uniqueDataPoint):m_objUniquePoint(uniqueDataPoint)
+	stRealDevDataPointRepo(const CUniqueDataPoint& uniqueDataPoint):m_objUniquePoint(uniqueDataPoint)
 	{
 
 	}
@@ -59,7 +61,7 @@ class CSCADAHandler
 	CScadaCallback m_scadaSubscriberCB;
 	CMQTTActionListener m_listener;
 
-	std::map<string, std::map<string, stDataPointRepo>> m_deviceDataPoints;
+	std::map<string, std::map<string, stRealDevDataPointRepo>> m_deviceDataPoints;
 
 	// Default constructor
 	CSCADAHandler(std::string strPlBusUrl, int iQOS);
@@ -75,16 +77,23 @@ class CSCADAHandler
 	void prepareNodeDeathMsg();
 	void publish_births();
 	void publish_node_birth();
-	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, stDataPointRepo>& a_dataPoints, string& a_siteName);
-	void publish_device_birth(string a_deviceName, std::map<string, stDataPointRepo>& a_dataPointInfo);
+	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, stRealDevDataPointRepo>& a_dataPoints, string& a_siteName);
+	void publish_device_birth(string a_deviceName, std::map<string, stRealDevDataPointRepo>& a_dataPointInfo);
 	bool initDataPoints();
 	void populateDataPoints();
 
-public:
+	bool splitString(const string a_string, vector<string>& a_splitVector, const string& a_delimeter);
 
+	void connected();
+
+public:
 	~CSCADAHandler();
 	static CSCADAHandler& instance();
+	bool prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
 	void cleanup();
+	bool isExtMqttSubConnected();
+	void disconnect();
+	void connect();
 };
 
 #endif

@@ -35,6 +35,7 @@ namespace
 	std::map<std::string, CWellSiteInfo> g_mapYMLWellSite;
 	std::map<std::string, CRTUNetworkInfo> g_mapRTUNwInfo;
 	std::map<std::string, CUniqueDataPoint> g_mapUniqueDataPoint;
+	std::map<std::string, CUniqueDataDevice> g_mapUniqueDataDevice;
 	std::vector<std::string> g_sErrorYMLs;
 	unsigned short g_usTotalCnt{0};
 
@@ -47,6 +48,12 @@ namespace
 		DO_LOG_DEBUG("Start");
 		for(auto &objWellSiteDev : a_oWellSite.getDevices())
 		{
+			std::string devID(SEPARATOR_CHAR+ objWellSiteDev.getID() + SEPARATOR_CHAR + a_oWellSite.getID());
+
+			// populate device data
+			CUniqueDataDevice objDevice{objWellSiteDev};
+			g_mapUniqueDataDevice.emplace(devID, objDevice);
+
 			//unsigned int uiPoint = 0;
 			for(auto &objPt : objWellSiteDev.getDevInfo().getDataPoints())
 			{
@@ -559,6 +566,16 @@ const std::map<std::string, CUniqueDataPoint>& network_info::getUniquePointList(
 {
 	DO_LOG_DEBUG("");
 	return g_mapUniqueDataPoint;
+}
+
+/**
+ * Get unique device list
+ * @return map of unique device
+ */
+const std::map<std::string, CUniqueDataDevice>& network_info::getUniqueDeviceList()
+{
+	DO_LOG_DEBUG("");
+	return g_mapUniqueDataDevice;
 }
 
 /**

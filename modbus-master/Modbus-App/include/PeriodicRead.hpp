@@ -73,7 +73,7 @@ private:
 	bool checkForRetry(struct stStackResponse &a_stStackResNode, eMbusCallbackType operationCallbackType);
 	void getCallbackForRetry(void** callbackFunc, eMbusCallbackType operationCallbackType);
 
-	bool prepareResponseJson(msg_envelope_t** a_pmsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp, struct timespec *a_pstTsPolling);
+	bool prepareResponseJson(msg_envelope_t** a_pmsg, std::string &a_sValue, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp, struct timespec *a_pstTsPolling);
 	bool postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData, struct timespec *a_pstTsPolling);
 	bool postResponseJSON(stStackResponse& a_stResp);
 

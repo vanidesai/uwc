@@ -112,14 +112,15 @@ static unsigned long get_micros(struct timespec ts) {
 
 /**
  * Prepare response json using EIS APIs
- * @param a_pMsg		:[in] pointer to message envelope to fill up
+ * @param a_pMsg		:[out] pointer to message envelope to fill up
+ * @param a_sValue		:[out] Value, if available
  * @param a_objReqData	:[in] request data
  * @param a_stResp		:[in] response data
  * @param a_pstTsPolling:[in] polling timestamp, if any
  * @return 	true : on success,
  * 			false : on error
  */
-bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp, struct timespec *a_pstTsPolling = NULL)
+bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std::string &a_sValue, const CRefDataForPolling* a_objReqData, stStackResponse a_stResp, struct timespec *a_pstTsPolling = NULL)
 {
 	if((MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType) &&
 			NULL == a_objReqData)
@@ -135,8 +136,7 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, con
 	{
 		MbusAPI_t stMbusApiPram = {};
 		std::string sTimestamp, sUsec, sTxID;
-		std::string sPolllingVal = "";
-		sPolllingVal.clear();
+		a_sValue.clear();
 		msg_envelope_elem_body_t* ptTopic = NULL;
 		msg_envelope_elem_body_t* ptWellhead = NULL;
 		msg_envelope_elem_body_t* ptMetric = NULL;
@@ -255,14 +255,8 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, con
 				std::vector<uint8_t> vt = a_stResp.m_Value;
 				if(0 != vt.size())
 				{
-					std::string sVal = "";
-					sVal = common_Handler::swapConversion(vt, bIsByteSwap, bIsWordSwap);
-					if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
-					{
-						sPolllingVal  = sVal;
-					}
-
-					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(sVal.c_str());
+					a_sValue = common_Handler::swapConversion(vt, bIsByteSwap, bIsWordSwap);
+					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(a_sValue.c_str());
 					msgbus_msg_envelope_put(msg, "value", ptValue);
 					msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
 					msgbus_msg_envelope_put(msg, "status", ptStatus);
@@ -348,12 +342,6 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, con
 
 			msg_envelope_elem_body_t* ptDriverSeq = msgbus_msg_envelope_new_string(sTxID.c_str());
 			msgbus_msg_envelope_put(msg, "driver_seq", ptDriverSeq);
-
-			if(false == sPolllingVal.empty())
-			{
-				// save last known response
-				(const_cast<CRefDataForPolling*>(a_objReqData))->saveGoodResponse(sPolllingVal, sUsec);
-			}
 		}
 		else
 		{
@@ -391,7 +379,8 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 
 	try
 	{
-		if(FALSE == prepareResponseJson(&g_msg, a_objReqData, a_stResp, a_pstTsPolling))
+		std::string sValue{""};
+		if(FALSE == prepareResponseJson(&g_msg, sValue, a_objReqData, a_stResp, a_pstTsPolling))
 		{
 			DO_LOG_INFO( " Error in preparing response");
 			return FALSE;
@@ -405,8 +394,20 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 			{
 				common_Handler::removeReqData(a_stResp.u16TransacID);	/// removing request structure from map
 			}
-			if(true == PublishJsonHandler::instance().publishJson(g_msg, a_stResp.m_strResponseTopic))
+			std::string sUsec{""};
+			if(true == PublishJsonHandler::instance().publishJson(sUsec, g_msg, a_stResp.m_strResponseTopic))
 			{
+				// Message is successfully published
+				// For polling operation having value field, store it as last known value and usec
+				if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
+				{
+					// Check if value was available.
+					if(false == sValue.empty())
+					{
+						// save last known response
+						(const_cast<CRefDataForPolling*>(a_objReqData))->saveGoodResponse(sValue, sUsec);
+					}
+				}
 				DO_LOG_DEBUG("Msg published successfully");
 			}
 			else

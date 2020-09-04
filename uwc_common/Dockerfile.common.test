@@ -15,6 +15,7 @@ ARG EIS_UID
 
 FROM ia_common:$EIS_VERSION as common
 
+# build openssl library
 FROM ia_common:$EIS_VERSION as openssl-build
 ARG OPENSSL_DIR=openssl
 
@@ -23,25 +24,25 @@ RUN mkdir -p ${OPENSSL_DIR} \
     && wget https://www.openssl.org/source/openssl-1.1.1g.tar.gz \
     && tar -xzvf openssl-1.1.1g.tar.gz > /dev/null 2>&1 \
     && cd openssl-1.1.1g \
-    && ./config --prefix=/usr/ssl shared -fPIC no-tests \
-    && make install_sw -s  
+    && ./config --prefix=/usr/ssl shared -fPIC no-tests  \
+    && make install_sw -s 
 
 # Build tahu library
 FROM eisbase as build-tahu
-COPY tahu.c /
-
+COPY --from=openssl-build /usr/ssl /usr/
 RUN apt-get update && apt-get install -y libmosquitto-dev \
-    &&  git clone --branch v0.5.8 https://github.com/eclipse/tahu \
-    &&  rm -rf tahu/client_libraries/c/src/tahu.c && cp /tahu.c tahu/client_libraries/c/src \
-    &&  cd tahu/client_libraries/c \
-    &&	make -s
+    &&  git clone --branch develop https://github.com/eclipse/tahu \
+    && cd tahu \ 
+    && git checkout 9bf91b69f5e9214e7ec765f2ad20acc7bc41236d \
+    &&  cd client_libraries/c \
+    &&	make -s 
 
 # Build Paho C Library
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
 
 COPY --from=openssl-build /usr/ssl /usr/
-RUN git clone --branch v1.3.4 https://github.com/eclipse/paho.mqtt.c.git \
+RUN git clone --branch v1.3.5 https://github.com/eclipse/paho.mqtt.c.git \
     &&	cd paho.mqtt.c \
     &&	mkdir build && cd build \
     &&	cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_STATIC:BOOL=OFF \
@@ -56,20 +57,25 @@ COPY --from=build-pahoc /usr/paho-c /usr/.
 COPY --from=build-tahu /EIS/tahu /EIS/tahu
 COPY --from=openssl-build /usr/ssl /usr/ssl
 
-COPY async_client.cpp /
-COPY async_client.h /
-COPY token.cpp /
+RUN wget https://github.com/eclipse/paho.mqtt.cpp/blob/f3a2a52259b5463ab50eee6d1c033cba18d6e84b/src/token.cpp?raw=true -P /tmp/ \
+	&& wget https://github.com/eclipse/paho.mqtt.cpp/blob/f3a2a52259b5463ab50eee6d1c033cba18d6e84b/src/async_client.cpp?raw=true -P /tmp/ \
+	&& wget https://github.com/eclipse/paho.mqtt.cpp/blob/f3a2a52259b5463ab50eee6d1c033cba18d6e84b/src/mqtt/async_client.h?raw=true -P /tmp/ \
+	&& mv /tmp/'token.cpp?raw=true' /tmp/token.cpp \
+	&& mv /tmp/'async_client.cpp?raw=true' /tmp/async_client.cpp \
+	&& mv /tmp/'async_client.h?raw=true' /tmp/async_client.h
+
 RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
-    && rm paho.mqtt.cpp/src/async_client.cpp && cp /async_client.cpp paho.mqtt.cpp/src/ \
-    && rm paho.mqtt.cpp/src/mqtt/async_client.h && cp /async_client.h paho.mqtt.cpp/src/mqtt/ \ 
-    && rm paho.mqtt.cpp/src/token.cpp && cp /token.cpp paho.mqtt.cpp/src/ \       
+    && rm paho.mqtt.cpp/src/async_client.cpp && cp /tmp/async_client.cpp paho.mqtt.cpp/src/ \
+    && rm paho.mqtt.cpp/src/mqtt/async_client.h && cp /tmp/async_client.h paho.mqtt.cpp/src/mqtt/ \ 
+    && rm paho.mqtt.cpp/src/token.cpp && cp /tmp/token.cpp paho.mqtt.cpp/src/ \       
     && cd paho.mqtt.cpp \
     && mkdir build && cd build \
     && cmake -DPAHO_WITH_SSL=TRUE -DPAHO_MQTT_C_PATH=/usr/paho-c \
 	-DCMAKE_INSTALL_PREFIX=/usr/paho-cpp -DOPENSSL_ROOT_DIR=/usr/ssl -DPAHO_BUILD_SAMPLES:BOOL=OFF \
 	-DBUILD_TESTS=OFF  -DPAHO_BUILD_SHARED:BOOL=ON .. \
     && make -s \
-    && make install
+    && make install \
+    && rm -rf /tmp/*
 
 WORKDIR /EIS
 RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \

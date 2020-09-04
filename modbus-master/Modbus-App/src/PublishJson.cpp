@@ -44,12 +44,13 @@ PublishJsonHandler& PublishJsonHandler::instance()
 
 /**
  * Publish json
+ * @param a_sUsec		:[out] USEC timestamp value at which a message is published
  * @param msg			:[in] message to publish
  * @param a_sTopic		:[in] topic on which to publish
  * @return 	true : on success,
  * 			false : on error
  */
-bool PublishJsonHandler::publishJson(msg_envelope_t* msg, const std::string &a_sTopic)
+bool PublishJsonHandler::publishJson(std::string &a_sUsec, msg_envelope_t* msg, const std::string &a_sTopic)
 {
 	if(NULL == msg)
 	{
@@ -63,7 +64,7 @@ bool PublishJsonHandler::publishJson(msg_envelope_t* msg, const std::string &a_s
 	void* pub_ctx = zmq_handler::getPubCTX(a_sTopic).m_pContext;
 	if((NULL == msgbus_ctx.m_pContext) || (NULL == pub_ctx))
 	{
-		DO_LOG_ERROR(": Failed to publish message - context is NULL" + a_sTopic);
+		DO_LOG_ERROR(": Failed to publish message - context is NULL: " + a_sTopic);
 		return false;
 	}
 
@@ -73,7 +74,8 @@ bool PublishJsonHandler::publishJson(msg_envelope_t* msg, const std::string &a_s
 		std::lock_guard<std::mutex> lock(msgbus_ctx.m_mutex);
 		auto p1 = std::chrono::system_clock::now();
 		unsigned long uTime = (unsigned long)(std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count());
-		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string((to_string(uTime)).c_str());
+		a_sUsec = std::to_string(uTime);
+		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(a_sUsec.c_str());
 		if(NULL != ptUsec)
 		{
 			msgbus_msg_envelope_put(msg, "usec", ptUsec);

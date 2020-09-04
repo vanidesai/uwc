@@ -14,25 +14,28 @@
 #include <string>
 #include <map>
 #include <algorithm>
+#include "Constants.hpp"
 #include "Logger.hpp"
 #include "ConfigManager.hpp"
 
 using namespace std;
 using namespace globalConfig;
 
-#define SPARKPLUG_TOPIC "spBv1.0/"
+#define SCADA_CONFIG_FILE_PATH "/opt/intel/eis/uwc_data/scada-rtu/scada_config.yml"
 
 class CCommon
 {
 private:
 	// Private constructor so that no objects can be created.
 	CCommon();
-	CCommon(const CCommon & obj){}
-	CCommon& operator=(CCommon const&);
+	CCommon(const CCommon & obj) = delete;
+	CCommon& operator=(CCommon const&) = delete;
 
 	string m_strAppName;
-	string m_strMqttURL;
+	string m_strExtMqttURL;
+	string m_strIntMqttURL;
 	string m_siteListFileName;
+	char m_delimeter;
 	string m_strNodeConfPath;
 	string m_strNetworkType;
 	string m_strGroupId;
@@ -58,6 +61,13 @@ public:
 	}
 
 	/**
+	 * load config required for scada-rtu container from scada_config.yml file
+	 * @param None
+	 * @return true/false based on condition
+	 */
+	bool loadYMLConfig();
+
+	/**
 	 * Get application name
 	 * @param None
 	 * @return application name in string
@@ -72,9 +82,9 @@ public:
 	 * @param strMqttExportURL
 	 * @return None
 	 */
-	void setStrMqttURL(const std::string &strMqttURL)
+	void setExtMqttURL(const std::string &strMqttURL)
 	{
-		m_strMqttURL = strMqttURL;
+		m_strExtMqttURL = strMqttURL;
 	}
 
 	/**
@@ -82,9 +92,30 @@ public:
 	 * @param None
 	 * @return connection URL in string
 	 */
-	const std::string& getStrMqttURL() const
+	const std::string& getExtMqttURL() const
 	{
-		return m_strMqttURL;
+		return m_strExtMqttURL;
+	}
+
+
+	/**
+	 * Set MQTT Export URL to connect with MQTT broker
+	 * @param strMqttExportURL
+	 * @return None
+	 */
+	void setIntMqttURL(const std::string &strMqttURL)
+	{
+		m_strIntMqttURL = strMqttURL;
+	}
+
+	/**
+	 * Get MQTT-Export broker connection URL
+	 * @param None
+	 * @return connection URL in string
+	 */
+	const std::string& getIntMqttURL() const
+	{
+		return m_strIntMqttURL;
 	}
 
 	/**
@@ -138,6 +169,24 @@ public:
 	}
 
 	/**
+	 * get set topic name separator for SCADA master
+	 * @return topic name separator
+	 */
+	const char getTopicSeparator() const
+	{
+		return m_delimeter;
+	}
+
+	/**
+	 * set topic name separator for SCADA master
+	 * @param strTopicSeparator	:[in] topic name separator
+	 */
+	void setTopicSeparator(const std::string &strTopicSeparator)
+	{
+		m_delimeter = strTopicSeparator[0];
+	}
+
+	/**
 	 * Return topic in sparkplug format to set in will message
 	 * in mqtt subscriber
 	 * @return death topic in string
@@ -145,8 +194,9 @@ public:
 	std::string getDeathTopic()
 	{
 		std::string topic(SPARKPLUG_TOPIC);
-		topic.append(m_strGroupId);
-		topic.append("/NDEATH/" + getEdgeNodeID());
+		topic.append(m_strGroupId + "/");
+		topic.append(NDEATH);
+		topic.append("/" + getEdgeNodeID());
 
 		return topic;
 	}
@@ -159,8 +209,9 @@ public:
 	std::string getNBirthTopic()
 	{
 		std::string topic(SPARKPLUG_TOPIC);
-		topic.append(m_strGroupId);
-		topic.append("/NBIRTH/" + getEdgeNodeID());
+		topic.append(m_strGroupId + "/");
+		topic.append(NBIRTH);
+		topic.append("/" + getEdgeNodeID());
 
 		return topic;
 	}
@@ -173,8 +224,39 @@ public:
 	std::string getDBirthTopic()
 	{
 		std::string topic(SPARKPLUG_TOPIC);
-		topic.append(m_strGroupId);
-		topic.append("/DBIRTH/" + getEdgeNodeID() + "/");
+		topic.append(m_strGroupId + "/");
+		topic.append(DBIRTH);
+		topic.append("/" + getEdgeNodeID());
+
+		return topic;
+	}
+
+	/**
+	 * Return topic in sparkplug format to send as device data
+	 * to SCADA
+	 * @return data topic in string
+	 */
+	std::string getDDataTopic()
+	{
+		std::string topic(SPARKPLUG_TOPIC);
+		topic.append(m_strGroupId + "/");
+		topic.append(DDATA);
+		topic.append("/" + getEdgeNodeID());
+
+		return topic;
+	}
+
+	/**
+	 * Return topic in sparkplug format to send as device death
+	 * to SCADA
+	 * @return death topic in string
+	 */
+	std::string getDDeathTopic()
+	{
+		std::string topic(SPARKPLUG_TOPIC);
+		topic.append(m_strGroupId + "/");
+		topic.append(DDEATH);
+		topic.append("/" + getEdgeNodeID());
 
 		return topic;
 	}

@@ -12,38 +12,65 @@
 #include "Common.hpp"
 #include "ConfigManager.hpp"
 
-#define PUBLISHER_ID "SCADARTU_PUBLISHER"
+#define EXT_PUBLISHER_ID "EXT_SCADARTU_PUBLISHER"
+#define INT_PUBLISHER_ID "INT_SCADARTU_PUBLISHER"
 
 int iPublishQOS = 0;
 
 /**
- * Constructor Initializes MQTT m_publisher
+ * Constructor Initializes MQTT m_ExtPublisher
  * @param strPlBusUrl :[in] MQTT broker URL
  * @param strClientID :[in] client ID with which to subscribe (this is topic name)
- * @param iQOS :[in] QOS value with which m_publisher will publish messages
+ * @param iQOS :[in] QOS value with which m_ExtPublisher will publish messages
  * @return None
  */
-CPublisher::CPublisher(std::string strPlBusUrl, int iQOS):
-		m_publisher(strPlBusUrl, PUBLISHER_ID)
+CPublisher::CPublisher(std::string a_ExtMqttURL, std::string a_IntMqttURL, int a_QOS):
+		m_ExtPublisher(a_ExtMqttURL, EXT_PUBLISHER_ID), m_IntPublisher(a_IntMqttURL, INT_PUBLISHER_ID)
 {
 	try
 	{
-		m_QOS = iQOS;
-		//connect options for m_publisher
+		m_QOS = a_QOS;
+		//connect options for m_ExtPublisher
 		m_connOpts.set_keep_alive_interval(20);
 		m_connOpts.set_clean_session(true);
 		m_connOpts.set_automatic_reconnect(1, 10);
+		m_ExtPublisher.set_callback(m_publisherCB);
 
-		m_publisher.set_callback(m_publisherCB);
-
-		if(connect())
+		if(connect(m_ExtPublisher, m_connOpts))
 		{
-			m_bIsFirst = false;
+			cout << "External MQTT publisher connected" << endl;
 		}
 		else
 		{
-			m_bIsFirst = true;
+			cout << "External MQTT publisher failed to connect" << endl;
 		}
+
+		//connect options for m_ExtPublisher
+		m_SSLConnOpts.set_keep_alive_interval(20);
+		m_SSLConnOpts.set_clean_session(true);
+		m_SSLConnOpts.set_automatic_reconnect(1, 10);
+
+		// set the certificates if dev mode is false
+		if(false == CCommon::getInstance().isDevMode())
+		{
+			mqtt::ssl_options sslopts;
+			sslopts.set_trust_store("/run/secrets/ca_broker");
+			sslopts.set_key_store("/run/secrets/client_cert");
+			sslopts.set_private_key("/run/secrets/client_key");
+			sslopts.set_enable_server_cert_auth(true);
+			m_SSLConnOpts.set_ssl(sslopts);
+		}
+		m_IntPublisher.set_callback(m_publisherCB);
+
+		if(connect(m_IntPublisher, m_SSLConnOpts))
+		{
+			cout << "Internal MQTT publisher connected" << endl;
+		}
+		else
+		{
+			cout << "Internal MQTT publisher failed to connect" << endl;
+		}
+
 
 		DO_LOG_DEBUG("MQTT initialized successfully");
 	}
@@ -61,16 +88,19 @@ CPublisher::CPublisher(std::string strPlBusUrl, int iQOS):
  */
 CPublisher& CPublisher::instance()
 {
-	static string strPlBusUrl = CCommon::getInstance().getStrMqttURL();
+	static string strExtMQTTUrl = CCommon::getInstance().getExtMqttURL();
 
-	if(strPlBusUrl.empty())
+	static string strIntMQTTUrl = CCommon::getInstance().getIntMqttURL();
+
+	if(strExtMQTTUrl.empty() || strIntMQTTUrl.empty())
 	{
-		DO_LOG_ERROR("MQTT_URL Environment variable is not set");
-		std::cout << __func__ << ":" << __LINE__ << " Error : MQTT_URL Environment variable is not set" <<  std::endl;
-		exit(EXIT_FAILURE);
+		DO_LOG_ERROR("INTERNAL_MQTT_URL/ EXTERNAL_MQTT_URL Environment variable is not set");
+		std::cout << __func__ << ":" << __LINE__ << " Error : INTERNAL_MQTT_URL/ EXTERNAL_MQTT_URL Environment variable is not set" <<  std::endl;
+		//exit(EXIT_FAILURE);
+		throw std::runtime_error("Missing required config..");
 	}
 
-	static CPublisher handler(strPlBusUrl.c_str(), iPublishQOS);
+	static CPublisher handler(strExtMQTTUrl, strIntMQTTUrl, iPublishQOS);
 	return handler;
 }
 
@@ -81,42 +111,34 @@ CPublisher& CPublisher::instance()
  */
 bool CPublisher::isPublisherConnected()
 {
-	return m_publisher.is_connected();
+	return (m_ExtPublisher.is_connected() && m_IntPublisher.is_connected());
 }
 
 /**
- * MQTT m_publisher connects with MQTT broker
+ * MQTT m_ExtPublisher connects with MQTT broker
  * @param None
  * @return true/false based on success/failure
  */
-bool CPublisher::connect()
+bool CPublisher::connect(mqtt::async_client& a_mqttClient, mqtt::connect_options& a_connOpts)
 {
 
 	bool bFlag = true;
 	try
 	{
-		m_conntok = m_publisher.connect(m_connOpts);
+		m_conntok = a_mqttClient.connect(a_connOpts);
 		// Wait for 2 seconds to get connected
 		if (false == m_conntok->wait_for(2000))
 		{
-		    std::cout << __func__ << ":" << __LINE__ << " MQTT publisher failed to connect with MQTT broker" << std::endl;
-		    DO_LOG_DEBUG("MQTT publisher failed to connect with MQTT broker");
-
 			bFlag = false;
 		}
 		else
 		{
-		    std::cout << __func__ << ":" << __LINE__ << " MQTT publisher connected with MQTT broker" << std::endl;
-		    DO_LOG_DEBUG("MQTT publisher connected with MQTT broker");
-
 		    bFlag = true;
 		}
 	}
 	catch (const std::exception &e)
 	{
 		DO_LOG_FATAL(e.what());
-		std::cout << __func__ << ":" << __LINE__ << " Exception : MQTT publisher failed to connect with MQTT broker: " << e.what() << std::endl;
-
 		bFlag = false;
 	}
 	return bFlag;
@@ -128,16 +150,10 @@ bool CPublisher::connect()
  * @param a_sTopic :[in] topic on which to publish message
  * @return true/false based on success/failure
  */
-bool CPublisher::publishMqttExportMsg(std::string &a_sMsg, std::string &a_sTopic)
+bool CPublisher::publishIntMqttMsg(std::string &a_sMsg, std::string &a_sTopic)
 {
 	try
 	{
-		if (true == m_bIsFirst)
-		{
-			connect();
-			m_bIsFirst = false;
-		}
-
 		// Check if topic is blank
 		if (true == a_sTopic.empty())
 		{
@@ -145,22 +161,14 @@ bool CPublisher::publishMqttExportMsg(std::string &a_sMsg, std::string &a_sTopic
 			return false;
 		}
 
-		if(false == m_publisher.is_connected())
-		{
-			if(false == connect())
-			{
-				DO_LOG_ERROR("MQTT m_publisher is not connected with MQTT broker");
-
-				m_bIsFirst = true;
-
-				return false;
-			}
-		}
+		cout << "Preparing msg for vendor app" << endl;
 
 		mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, m_QOS, false);
 
-		m_publisher.publish(pubmsg, nullptr, m_listener);
-		DO_LOG_DEBUG("Published message on MQTT broker successfully with QOS:"+ std::to_string(m_QOS));
+		m_IntPublisher.publish(pubmsg, nullptr, m_listener);
+
+		cout << "Published message on Internal MQTT broker successfully with QOS:" << endl;
+		DO_LOG_DEBUG("Published message on Internal MQTT broker successfully with QOS:"+ std::to_string(m_QOS));
 
 		a_sMsg.clear();
 		return true;
@@ -168,6 +176,7 @@ bool CPublisher::publishMqttExportMsg(std::string &a_sMsg, std::string &a_sTopic
 	catch (const mqtt::exception &exc)
 	{
 		DO_LOG_FATAL(exc.what());
+		//cout << "Exception : " << exc.what() << endl;
 	}
 	return false;
 }
@@ -179,23 +188,31 @@ bool CPublisher::publishMqttExportMsg(std::string &a_sMsg, std::string &a_sTopic
  * @param a_topic :[in] topic on which to publish message
  * @return true/false based on success/failure
  */
-bool CPublisher::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_ddata_payload, string a_topic)
+bool CPublisher::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payload, string a_topic)
 {
 	try
 	{
 		// Encode the payload into a binary format so it can be published in the MQTT message.
-		// The binary_buffer must be large enough to hold the contents of the binary payload
-		size_t buffer_length =  9216; // 100 data points take around 8513 bytes
+		size_t buffer_length = 0;
+
+		bool encode_passed = pb_get_encoded_size(&buffer_length, org_eclipse_tahu_protobuf_Payload_fields, &a_payload);
+		if(encode_passed == false)
+		{
+			DO_LOG_ERROR("Failed to calculate the payload length");
+			return false;
+		}
+
 		uint8_t *binary_buffer = (uint8_t *)malloc(buffer_length * sizeof(uint8_t));
 		if(binary_buffer == NULL)
 		{
 			DO_LOG_ERROR("Failed to allocate new memory");
 			return false;
 		}
-		size_t message_length = encode_payload(&binary_buffer, buffer_length, &a_ddata_payload);
+		size_t message_length = encode_payload(binary_buffer, buffer_length, &a_payload);
 		if(message_length == 0)
 		{
 			DO_LOG_ERROR("Failed to encode payload");
+
 			if(binary_buffer != NULL)
 			{
 				free(binary_buffer);
@@ -206,7 +223,7 @@ bool CPublisher::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_ddata_
 		// Publish the DDATA on the appropriate topic
 		mqtt::message_ptr pubmsg = mqtt::make_message(a_topic, (void*)binary_buffer, message_length, 0, false);
 
-		m_publisher.publish(pubmsg, nullptr, m_listener);
+		m_ExtPublisher.publish(pubmsg, nullptr, m_listener);
 
 		// Free the memory
 		if(binary_buffer != NULL)
@@ -231,11 +248,18 @@ void CPublisher::cleanup()
 {
 	DO_LOG_DEBUG("Destroying CPublisher instance ...");
 
-	m_publisher.disable_callbacks();
+	m_ExtPublisher.disable_callbacks();
 
-	if(m_publisher.is_connected())
+	if(m_ExtPublisher.is_connected())
 	{
-		m_publisher.disconnect();
+		m_ExtPublisher.disconnect();
+	}
+
+	m_IntPublisher.disable_callbacks();
+
+	if(m_IntPublisher.is_connected())
+	{
+		m_IntPublisher.disconnect();
 	}
 	DO_LOG_DEBUG("Destroyed CPublisher instance");
 }

@@ -14,7 +14,9 @@
 #include <vector>
 
 #include "SCADAHandler.hpp"
+#include "InternalMQTTSubscriber.hpp"
 #include "Publisher.hpp"
+#include "SparkPlugDevMgr.hpp"
 
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
@@ -24,7 +26,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.5.4"
+#define APP_VERSION "0.0.5.5"
 
 /**
  * Function to keep running this application and check NBIRTH and NDEATH messages
@@ -41,6 +43,47 @@ void updateDataPoints()
 }
 
 /**
+ * Process a message to be sent on external MQTT broker
+ * @param a_objCDataPointsMgr :[in] reference of data points manager class
+ * @param a_qMgr :[in] reference of queue from which message is to be processed
+ * @return none
+ */
+void processInternalMqttMsgs(QMgr::CQueueMgr& a_qMgr)
+{
+	string eisTopic = "";
+
+	try
+	{
+		mqtt::const_message_ptr recvdMsg;
+
+		while (false == g_shouldStop.load())
+		{
+			if(true == a_qMgr.isMsgArrived(recvdMsg))
+			{
+				std::vector<stRefForSparkPlugAction> stRefActionVec;
+				CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+						recvdMsg->get_topic(),
+						recvdMsg->get_payload(),
+						stRefActionVec);
+
+				std::cout << "Printing Full Dev List: \n";
+				CSparkPlugDevManager::getInstance().printRefActions(stRefActionVec);
+
+				//prepare a sparkplug message only if there are values in map
+				if(! stRefActionVec.empty())
+				{
+					CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+				}
+			}
+		}
+	}
+	catch (const std::exception &e)
+	{
+		DO_LOG_FATAL(e.what());
+	}
+}
+
+/**
  * Main function of application
  * @param argc :[in] number of input parameters
  * @param argv :[in] input parameters
@@ -51,8 +94,18 @@ int main(int argc, char *argv[])
 	DO_LOG_DEBUG("Starting SCADA RTU ...");
 	std::cout << __func__ << ":" << __LINE__ << " ------------- Starting SCADA RTU Container -------------" << std::endl;
 
+	DO_LOG_INFO("SCADA RTU container app version is set to :: "+  std::string(APP_VERSION));
+	cout << "SCADA RTU container app version is set to :: "+  std::string(APP_VERSION) << endl;
+
 	try
 	{
+		if(!CCommon::getInstance().loadYMLConfig())
+		{
+			DO_LOG_ERROR("Please set the required config in scada_config.yml file and restart the container");
+			cout << "Please set the required config in scada_config.yml file and restart the container" << endl;
+			//return -1;
+		}
+
 		//initialize CCommon class to get common variables
 		string AppName = CCommon::getInstance().getStrAppName();
 		if(AppName.empty())
@@ -63,27 +116,35 @@ int main(int argc, char *argv[])
 			return -1;
 		}
 
-		DO_LOG_INFO("SCADA RTU container app version is set to :: "+  std::string(APP_VERSION));
-		cout << "SCADA RTU container app version is set to :: "+  std::string(APP_VERSION) << endl;
-
-		if(CCommon::getInstance().getStrMqttURL().empty())
+		if(CCommon::getInstance().getExtMqttURL().empty() || CCommon::getInstance().getIntMqttURL().empty())
 		{
-			cout << "MQTT_URL is empty in environment variables" << endl;
+			while(true)
+			{
+				std::cout << "Waiting to set EXTERNAL_MQTT_URL/ INTERNAL_MQTT_URL variable in scada_config.yml file..." << endl;
+				std::this_thread::sleep_for(std::chrono::seconds(300));
+			};
 		}
 		else
 		{
-			cout << "MQTT URL : " << CCommon::getInstance().getStrMqttURL() << endl;
+				try
+				{
+					CPublisher::instance();
+				}
+				catch (std::runtime_error& e)
+				{
+					cout << "EXTERNAL_MQTT_URL is either not set or invalid :: " + std::string(e.what()) << endl;
+					DO_LOG_ERROR("EXTERNAL_MQTT_URL is either not set or invalid" + std::string(e.what()));
+				}
 
-			CPublisher::instance();
-
-			if( false == CPublisher::instance().isPublisherConnected())
-			{
-				std::cout << "Publisher failed to connect with MQTT broker" << endl;
-			}
-			else
-			{
-				CSCADAHandler::instance();
-			}
+				if( false == CPublisher::instance().isPublisherConnected())
+				{
+					std::cout << "Publisher failed to connect with MQTT broker" << endl;
+				}
+				else
+				{
+					CSCADAHandler::instance();
+					CIntMqttHandler::instance();
+				}
 		}
 
 
@@ -93,6 +154,17 @@ int main(int argc, char *argv[])
 #endif
 		//send messages for SCADA
 		g_vThreads.push_back(std::thread(updateDataPoints));
+
+		//start thread only if internal and external subscribers are connected
+		//if(CSCADAHandler::instance().isExtMqttSubConnected()&& CIntMqttHandler::instance().isIntMqttSubConnected())
+		//{
+			g_vThreads.push_back(std::thread(processInternalMqttMsgs, std::ref(QMgr::getDatapointsQ())));
+		//}
+
+/*		//added for testing of reconnect - it should publish NBIRTH and DBIRTH after connect
+		CSCADAHandler::instance().disconnect();
+		sleep(5);
+		CSCADAHandler::instance().connect();*/
 
 		for (auto &th : g_vThreads)
 		{

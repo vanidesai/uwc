@@ -242,42 +242,43 @@ services:
       - "$PWD/unit_test_reports/mqtt-export:/reports/mqtt-export"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
 
-#  scada-rtu-test:
-#    depends_on:
-#      - ia_eisbase
-#      - uwc_test_common
-#    build:
-#      context: $PWD/../scada-rtu/
-#      dockerfile: $PWD/../scada-rtu/Dockerfile_UT
-#      args:
-#        EIS_VERSION: ${EIS_VERSION}
-#        EIS_UID: ${EIS_UID}
-#        EIS_USER_NAME: ${EIS_USER_NAME}
-#    image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
-#    container_name: scada-rtu-test
-#    hostname: scada-rtu-test
-#    network_mode: host
-#    ulimits:
-#     rtprio:
-#       soft: "99" # these are the maximum values of priorites to be used inside the container application
-#       hard: "99"
-#    environment:
-#      AppName: "SCADA-RTU-TEST"
-#      DEV_MODE: ${DEV_MODE}
-#      no_proxy: ${no_proxy}
-#      Log4cppPropsFile: "/SCADA-RTU-APP/Config/log4cpp.properties"
-#      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
-#      NETWORK_TYPE: "ALL"
-#      MQTT_URL: ""
-#      CertType: "zmq"
-#      PROFILING_MODE: ${PROFILING_MODE}
-#    logging:
-#        driver: "json-file"
-#        options:
-#            max-file: "3"
-#            max-size: "10m"
-#    volumes:
-#      - "$PWD/unit_test_reports/scada-rtu:/reports/scada-rtu"
-#      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
-#      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-#      - "${EIS_INSTALL_PATH}/container_logs/scada-rtu:/opt/intel/app/logs"
+  scada-rtu-test:
+    depends_on:
+      - ia_eisbase
+      - uwc_test_common
+    build:
+      context: $PWD/../scada-rtu/
+      dockerfile: $PWD/../scada-rtu/Dockerfile_UT
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+    image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
+    container_name: scada-rtu-test
+    hostname: scada-rtu-test
+    network_mode: host
+    ulimits:
+     rtprio:
+       soft: "99" # these are the maximum values of priorites to be used inside the container application
+       hard: "99"
+    environment:
+      AppName: "SCADA-RTU-TEST"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${no_proxy}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
+      INTERNAL_MQTT_URL: "tcp://127.0.0.1:1883"
+      NETWORK_TYPE: "ALL"
+      TOPIC_SEPARATOR: '-'
+      CertType: "zmq"
+      PROFILING_MODE: ${PROFILING_MODE}
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "3"
+            max-size: "10m"
+    volumes:
+      - "$PWD/unit_test_reports/scada-rtu:/reports/scada-rtu"
+      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+      - "${EIS_INSTALL_PATH}/container_logs/scada-rtu:/opt/intel/app/logs"

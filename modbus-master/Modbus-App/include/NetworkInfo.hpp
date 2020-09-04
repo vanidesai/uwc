@@ -207,6 +207,20 @@ namespace network_info
 		static void build(const YAML::Node& a_oData, CWellSiteInfo &a_oWellSite);
 	};
 	
+	class CUniqueDataDevice
+	{
+	private:
+		const CWellSiteDevInfo &m_rWellSiteDev;
+
+	public:
+		CUniqueDataDevice(const CWellSiteDevInfo &a_rWellSiteDev) :
+				m_rWellSiteDev { a_rWellSiteDev } {
+		}
+		const CWellSiteDevInfo& getWellSiteDev() const {
+			return m_rWellSiteDev;
+		}
+	};
+
 	class CUniqueDataPoint
 	{
 		const unsigned int m_uiMyRollID;
@@ -243,6 +257,12 @@ namespace network_info
 	void buildNetworkInfo(string a_strNetworkType, string DeviceListFile);
 	const std::map<std::string, CWellSiteInfo>& getWellSiteList();
 	const std::map<std::string, CUniqueDataPoint>& getUniquePointList();
+	/**
+	 * Get unique device list
+	 * @return map of unique device
+	 */
+	const std::map<std::string, CUniqueDataDevice>& getUniqueDeviceList();
+
 	bool validateIpAddress(const string &ipAddress);
 	// Returns true if s is a number else false
 	bool isNumber(string s);

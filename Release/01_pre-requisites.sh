@@ -215,6 +215,15 @@ createDockerVolumeDir()
         	echo "${RED}Failed to create docker volume directory${NC}"
 		exit 1;
 	fi
+	
+	rm -rf /opt/intel/eis/uwc_data/scada-rtu
+    	mkdir -p /opt/intel/eis/uwc_data/scada-rtu
+	if [ "$?" -eq "0" ]; then
+		echo "${GREEN}/opt/intel/eis/uwc_data/scada-rtu is sucessfully created. ${NC}"
+	else
+        	echo "${RED}Failed to create docker volume directory${NC}"
+		exit 1;
+	fi
    fi
 	echo "${GREEN}Deleting old /opt/intel/eis/container_logs directory.${NC}"
 	rm -rf  /opt/intel/eis/container_logs
@@ -292,6 +301,7 @@ addUWCContainersInEIS()
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp Others/Config/UWC/Global_Config.yml /opt/intel/eis/uwc_data/common_config/Global_Config.yml
+    cp Others/Config/UWC/scada_config.yml /opt/intel/eis/uwc_data/scada-rtu/scada_config.yml
     copyDeployComposeFile
     copy_verification=$(echo $?)
     if [ "$copy_verification" -eq "0" ]; then

@@ -29,6 +29,47 @@ CCommon::CCommon()
 	}
 }
 
+/**
+ * load config required for scada-rtu container from scada_config.yml file
+ * @param None
+ * @return true/false based on condition
+ */
+bool CCommon::loadYMLConfig()
+{
+	YAML::Node config;
+	bool bRet = false;
+
+	try
+	{
+		config = YAML::LoadFile(SCADA_CONFIG_FILE_PATH);
+	}
+	catch(YAML::Exception &e)
+	{
+		DO_LOG_ERROR("scada_config.yml file not found :: " + std::string(e.what()));
+		cout << "ERROR: scada_config.yml file not found :: " + std::string(e.what()) << endl;
+		return false;
+	}
+
+	if((config["EXTERNAL_MQTT_URL"])
+			&& 0 == globalConfig::validateParam(config, "EXTERNAL_MQTT_URL", globalConfig::eDataType::DT_STRING))
+	{
+		setExtMqttURL(config["EXTERNAL_MQTT_URL"].as<string>());
+		DO_LOG_INFO("EXTERNAL_MQTT_URL is set to :: " + getExtMqttURL())
+		cout << "EXTERNAL_MQTT_URL is set to :: " + getExtMqttURL() << endl;
+		bRet = true;
+	}
+	else
+	{
+		DO_LOG_ERROR("EXTERNAL_MQTT_URL key is not present or type is invalid");
+		cout << "EXTERNAL_MQTT_URL key is not present or type is invalid" << endl;
+		setExtMqttURL("");
+		bRet = false;
+	}
+
+	return bRet;
+}
+
+
 void CCommon::setScadaRTUIds()
 {
 	// load global configuration for container real-time setting
@@ -119,8 +160,8 @@ bool CCommon::readCommonEnvVariables()
 	{
 		bool bRetVal = false;
 
-		std::list<std::string> topicList{"AppName", "MQTT_URL", "DEV_MODE",
-			"NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME"};
+		std::list<std::string> topicList{"AppName", "INTERNAL_MQTT_URL" , "DEV_MODE",
+			"NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME", "TOPIC_SEPARATOR"};
 
 		std::map <std::string, std::string> envTopics;
 
@@ -139,9 +180,10 @@ bool CCommon::readCommonEnvVariables()
 		}
 
 		setStrAppName(envTopics.at("AppName"));
-		setStrMqttURL(envTopics.at("MQTT_URL"));
+		setIntMqttURL(envTopics.at("INTERNAL_MQTT_URL"));
 		setNetworkType(envTopics.at("NETWORK_TYPE"));
 		setSiteListFileName(envTopics.at("DEVICES_GROUP_LIST_FILE_NAME"));
+		setTopicSeparator(envTopics.at("TOPIC_SEPARATOR"));
 
 		string devMode = envTopics.at("DEV_MODE");
 		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
