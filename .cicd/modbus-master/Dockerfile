@@ -65,7 +65,7 @@ RUN mkdir kw10 ; \
        su hadi -c "echo Hadi is here*******"; \
        wget https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW20.1/Linux/kw-server-installer.20.1.0.97.linux64.sh ;\
        chmod 755 kw-server-installer.20.1.0.97.linux64.sh ;\
-       su hadi -c "./kw-server-installer.20.1.0.97.linux64.sh --agree -i /kw10 --license-server kwlic.intel.com:7500" ;\
+       su hadi -c "./kw-server-installer.20.1.0.97.linux64.sh --agree -i /kw10 --license-server klocwork05p.elic.intel.com:7500" ;\
        ls kw10 ;
 
 RUN  ls -la ~
