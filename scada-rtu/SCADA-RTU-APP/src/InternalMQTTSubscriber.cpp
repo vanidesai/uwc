@@ -90,10 +90,22 @@ bool CIntMqttHandler::connect()
 	bool bFlag = true;
 	try
 	{
-		m_subscriber.connect(m_connOpts, nullptr, m_listener);
+		std::cout << "Trying to connect with internal mqtt broker..." << std::endl;
 
-	    std::cout << __func__ << ":" << __LINE__ << " MQTT publisher & m_subscriber connected with MQTT broker" << std::endl;
-	    DO_LOG_DEBUG("MQTT publisher & m_subscriber connected with MQTT broker");
+		if (false == m_subscriber.connect(m_connOpts, nullptr, m_listener)->wait_for(2000))
+		{
+			bFlag = false;
+			std::cout << __func__ << ":" << __LINE__ << "Failed to connect MQTT publisher & m_subscriber with internal broker" << std::endl;
+ 			DO_LOG_DEBUG("MQTT publisher & m_subscriber connection with internal MQTT broker is failed");
+		}
+		else
+		{
+		    bFlag = true;
+			    std::cout << __func__ << ":" << __LINE__ << " MQTT publisher & m_subscriber connected with internal MQTT broker" << std::endl;
+	    DO_LOG_DEBUG("MQTT publisher & m_subscriber connected with internal MQTT broker");
+		}
+
+
 	}
 	catch (const std::exception &e)
 	{
@@ -155,7 +167,6 @@ bool CIntMqttHandler::pushMsgInQ(mqtt::const_message_ptr msg)
 	bool bRet = true;
 	try
 	{
-		cout << "Message received from internal MQTT " << endl;
 		QMgr::getDatapointsQ().pushMsg(msg);
 
 		DO_LOG_DEBUG("Pushed MQTT message in queue");
