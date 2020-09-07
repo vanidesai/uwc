@@ -153,7 +153,9 @@ TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 		setenv("WRITE_RESPONSE_TOPIC", "PL_0", 1);
 		std::string topic = std::getenv("WRITE_RESPONSE_TOPIC");
 		zmq_handler::getCTX(topic);
-		uint8_t valv = PublishJsonHandler::instance().publishJson(NULL, topic);
+
+		std::string sUsec{""};
+		uint8_t valv = PublishJsonHandler::instance().publishJson(sUsec, NULL, topic);
 
 		EXPECT_EQ(false, valv);
 
@@ -246,7 +248,8 @@ TEST_F(PublishJson_ut, publishJson_null_msg)
 	{
 		msg = msgbus_msg_envelope_new(CT_JSON);
 
-		EXPECT_EQ(true, PublishJsonHandler::instance().publishJson(msg, topic));
+		std::string sUsec{""};
+		EXPECT_EQ(true, PublishJsonHandler::instance().publishJson(sUsec, msg, topic));
 
 	}
 
@@ -260,9 +263,11 @@ TEST_F(PublishJson_ut, publishJson_null_msg)
 /* NULL arguments */
 TEST_F(PublishJson_ut, publishJson_pub)
 {
+	std::string sUsec{""};
+
 	try
 	{
-		EXPECT_EQ(false, PublishJsonHandler::instance().publishJson(NULL, "PL1_flowmeter2"));
+		EXPECT_EQ(false, PublishJsonHandler::instance().publishJson(sUsec, NULL, "PL1_flowmeter2"));
 	}
 
 	catch(std::exception &e)

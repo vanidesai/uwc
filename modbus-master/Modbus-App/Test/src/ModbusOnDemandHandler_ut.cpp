@@ -413,7 +413,8 @@ TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_sub)
 		zmq_handler::stZmqContext MsgbusCtx = zmq_handler::getCTX(topic);
 		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(topic);
 
-		PublishJsonHandler::instance().publishJson(g_msg, topic);
+		std::string sUsec{""};
+		PublishJsonHandler::instance().publishJson(sUsec, g_msg, topic);
 
 	}
 
@@ -494,8 +495,8 @@ TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_pub)
 
 		cout << "**************************************************** Publishing for topic :: " << topic << endl;
 
-
-		PublishJsonHandler::instance().publishJson(g_msg, topic);
+		std::string sUsec{""};
+		PublishJsonHandler::instance().publishJson(sUsec, g_msg, topic);
 
 	}
 
