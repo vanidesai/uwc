@@ -66,9 +66,6 @@ void processInternalMqttMsgs(QMgr::CQueueMgr& a_qMgr)
 						recvdMsg->get_payload(),
 						stRefActionVec);
 
-				std::cout << "Printing Full Dev List: \n";
-				CSparkPlugDevManager::getInstance().printRefActions(stRefActionVec);
-
 				//prepare a sparkplug message only if there are values in map
 				if(! stRefActionVec.empty())
 				{
@@ -132,13 +129,13 @@ int main(int argc, char *argv[])
 				}
 				catch (std::runtime_error& e)
 				{
-					cout << "EXTERNAL_MQTT_URL is either not set or invalid :: " + std::string(e.what()) << endl;
+					cout << "ERROR:: EXTERNAL_MQTT_URL is either not set or invalid :: " + std::string(e.what()) << endl;
 					DO_LOG_ERROR("EXTERNAL_MQTT_URL is either not set or invalid" + std::string(e.what()));
 				}
 
 				if( false == CPublisher::instance().isPublisherConnected())
 				{
-					std::cout << "Publisher failed to connect with MQTT broker" << endl;
+					std::cout << "ERROR:: Publisher failed to connect with MQTT broker" << endl;
 				}
 				else
 				{

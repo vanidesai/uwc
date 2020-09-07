@@ -150,10 +150,10 @@ public:
 
 	void print()
 	{
-		std::cout << "\t DataType: " << m_uiDataType << "\t Value: ";
+		/*std::cout << "\t DataType: " << m_uiDataType << "\t Value: ";
 		std::visit([](auto &&arg)
 		{	std::cout << typeid(arg).name() << ":" << arg << std::endl;},
-				m_objVal);
+				m_objVal);*/
 	}
 	;
 };

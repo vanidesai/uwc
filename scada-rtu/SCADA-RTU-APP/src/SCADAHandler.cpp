@@ -169,7 +169,6 @@ bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbir
 	catch(exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
-		std::cout << "Exception : " << ex.what() << endl;
 		return false;
 	}
 	return true;
@@ -194,7 +193,6 @@ void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, s
 		if(a_dataPointInfo.empty())
 		{
 			DO_LOG_ERROR("No data points are available to publish DBIRTH message");
-			cout << "No data points are available to publish DBIRTH message" << endl;
 			return;
 		}
 
@@ -208,7 +206,6 @@ void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, s
 	catch(exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
-		std::cout << " Exception : " << endl;
 	}
 	// Free the memory
 	free_payload(&dbirth_payload);
@@ -513,8 +510,6 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 				//metric.has_is_null = true;
 
 				itrMetric.second.getValue().assignToSparkPlug(metric);
-				cout << "*** Assigned data-type : " << metric.which_value << endl;
-				cout << "*** Assigned values : " << metric.value.int_value << endl;
 
 				//add_metric_to_payload(&sparkplug_payload, &metric);
 
@@ -544,7 +539,6 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 	catch(exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
-		std::cout << "Exception : " << ex.what() << endl;
 		return false;
 	}
 	return true;

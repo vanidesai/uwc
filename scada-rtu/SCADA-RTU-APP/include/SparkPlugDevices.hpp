@@ -103,11 +103,11 @@ public:
 
 	void print()
 	{
-		std::cout << "Device: " << m_sSparkPlugName << ": Metric List:\n";
+		/*std::cout << "Device: " << m_sSparkPlugName << ": Metric List:\n";
 		for (auto &itr : m_mapMetrics)
 		{
 			itr.second.print();
-		}
+		}*/
 	}
 };
 

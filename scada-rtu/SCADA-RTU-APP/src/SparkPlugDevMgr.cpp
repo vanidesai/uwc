@@ -486,7 +486,7 @@ void CSparkPlugDevManager::processDataMsg(std::string a_sAppName,
  */
 void CSparkPlugDevManager::printRefActions(std::vector<stRefForSparkPlugAction> &a_stRefActionVec)
 {
-	std::cout
+	/*std::cout
 			<< "--------------------------------- Printing actions ---------------------------------\n";
 	for (auto &itr : a_stRefActionVec)
 	{
@@ -501,5 +501,5 @@ void CSparkPlugDevManager::printRefActions(std::vector<stRefForSparkPlugAction> 
 		}
 		std::cout << "**********************\n";
 	}
-	std::cout << "---------------------------------\n";
+	std::cout << "---------------------------------\n";*/
 }

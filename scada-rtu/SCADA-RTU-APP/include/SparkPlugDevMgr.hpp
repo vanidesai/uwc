@@ -71,11 +71,11 @@ public:
 
 	void print()
 	{
-		std::cout << "Device List:\n";
+		/*std::cout << "Device List:\n";
 		for (auto &itr : m_mapSparkPlugDev)
 		{
 			itr.second.print();
-		}
+		}*/
 	}
 };
 

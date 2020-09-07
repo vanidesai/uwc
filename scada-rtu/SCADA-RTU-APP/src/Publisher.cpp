@@ -125,6 +125,7 @@ bool CPublisher::connect(mqtt::async_client& a_mqttClient, mqtt::connect_options
 	bool bFlag = true;
 	try
 	{
+		std::cout << "Trying to connect with mqtt broker..." << std::endl;
 		m_conntok = a_mqttClient.connect(a_connOpts);
 		// Wait for 2 seconds to get connected
 		if (false == m_conntok->wait_for(2000))
@@ -161,13 +162,11 @@ bool CPublisher::publishIntMqttMsg(std::string &a_sMsg, std::string &a_sTopic)
 			return false;
 		}
 
-		cout << "Preparing msg for vendor app" << endl;
 
 		mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, m_QOS, false);
 
 		m_IntPublisher.publish(pubmsg, nullptr, m_listener);
 
-		cout << "Published message on Internal MQTT broker successfully with QOS:" << endl;
 		DO_LOG_DEBUG("Published message on Internal MQTT broker successfully with QOS:"+ std::to_string(m_QOS));
 
 		a_sMsg.clear();

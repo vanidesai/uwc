@@ -25,73 +25,60 @@ bool CValObj::assignToSparkPlug(
 			switch (m_uiDataType)
 			{
 			case METRIC_DATA_TYPE_BOOLEAN:
-				cout << "** Found METRIC_DATA_TYPE_BOOLEAN" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_boolean_value_tag;
 				a_metric.value.boolean_value = std::get<bool>(m_objVal);
 				break;
 
 			case METRIC_DATA_TYPE_UINT8:
-				cout << "** Found METRIC_DATA_TYPE_UINT8" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_int_value_tag;
 				a_metric.value.int_value = std::get<uint8_t>(m_objVal);
 				break;
 			case METRIC_DATA_TYPE_UINT16:
-				cout << "** Found METRIC_DATA_TYPE_UINT16" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_int_value_tag;
 				a_metric.value.int_value = std::get<uint16_t>(m_objVal);
 				break;
 			case METRIC_DATA_TYPE_INT8:
-				cout << "** Found METRIC_DATA_TYPE_INT8" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_int_value_tag;
 				a_metric.value.int_value = std::get<int8_t>(m_objVal);
 				break;
 			case METRIC_DATA_TYPE_INT16:
-				cout << "** Found METRIC_DATA_TYPE_INT16" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_int_value_tag;
 				a_metric.value.int_value = std::get<int16_t>(m_objVal);
 				break;
 			case METRIC_DATA_TYPE_INT32:
-				cout << "** Found METRIC_DATA_TYPE_INT32" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_int_value_tag;
 				a_metric.value.int_value = std::get<int32_t>(m_objVal);
 				break;
 
 			case METRIC_DATA_TYPE_UINT32:
-				cout << "** Found METRIC_DATA_TYPE_UINT32" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_long_value_tag;
 				a_metric.value.int_value = std::get<uint32_t>(m_objVal);
 				break;
 			case METRIC_DATA_TYPE_UINT64:
-				cout << "** Found METRIC_DATA_TYPE_UINT64" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_long_value_tag;
 				a_metric.value.long_value = std::get<uint64_t>(m_objVal);
 				break;
 			case METRIC_DATA_TYPE_INT64:
-				cout << "** Found METRIC_DATA_TYPE_INT64" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_long_value_tag;
 				a_metric.value.long_value = std::get<int64_t>(m_objVal);
 				break;
 
 			case METRIC_DATA_TYPE_FLOAT:
-				cout << "** Found METRIC_DATA_TYPE_FLOAT" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_float_value_tag;
 				a_metric.value.float_value = std::get<float>(m_objVal);
 				break;
 
 			case METRIC_DATA_TYPE_DOUBLE:
-				cout << "** Found METRIC_DATA_TYPE_DOUBLE" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_double_value_tag;
 				a_metric.value.double_value = std::get<double>(m_objVal);
 				break;
 
 			case METRIC_DATA_TYPE_STRING:
-				cout << "** Found METRIC_DATA_TYPE_STRING" << endl;
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_string_value_tag;
 				a_metric.value.string_value = strdup((std::get<std::string>(m_objVal)).c_str());
 				break;
 
 			default:
-				cout << "** Found Invalid data type" << endl;
 				DO_LOG_ERROR(
 						"Not supported datatype encountered: "
 								+ std::to_string(m_uiDataType))
