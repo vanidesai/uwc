@@ -214,7 +214,7 @@ bool CSparkPlugDev::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 			std::lock_guard<std::mutex> lck(m_mutexMetricList);
 			for(auto &itr: m_mapMetrics)
 			{
-				uint64_t current_time = get_current_timestamp();
+				uint64_t current_time = itr.second.getTimestamp();
 
 				org_eclipse_tahu_protobuf_Payload_Metric metric = {NULL, false, 0, true, current_time , true,
 						itr.second.getValue().getDataType(), false, 0, false, 0, false, true, false,
