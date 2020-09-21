@@ -99,7 +99,7 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg)
 
 	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
 			"Data/A/B",
-			"{\"metrics\": [{\"name\":\"UtData01\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			"{\"metric\": [{\"name\":\"UtData01\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
 			stRefActionVec);
 
 	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
@@ -125,7 +125,72 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageData)
 
 	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
 			"A/B/C/D/Update",
-			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			"{\"metric\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_01)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"{\"NoMetric\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_02)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"{\"metric\": [{\"name\":\"UtData01\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_03)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"{\"metric\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp_Invalid\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_04)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"{\"metric\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_05)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"{\"metric\": \"UtData02\",\"command\": \"D1\",\"value_Invalid\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
 			stRefActionVec);
 
 	//Does nothing
