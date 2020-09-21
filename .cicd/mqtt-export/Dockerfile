@@ -45,9 +45,9 @@ RUN mkdir kw10 ; \
        adduser --disabled-password --no-create-home --gecos "" hadi ;\
        chown -R hadi kw10 ; \
        su hadi -c "echo Hadi is here*******"; \
-       wget --no-check-certificate https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW12.3/Linux/kw-server-installer.12.3.0.819.linux64.sh ;\
-       chmod 755 kw-server-installer.12.3.0.819.linux64.sh ;\
-       su hadi -c "./kw-server-installer.12.3.0.819.linux64.sh --agree -i /kw10 --license-server kwlic.intel.com:7500" ;\
+       wget --no-check-certificate https://ubit-artifactory-or.intel.com/artifactory/ScanTools-igk-cache/Klocwork/Server/KW20.1/Linux/kw-server-installer.20.1.0.97.linux64.sh ;\
+       chmod 755 kw-server-installer.20.1.0.97.linux64.sh ;\
+       su hadi -c "./kw-server-installer.20.1.0.97.linux64.sh --agree -i /kw10 --license-server klocwork03p.elic.intel.com:7500" ;\
        ls kw10 ;
 	   
 RUN  ls -la ~
@@ -64,9 +64,7 @@ RUN cd /MQTT-Export-App/Release \
     &&	/kw10/bin/kwinject make clean all -s
     
 RUN cd /MQTT-Export-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
-       /kw10/bin/kwbuildproject --verbose --license-host  klocwork02p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out --log-file test.log ;\
-       cp test.log tables_UWC/build.log ;\
-       cp parse_errors.log tables_UWC/parse_errors.log ;\
+       /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
        /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
 
 # Build mqtt export container service
