@@ -41,7 +41,7 @@
                             							
                             <tool id="cdt.managedbuild.tool.gnu.archiver.base.605465093" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
                             							
-                            <tool command="g++ -std=c++11" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1136734777" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
+                            <tool command="g++ -std=c++1z" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1136734777" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
                                 								
                                 <option id="gnu.cpp.compiler.exe.debug.option.optimization.level.2025668989" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
                                 								
@@ -225,7 +225,7 @@
                                     								
                                 </option>
                                 								
-                                <option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.863774327" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
+                                <option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.863774327" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
                                     									
                                     <listOptionValue builtIn="false" value="SCADA_RTU"/>
                                     								
@@ -357,7 +357,7 @@
                             							
                             <tool id="cdt.managedbuild.tool.gnu.archiver.base.861143725" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
                             							
-                            <tool command="g++ -std=c++11" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.977667553" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
+                            <tool command="g++ -std=c++1z" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.977667553" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
                                 								
                                 <option id="gnu.cpp.compiler.exe.debug.option.optimization.level.2048924094" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
                                 								
@@ -383,9 +383,9 @@
                                 								
                                 <option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.396044183" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
                                     									
-                                    <listOptionValue builtIn="false" value="UNIT_TEST"/>
-                                    									
                                     <listOptionValue builtIn="false" value="SCADA_RTU"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="UNIT_TEST"/>
                                     								
                                 </option>
                                 								
@@ -530,6 +530,8 @@
     <storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
     	
     <storageModule moduleId="refreshScope" versionNumber="2">
+        		
+        <configuration configurationName="Build.test"/>
         		
         <configuration configurationName="Debug">
             			

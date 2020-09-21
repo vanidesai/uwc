@@ -8,21 +8,24 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "../Inc/Publisher_ut.hpp"
+#ifndef TEST_INCLUDE_COMMON_UT_H_
+#define TEST_INCLUDE_COMMON_UT_H_
 
-void Publisher_ut::SetUp()
+#include "Common.hpp"
+
+#ifdef UNIT_TEST
+#include <gtest/gtest.h>
+#endif
+
+class Common_ut : public::testing::Test
 {
-	// Setup code
-}
+protected:
+	virtual void SetUp();
+	virtual void TearDown();
 
-void Publisher_ut::TearDown()
-{
-	// TearDown code
-}
+public:
+	bool Bool_Res = false;
 
-// publishMqttExportMsg: Successfully publish mqtt-export message
-/*TEST_F(Publisher_ut, publishMqttExportMsg_Sucess)
-{
-	EXPECT_EQ( true, CPublisher::instance().publishIntMqttMsg(msg, topic) );
+};
 
-}*/
+#endif /* TEST_INCLUDE_COMMON_UT_H_ */

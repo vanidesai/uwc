@@ -21,6 +21,7 @@
 #include <map>
 #include <functional>
 #include "SparkPlugDevices.hpp"
+#include "NetworkInfo.hpp"
 
 extern "C"
 {
@@ -33,6 +34,7 @@ class CSparkPlugDevManager
 {
 	devSparkplugMap_t m_mapSparkPlugDev;
 	CVendorAppList m_objVendorAppList;
+	std::mutex m_mutexDevList;
 
 	CSparkPlugDevManager()
 	{
@@ -40,13 +42,17 @@ class CSparkPlugDevManager
 	}
 	;
 
+	CMetric parseRealDeviceUpdateMsg(std::string a_sPayLoad);
+
 	metricMap_t parseVendorAppBirthMessage(std::string a_sPayLoad);
-	bool processMetric(CMetric &a_oMetric, cJSON *a_cjName, cJSON *a_cjDatatype,
-			cJSON *a_cjValue);
-	bool getTopicParts(std::string a_sTopic,
-			std::vector<std::string> &a_vsTopicParts);
+	bool processMetric(CMetric &a_oMetric, cJSON *a_cjArrayElemMetric);
+	bool processMetricFromUpdateMsg(CMetric &a_oMetric, cJSON *a_cjRoot);
+	bool processDCMDMetric(CMetric &a_oMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric);
+
+	uint64_t parseVendorAppDeathMessage(std::string& a_sPayLoad);
 
 	void processDeathMsg(std::string a_sAppName,
+			std::string a_sPayLoad,
 			std::vector<stRefForSparkPlugAction> &a_stRefActionVec);
 	void processBirthMsg(std::string a_sAppName, std::string a_sSubDev,
 			std::string a_sPayLoad,
@@ -55,19 +61,29 @@ class CSparkPlugDevManager
 			std::string a_sPayLoad,
 			std::vector<stRefForSparkPlugAction> &a_stRefActionVec);
 
+	void processUpdateMsg(std::string a_sDeviceName,
+			std::string a_sSubDev, std::string a_sPayLoad,
+			std::vector<stRefForSparkPlugAction> &a_stRefActionVec);
+
+
 public:
 	static CSparkPlugDevManager& getInstance();
 
-	devSparkplugMap_t getDevList()
-	{
-		return m_mapSparkPlugDev;
-	}
-	;
+	bool getTopicParts(std::string a_sTopic,
+			std::vector<std::string> &a_vsTopicParts, const string& a_delimeter);
 
 	bool processInternalMQTTMsg(std::string a_sTopic, std::string a_sPayLoad,
 			std::vector<stRefForSparkPlugAction> &a_stRefAction);
 
+	bool processExternalMQTTMsg(std::string a_sTopic, org_eclipse_tahu_protobuf_Payload& a_payload,
+			std::vector<stRefForSparkPlugAction> &a_stRefAction);
+
 	void printRefActions(std::vector<stRefForSparkPlugAction> &a_stRefActionVec);
+
+	bool addRealDevices();
+
+	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, std::string a_sDevName);
+	bool setMsgPublishedStatus(eDevStatus a_enStatus, std::string a_sDevName);
 
 	void print()
 	{

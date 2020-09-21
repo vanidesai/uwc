@@ -52,7 +52,7 @@ bool CValObj::assignToSparkPlug(
 
 			case METRIC_DATA_TYPE_UINT32:
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_long_value_tag;
-				a_metric.value.int_value = std::get<uint32_t>(m_objVal);
+				a_metric.value.long_value = std::get<uint32_t>(m_objVal);
 				break;
 			case METRIC_DATA_TYPE_UINT64:
 				a_metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_long_value_tag;
@@ -92,6 +92,133 @@ bool CValObj::assignToSparkPlug(
 			return false;
 		}
 	} while (0);
+	return true;
+}
+
+/**
+ * Assign values to sparkplug metric data-structure according to the sparkplug specification
+ * @param a_metric :[out] metric in which to assign value in sparkplug format
+ * @return true/false based on success/failure
+ */
+bool CValObj::assignToCJSON(cJSON *a_cjMetric)
+{
+	do
+	{
+	try
+	{
+		switch (m_uiDataType)
+		{
+		case METRIC_DATA_TYPE_BOOLEAN:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Boolean"));
+				bool val = std::get<bool>(m_objVal);
+				if(val == true)
+				{
+					cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateTrue());
+				}
+				else
+				{
+					cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateFalse());
+				}
+			}
+			break;
+
+		case METRIC_DATA_TYPE_UINT8:
+		{
+			cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("UInt8"));
+			uint8_t val = std::get<uint8_t>(m_objVal);
+			cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+		}
+			break;
+		case METRIC_DATA_TYPE_UINT16:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("UInt16"));
+				uint16_t val = std::get<uint16_t>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			}
+			break;
+		case METRIC_DATA_TYPE_INT8:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Int8"));
+				int8_t val = std::get<int8_t>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			}
+			break;
+		case METRIC_DATA_TYPE_INT16:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Int16"));
+				int16_t val = std::get<int16_t>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			}
+			break;
+		case METRIC_DATA_TYPE_INT32:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Int32"));
+				int32_t val = std::get<int32_t>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			}
+			break;
+
+		case METRIC_DATA_TYPE_UINT32:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("UInt32"));
+				uint32_t val = std::get<uint32_t>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			}
+			break;
+		case METRIC_DATA_TYPE_UINT64:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("UInt64"));
+				uint64_t val = std::get<uint64_t>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			}
+			break;
+		case METRIC_DATA_TYPE_INT64:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Int64"));
+				int64_t val = std::get<int64_t>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			}
+			break;
+
+		case METRIC_DATA_TYPE_FLOAT:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Float"));
+				float val = std::get<float>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			}
+			break;
+
+		case METRIC_DATA_TYPE_DOUBLE:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Double"));
+				double val = std::get<double>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			}
+			break;
+
+		case METRIC_DATA_TYPE_STRING:
+			{
+				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("String"));
+				string val = std::get<std::string>(m_objVal);
+				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateString(val.c_str()));
+			}
+			break;
+
+		default:
+			DO_LOG_ERROR(
+					"Not supported datatype encountered: "
+							+ std::to_string(m_uiDataType))
+			;
+			return false;
+		}
+	}
+	catch (std::exception &e)
+	{
+		DO_LOG_ERROR(std::string("Error:") + e.what());
+		return false;
+	}
+	}while(0);
 	return true;
 }
 
@@ -148,7 +275,7 @@ bool CValObj::setValObj(std::string a_sDatatype, cJSON *a_cjValue)
 			{
 				m_uiDataType = METRIC_DATA_TYPE_UINT32;
 				//m_objVal = (uint32_t)cJSON_GetNumberValue(a_cjValue);
-				m_objVal = (uint32_t) a_cjValue->valueint;
+				m_objVal = (uint32_t) a_cjValue->valuedouble;
 			}
 			else if (("uint64" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
@@ -226,5 +353,166 @@ bool CValObj::setValObj(std::string a_sDatatype, cJSON *a_cjValue)
 			return false;
 		}
 	} while (0);
+	return true;
+}
+
+/**
+ * Set value and data-type of a metric from sparkplug DCMD message
+ * @param a_sDatatype :[in] data-type to set
+ * @param a_cjValue :[in] value to set
+ * @return true/false based on success/failure
+ */
+bool CValObj::setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_metric)
+{
+	try
+	{
+		m_uiDataType = a_metric.datatype;
+
+		switch (m_uiDataType)
+		{
+		case METRIC_DATA_TYPE_BOOLEAN:
+			m_objVal = (bool)a_metric.value.boolean_value;
+			break;
+
+		case METRIC_DATA_TYPE_UINT8:
+			m_objVal = (uint8_t)a_metric.value.int_value;
+			break;
+		case METRIC_DATA_TYPE_UINT16:
+			m_objVal = (uint16_t)a_metric.value.int_value;
+			break;
+		case METRIC_DATA_TYPE_INT8:
+			m_objVal = (int8_t)a_metric.value.int_value;
+			break;
+		case METRIC_DATA_TYPE_INT16:
+			m_objVal = (int16_t)a_metric.value.int_value;
+			break;
+		case METRIC_DATA_TYPE_INT32:
+			m_objVal = (int32_t) a_metric.value.int_value;
+			break;
+
+		case METRIC_DATA_TYPE_UINT32:
+			m_objVal = (uint32_t)a_metric.value.int_value;
+			break;
+		case METRIC_DATA_TYPE_UINT64:
+			m_objVal = (uint64_t)a_metric.value.long_value;
+			break;
+		case METRIC_DATA_TYPE_INT64:
+			m_objVal = (int64_t)a_metric.value.long_value;
+			//m_objVal = a_metric.value.long_value;
+			break;
+
+		case METRIC_DATA_TYPE_FLOAT:
+			m_objVal = (float)a_metric.value.float_value;
+			break;
+
+		case METRIC_DATA_TYPE_DOUBLE:
+			m_objVal = (double)a_metric.value.double_value;
+			break;
+
+		case METRIC_DATA_TYPE_STRING:
+			m_objVal = (string)a_metric.value.string_value;
+			break;
+
+		default:
+			DO_LOG_ERROR(
+					"Not supported datatype encountered: "
+							+ std::to_string(m_uiDataType))
+			;
+			return false;
+		}
+	}
+	catch (std::exception &e)
+	{
+		DO_LOG_FATAL(e.what());
+
+		//cout << "Exception : " << e.what() << endl;
+
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Prepare device birth messages to be published on SCADA system
+ * @param dbirth_payload :[out] reference of spark plug message payload in which to store birth messages
+ * @param a_dataPoints :[in] map of datapoints corresponding to the device
+ * @return true/false depending on the success/failure
+ */
+bool CMetric::addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric)
+{
+	using namespace network_info;
+	try
+	{
+		{
+			/*std::cout << "CMetric::addMetricForBirth - sparkplug name:" << m_sSparkPlugName
+			<< ", \t normal name: " << m_sName << std::endl;*/
+
+			std::string strDeviceName = m_sSparkPlugName;
+
+			a_rMetric.name = (char*)malloc(m_sSparkPlugName.size());
+			if(a_rMetric.name == NULL)
+			{
+				DO_LOG_ERROR("Failed to allocate new memory");
+				return false;
+			};
+			strDeviceName.copy(a_rMetric.name, m_sSparkPlugName.size());
+			a_rMetric.name[m_sSparkPlugName.size()] = '\0';
+			//a_rMetric.has_is_null = true;
+			//a_rMetric.is_null = true;
+
+			m_objVal.assignToSparkPlug(a_rMetric);
+
+			if (true == std::holds_alternative<std::reference_wrapper<const network_info::CUniqueDataPoint>>(m_rDirectProp))
+			{
+				org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
+				auto &orUniqueDataPoint = std::get<std::reference_wrapper<const network_info::CUniqueDataPoint>>(m_rDirectProp);
+				
+				int iAddr = orUniqueDataPoint.get().getDataPoint().getAddress().m_iAddress;
+				add_property_to_set(&prop, "Addr", PROPERTY_DATA_TYPE_INT32, &iAddr, sizeof(iAddr));
+
+				int iWidth = orUniqueDataPoint.get().getDataPoint().getAddress().m_iWidth;
+				add_property_to_set(&prop, "Width", PROPERTY_DATA_TYPE_INT32, &iWidth, sizeof(iWidth));
+
+				string strDataType = orUniqueDataPoint.get().getDataPoint().getAddress().m_sDataType;
+				add_property_to_set(&prop, "DataType", PROPERTY_DATA_TYPE_STRING, strDataType.c_str(), strDataType.length());
+
+				eEndPointType endPointType = orUniqueDataPoint.get().getDataPoint().getAddress().m_eType;
+
+				string strType = "";
+				switch(endPointType)
+				{
+				case eEndPointType::eCoil:
+					strType = "COIL";
+					break;
+				case eEndPointType::eDiscrete_Input:
+					strType = "DISCRETE_INPUT";
+					break;
+				case eEndPointType::eHolding_Register:
+					strType = "HOLDING_REGISTER";
+					break;
+				case eEndPointType::eInput_Register:
+					strType = "INPUT_REGISTER";
+					break;
+				default:
+					DO_LOG_ERROR("Invalid type of data-point in yml file");
+					return false;
+				}
+				add_property_to_set(&prop, "Type", PROPERTY_DATA_TYPE_STRING, strType.c_str(), strType.length());
+
+				uint32_t iPollingInterval = orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_uiPollFreq;
+				add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, &iPollingInterval, sizeof(iPollingInterval));
+
+				bool bVal = orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_bIsRealTime;
+				add_property_to_set(&prop, "Realtime", PROPERTY_DATA_TYPE_BOOLEAN, &bVal, sizeof(bVal));
+
+				add_propertyset_to_metric(&a_rMetric, &prop);
+			}
+		}
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		return false;
+	}
 	return true;
 }

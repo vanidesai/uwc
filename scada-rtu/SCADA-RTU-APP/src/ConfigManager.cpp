@@ -245,8 +245,8 @@ int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 	{
 		if(!(a_BaseNode[a_sKey])  || a_BaseNode[a_sKey].as<std::string>() == "")
 		{
-			DO_LOG_ERROR(a_sKey + " is not present or empty !!");
-			DO_LOG_ERROR("setting it to default !!");
+			//DO_LOG_ERROR(a_sKey + " is not present or empty !!");
+			//DO_LOG_ERROR("setting it to default !!");
 			iRet = -1;
 		}
 		else

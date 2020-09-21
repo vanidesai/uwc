@@ -7,3 +7,4 @@ file:
 
 # URL's to be used for external broker
 EXTERNAL_MQTT_URL: "tcp://127.0.0.1:1883"
+qos_mqtt_comm: 1

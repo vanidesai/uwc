@@ -8,21 +8,28 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "../Inc/Publisher_ut.hpp"
+#ifndef TEST_INC_METRIC_UT_HPP_
+#define TEST_INC_METRIC_UT_HPP_
 
-void Publisher_ut::SetUp()
+#include <string.h>
+#include "Metric.hpp"
+#ifdef UNIT_TEST
+#include <gtest/gtest.h>
+#endif
+
+class Metric_ut : public::testing::Test
 {
-	// Setup code
-}
+protected:
+	virtual void SetUp();
+	virtual void TearDown();
 
-void Publisher_ut::TearDown()
-{
-	// TearDown code
-}
+public:
 
-// publishMqttExportMsg: Successfully publish mqtt-export message
-/*TEST_F(Publisher_ut, publishMqttExportMsg_Sucess)
-{
-	EXPECT_EQ( true, CPublisher::instance().publishIntMqttMsg(msg, topic) );
+	CValObj CValObj_ins;
+	CValObj CValObj_main;
+	org_eclipse_tahu_protobuf_Payload_Metric a_metric;
 
-}*/
+};
+
+
+#endif /* TEST_INC_METRIC_UT_HPP_ */

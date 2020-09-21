@@ -20,8 +20,11 @@
 #include <typeinfo>
 #include <map>
 #include <functional>
+#include <mutex>
 
 #include "Metric.hpp"
+#include "NetworkInfo.hpp"
+#include "Common.hpp"
 
 extern "C"
 {
@@ -35,7 +38,12 @@ class CVendorApp;
 
 using metricMap_t = std::map<std::string, CMetric>;
 using devSparkplugMap_t = std::map<std::string, CSparkPlugDev>;
+using var_dev_ref_t = std::variant<std::monostate, std::reference_wrapper<const network_info::CUniqueDataDevice>>; 
 
+enum eDevStatus
+{
+	enDEVSTATUS_NONE, enDEVSTATUS_UP, enDEVSTATUS_DOWN
+};
 
 class CSparkPlugDev
 {
@@ -43,20 +51,55 @@ class CSparkPlugDev
 	std::string m_sSparkPlugName;
 	bool m_bIsVendorApp;
 	metricMap_t m_mapMetrics;
-	bool m_bIsDead;
+	std::atomic<eDevStatus> m_enLastStatetPublishedToSCADA;
+	uint64_t m_deathTimestamp;
+	var_dev_ref_t m_rDirectDevRef;
+	std::mutex m_mutexMetricList;
+
+	CSparkPlugDev& operator=(const CSparkPlugDev&) = delete;	/// assignmnet operator
 
 public:
 	CSparkPlugDev(std::string a_sSubDev, std::string a_sSparkPluName,
 			bool a_bIsVendorApp = false) :
-			m_sSubDev
-			{ a_sSubDev }, m_sSparkPlugName
-			{ a_sSparkPluName }, m_bIsVendorApp
-			{ a_bIsVendorApp }, m_bIsDead
-			{ false }
+			m_sSubDev{ a_sSubDev }, m_sSparkPlugName{ a_sSparkPluName },
+			m_bIsVendorApp{ a_bIsVendorApp }, 
+			m_enLastStatetPublishedToSCADA{enDEVSTATUS_NONE},
+			m_deathTimestamp {0}, m_mutexMetricList{}
 	{
 		;
 	}
-	;
+	
+	CSparkPlugDev(const network_info::CUniqueDataDevice &a_rUniqueDev, std::string a_sSparkPlugName) :
+			m_sSubDev{ a_rUniqueDev.getWellSiteDev().getID() }, 
+			m_sSparkPlugName{ a_sSparkPlugName },
+			m_bIsVendorApp{ false },
+			m_enLastStatetPublishedToSCADA{enDEVSTATUS_NONE},
+			m_deathTimestamp {0}, m_rDirectDevRef {a_rUniqueDev}, m_mutexMetricList{}
+	{
+		;
+	}
+
+	CSparkPlugDev(const CSparkPlugDev &a_refObj) :
+			m_sSubDev{ a_refObj.m_sSubDev }, m_sSparkPlugName{ a_refObj.m_sSparkPlugName },
+			m_bIsVendorApp{ a_refObj.m_bIsVendorApp }, m_mapMetrics{a_refObj.m_mapMetrics},
+			m_enLastStatetPublishedToSCADA{enDEVSTATUS_NONE},
+			m_deathTimestamp {0}, 
+			m_rDirectDevRef{a_refObj.m_rDirectDevRef}, m_mutexMetricList{}
+	{
+		;
+	}
+
+	void addMetric(const network_info::CUniqueDataPoint &a_rUniqueDataPoint);
+
+	void setDeathTime(uint64_t a_deviceDeathTimestamp)
+	{
+		m_deathTimestamp = a_deviceDeathTimestamp;
+	}
+
+	uint64_t getDeathTime()
+	{
+		return m_deathTimestamp;
+	}
 
 	std::string getSubDevName()
 	{
@@ -80,26 +123,22 @@ public:
 
 	metricMap_t processNewData(metricMap_t a_MetricList);
 	metricMap_t processNewBirthData(metricMap_t a_MetricList, bool &a_bIsOnlyValChange);
-	void setDeathStatus(bool a_bIsDead)
+	
+	void setPublishedStatus(eDevStatus a_enStatus)
 	{
-		m_bIsDead = a_bIsDead;
-	}
-	;
-	bool isDead()
+		m_enLastStatetPublishedToSCADA.store(a_enStatus);
+	}	
+	eDevStatus getLastPublishedDevStatus()
 	{
-		return m_bIsDead;
+		return m_enLastStatetPublishedToSCADA.load();
 	}
-	;
+
 	bool isVendorApp()
 	{
 		return m_bIsVendorApp;
 	}
 	;
-	metricMap_t getMetrics()
-	{
-		return m_mapMetrics;
-	}
-	;
+	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload);
 
 	void print()
 	{
@@ -109,6 +148,9 @@ public:
 			itr.second.print();
 		}*/
 	}
+
+	bool getWriteMsg(string& a_sTopic, cJSON *a_root, pair<const string,CMetric>& a_metric, const int& a_appSeqNo);
+	bool getCMDMsg(string& a_sTopic, metricMap_t& m_metrics, cJSON *metricArray);
 };
 
 class CVendorApp
@@ -116,17 +158,25 @@ class CVendorApp
 	std::string m_sName;
 	bool m_bIsDead;
 	std::map<std::string, std::reference_wrapper<CSparkPlugDev>> m_mapDevList;
+	std::mutex m_mutexDevList;
+
+	CVendorApp& operator=(const CVendorApp&) = delete;	/// assignmnet operator
 
 public:
 	CVendorApp(std::string a_sName) :
-			m_sName(a_sName), m_bIsDead
-			{ false }
+			m_sName(a_sName), m_bIsDead{ false }, m_mutexDevList{}
 	{
 		;
 	}
-	;
+	CVendorApp(const CVendorApp &a_refObj) :
+			m_sName(a_refObj.m_sName), m_bIsDead{a_refObj.m_bIsDead},
+			m_mapDevList{a_refObj.m_mapDevList}, m_mutexDevList{}
+	{
+		;
+	}
 	uint8_t addDevice(CSparkPlugDev &a_oDev)
 	{
+		std::lock_guard<std::mutex> lck(m_mutexDevList);
 		std::string sDevName = a_oDev.getSparkPlugName();
 		if (m_mapDevList.end() == m_mapDevList.find(sDevName))
 		{
@@ -139,6 +189,7 @@ public:
 
 	std::map<std::string, std::reference_wrapper<CSparkPlugDev>>& getDevices()
 	{
+		std::lock_guard<std::mutex> lck(m_mutexDevList);
 		return m_mapDevList;
 	}
 	;
@@ -158,10 +209,12 @@ public:
 class CVendorAppList
 {
 	std::map<std::string, CVendorApp> m_mapVendorApps;
+	std::mutex m_mutexAppList;
 
 public:
 	void addDevice(std::string a_sVendorApp, CSparkPlugDev &a_oDev)
 	{
+		std::lock_guard<std::mutex> lck(m_mutexAppList);
 		if (m_mapVendorApps.end() == m_mapVendorApps.find(a_sVendorApp))
 		{
 			CVendorApp temp
@@ -176,6 +229,7 @@ public:
 
 	CVendorApp* getVendorApp(std::string a_sVendorApp)
 	{
+		std::lock_guard<std::mutex> lck(m_mutexAppList);
 		if (m_mapVendorApps.end() == m_mapVendorApps.find(a_sVendorApp))
 		{
 			return NULL;
@@ -188,7 +242,7 @@ public:
 
 enum eMsgAction
 {
-	enMSG_BIRTH, enMSG_DEATH, enMSG_DATA,
+	enMSG_NONE, enMSG_BIRTH, enMSG_DEATH, enMSG_DATA, enMSG_DCMD_CMD, enMSG_DCMD_WRITE
 };
 
 struct stRefForSparkPlugAction

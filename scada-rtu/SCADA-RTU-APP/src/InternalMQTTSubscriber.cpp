@@ -11,10 +11,12 @@
 #include "InternalMQTTSubscriber.hpp"
 #include "Common.hpp"
 #include "ConfigManager.hpp"
+#include "SparkPlugDevices.hpp"
+
+#include <chrono>
+#include <ctime>
 
 #define SUBSCRIBER_ID "INTERNAL_MQTT_SUBSCRIBER"
-
-int iMqttExpQOS = 0;
 
 /**
  * Constructor Initializes MQTT publisher
@@ -29,6 +31,8 @@ CIntMqttHandler::CIntMqttHandler(std::string strPlBusUrl, int iQOS):
 	try
 	{
 		m_QOS = iQOS;
+		m_appSeqNo = 0;
+
 		//connect options for sync publisher/client
 		m_connOpts.set_keep_alive_interval(20);
 		m_connOpts.set_clean_session(true);
@@ -66,15 +70,17 @@ CIntMqttHandler::CIntMqttHandler(std::string strPlBusUrl, int iQOS):
 CIntMqttHandler& CIntMqttHandler::instance()
 {
 	static string strPlBusUrl = CCommon::getInstance().getIntMqttURL();
+	static int nQos = CCommon::getInstance().getMQTTQos();
 
 	if(strPlBusUrl.empty())
 	{
 		DO_LOG_ERROR("MQTT_URL Environment variable is not set");
 		std::cout << __func__ << ":" << __LINE__ << " Error : MQTT_URL Environment variable is not set" <<  std::endl;
-		exit(EXIT_FAILURE);
+		throw std::runtime_error("Missing required config..");
 	}
 
-	static CIntMqttHandler handler(strPlBusUrl.c_str(), iMqttExpQOS);
+	DO_LOG_DEBUG("Internal MQTT subscriber is connecting with QOS : " + to_string(nQos));
+	static CIntMqttHandler handler(strPlBusUrl.c_str(), nQos);
 	return handler;
 }
 
@@ -128,7 +134,6 @@ bool CIntMqttHandler::subscribeToTopics()
 
 	try
 	{
-		vMqttTopics.push_back("/+/+/+/update");
 		vMqttTopics.push_back("BIRTH/#");
 		vMqttTopics.push_back("DATA/#");
 		vMqttTopics.push_back("DEATH/#");
@@ -143,7 +148,7 @@ bool CIntMqttHandler::subscribeToTopics()
 			}
 		}
 
-		std::cout << __func__ << ":" << __LINE__ << "MQTT handler subscribed topics with MQTT broker" << std::endl;
+		std::cout << __func__ << ":" << __LINE__ << "Internal MQTT handler subscribed topics with MQTT broker" << std::endl;
 	}
 	catch(exception &ex)
 	{
@@ -212,3 +217,144 @@ bool CIntMqttHandler::isIntMqttSubConnected()
 CIntMqttHandler::~CIntMqttHandler()
 {
 }
+
+/**
+ * Get app sequence no needed for write-on-demand
+ * @return app sequence no in int format
+ */
+int CIntMqttHandler::getAppSeqNo()
+{
+	m_appSeqNo++;
+	if(m_appSeqNo > 65535)
+	{
+		m_appSeqNo = 0;//todo - should we reset this to 0 after reconnection ?
+	}
+
+	return m_appSeqNo;
+}
+
+/**
+ * Prepare a message in CJSON format to be sent on Inetnal MQTT
+ * for vendor app and MQTT-Export
+ * @param a_stRefActionVec :[in] vector of structure containing metrics with values
+ * for which to prepare the request
+ * @return true/false based on success/failure
+ */
+bool CIntMqttHandler::prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec)
+{
+	cJSON *root = NULL, *metricArray = NULL;
+
+	try
+	{
+		//there should be only one device while forming CMD message from DCMD msg
+		for (auto &itr : a_stRefActionVec)
+		{
+			string strMsgTopic = "";
+
+			//get this device name to add in topic
+			string strDeviceName = "";
+			strDeviceName.append(itr.m_refSparkPlugDev.get().getSparkPlugName());
+
+			if (strDeviceName.size() == 0)
+			{
+				DO_LOG_ERROR("Device name is blank");
+				return false;
+			}
+
+			//parse the site name from the topic
+			vector<string> vParsedTopic = { };
+			CSparkPlugDevManager::getInstance().getTopicParts(strDeviceName, vParsedTopic, "-");
+
+			if (vParsedTopic.size() != 2)
+			{
+				DO_LOG_ERROR("Invalid device name found while preparing request for internal MQTT");
+				return false;
+			}
+
+			root = cJSON_CreateObject();
+			if (root == NULL)
+			{
+				DO_LOG_ERROR("Creation of CJSON object failed");
+				return false;
+			}
+
+			metricArray = cJSON_CreateArray();
+			if (metricArray == NULL)
+			{
+				DO_LOG_ERROR("Creation of CJSON array failed");
+				if (root != NULL)
+				{
+					cJSON_Delete(root);
+					root = NULL;
+				}
+				return false;
+			}
+
+			//list of changed metrics for which to send CMD or write-on-demand CJSON request
+			metricMap_t m_metrics = itr.m_mapChangedMetrics;
+
+			if(itr.m_refSparkPlugDev.get().isVendorApp())
+			{
+				if (false == itr.m_refSparkPlugDev.get().getCMDMsg(strMsgTopic, m_metrics, metricArray))
+				{
+					DO_LOG_ERROR("Failed to prepare CJSON message for internal MQTT");
+				}
+				else
+				{
+					cJSON_AddItemToObject(root, "metrics", metricArray);
+
+					string strPubMsg = cJSON_Print(root);
+
+					DO_LOG_DEBUG("Publishing message on internal MQTT for CMD:");
+					DO_LOG_DEBUG("Topic : " + strMsgTopic);
+					DO_LOG_DEBUG("Payload : " + strPubMsg);
+
+					//publish sparkplug message
+					CPublisher::instance().publishIntMqttMsg(strPubMsg, strMsgTopic);
+				}
+			}
+			else
+			{
+				for(auto& metric : m_metrics)
+				{
+					if(false == itr.m_refSparkPlugDev.get().getWriteMsg(strMsgTopic, root, metric, getAppSeqNo()))
+					{
+						DO_LOG_ERROR("Failed to prepare CJSON message for internal MQTT");
+					}
+					else
+					{
+						if((root != NULL) && (! strMsgTopic.empty()))
+						{
+							//publish sparkplug message
+							string strPubMsg = cJSON_Print(root);
+							CPublisher::instance().publishIntMqttMsg(strPubMsg, strMsgTopic);
+						}
+					}
+					if (root != NULL)
+					{
+						cJSON_Delete(root);
+						root = NULL;
+					}
+				}
+			}
+
+			if (root != NULL)
+			{
+				cJSON_Delete(root);
+				root = NULL;
+			}
+		}//action structure ends
+	}
+	catch (exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		if (root != NULL)
+		{
+			cJSON_Delete(root);
+			root = NULL;
+		}
+		return false;
+	}
+	return true;
+}
+

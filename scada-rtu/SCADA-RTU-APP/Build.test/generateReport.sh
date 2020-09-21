@@ -11,7 +11,7 @@
 
 export LD_LIBRARY_PATH="/SCADA-RTU-APP/lib:/usr/local/lib"
 env
-./SCADARTU > /reports/scada-rtu/SCADARTU_status.log 2>&1
+./SCADA-RTU-TEST > /reports/scada-rtu/SCADARTU_status.log 2>&1
 
 # Run GCovr command
 gcovr --html -e "../Test" -e "../include/utils" -e "../include/tahu" -e "../include/yaml-cpp" -e "../src/utils" -e "../include/log4cpp/Appender.hh" --exclude-throw-branches -o /reports/scada-rtu/SCADARTU_Report.html -r .. .

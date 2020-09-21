@@ -30,11 +30,12 @@ using namespace CommonUtils;
 // Unnamed namespace to define globals 
 namespace  
 {
-	eNetworkType g_eNetworkType{eNetworkType::eTCP};
+	eNetworkType g_eNetworkType{eNetworkType::eALL};
 	std::atomic<bool> g_bIsStarted{false};
 	std::map<std::string, CWellSiteInfo> g_mapYMLWellSite;
 	std::map<std::string, CRTUNetworkInfo> g_mapRTUNwInfo;
 	std::map<std::string, CUniqueDataPoint> g_mapUniqueDataPoint;
+	std::map<std::string, CUniqueDataDevice> g_mapUniqueDataDevice;
 	std::vector<std::string> g_sErrorYMLs;
 	unsigned short g_usTotalCnt{0};
 
@@ -47,6 +48,14 @@ namespace
 		DO_LOG_DEBUG("Start");
 		for(auto &objWellSiteDev : a_oWellSite.getDevices())
 		{
+			std::string devID(SEPARATOR_CHAR+ objWellSiteDev.getID() + SEPARATOR_CHAR + a_oWellSite.getID());
+
+			// populate device data
+			CUniqueDataDevice objDevice{a_oWellSite, objWellSiteDev};
+			g_mapUniqueDataDevice.emplace(devID, objDevice);
+
+			auto &refUniqueDev = g_mapUniqueDataDevice.at(devID);
+
 			//unsigned int uiPoint = 0;
 			for(auto &objPt : objWellSiteDev.getDevInfo().getDataPoints())
 			{
@@ -57,6 +66,8 @@ namespace
 				// Build unique data point
 				CUniqueDataPoint oUniquePoint{sUniqueId, a_oWellSite, objWellSiteDev, objPt};
 				g_mapUniqueDataPoint.emplace(sUniqueId, oUniquePoint);
+
+				refUniqueDev.addPoint(std::ref(g_mapUniqueDataPoint.at(sUniqueId)));
 
 				DO_LOG_INFO(oUniquePoint.getID() +
 							"=" +
@@ -92,6 +103,22 @@ namespace
 		return true;
 	}
 	#endif
+}
+
+/**
+ * Add unique data point reference to unique device
+ * @param a_rPoint :[in] data point reference
+ */
+void network_info::CUniqueDataDevice::addPoint(const CUniqueDataPoint &a_rPoint)
+{
+	try
+	{
+		m_rPointList.push_back(a_rPoint);
+	}
+	catch (std::exception &e)
+	{
+		DO_LOG_ERROR(e.what());
+	}
 }
 
 /**
@@ -562,6 +589,15 @@ const std::map<std::string, CUniqueDataPoint>& network_info::getUniquePointList(
 }
 
 /**
+ * Get unique device list
+ * @return map of unique device
+ */
+const std::map<std::string, CUniqueDataDevice>& network_info::getUniqueDeviceList()
+{
+	return g_mapUniqueDataDevice;
+}
+
+/**
  * Get point type
  * @param a_type	:[in] point type as string from YAML file
  * @return point point type enum based on string
@@ -657,15 +693,6 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 		a_oCDataPoint.m_stAddress.m_sDataType =  a_oData["attributes"]["datatype"].as<std::string>();
 	}
 
-	if(0 != globalConfig::validateParam(a_oData["attributes"], "isinput", globalConfig::DT_BOOL))
-	{
-		a_oCDataPoint.m_bIsInput = true;
-	}
-	else
-	{
-		a_oCDataPoint.m_bIsInput =  a_oData["attributes"]["isinput"].as<bool>();
-	}
-
 	// Check mandatory parameters
 	try
 	{
@@ -726,13 +753,13 @@ void printWellSite(CWellSiteInfo a_oWellSite)
 	DO_LOG_DEBUG(" Start: wellsite: " +
 				a_oWellSite.getID());
 
-	for(auto objWellSiteDev : a_oWellSite.getDevices())
+	for(auto &objWellSiteDev : a_oWellSite.getDevices())
 	{
 		DO_LOG_DEBUG(a_oWellSite.getID() +
 					"\\" +
 					objWellSiteDev.getID());
 
-		for(auto objPt : objWellSiteDev.getDevInfo().getDataPoints())
+		for(auto &objPt : objWellSiteDev.getDevInfo().getDataPoints())
 		{
 			DO_LOG_DEBUG(a_oWellSite.getID() +
 						"\\" +
@@ -801,7 +828,7 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 		return;
 	}
 	std::vector<CWellSiteInfo> oWellSiteList;
-	for(auto sWellSiteFile: g_sWellSiteFileList)
+	for(auto &sWellSiteFile: g_sWellSiteFileList)
 	{
 		if(true == sWellSiteFile.empty())
 		{
@@ -866,12 +893,12 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 		g_usTotalCnt = 0;
 	}
 	DO_LOG_INFO(": Count start from = " +g_usTotalCnt);
-	for(auto a: g_mapYMLWellSite)
+	for(auto &a: g_mapYMLWellSite)
 	{
-		populateUniquePointData(g_mapYMLWellSite.at(a.first));
+		populateUniquePointData(a.second);
 	}
 
-	for(auto a: oWellSiteList)
+	for(auto &a: oWellSiteList)
 	{
 		std::cout << "\nNew Well Site\n";
 		printWellSite(a);

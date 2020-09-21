@@ -22,6 +22,7 @@ using namespace std;
 using namespace globalConfig;
 
 #define SCADA_CONFIG_FILE_PATH "/opt/intel/eis/uwc_data/scada-rtu/scada_config.yml"
+#define MQTT_EXPORT_VERSION "2.0"
 
 class CCommon
 {
@@ -33,6 +34,7 @@ private:
 
 	string m_strAppName;
 	string m_strExtMqttURL;
+	int m_nQos;
 	string m_strIntMqttURL;
 	string m_siteListFileName;
 	char m_delimeter;
@@ -95,6 +97,36 @@ public:
 	const std::string& getExtMqttURL() const
 	{
 		return m_strExtMqttURL;
+	}
+
+	/**
+	 * Set MQTT QOS to connect with MQTT broker
+	 * @param nQos
+	 * @return None
+	 */
+	void setMQTTQos(const int nQos)
+	{
+		switch(nQos)
+		{
+		case 0:
+		case 1:
+		case 2:
+			m_nQos = nQos;
+			break;
+		default:
+			m_nQos = 1;
+			break;
+		}
+	}
+
+	/**
+	 * Get MQTT-Export broker connection QOS parameter
+	 * @param None
+	 * @return connection QOS in int
+	 */
+	const int getMQTTQos() const
+	{
+		return m_nQos;
 	}
 
 
@@ -166,24 +198,6 @@ public:
 	void setSiteListFileName(const std::string &siteListFileName)
 	{
 		m_siteListFileName = siteListFileName;
-	}
-
-	/**
-	 * get set topic name separator for SCADA master
-	 * @return topic name separator
-	 */
-	const char getTopicSeparator() const
-	{
-		return m_delimeter;
-	}
-
-	/**
-	 * set topic name separator for SCADA master
-	 * @param strTopicSeparator	:[in] topic name separator
-	 */
-	void setTopicSeparator(const std::string &strTopicSeparator)
-	{
-		m_delimeter = strTopicSeparator[0];
 	}
 
 	/**
@@ -287,5 +301,13 @@ public:
 	{
 		m_strNetworkType = strNetworkType;
 	}
+
+	const std::string getVersion()
+	{
+		return std::string(MQTT_EXPORT_VERSION);
+	}
+
+	bool getTopicParts(std::string a_sTopic, std::vector<std::string> &a_vsTopicParts, const string& a_delimeter);
+
 };
 #endif

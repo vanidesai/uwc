@@ -66,6 +66,30 @@ bool CCommon::loadYMLConfig()
 		bRet = false;
 	}
 
+	if((config["qos_mqtt_comm"])
+			&& 0 == globalConfig::validateParam(config, "qos_mqtt_comm", globalConfig::eDataType::DT_INTEGER))
+	{
+		int nQos = config["qos_mqtt_comm"].as<std::int32_t>();
+		if(nQos >= 0 && nQos <=2)
+		{
+			setMQTTQos(nQos);
+			DO_LOG_INFO("QOS is set to :: " + to_string(getMQTTQos()))
+			cout << "QOS is set to :: " + to_string(getMQTTQos()) << endl;
+		}
+		else
+		{
+			setMQTTQos(1);	// default QOS value is 1
+			DO_LOG_ERROR("QOS key is not within valid range, set to default value 1");
+			cout << "QOS key is not within valid range, set to default value :: " << to_string(getMQTTQos()) << endl;
+		}
+	}
+	else
+	{
+		setMQTTQos(1);	// default QOS value is 1
+		DO_LOG_ERROR("QOS key is not present, set to default value 1");
+		cout << "QOS key is not present, set to default value :: " << to_string(getMQTTQos()) << endl;
+	}
+
 	return bRet;
 }
 
@@ -161,7 +185,7 @@ bool CCommon::readCommonEnvVariables()
 		bool bRetVal = false;
 
 		std::list<std::string> topicList{"AppName", "INTERNAL_MQTT_URL" , "DEV_MODE",
-			"NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME", "TOPIC_SEPARATOR"};
+			"NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME"};
 
 		std::map <std::string, std::string> envTopics;
 
@@ -183,7 +207,6 @@ bool CCommon::readCommonEnvVariables()
 		setIntMqttURL(envTopics.at("INTERNAL_MQTT_URL"));
 		setNetworkType(envTopics.at("NETWORK_TYPE"));
 		setSiteListFileName(envTopics.at("DEVICES_GROUP_LIST_FILE_NAME"));
-		setTopicSeparator(envTopics.at("TOPIC_SEPARATOR"));
 
 		string devMode = envTopics.at("DEV_MODE");
 		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
@@ -243,4 +266,39 @@ string CCommon::getMACAddress(const string& a_strInterfaceName)
  */
 CCommon::~CCommon()
 {
+}
+
+
+/**
+ * Splits topic name with delimeter '/'
+ * @param a_sTopic :[in] topic to split
+ * @param a_vsTopicParts :[out] stores all the split names in this vector
+ * @return true/false based on true/false
+ */
+bool CCommon::getTopicParts(std::string a_sTopic,
+		std::vector<std::string> &a_vsTopicParts, const string& a_delimeter)
+{
+	try
+	{
+		std::string delimiter = "/";
+		if(! a_delimeter.empty())
+		{
+			delimiter = a_delimeter;
+		}
+		size_t last = 0;
+		size_t next = 0;
+		while ((next = a_sTopic.find(delimiter, last)) != std::string::npos)
+		{
+			a_vsTopicParts.push_back(a_sTopic.substr(last, next - last));
+			last = next + 1;
+		}
+		a_vsTopicParts.push_back(a_sTopic.substr(last));
+	}
+	catch (std::exception &e)
+	{
+		DO_LOG_ERROR(std::string("Error:") + e.what());
+		a_vsTopicParts.clear();
+		return false;
+	}
+	return true;
 }

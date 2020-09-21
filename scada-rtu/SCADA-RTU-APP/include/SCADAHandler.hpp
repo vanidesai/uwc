@@ -18,7 +18,7 @@
 #include "Publisher.hpp"
 #include "NetworkInfo.hpp"
 #include "SparkPlugDevMgr.hpp"
-
+#include "QueueMgr.hpp"
 //
 #include <tahu.pb.h>
 #include <pb_decode.h>
@@ -82,18 +82,21 @@ class CSCADAHandler
 	bool initDataPoints();
 	void populateDataPoints();
 
-	bool splitString(const string a_string, vector<string>& a_splitVector, const string& a_delimeter);
-
+	void subscribeTopics();
 	void connected();
+	void vendor_app_birth_request();
 
 public:
 	~CSCADAHandler();
 	static CSCADAHandler& instance();
-	bool prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
-	void cleanup();
-	bool isExtMqttSubConnected();
 	void disconnect();
 	void connect();
+	void cleanup();
+
+	bool pushMsgInQ(mqtt::const_message_ptr msg);
+	bool prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
+	bool isExtMqttSubConnected();
+	bool processDCMDMsg(mqtt::const_message_ptr a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
 };
 
 #endif

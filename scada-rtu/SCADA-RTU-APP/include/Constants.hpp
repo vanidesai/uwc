@@ -18,7 +18,6 @@
 #define DDATA "DDATA"
 #define DDEATH "DDEATH"
 #define DDATA "DDATA"
-//#define TOPIC_SEPARATOR "/"
 
 
 #endif

@@ -21,6 +21,7 @@
 #include <map>
 #include <functional>
 #include "Logger.hpp"
+#include "NetworkInfo.hpp"
 
 extern "C"
 {
@@ -47,6 +48,7 @@ using namespace std;
 #define SUBDEV_SEPARATOR_CHAR ("-")
 
 using var_t = std::variant<bool, uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, float, double, std::string>;
+using var_metric_ref_t = std::variant<std::monostate, std::reference_wrapper<const network_info::CUniqueDataPoint>>; 
 
 class CValObj
 {
@@ -55,6 +57,7 @@ class CValObj
 	var_t m_objVal;
 
 	bool setValObj(std::string a_sDatatype, cJSON *a_cjValue);
+	bool setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_metric);
 
 public:
 	CValObj() :
@@ -79,6 +82,9 @@ public:
 	{
 	}
 	;
+
+	CValObj& operator=(const CValObj &a_obj);
+
 
 	uint8_t compareDataType(const CValObj &a_obj)
 	{
@@ -148,6 +154,8 @@ public:
 
 	bool assignToSparkPlug(org_eclipse_tahu_protobuf_Payload_Metric &a_metric);
 
+	bool assignToCJSON(cJSON *a_cjMetric);
+
 	void print()
 	{
 		/*std::cout << "\t DataType: " << m_uiDataType << "\t Value: ";
@@ -163,10 +171,13 @@ class CMetric
 	std::string m_sName;
 	std::string m_sSparkPlugName;
 	CValObj m_objVal;
-
+	uint64_t m_timestamp;
+	var_metric_ref_t m_rDirectProp;
+	
 	friend class CSparkPlugDevManager;
 	CMetric()
 	{
+		m_timestamp = 0;
 	}
 	;
 	void setName(std::string a_sName)
@@ -179,26 +190,32 @@ class CMetric
 		return m_objVal.setValObj(a_sDatatype, a_cjValue);
 	}
 	;
+	bool setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric)
+	{
+		return m_objVal.setValObj(a_sparkplugMetric);
+	};
 
 public:
 	CMetric(std::string a_sName) :
-			m_sName
-			{ a_sName }, m_sSparkPlugName
-			{ a_sName }, m_objVal
-			{ }
+			m_sName{ a_sName }, m_sSparkPlugName{ a_sName },
+			m_objVal{ }, m_timestamp{ }
 	{
 		;
 	}
 	;
-	CMetric(std::string a_sName, const CValObj &a_objVal) :
-			m_sName
-			{ a_sName }, m_sSparkPlugName
-			{ a_sName }, m_objVal
-			{ a_objVal }
+	CMetric(std::string a_sName, const CValObj &a_objVal, const uint64_t a_timestamp) :
+			m_sName{ a_sName }, m_sSparkPlugName{ a_sName },
+			m_objVal{ a_objVal }, m_timestamp {a_timestamp}
 	{
 		;
 	}
 	;
+	CMetric(const network_info::CUniqueDataPoint &a_rDirectPropRef) :
+			m_sName{ a_rDirectPropRef.getDataPoint().getID() }, m_sSparkPlugName{ a_rDirectPropRef.getDataPoint().getID() },
+			m_objVal{METRIC_DATA_TYPE_STRING, std::string("")}, m_timestamp {}, m_rDirectProp{a_rDirectPropRef}
+	{
+		;
+	}
 
 	std::string getName()
 	{
@@ -227,12 +244,24 @@ public:
 	}
 	;
 
+	void setTimestamp(const uint64_t a_timestamp)
+	{
+		m_timestamp = a_timestamp;
+	}
+
+	uint64_t getTimestamp()
+	{
+		return m_timestamp;
+	}
+
 	void print()
 	{
 		std::cout << "Metric Name: " << m_sName;
 		m_objVal.print();
 	}
 	;
+
+	bool addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric);
 };
 
 #endif

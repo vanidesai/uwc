@@ -15,8 +15,6 @@
 #define EXT_PUBLISHER_ID "EXT_SCADARTU_PUBLISHER"
 #define INT_PUBLISHER_ID "INT_SCADARTU_PUBLISHER"
 
-int iPublishQOS = 0;
-
 /**
  * Constructor Initializes MQTT m_ExtPublisher
  * @param strPlBusUrl :[in] MQTT broker URL
@@ -89,8 +87,8 @@ CPublisher::CPublisher(std::string a_ExtMqttURL, std::string a_IntMqttURL, int a
 CPublisher& CPublisher::instance()
 {
 	static string strExtMQTTUrl = CCommon::getInstance().getExtMqttURL();
-
 	static string strIntMQTTUrl = CCommon::getInstance().getIntMqttURL();
+	static int nQos = CCommon::getInstance().getMQTTQos();
 
 	if(strExtMQTTUrl.empty() || strIntMQTTUrl.empty())
 	{
@@ -100,7 +98,8 @@ CPublisher& CPublisher::instance()
 		throw std::runtime_error("Missing required config..");
 	}
 
-	static CPublisher handler(strExtMQTTUrl, strIntMQTTUrl, iPublishQOS);
+	DO_LOG_DEBUG("Publisher is connecting with QOS : " + to_string(nQos));
+	static CPublisher handler(strExtMQTTUrl, strIntMQTTUrl, nQos);
 	return handler;
 }
 
@@ -125,7 +124,6 @@ bool CPublisher::connect(mqtt::async_client& a_mqttClient, mqtt::connect_options
 	bool bFlag = true;
 	try
 	{
-		std::cout << "Trying to connect with mqtt broker..." << std::endl;
 		m_conntok = a_mqttClient.connect(a_connOpts);
 		// Wait for 2 seconds to get connected
 		if (false == m_conntok->wait_for(2000))

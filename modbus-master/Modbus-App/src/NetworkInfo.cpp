@@ -674,15 +674,6 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 		a_oCDataPoint.m_stAddress.m_sDataType =  a_oData["attributes"]["datatype"].as<std::string>();
 	}
 
-	if(0 != globalConfig::validateParam(a_oData["attributes"], "isinput", globalConfig::DT_BOOL))
-	{
-		a_oCDataPoint.m_bIsInput = true;
-	}
-	else
-	{
-		a_oCDataPoint.m_bIsInput =  a_oData["attributes"]["isinput"].as<bool>();
-	}
-
 	// Check mandatory parameters
 	try
 	{
@@ -818,7 +809,7 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 		return;
 	}
 	std::vector<CWellSiteInfo> oWellSiteList;
-	for(auto sWellSiteFile: g_sWellSiteFileList)
+	for(auto &sWellSiteFile: g_sWellSiteFileList)
 	{
 		if(true == sWellSiteFile.empty())
 		{
@@ -883,12 +874,12 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 		g_usTotalCnt = 0;
 	}
 	DO_LOG_INFO(": Count start from = " +g_usTotalCnt);
-	for(auto a: g_mapYMLWellSite)
+	for(auto &a: g_mapYMLWellSite)
 	{
-		populateUniquePointData(g_mapYMLWellSite.at(a.first));
+		populateUniquePointData(a.second);
 	}
 
-	for(auto a: oWellSiteList)
+	for(auto &a: oWellSiteList)
 	{
 		std::cout << "\nNew Well Site\n";
 		printWellSite(a);

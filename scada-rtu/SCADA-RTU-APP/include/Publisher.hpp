@@ -33,7 +33,7 @@ class CPublisher
 {
 	mqtt::async_client m_ExtPublisher;
 	mqtt::async_client m_IntPublisher;
-	bool m_bIsFirst;
+
 	mqtt::connect_options m_connOpts;
 	mqtt::connect_options m_SSLConnOpts;
 	mqtt::token_ptr m_conntok;

@@ -132,4 +132,5 @@ void CScadaCallback::connected(const std::string& cause)
  */
 void CScadaCallback::message_arrived(mqtt::const_message_ptr msg)
 {
+	CSCADAHandler::instance().pushMsgInQ(msg);
 }

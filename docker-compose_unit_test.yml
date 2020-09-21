@@ -265,7 +265,7 @@ services:
       AppName: "SCADA-RTU-TEST"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
-      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+      Log4cppPropsFile: "/SCADA-RTU-APP/Config/log4cpp.properties"
       DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
       INTERNAL_MQTT_URL: "tcp://127.0.0.1:1883"
       NETWORK_TYPE: "ALL"

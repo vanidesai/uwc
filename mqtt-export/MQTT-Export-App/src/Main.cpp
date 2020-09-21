@@ -25,7 +25,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.5.5"
+#define APP_VERSION "0.0.5.7"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -

@@ -26,7 +26,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.5.5"
+#define APP_VERSION "0.0.5.7"
 
 /**
  * Function to keep running this application and check NBIRTH and NDEATH messages
@@ -41,6 +41,34 @@ void updateDataPoints()
 		//keep on working till the application is not stopped
 	}
 }
+
+/**
+ * Process a message to be sent on internal MQTT broker
+ * @param a_objCDataPointsMgr :[in] reference of data points manager class
+ * @param a_qMgr :[in] reference of queue from which message is to be processed
+ * @return none
+ */
+void processExternalMqttMsgs(QMgr::CQueueMgr& a_qMgr)
+{
+	mqtt::const_message_ptr recvdMsg;
+
+	while (false == g_shouldStop.load())
+	{
+		if(true == a_qMgr.isMsgArrived(recvdMsg))
+		{
+			std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+			CSCADAHandler::instance().processDCMDMsg(recvdMsg, stRefActionVec);
+
+			//prepare a sparkplug message only if there are values in map
+			if(! stRefActionVec.empty())
+			{
+				CIntMqttHandler::instance().prepareCJSONMsg(stRefActionVec);
+			}
+		}
+	}
+}
+
 
 /**
  * Process a message to be sent on external MQTT broker
@@ -88,14 +116,14 @@ void processInternalMqttMsgs(QMgr::CQueueMgr& a_qMgr)
  */
 int main(int argc, char *argv[])
 {
-	DO_LOG_DEBUG("Starting SCADA RTU ...");
-	std::cout << __func__ << ":" << __LINE__ << " ------------- Starting SCADA RTU Container -------------" << std::endl;
-
-	DO_LOG_INFO("SCADA RTU container app version is set to :: "+  std::string(APP_VERSION));
-	cout << "SCADA RTU container app version is set to :: "+  std::string(APP_VERSION) << endl;
-
 	try
 	{
+		
+		std::cout << __func__ << ":" << __LINE__ << " ------------- Starting SCADA RTU Container -------------" << std::endl;
+		std::cout << "SCADA RTU container app version is set to :: "+  std::string(APP_VERSION) << endl;
+
+		DO_LOG_DEBUG("Starting SCADA RTU ...");
+		DO_LOG_INFO("SCADA RTU container app version is set to :: "+  std::string(APP_VERSION));
 		if(!CCommon::getInstance().loadYMLConfig())
 		{
 			DO_LOG_ERROR("Please set the required config in scada_config.yml file and restart the container");
@@ -141,6 +169,7 @@ int main(int argc, char *argv[])
 				{
 					CSCADAHandler::instance();
 					CIntMqttHandler::instance();
+					//CSparkPlugDevManager::getInstance().print();
 				}
 		}
 
@@ -156,6 +185,7 @@ int main(int argc, char *argv[])
 		//if(CSCADAHandler::instance().isExtMqttSubConnected()&& CIntMqttHandler::instance().isIntMqttSubConnected())
 		//{
 			g_vThreads.push_back(std::thread(processInternalMqttMsgs, std::ref(QMgr::getDatapointsQ())));
+			g_vThreads.push_back(std::thread(processExternalMqttMsgs, std::ref(QMgr::getScadaSubQ())));
 		//}
 
 /*		//added for testing of reconnect - it should publish NBIRTH and DBIRTH after connect

@@ -15,6 +15,8 @@
 #include "MQTTCallback.hpp"
 #include "Logger.hpp"
 #include "QueueMgr.hpp"
+#include "SparkPlugDevMgr.hpp"
+#include "Publisher.hpp"
 
 using namespace std;
 
@@ -24,6 +26,8 @@ class CIntMqttHandler
 	mqtt::connect_options m_connOpts;
 	mqtt::token_ptr m_conntok;
 	int m_QOS;
+
+	int m_appSeqNo;
 
 	CSubscriberCallback m_mqttSubscriberCB;
 	CMQTTActionListener m_listener;
@@ -38,12 +42,16 @@ class CIntMqttHandler
 	CIntMqttHandler& operator=(const CIntMqttHandler&) = delete;	// Copy assign
 
 	bool subscribeToTopics();
+	string getDatatypeInString(uint32_t a_uiDatatype);
+
+	int getAppSeqNo();
 
 public:
 	~CIntMqttHandler();
 	static CIntMqttHandler& instance(); //function to get single instance of this class
 	bool isIntMqttSubConnected();
 	bool pushMsgInQ(mqtt::const_message_ptr msg);
+	bool prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
 	bool connect();
  	void cleanup();
  };

@@ -10,8 +10,6 @@
 
 #include "SCADAHandler.hpp"
 
-int iScadaQOS = 0;
-
 /**
  * constructor Initializes MQTT m_subscriber
  * @param strPlBusUrl :[in] MQTT broker URL
@@ -38,6 +36,9 @@ CSCADAHandler::CSCADAHandler(std::string strMqttURL, int iQOS) :
 
 		//get values of all the data points and store in data points repository
 		initDataPoints();
+
+		// Create SparkPlug devices corresponding to Modbus devices
+		CSparkPlugDevManager::getInstance().addRealDevices();
 
 		// Initialize the sequence number for Sparkplug MQTT messages
 		reset_sparkplug_sequence();
@@ -99,6 +100,9 @@ void CSCADAHandler::publish_births()
 	// Publish the NBIRTH
 	publish_node_birth();
 
+	//publish vendor app birth message
+    vendor_app_birth_request();
+
 	// Publish the DBIRTH
 	for(auto &itrDevice : m_deviceDataPoints)
 	{
@@ -122,16 +126,13 @@ bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbir
 		{
 			a_siteName = dataPoint.second.m_objUniquePoint.getWellSite().getID();
 
-			string strDeviceName = "";
-			if(dataPoint.second.m_objUniquePoint.getDataPoint().isInputPoint() == true)//data point is input
+			string strDeviceName = dataPoint.second.m_objUniquePoint.getDataPoint().getID();
+
+			if(strDeviceName.empty())
 			{
-				strDeviceName.assign("Inputs/");
+				DO_LOG_ERROR("Device name is empty while forming DBIRTH message");
+				return false;
 			}
-			else
-			{
-				strDeviceName.assign("Outputs/");
-			}
-			strDeviceName.append(dataPoint.second.m_objUniquePoint.getDataPoint().getID());
 
 			uint64_t current_time = get_current_timestamp();
 
@@ -149,8 +150,41 @@ bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbir
 			strDeviceName.copy(metric.name, strDeviceName.size());
 			metric.name[strDeviceName.size()] = '\0';
 			metric.has_is_null = true;
+			metric.is_null = true;
 
 			org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
+
+			int iAddr =  dataPoint.second.m_objUniquePoint.getDataPoint().getAddress().m_iAddress;
+			add_property_to_set(&prop, "Addr", PROPERTY_DATA_TYPE_INT32, &iAddr, sizeof(iAddr));
+
+			int iWidth = dataPoint.second.m_objUniquePoint.getDataPoint().getAddress().m_iWidth;
+			add_property_to_set(&prop, "Width", PROPERTY_DATA_TYPE_INT32, &iWidth, sizeof(iWidth));
+
+			string strDataType = dataPoint.second.m_objUniquePoint.getDataPoint().getAddress().m_sDataType;
+			add_property_to_set(&prop, "DataType", PROPERTY_DATA_TYPE_STRING, strDataType.c_str(), strDataType.length());
+
+			eEndPointType endPointType = dataPoint.second.m_objUniquePoint.getDataPoint().getAddress().m_eType;
+
+			string strType = "";
+			switch(endPointType)
+			{
+			case eEndPointType::eCoil:
+				strType = "COIL";
+				break;
+			case eEndPointType::eDiscrete_Input:
+				strType = "DISCRETE_INPUT";
+				break;
+			case eEndPointType::eHolding_Register:
+				strType = "HOLDING_REGISTER";
+				break;
+			case eEndPointType::eInput_Register:
+				strType = "INPUT_REGISTER";
+				break;
+			default:
+				DO_LOG_ERROR("Invalid type of data-point in yml file");
+				return false;
+			}
+			add_property_to_set(&prop, "Type", PROPERTY_DATA_TYPE_STRING, strType.c_str(), strType.length());
 
 			uint32_t iPollingInterval = dataPoint.second.m_objUniquePoint.getDataPoint().getPollingConfig().m_uiPollFreq;
 			add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, &iPollingInterval, sizeof(iPollingInterval));
@@ -196,11 +230,12 @@ void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, s
 			return;
 		}
 
-		if(true == prepareDBirthMessage(dbirth_payload, a_dataPointInfo, strSiteName))
+		if(true == CSparkPlugDevManager::getInstance().prepareDBirthMessage(dbirth_payload, a_deviceName))
 		{
 			string strDBirthTopic = CCommon::getInstance().getDBirthTopic() + "/" + a_deviceName;
 
 			CPublisher::instance().publishSparkplugMsg(dbirth_payload, strDBirthTopic);
+			CSparkPlugDevManager::getInstance().setMsgPublishedStatus(enDEVSTATUS_UP, a_deviceName);
 		}
 	}
 	catch(exception &ex)
@@ -220,15 +255,17 @@ void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, s
 CSCADAHandler& CSCADAHandler::instance()
 {
 	static string strMqttUrl = CCommon::getInstance().getExtMqttURL();
+	static int nQos = CCommon::getInstance().getMQTTQos();
 
 	if(strMqttUrl.empty())
 	{
 		DO_LOG_ERROR("EXTERNAL_MQTT_URL variable is not set in config file");
 		std::cout << __func__ << ":" << __LINE__ << " Error : EXTERNAL_MQTT_URL variable is not set in config file" <<  std::endl;
-		exit(EXIT_FAILURE);
+		throw std::runtime_error("Missing required config..");
 	}
 
-	static CSCADAHandler handler(strMqttUrl.c_str(), iScadaQOS);
+	DO_LOG_DEBUG("External MQTT subscriber is connecting with QOS : " + to_string(nQos));
+	static CSCADAHandler handler(strMqttUrl.c_str(), nQos);
 	return handler;
 }
 
@@ -376,55 +413,41 @@ bool CSCADAHandler::initDataPoints()
 	return true;
 }
 
+/**
+ * Subscribe to topics to accept from SCADA master
+ */
+void CSCADAHandler::subscribeTopics()
+{
+	string strDCMDMsg = "+/+/DCMD/+/+";
+	m_subscriber.subscribe(strDCMDMsg, m_QOS, nullptr, m_listener);
+
+	DO_LOG_DEBUG("Subscribed with topics from SCADA master");
+}
+
+/**
+ * Callback function to publish node and device birth messages
+ */
 void CSCADAHandler::connected()
 {
+	//as per specification, we need to subscribe to the topics first
+    subscribeTopics();
+
     // Publish the NBIRTH and DBIRTH Sparkplug messages
     publish_births();
 
+}
+
+/**
+ * Publish message on internal MQTT for vendor app
+ * so that it will publish device birth message
+ */
+void CSCADAHandler::vendor_app_birth_request()
+{
     //get birth details from vendor app by publishing messages for them
     //prepare CJSON message to publish on internal MQTT
-	string strPubTopic = "START_BIRTH_MESSAGE";
+	string strPubTopic = "START_BIRTH_PROCESS";
 	string strBlankMsg = "";
 	CPublisher::instance().publishIntMqttMsg(strBlankMsg, strPubTopic);
-}
-/**
- * Helper function to split string based on "/" delimiter
- * @param a_string : [in] string to split
- * @param a_splitVector: [out] store split string in vector
- * @return true/false based on success/failure
- */
-bool CSCADAHandler::splitString(const string a_string, vector<string>& a_splitVector, const string& a_delimeter)
-{
-	try
-	{
-		string strString = a_string;
-		size_t pos = 0;
-		std::string delimiter = "";
-		if(a_delimeter.empty())
-		{
-			delimiter = "/";
-		}
-		else
-		{
-			delimiter = a_delimeter;
-		}
-		std::string token;
-		while ((pos = strString.find(delimiter)) != std::string::npos)
-		{
-		    token = strString.substr(0, pos);
-		    a_splitVector.push_back(token);
-		    strString.erase(0, pos + delimiter.length());
-		}
-
-		a_splitVector.push_back(strString);
-
-		return true;
-	}
-	catch(exception& ex)
-	{
-		DO_LOG_FATAL(ex.what());
-		return false;
-	}
 }
 
 /**
@@ -445,38 +468,38 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 			get_next_payload(&sparkplug_payload);
 
 			//get this device name to add in topic
-			string strDeviceName = "";
-			strDeviceName.append(itr.m_refSparkPlugDev.get().getSparkPlugName());
+			std::string strDeviceName{itr.m_refSparkPlugDev.get().getSparkPlugName()};
 
-			if(strDeviceName.size() == 0)
+			if (strDeviceName.size() == 0)
 			{
 				DO_LOG_ERROR("Device name is blank");
 				return false;
 			}
 
-			//parse the site name from the topic
-			vector<string> vParsedTopic = {};
-			splitString(strDeviceName, vParsedTopic, "-");
-
-			//assuming site name exists after the last occurrence of -
-			string siteName = vParsedTopic[vParsedTopic.size()-1];
-
 			string strMsgTopic = "";
 			metricMap_t m_metricForMsg;
+			eDevStatus enMsgPublishState{enDEVSTATUS_NONE};
 
 			//depending on action, call the topic name
-			switch(itr.m_enAction)
+			switch (itr.m_enAction)
 			{
 			case enMSG_BIRTH:
 				strMsgTopic = CCommon::getInstance().getDBirthTopic() + "/";
-				m_metricForMsg = itr.m_refSparkPlugDev.get().getMetrics();
+				if(true == CSparkPlugDevManager::getInstance().prepareDBirthMessage(sparkplug_payload, strDeviceName))
+				{
+					strMsgTopic.append(strDeviceName);
+					CPublisher::instance().publishSparkplugMsg(sparkplug_payload, strMsgTopic);
+					itr.m_refSparkPlugDev.get().setPublishedStatus(enDEVSTATUS_UP);
+				}
 				break;
 			case enMSG_DEATH:
 				strMsgTopic = CCommon::getInstance().getDDeathTopic() + "/";
+				enMsgPublishState = enDEVSTATUS_DOWN;
 				break;
 			case enMSG_DATA:
 				strMsgTopic = CCommon::getInstance().getDDataTopic() + "/";
 				m_metricForMsg = std::ref(itr.m_mapChangedMetrics);
+				enMsgPublishState = enDEVSTATUS_UP;
 				break;
 			default:
 				DO_LOG_ERROR("Invalid message type received from internal MQTT broker");
@@ -485,53 +508,52 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 
 			strMsgTopic.append(strDeviceName);
 
+			if (itr.m_enAction == enMSG_DEATH)
+			{
+				sparkplug_payload.has_timestamp = true;
+				sparkplug_payload.timestamp = itr.m_refSparkPlugDev.get().getDeathTime();
+			}
+			else if (itr.m_enAction != enMSG_BIRTH)
+			{
 			//these shall be part of a single sparkplug msg
 			for (auto &itrMetric : m_metricForMsg)
 			{
-				uint64_t current_time = get_current_timestamp();
+				uint64_t timestamp = itrMetric.second.getTimestamp();
 				string strMetricName = itrMetric.second.getName();
 
-				org_eclipse_tahu_protobuf_Payload_Metric metric = {(char*)strMetricName.c_str(),
-						false, 0, true, current_time , true, itrMetric.second.getValue().getDataType(),
-						false, 0, false, 0, false, true, false,
+					org_eclipse_tahu_protobuf_Payload_Metric metric =
+							{ NULL, false, 0, true, timestamp, true,
+									itrMetric.second.getValue().getDataType(), false, 0, false, 0, false,
+									true, false,
 						org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
-						false, org_eclipse_tahu_protobuf_Payload_PropertySet_init_default, 0, {0}};
+									false,
+											org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+									0,
+									{ 0 } };
 
-/*				string strMetricName = itrMetric.second.getName();
-
-				metric.name = (char*)malloc(strMetricName.size() + 1);
+					metric.name = (char*) malloc(strMetricName.size());
 				if(metric.name == NULL)
 				{
 					DO_LOG_ERROR("Failed to allocate new memory");
 					return false;
 				};
-				strMetricName.copy(metric.name, strMetricName.size());
-				metric.name[strMetricName.size()] = '\0';*/
-				//metric.has_is_null = true;
+					strMetricName.copy(metric.name, strMetricName.size());
+					metric.name[strMetricName.size()] = '\0';
 
 				itrMetric.second.getValue().assignToSparkPlug(metric);
 
-				//add_metric_to_payload(&sparkplug_payload, &metric);
-
-				if(metric.which_value == org_eclipse_tahu_protobuf_Payload_Metric_string_value_tag)
-				{
-					add_simple_metric(&sparkplug_payload, strMetricName.c_str(), false, 0, itrMetric.second.getValue().getDataType(), false, false, metric.value.string_value, strlen(metric.value.string_value)+1);
-				}
-				else// if(metric.which_value == org_eclipse_tahu_protobuf_Payload_Metric_boolean_value_tag)
-				{
-					add_simple_metric(&sparkplug_payload, strMetricName.c_str(), false, 0, itrMetric.second.getValue().getDataType(), false, false, &metric.value, sizeof(metric.value));
-				}
+				add_metric_to_payload(&sparkplug_payload, &metric);
 
 			}//metric ends
+			}
+			if (itr.m_enAction != enMSG_BIRTH)
+			{
+				//publish sparkplug message
+				CPublisher::instance().publishSparkplugMsg(sparkplug_payload,
+					strMsgTopic);
 
-/*
-			//not required now
-			add_simple_metric(&sparkplug_payload, "Properties/Site info name", false, 0,
-					METRIC_DATA_TYPE_STRING, false, false, siteName.c_str(), siteName.size()+1);
-*/
-
-			//publish sparkplug message
-			CPublisher::instance().publishSparkplugMsg(sparkplug_payload, strMsgTopic);
+				itr.m_refSparkPlugDev.get().setPublishedStatus(enMsgPublishState);
+			}
 
 			free_payload(&sparkplug_payload);
 		}
@@ -570,4 +592,65 @@ void CSCADAHandler::connect()
 {
 	cout << "Connecting to External MQTT ... " << endl;
 	m_subscriber.connect();
+}
+
+
+/**
+ * Process message received from external MQTT broker
+ * @param a_msg :[in] mqtt message to be processed
+ * @return none
+ */
+bool CSCADAHandler::processDCMDMsg(mqtt::const_message_ptr a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec)
+{
+
+	org_eclipse_tahu_protobuf_Payload dcmd_payload = org_eclipse_tahu_protobuf_Payload_init_zero;
+	bool bRet = false;
+
+	try
+	{
+		int msgLen = a_msg->get_payload().length();
+
+		if(decode_payload(&dcmd_payload, (uint8_t* )a_msg->get_payload().data(), msgLen) >= 0)
+		{
+			bRet = CSparkPlugDevManager::getInstance().processExternalMQTTMsg(a_msg->get_topic(),
+					dcmd_payload, a_stRefActionVec);
+		}
+		else
+		{
+			DO_LOG_ERROR("Failed to decode the sparkplug payload");
+		}
+
+		free_payload(&dcmd_payload);
+		return bRet;
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		free_payload(&dcmd_payload);
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Push message in message queue to send on EIS
+ * @param msg :[in] reference of message to push in queue
+ * @return true/false based on success/failure
+ */
+bool CSCADAHandler::pushMsgInQ(mqtt::const_message_ptr msg)
+{
+	bool bRet = true;
+	try
+	{
+		QMgr::getScadaSubQ().pushMsg(msg);
+
+		DO_LOG_DEBUG("Pushed MQTT message in queue");
+		bRet = true;
+	}
+	catch (const std::exception &e)
+	{
+		DO_LOG_FATAL(e.what());
+		bRet = false;
+	}
+	return bRet;
 }

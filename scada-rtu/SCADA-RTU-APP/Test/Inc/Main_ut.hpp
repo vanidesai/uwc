@@ -13,13 +13,15 @@
 
 #include "Common.hpp"
 #include "ConfigManager.hpp"
+#include "QueueMgr.hpp"
 #include <iterator>
 #include <vector>
 #include <future>
 
-//#include "MQTTHandler.hpp"
 #include "SCADAHandler.hpp"
 #include "Publisher.hpp"
+#include "SparkPlugDevices.hpp"
+#include "Metric.hpp"
 
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
@@ -32,13 +34,14 @@ struct stFuture
 };
 
 extern void updateDataPoints();
-//extern bool processMsgToSendOnMqtt(QMgr::stMqttMsg a_mqttMsgToPublish);
-//extern bool postMsgsToSCADA(QMgr::CQueueMgr& a_qMgr);
+extern void processInternalMqttMsgs(QMgr::CQueueMgr& a_qMgr);
+void processExternalMqttMsgs(QMgr::CQueueMgr& a_qMgr);
 extern bool isTaskComplete(stFuture &a_futures);
 extern void timerThread(uint32_t interval);
 
 extern vector<std::thread> g_vThreads;
 extern std::atomic<bool> g_shouldStop;
+
 
 class Main_ut : public::testing::Test
 {
