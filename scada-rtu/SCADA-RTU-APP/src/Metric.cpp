@@ -89,6 +89,14 @@ bool CValObj::assignToSparkPlug(
 		} catch (std::exception &e)
 		{
 			DO_LOG_ERROR(std::string("Error:") + e.what());
+			if(METRIC_DATA_TYPE_STRING == m_uiDataType)
+			{
+				if(NULL != a_metric.value.string_value)
+				{
+					free(a_metric.value.string_value);
+					a_metric.value.string_value = NULL;
+				}
+			}
 			return false;
 		}
 	} while (0);
@@ -424,9 +432,40 @@ bool CValObj::setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_metric)
 	catch (std::exception &e)
 	{
 		DO_LOG_FATAL(e.what());
+		return false;
+	}
+	return true;
+}
 
-		//cout << "Exception : " << e.what() << endl;
+/**
+ * Add name value to a metric to be published on SCADA system
+ * @param dbirth_payload :[out] reference of spark plug message payload in which to store birth messages
+ * @return true/false depending on the success/failure
+ */
+bool CMetric::addMetricNameValue(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric)
+{
+	using namespace network_info;
+	try
+	{
+		{
+			a_rMetric.name = strdup(m_sSparkPlugName.c_str());
+			if(a_rMetric.name == NULL)
+			{
+				DO_LOG_ERROR("Failed to allocate new memory");
+				return false;
+			};
 
+			m_objVal.assignToSparkPlug(a_rMetric);
+		}
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		if(a_rMetric.name != NULL)
+		{
+			free(a_rMetric.name);
+			a_rMetric.name = NULL;
+		}
 		return false;
 	}
 	return true;
@@ -435,7 +474,6 @@ bool CValObj::setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_metric)
 /**
  * Prepare device birth messages to be published on SCADA system
  * @param dbirth_payload :[out] reference of spark plug message payload in which to store birth messages
- * @param a_dataPoints :[in] map of datapoints corresponding to the device
  * @return true/false depending on the success/failure
  */
 bool CMetric::addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric)
@@ -444,23 +482,12 @@ bool CMetric::addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMet
 	try
 	{
 		{
-			/*std::cout << "CMetric::addMetricForBirth - sparkplug name:" << m_sSparkPlugName
-			<< ", \t normal name: " << m_sName << std::endl;*/
-
-			std::string strDeviceName = m_sSparkPlugName;
-
-			a_rMetric.name = (char*)malloc(m_sSparkPlugName.size());
-			if(a_rMetric.name == NULL)
+			a_rMetric.name = strdup(m_sSparkPlugName.c_str());
+			if(addMetricNameValue(a_rMetric) == false)
 			{
-				DO_LOG_ERROR("Failed to allocate new memory");
+				DO_LOG_ERROR(m_sSparkPlugName + ":Failed to add metric name and value");
 				return false;
 			};
-			strDeviceName.copy(a_rMetric.name, m_sSparkPlugName.size());
-			a_rMetric.name[m_sSparkPlugName.size()] = '\0';
-			//a_rMetric.has_is_null = true;
-			//a_rMetric.is_null = true;
-
-			m_objVal.assignToSparkPlug(a_rMetric);
 
 			if (true == std::holds_alternative<std::reference_wrapper<const network_info::CUniqueDataPoint>>(m_rDirectProp))
 			{

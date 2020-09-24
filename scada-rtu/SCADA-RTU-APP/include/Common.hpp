@@ -37,7 +37,6 @@ private:
 	int m_nQos;
 	string m_strIntMqttURL;
 	string m_siteListFileName;
-	char m_delimeter;
 	string m_strNodeConfPath;
 	string m_strNetworkType;
 	string m_strGroupId;

@@ -47,7 +47,7 @@ using namespace std;
 #define VALUE_ASSINED      (4)
 #define SUBDEV_SEPARATOR_CHAR ("-")
 
-using var_t = std::variant<bool, uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, float, double, std::string>;
+using var_t = std::variant<std::monostate, bool, uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, float, double, std::string>;
 using var_metric_ref_t = std::variant<std::monostate, std::reference_wrapper<const network_info::CUniqueDataPoint>>; 
 
 class CValObj
@@ -62,7 +62,7 @@ class CValObj
 public:
 	CValObj() :
 			m_uiDataType
-			{ 0 }
+			{ 0 }, m_objVal{std::monostate{}}
 	{
 		;
 	}
@@ -175,9 +175,9 @@ class CMetric
 	var_metric_ref_t m_rDirectProp;
 	
 	friend class CSparkPlugDevManager;
-	CMetric()
+	CMetric() : m_timestamp {get_current_timestamp()}, m_rDirectProp{std::monostate{}}
 	{
-		m_timestamp = 0;
+	
 	}
 	;
 	void setName(std::string a_sName)
@@ -198,21 +198,21 @@ class CMetric
 public:
 	CMetric(std::string a_sName) :
 			m_sName{ a_sName }, m_sSparkPlugName{ a_sName },
-			m_objVal{ }, m_timestamp{ }
+			m_objVal{ }, m_timestamp{get_current_timestamp()}, m_rDirectProp{std::monostate{}}
 	{
 		;
 	}
 	;
 	CMetric(std::string a_sName, const CValObj &a_objVal, const uint64_t a_timestamp) :
 			m_sName{ a_sName }, m_sSparkPlugName{ a_sName },
-			m_objVal{ a_objVal }, m_timestamp {a_timestamp}
+			m_objVal{ a_objVal }, m_timestamp {a_timestamp}, m_rDirectProp{std::monostate{}}
 	{
 		;
 	}
 	;
 	CMetric(const network_info::CUniqueDataPoint &a_rDirectPropRef) :
 			m_sName{ a_rDirectPropRef.getDataPoint().getID() }, m_sSparkPlugName{ a_rDirectPropRef.getDataPoint().getID() },
-			m_objVal{METRIC_DATA_TYPE_STRING, std::string("")}, m_timestamp {}, m_rDirectProp{a_rDirectPropRef}
+			m_objVal{METRIC_DATA_TYPE_STRING, std::string("")}, m_timestamp {get_current_timestamp()}, m_rDirectProp{a_rDirectPropRef}
 	{
 		;
 	}
@@ -261,6 +261,7 @@ public:
 	}
 	;
 
+	bool addMetricNameValue(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric);
 	bool addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric);
 };
 

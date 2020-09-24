@@ -76,7 +76,8 @@ typedef struct MbusAPI
 			unsigned short  a_u16ByteCount = 0,
 			long a_lPriority = 0,
 			int a_nRetry = 0,
-			int32_t a_i32Ctx = 0):
+			int32_t a_i32Ctx = 0,
+			stOnDemandRequest a_stOnDemandReqData = {{0}}):
 			m_u8DevId{a_u8DevId},
 			m_u16TxId{a_u16TxId},
 			m_u16Quantity{a_u16Quantity},
@@ -84,8 +85,9 @@ typedef struct MbusAPI
 			m_u16ByteCount{a_u16ByteCount},
 			m_lPriority{a_lPriority},
 			m_nRetry{a_nRetry},
-			m_i32Ctx{a_i32Ctx}
-			{};
+			m_i32Ctx{a_i32Ctx},
+			m_stOnDemandReqData{a_stOnDemandReqData}
+{};
 }MbusAPI_t;
 
 // Function to get function code

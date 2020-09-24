@@ -78,7 +78,7 @@ void CSCADAHandler::prepareNodeDeathMsg()
 	size_t message_length = encode_payload(binary_buffer, buffer_length, &ndeath_payload);
 
 	// Publish the DDATA on the appropriate topic
-	mqtt::message_ptr pubmsg = mqtt::make_message(CCommon::getInstance().getDeathTopic(), (void*)binary_buffer, message_length, 0, false);
+	mqtt::message_ptr pubmsg = mqtt::make_message(CCommon::getInstance().getDeathTopic(), (void*)binary_buffer, message_length, m_QOS, false);
 
 	//connect options for async m_subscriber
 	m_subscriberConopts.set_will_message(pubmsg);
@@ -141,14 +141,12 @@ bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbir
 					org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
 					false, org_eclipse_tahu_protobuf_Payload_PropertySet_init_default, 0, {0}};
 
-			metric.name = (char*)malloc(strDeviceName.size());
+			metric.name = strdup(strDeviceName.c_str());
 			if(metric.name == NULL)
 			{
 				DO_LOG_ERROR("Failed to allocate new memory");
 				return false;
 			};
-			strDeviceName.copy(metric.name, strDeviceName.size());
-			metric.name[strDeviceName.size()] = '\0';
 			metric.has_is_null = true;
 			metric.is_null = true;
 
@@ -521,25 +519,23 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 				uint64_t timestamp = itrMetric.second.getTimestamp();
 				string strMetricName = itrMetric.second.getName();
 
-					org_eclipse_tahu_protobuf_Payload_Metric metric =
-							{ NULL, false, 0, true, timestamp, true,
-									itrMetric.second.getValue().getDataType(), false, 0, false, 0, false,
-									true, false,
-						org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
-									false,
-											org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
-									0,
-									{ 0 } };
+				org_eclipse_tahu_protobuf_Payload_Metric metric =
+						{ NULL, false, 0, true, timestamp, true,
+								itrMetric.second.getValue().getDataType(), false, 0, false, 0, false,
+								true, false,
+					org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+								false,
+										org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+								0,
+								{ 0 } };
 
-					metric.name = (char*) malloc(strMetricName.size());
+				metric.name = strdup(strMetricName.c_str());
 				if(metric.name == NULL)
 				{
 					DO_LOG_ERROR("Failed to allocate new memory");
 					return false;
 				};
-					strMetricName.copy(metric.name, strMetricName.size());
-					metric.name[strMetricName.size()] = '\0';
-
+					
 				itrMetric.second.getValue().assignToSparkPlug(metric);
 
 				add_metric_to_payload(&sparkplug_payload, &metric);

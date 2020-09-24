@@ -26,7 +26,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.5.7"
+#define APP_VERSION "0.0.5.8"
 
 /**
  * Function to keep running this application and check NBIRTH and NDEATH messages

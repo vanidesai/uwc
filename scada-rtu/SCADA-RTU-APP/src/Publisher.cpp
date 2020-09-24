@@ -218,7 +218,7 @@ bool CPublisher::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payloa
 		}
 
 		// Publish the DDATA on the appropriate topic
-		mqtt::message_ptr pubmsg = mqtt::make_message(a_topic, (void*)binary_buffer, message_length, 0, false);
+		mqtt::message_ptr pubmsg = mqtt::make_message(a_topic, (void*)binary_buffer, message_length, m_QOS, false);
 
 		m_ExtPublisher.publish(pubmsg, nullptr, m_listener);
 

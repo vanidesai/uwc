@@ -221,9 +221,14 @@ bool CSparkPlugDev::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 						org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
 						false, org_eclipse_tahu_protobuf_Payload_PropertySet_init_default, 0, {0}};
 
-				itr.second.addMetricForBirth(metric);
-
-				add_metric_to_payload(&a_rTahuPayload, &metric);
+				if(true == itr.second.addMetricForBirth(metric))
+				{
+					add_metric_to_payload(&a_rTahuPayload, &metric);
+				}
+				else
+				{
+					DO_LOG_ERROR(itr.second.getSparkPlugName() + ":Could not add metric to device. Trying to add other metrics.");
+				}
 			}
 		}
 		if (true == std::holds_alternative<std::reference_wrapper<const network_info::CUniqueDataDevice>>(m_rDirectDevRef))
@@ -293,14 +298,18 @@ bool CSparkPlugDev::getWriteMsg(string& a_sTopic, cJSON *a_root, pair<const stri
 			time_t t = a_metric.second.getTimestamp() / 1000;
 
 			char cTimestamp[100];
-			if (std::strftime(cTimestamp, sizeof(cTimestamp), "%F %T", std::localtime(&t)))
+			auto ptrTime = std::localtime(&t);
+			if(NULL != ptrTime)
 			{
-				cJSON_AddItemToObject(a_root, "timestamp", cJSON_CreateString(cTimestamp));
-			}
-			else
-			{
-				DO_LOG_ERROR("Cannot assign timestamp in write-on-demand request");
-				return false;
+				if (std::strftime(cTimestamp, sizeof(cTimestamp), "%F %T", ptrTime))
+				{
+					cJSON_AddItemToObject(a_root, "timestamp", cJSON_CreateString(cTimestamp));
+				}
+				else
+				{
+					DO_LOG_ERROR("Cannot assign timestamp in write-on-demand request");
+					return false;
+				}
 			}
 
 			cJSON_AddItemToObject(a_root, "usec", cJSON_CreateString(std::to_string(a_metric.second.getTimestamp()).c_str()));
