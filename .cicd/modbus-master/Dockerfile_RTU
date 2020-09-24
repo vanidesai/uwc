@@ -51,7 +51,6 @@ RUN mkdir kw10 ; \
        export http_proxy="http://proxy-chain.intel.com:911"; \
        export https_proxy="http://proxy-chain.intel.com:911"; \
        export all_proxy="http://proxy-chain.intel.com:911"; \
-
        dpkg --add-architecture i386 ;\
        apt-get update -y ;\
        apt-get install lsb-core -y ;\
@@ -59,7 +58,6 @@ RUN mkdir kw10 ; \
        apt-get install lib32tinfo5 -y ;\
        apt-get install libncursesw:i386 -y ;\
        apt-get install libnuma1 -y ;\
-
        adduser --disabled-password --no-create-home --gecos "" hadi ;\
        chown -R hadi kw10 ; \
        su hadi -c "echo Hadi is here*******"; \
@@ -114,7 +112,6 @@ RUN mkdir kw10 ; \
        export http_proxy="http://proxy-chain.intel.com:911"; \
        export https_proxy="http://proxy-chain.intel.com:911"; \
        export all_proxy="http://proxy-chain.intel.com:911"; \
-
        dpkg --add-architecture i386 ;\
        apt-get update -y ;\
        apt-get install lsb-core -y ;\
@@ -122,7 +119,6 @@ RUN mkdir kw10 ; \
        apt-get install lib32tinfo5 -y ;\
        apt-get install libncursesw:i386 -y ;\
        apt-get install libnuma1 -y ;\
-
        adduser --disabled-password --no-create-home --gecos "" hadi ;\
        chown -R hadi kw10 ; \
        su hadi -c "echo Hadi is here*******"; \
