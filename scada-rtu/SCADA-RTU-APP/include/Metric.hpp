@@ -61,24 +61,19 @@ class CValObj
 
 public:
 	CValObj() :
-			m_uiDataType
-			{ 0 }, m_objVal{std::monostate{}}
+			m_uiDataType{0}, m_objVal{}
 	{
 		;
 	}
 	;
 	CValObj(uint32_t a_uiDataType, var_t a_objVal) :
-			m_uiDataType
-			{ a_uiDataType }, m_objVal
-			{ a_objVal }
+			m_uiDataType{ a_uiDataType }, m_objVal{ a_objVal }
 	{
 		;
 	}
 	;
 	CValObj(const CValObj &a_obj) :
-			m_uiDataType
-			{ a_obj.m_uiDataType }, m_objVal
-			{ a_obj.m_objVal }
+			m_uiDataType{ a_obj.m_uiDataType }, m_objVal{ a_obj.m_objVal }
 	{
 	}
 	;
@@ -175,9 +170,9 @@ class CMetric
 	var_metric_ref_t m_rDirectProp;
 	
 	friend class CSparkPlugDevManager;
-	CMetric() : m_timestamp {get_current_timestamp()}, m_rDirectProp{std::monostate{}}
+	CMetric() : m_timestamp {0}, m_rDirectProp{}
 	{
-	
+		m_timestamp = get_current_timestamp();
 	}
 	;
 	void setName(std::string a_sName)

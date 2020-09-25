@@ -482,7 +482,6 @@ bool CMetric::addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMet
 	try
 	{
 		{
-			a_rMetric.name = strdup(m_sSparkPlugName.c_str());
 			if(addMetricNameValue(a_rMetric) == false)
 			{
 				DO_LOG_ERROR(m_sSparkPlugName + ":Failed to add metric name and value");
