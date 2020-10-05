@@ -10,6 +10,7 @@
 ################################################################################
 
 Current_Dir=$(pwd)
+working_dir=$(pwd)
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
@@ -64,6 +65,70 @@ check_for_errors()
         fi
     fi
     return 0
+}
+
+# function to set dev node based on deployment mode
+setDevMode()
+{
+   echo "${INFO}Setting dev mode...${NC}"    
+   sed -i "s/$1/$2/g" $working_dir/docker_setup/.env
+   if [ "$?" -ne "0" ]; then
+	echo "${RED}Failed to set dev mode."
+	echo "${GREEN}Kinldy set DEV_MODE to false manualy in .env file and then re--run this script"
+	exit 1
+   else
+	echo "${GREEN}Dev Mode is set to $2 ${NC}"
+   fi
+}
+
+# function to copy docker-compose.yml as per the deployment mode 
+function copyDeployComposeFile()
+{
+    cd $working_dir
+
+    DEPLOY_MODE=$(grep UWC_DEPLOY_MODE $working_dir/docker_setup/.env | cut -d '=' -f 2-)
+    if [ -z "$DEPLOY_MODE" ]; then
+	DEPLOY_MODE="IPC_PROD"
+        echo "Deployment mode is set to default i.e. IPC_PROD"
+    else
+        echo "Deployment mode is set to = " $DEPLOY_MODE
+    fi
+    
+    rm -rf UWC/ && mkdir UWC
+    tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
+    cd UWC
+
+      case $DEPLOY_MODE in
+      IPC_PROD)
+		if [ $SCADA_REQUIRED == "no" ];then
+			cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
+
+		elif [ $IS_TLS == "no" ] || [ $IS_TLS == "false" ]; then
+			cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
+		else
+            		cp docker-compose.yml ../docker_setup/docker-compose.yml
+            		setDevMode "DEV_MODE=true" "DEV_MODE=false"
+		fi
+        ;;
+      IPC_DEV)
+            cp docker-compose_IPC_DEV.yml ../docker_setup/docker-compose.yml
+            setDevMode "DEV_MODE=false" "DEV_MODE=true"
+        ;;
+      *)
+            # set default mode to ipc prod
+    		if [ $SCADA_REQUIRED == "no" ];then
+			cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
+
+		elif [ $IS_TLS == "no" ] || [ $IS_TLS == "false" ]; then
+			cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
+		else
+            		cp docker-compose.yml ../docker_setup/docker-compose.yml
+            		setDevMode "DEV_MODE=true" "DEV_MODE=false"
+		fi
+        ;;
+    esac 
+
+    rm -rf UWC/
 }
 
 #------------------------------------------------------------------
@@ -392,6 +457,7 @@ else
 fi
 
 createScadaConfigFile
+copyDeployComposeFile
 
 cd "${Current_Dir}"
 exit 0
