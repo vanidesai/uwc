@@ -220,7 +220,8 @@ configureExternalCerts()
 		rm -rf ${Current_Dir}/tmp_certs
 		return 0
 	else
-		echo "${RED}${Current_Dir}/docker_setup/provision/Certificates is not exist.${NC}"
+		echo "${GREEN}No need to configure certificates for scada-rtu container${NC}"
+		echo "${INFO}******************* Script END *****************************${NC}"
     	fi
 	
 }
