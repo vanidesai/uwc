@@ -174,7 +174,7 @@ installBasicPackages()
 {
     echo "${INFO}Executing Pre-requisites Edge Insights Software ${iei_version}${NC}"
     # Installing dependent packages
-    apt-get update && apt-get -y install build-essential python3-pip wget curl patch diff
+    apt-get update && apt-get -y install build-essential python3-pip wget curl patch
     if [ "$?" -ne "0" ]; then
 	echo "${RED}failed to download basic packages.${NC}"
     fi
