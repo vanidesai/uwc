@@ -26,7 +26,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.5.8"
+#define APP_VERSION "0.0.5.9"
 
 /**
  * Function to keep running this application and check NBIRTH and NDEATH messages
@@ -109,6 +109,37 @@ void processInternalMqttMsgs(QMgr::CQueueMgr& a_qMgr)
 }
 
 /**
+ * Initialize data points repository by reading data points
+ * from yaml file
+ * @param none
+ * @return true/false depending on success/failure
+ */
+bool initDataPoints()
+{
+	try
+	{
+		string strNetWorkType = CCommon::getInstance().getNetworkType();
+		string strSiteListFileName = CCommon::getInstance().getSiteListFileName();
+
+		if(strNetWorkType.empty() || strSiteListFileName.empty())
+		{
+			DO_LOG_ERROR("Network type or device list file name is not present");
+			return false;
+		}
+
+		network_info::buildNetworkInfo(strNetWorkType, strSiteListFileName);
+
+		// Create SparkPlug devices corresponding to Modbus devices
+		CSparkPlugDevManager::getInstance().addRealDevices();
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+	return true;
+}
+
+/**
  * Main function of application
  * @param argc :[in] number of input parameters
  * @param argv :[in] input parameters
@@ -151,7 +182,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-				try
+				/*try
 				{
 					CPublisher::instance();
 				}
@@ -159,17 +190,22 @@ int main(int argc, char *argv[])
 				{
 					cout << "ERROR:: EXTERNAL_MQTT_URL is either not set or invalid :: " + std::string(e.what()) << endl;
 					DO_LOG_ERROR("EXTERNAL_MQTT_URL is either not set or invalid" + std::string(e.what()));
-				}
+				}*/
 
-				if( false == CPublisher::instance().isPublisherConnected())
+				/*if( false == CPublisher::instance().isPublisherConnected())
 				{
 					std::cout << "ERROR:: Publisher failed to connect with MQTT broker" << endl;
 				}
-				else
+				else*/
 				{
+					CSparkPlugDevManager::getInstance();
+
+					initDataPoints();
+
 					CSCADAHandler::instance();
 					CIntMqttHandler::instance();
-					//CSparkPlugDevManager::getInstance().print();
+
+					//CIntMqttHandler::instance().publishIntMqttMsg("", "START_BIRTH_PROCESS");
 				}
 		}
 

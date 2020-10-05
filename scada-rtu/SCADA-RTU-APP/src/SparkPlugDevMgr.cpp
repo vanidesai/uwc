@@ -151,6 +151,24 @@ bool CSparkPlugDevManager::processInternalMQTTMsg(std::string a_sTopic,
 			getTopicParts(a_sTopic, vsTopicParts, "/");
 			switch (vsTopicParts.size())
 			{
+			/*case 1:
+			// Added for testing
+			{
+				std::string sSubTopic{ vsTopicParts[0] };
+				std::transform(sSubTopic.begin(), sSubTopic.end(),
+						sSubTopic.begin(), ::tolower);
+
+				if (0 == sSubTopic.compare("stopscada"))
+				{
+					CSCADAHandler::instance().disconnect();					
+				}
+				else if (0 == sSubTopic.compare("connectscada"))
+				{
+					CSCADAHandler::instance().connect();					
+				}
+				bRet = false;
+			}
+			break;*/
 			// DEATH message
 			// DEATH/{NAON_UWCP_ID}
 			case 2:
@@ -318,96 +336,6 @@ bool CSparkPlugDevManager::processMetric(CMetric &a_oMetric, cJSON *a_cjArrayEle
 }
 
 /**
- * Processes metric to parse its data-type and value from real device update msg
- * sets in CValueObj corresponding to the metric
- * @param a_oMetric :[in] metric to be parsed
- * @param a_cjRoot :[in] cJSON element containing details about the metric
- * @return true/false based on success/failure
- */
-bool CSparkPlugDevManager::processMetricFromUpdateMsg(CMetric &a_oMetric, cJSON *a_cjRoot)
-{
-	do
-	{
-		try
-		{
-			if (a_cjRoot == NULL)
-			{
-				DO_LOG_ERROR("Invalid payload: Name or datatype or value is missing.");
-				return false;
-			}
-
-			//in case of error, memory will be freed in callee function
-			cJSON *cjName = cJSON_GetObjectItem(a_cjRoot, "metric");
-			if(cjName == NULL)
-			{
-				DO_LOG_ERROR("Invalid payload: metric is not found.");
-				return false;
-			}
-			char *strName = cjName->valuestring;
-			if (strName == NULL)
-			{
-				DO_LOG_ERROR("Invalid payload: metric name is not found.");
-				return false;
-			}
-			a_oMetric.setName(strName);
-			a_oMetric.setSparkPlugName(strName);
-
-			//timestamp is optional parameter
-			uint64_t current_time = 0;
-			cJSON *cjTimestamp = cJSON_GetObjectItem(a_cjRoot,"timestamp");
-			if(cjTimestamp == NULL)
-			{
-				current_time = get_current_timestamp();
-			}
-			else
-			{
-				// Initialize result
-				uint64_t res = 0;
-				string strTimeStamp = cjTimestamp->valuestring;
-
-				if(strTimeStamp.empty())
-				{
-					DO_LOG_ERROR("Invalid timestamp received in update message");
-					return false;
-				}
-
-				//Iterate through all characters
-				//of input string and update result
-				for (int i = 0; cjTimestamp->valuestring[i]!= '\0';++i)
-					res = res * 10 + cjTimestamp->valuestring[i] - '0';
-
-				current_time = res;
-			}
-
-			a_oMetric.setTimestamp(current_time);
-
-			//consider data-type as string for update msg as it does not contain datatype
-			std::string sDataType{ "String" };
-
-			cJSON *cjValue = cJSON_GetObjectItem(a_cjRoot, "value");
-			if (cjValue == NULL)
-			{
-				DO_LOG_ERROR("Invalid payload: value is not found.");
-				return false;
-			}
-
-			//map data-type with Sparkplug data-type
-			if (false == a_oMetric.setValObj(sDataType, cjValue))
-			{
-				DO_LOG_ERROR("Cannot parse value.");
-				return false;
-			}
-		}
-		catch (std::exception &e)
-		{
-			DO_LOG_ERROR(std::string("Error:") + e.what());
-			return false;
-		}
-	} while (0);
-	return true;
-}
-
-/**
  * Processes metric to parse its data-type and value; sets in CValueObj corresponding to the metric
  * @param a_oMetric :[in] metric to be parsed
  * @param a_cjName :[in] name of metric
@@ -509,59 +437,6 @@ metricMap_t CSparkPlugDevManager::parseVendorAppBirthMessage(std::string a_sPayL
 }
 
 /**
- * Parses real device update message and stores metrics and corresponding values
- * @param a_sPayLoad :[iin] payload containing metrics
- * @return map containing metric and corresponding values
- */
-CMetric CSparkPlugDevManager::parseRealDeviceUpdateMsg(std::string a_sPayLoad)
-{
-	CMetric oMetric;
-	cJSON *root = NULL;
-	try
-	{
-		root = cJSON_Parse(a_sPayLoad.c_str());
-		if (NULL == root)
-		{
-			DO_LOG_ERROR("Message received from MQTT could not be parsed in json format");
-			return oMetric;
-		}
-
-		//consider processing for vendor app array of metrics if
-		//root is array
-		//else if root is not array treat it as update msg with
-		//single metric
-		if(cJSON_IsArray(root))
-		{
-			//json has needed values, fill in map
-			cJSON *param = root->child;
-			if(param != NULL)
-			{
-				processMetric(oMetric, param);
-			}
-			else
-			{
-				DO_LOG_ERROR("Param is null in update msg parsing");
-			}
-		}
-		else
-		{
-			processMetricFromUpdateMsg(oMetric, root);
-		}
-
-	}
-	catch (std::exception &ex)
-	{
-		DO_LOG_FATAL(ex.what());
-	}
-
-	if (NULL != root)
-	{
-		cJSON_Delete(root);
-	}
-
-	return oMetric;
-}
-/**
  * Parses birth message of vendor app; stores metrics and corresponding values
  * @param a_sPayLoad :[iin] payload containing metrics
  * @return map containing metric and corresponding values
@@ -647,6 +522,7 @@ void CSparkPlugDevManager::processDeathMsg(std::string a_sAppName,
 				stRefForSparkPlugAction stDummyAction
 				{ std::ref(itr.second.get()), enMSG_DEATH, mapChangedMetrics };
 				a_stRefActionVec.push_back(stDummyAction);
+				itr.second.get().setKnownDevStatus(enDEVSTATUS_DOWN);
 			}
 		} catch (const std::exception &e)
 		{
@@ -730,6 +606,7 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 				stRefForSparkPlugAction stDummyAction
 				{ std::ref(oDev), enMSG_BIRTH, mapChangedMetricsFromBirth };
 				a_stRefActionVec.push_back(stDummyAction);
+				oDev.setKnownDevStatus(enDEVSTATUS_UP);
 
 				break;
 			}
@@ -754,6 +631,7 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 					stRefForSparkPlugAction stDummyAction
 					{ std::ref(oDev), enMSG_BIRTH, mapChangedMetricsFromBirth };
 					a_stRefActionVec.push_back(stDummyAction);
+					oDev.setKnownDevStatus(enDEVSTATUS_UP);
 				}
 				else
 				{
@@ -761,6 +639,7 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 					stRefForSparkPlugAction stDummyAction
 					{ std::ref(oDev), enMSG_DATA, mapChangedMetricsFromBirth };
 					a_stRefActionVec.push_back(stDummyAction);
+					oDev.setKnownDevStatus(enDEVSTATUS_UP);
 				}
 			}
 		} catch (const std::exception &e)
@@ -787,7 +666,6 @@ void CSparkPlugDevManager::processUpdateMsg(std::string a_sDeviceName,
 	// Case 1: Only values of few metrics are changed => This results in no DDATA message
 	// Case 2: There are no changes => No DDATA message
 
-	metricMap_t mapChangedMetricsFromUpdate;
 	do
 	{
 		try
@@ -804,13 +682,7 @@ void CSparkPlugDevManager::processUpdateMsg(std::string a_sDeviceName,
 			}
 
 			std::string sDevName(a_sDeviceName + SUBDEV_SEPARATOR_CHAR + a_sSubDev);
-			DO_LOG_INFO("Device name is: " + sDevName);
-
-			// Parse message and get metric info
-			CMetric oMetric = parseRealDeviceUpdateMsg(a_sPayLoad);
-
-			metricMap_t mapMetricsInMsg;
-			mapMetricsInMsg.insert({oMetric.getName(), oMetric});
+			DO_LOG_DEBUG(sDevName + ":Device. Received message: " + a_sPayLoad);
 
 			// Find the device in list
 			bool bIsFound = false;			
@@ -833,26 +705,14 @@ void CSparkPlugDevManager::processUpdateMsg(std::string a_sDeviceName,
 			}
 
 			auto &oDev = itr->second;
-			bool bIsOnlyValChange = false;
-			mapChangedMetricsFromUpdate = oDev.processNewBirthData(mapMetricsInMsg, bIsOnlyValChange);
 
-			// Check if any changes have occurred
-			if (0 != mapChangedMetricsFromUpdate.size())
+			// Parse message and get metric info
+			bool bRet = oDev.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec);
+
+			if(false == bRet)
 			{
-				// Check if it is BIRTH message
-				if (true == bIsOnlyValChange)
-				{
-					DO_LOG_DEBUG("Real device value has been changed in update msg.");
-
-					stRefForSparkPlugAction stDummyAction
-					{ std::ref(oDev), enMSG_DATA, mapChangedMetricsFromUpdate};
-					a_stRefActionVec.push_back(stDummyAction);
-				}
-				else
-				{
-					DO_LOG_ERROR("Real device update message is wrong.");
-					break;
-				}
+				DO_LOG_ERROR("Message processing failed. Ignored message: " + a_sPayLoad);
+				break;
 			}
 		}
 		catch (const std::exception &e)
@@ -930,6 +790,7 @@ void CSparkPlugDevManager::processDataMsg(std::string a_sAppName,
 						stRefForSparkPlugAction stDummyAction
 						{ std::ref(oDev), enMSG_BIRTH, mapChangedMetricsFromData };
 						a_stRefActionVec.push_back(stDummyAction);
+						oDev.setKnownDevStatus(enDEVSTATUS_UP);
 					}
 					else if (0 != mapChangedMetricsFromData.size())
 					{
@@ -937,6 +798,7 @@ void CSparkPlugDevManager::processDataMsg(std::string a_sAppName,
 						stRefForSparkPlugAction stDummyAction
 						{ std::ref(oDev), enMSG_DATA, mapChangedMetricsFromData };
 						a_stRefActionVec.push_back(stDummyAction);
+						oDev.setKnownDevStatus(enDEVSTATUS_UP);
 					}					
 				}
 			}
@@ -1028,10 +890,11 @@ bool CSparkPlugDevManager::addRealDevices()
 /**
  * Prepare device birth messages to be published on SCADA system
  * @param a_rTahuPayload :[out] reference of spark plug message payload in which to store birth messages
- * @param  a_sDevName:[in] device name for which birth message to be generated
+ * @param a_sDevName:[in] device name for which birth message to be generated
+ * @param a_bIsNBIRTHProcess: [in] indicates whether DBIRTH is needed as a part of NBIRTH process
  * @return true/false depending on the success/failure
  */
-bool CSparkPlugDevManager::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, std::string a_sDevName)
+bool CSparkPlugDevManager::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, std::string a_sDevName, bool a_bIsNBIRTHProcess)
 {
 	try
 	{
@@ -1040,7 +903,7 @@ bool CSparkPlugDevManager::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payloa
 		// Check if device is found
 		if (m_mapSparkPlugDev.end() != itr)
 		{
-			return itr->second.prepareDBirthMessage(a_rTahuPayload);
+			return itr->second.prepareDBirthMessage(a_rTahuPayload, a_bIsNBIRTHProcess);
 		}
 	}
 	catch(exception &ex)
@@ -1052,7 +915,29 @@ bool CSparkPlugDevManager::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payloa
 }
 
 /**
- * Sets the status of last published message for thsi device
+ * Returns list of device names
+ * @return List of device names
+ */
+std::vector<std::string> CSparkPlugDevManager::getDeviceList()
+{
+	std::vector<std::string> sDevNameVector;
+	try
+	{
+		std::lock_guard<std::mutex> lck(m_mutexDevList);
+		for (auto const& itr : m_mapSparkPlugDev) 
+		{
+			sDevNameVector.push_back(itr.first);
+		}
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+	}
+	return sDevNameVector;
+}
+
+/**
+ * Sets the status of last published message for this device
  * @param a_enStatus :[in] Publish status for this device for last message
  * @param  a_sDevName:[in] device name for which birth message to be generated
  * @return true/false depending on the success/failure

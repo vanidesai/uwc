@@ -15,8 +15,7 @@
  * @param a_metric :[out] metric in which to assign value in sparkplug format
  * @return true/false based on success/failure
  */
-bool CValObj::assignToSparkPlug(
-		org_eclipse_tahu_protobuf_Payload_Metric &a_metric)
+bool CValObj::assignToSparkPlug(org_eclipse_tahu_protobuf_Payload_Metric &a_metric) const
 {
 	do
 	{
@@ -108,7 +107,7 @@ bool CValObj::assignToSparkPlug(
  * @param a_metric :[out] metric in which to assign value in sparkplug format
  * @return true/false based on success/failure
  */
-bool CValObj::assignToCJSON(cJSON *a_cjMetric)
+bool CValObj::assignToCJSON(cJSON *a_cjMetric) const
 {
 	do
 	{

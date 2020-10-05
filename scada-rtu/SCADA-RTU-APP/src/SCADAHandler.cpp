@@ -8,7 +8,11 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+#include <thread>
 #include "SCADAHandler.hpp"
+#include "InternalMQTTSubscriber.hpp"
+
+extern std::atomic<bool> g_shouldStop;
 
 /**
  * constructor Initializes MQTT m_subscriber
@@ -16,32 +20,25 @@
  * @param iQOS :[in] QOS with which to get messages
  * @return None
  */
-CSCADAHandler::CSCADAHandler(std::string strMqttURL, int iQOS) :
-		m_subscriber(strMqttURL, SUBSCRIBERID)
+CSCADAHandler::CSCADAHandler(const std::string &strMqttURL, int iQOS) :
+	m_MQTTClient{strMqttURL, SUBSCRIBERID, iQOS, CCommon::getInstance().isScadaTLS(), 
+	"/run/secrets/scadahost_ca_cert", "/run/secrets/scadahost_client_cert", 
+	"/run/secrets/scadahost_client_key", "SCADAMQTTListener"}
+		
 {
 	try
 	{
 		m_QOS = iQOS;
 
-		prepareNodeDeathMsg();
-
-		//connect options for async m_subscriber
-		m_subscriberConopts.set_keep_alive_interval(20);
-		m_subscriberConopts.set_clean_session(true);
-		m_subscriberConopts.set_automatic_reconnect(1, 10);
-
-		m_subscriber.set_callback(m_scadaSubscriberCB);
-
-		connectSubscriber();
+		prepareNodeDeathMsg(false);
+		m_MQTTClient.setNotificationConnect(CSCADAHandler::connected);
+		m_MQTTClient.setNotificationDisConnect(CSCADAHandler::disconnected);
+		m_MQTTClient.setNotificationMsgRcvd(CSCADAHandler::msgRcvd);
 
 		//get values of all the data points and store in data points repository
-		initDataPoints();
+		//initDataPoints();
 
-		// Create SparkPlug devices corresponding to Modbus devices
-		CSparkPlugDevManager::getInstance().addRealDevices();
-
-		// Initialize the sequence number for Sparkplug MQTT messages
-		reset_sparkplug_sequence();
+		init();
 
 		DO_LOG_DEBUG("MQTT initialized successfully");
 	}
@@ -53,41 +50,258 @@ CSCADAHandler::CSCADAHandler(std::string strMqttURL, int iQOS) :
 }
 
 /**
+ * This is a singleton class. Used to handle communication with SCADA master
+ * through external MQTT.
+ * Initiates number of threads, semaphores for handling connection successful
+ * and internal MQTT connection lost scenario.
+ * @param None
+ * @return true on successful init
+ */
+bool CSCADAHandler::init()
+{
+	// Initiate semaphore for requests
+	int retVal = sem_init(&m_semSCADAConnSuccess, 0, 0 /* Initial value of zero*/);
+	if (retVal == -1)
+	{
+		std::cout << "*******Could not create unnamed semaphore for SCADA success connection\n";
+		return false;
+	}
+	std::thread{ std::bind(&CSCADAHandler::handleSCADAConnectionSuccessThread,
+			std::ref(*this)) }.detach();
+
+	retVal = sem_init(&m_semIntMQTTConnLost, 0, 0 /* Initial value of zero*/);
+	if (retVal == -1)
+	{
+		std::cout << "*******Could not create unnamed semaphore for Internal MQTT connection lost\n";
+		return false;
+	}
+	std::thread{ std::bind(&CSCADAHandler::handleIntMQTTConnLostThread,
+			std::ref(*this)) }.detach();
+
+	//publish vendor app birth message
+	vendor_app_birth_request();
+	
+	return true;
+}
+
+/**
+ * Thread function to handle SCADA connection success scenario.
+ * It listens on a semaphore to know the connection status.
+ * @return none
+ */
+void CSCADAHandler::handleSCADAConnectionSuccessThread()
+{
+	while(false == g_shouldStop.load())
+	{
+		try
+		{
+			do
+			{
+				if((sem_wait(&m_semSCADAConnSuccess)) == -1 && errno == EINTR)
+				{
+					// Continue if interrupted by handler
+					continue;
+				}
+				if(true == g_shouldStop.load())
+				{
+					break;
+				}
+
+				// As a process first subscribe to topics
+				subscribeTopics();
+
+				// Publish the NBIRTH
+				publish_node_birth();
+
+				// Publish the DBIRTH for all devices
+				publishAllDevBirths();
+
+				setInitStatus(true);
+			} while(0);
+
+		}
+		catch (exception &e)
+		{
+			DO_LOG_ERROR("failed to send birth messages :: " + std::string(e.what()));
+		}
+	}
+}
+
+/**
+ * Thread function to handle internal MQTT connection lost scenario.
+ * It listens on a semaphore to know the connection status.
+ * @return none
+ */
+void CSCADAHandler::handleIntMQTTConnLostThread()
+{
+	while(false == g_shouldStop.load())
+	{
+		try
+		{
+			do
+			{
+				if((sem_wait(&m_semIntMQTTConnLost)) == -1 && errno == EINTR)
+				{
+					// Continue if interrupted by handler
+					continue;
+				}
+				if(true == g_shouldStop.load())
+				{
+					break;
+				}
+				DO_LOG_ERROR("INFO: Internal MQTT connection lost. DDEATH to be sent");
+
+				// Publish DDEATH for each device
+				auto vDevList = CSparkPlugDevManager::getInstance().getDeviceList();
+				for(auto &itrDevice : vDevList)
+				{
+					// Check if internal MQTT connection is established.
+					if(true == CIntMqttHandler::instance().isConnected())
+					{
+						// Connection is established.
+						// No need to send remaining DDEATH messages
+						DO_LOG_ERROR("Info: Internal MQTT connection is established. No More DDEATH to be sent.");
+						break;
+					}
+					if(false == getInitStatus())
+					{
+						DO_LOG_ERROR("Node init is not done. SparkPlug message publish is not done");
+						break;
+					}
+					DO_LOG_ERROR("Sending DDEATH for : " + itrDevice);
+					publishMsgDDEATH(itrDevice);
+					CSparkPlugDevManager::getInstance().setMsgPublishedStatus(enDEVSTATUS_DOWN, itrDevice);
+				}
+			} while(0);
+		}
+		catch (exception &e)
+		{
+			DO_LOG_ERROR("ERROR :: " + std::string(e.what()));
+		}
+	}
+}
+
+/**
+ *
+ * Signals that initernal MQTT connection is lost
+ * @return none
+ */
+void CSCADAHandler::signalIntMQTTConnLostThread()
+{
+	sem_post(&m_semIntMQTTConnLost);
+}
+
+/**
+ *
+ * Publish message on MQTT broker for MQTT-Export
+ * @param a_ddata_payload :[in] spark plug message to publish
+ * @param a_topic :[in] topic on which to publish message
+ * @return true/false based on success/failure
+ */
+bool CSCADAHandler::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payload, string a_topic)
+{
+	try
+	{
+		// Encode the payload into a binary format so it can be published in the MQTT message.
+		size_t buffer_length = 0;
+
+		bool encode_passed = pb_get_encoded_size(&buffer_length, org_eclipse_tahu_protobuf_Payload_fields, &a_payload);
+		if(encode_passed == false)
+		{
+			DO_LOG_ERROR("Failed to calculate the payload length");
+			return false;
+		}
+
+		uint8_t *binary_buffer = (uint8_t *)malloc(buffer_length * sizeof(uint8_t));
+		if(binary_buffer == NULL)
+		{
+			DO_LOG_ERROR("Failed to allocate new memory");
+			return false;
+		}
+		size_t message_length = encode_payload(binary_buffer, buffer_length, &a_payload);
+		if(message_length == 0)
+		{
+			DO_LOG_ERROR("Failed to encode payload");
+
+			if(binary_buffer != NULL)
+			{
+				free(binary_buffer);
+			}
+			return false;
+		}
+		
+		// Publish the DDATA on the appropriate topic
+		mqtt::message_ptr pubmsg = mqtt::make_message(a_topic, (void*)binary_buffer, message_length, m_QOS, false);
+
+		m_MQTTClient.publishMsg(pubmsg);
+
+		// Free the memory
+		if(binary_buffer != NULL)
+		{
+			free(binary_buffer);
+		}
+		return true;
+	}
+	catch(exception& ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		return false;
+	}
+}
+
+/**
  * Prepare a will message for subscriber. That will
  * act as a death message when this node goes down.
  * @param none
  * @return none
  */
-void CSCADAHandler::prepareNodeDeathMsg()
+void CSCADAHandler::prepareNodeDeathMsg(bool a_bPublishMsg)
 {
-	// Create the NDEATH payload
-	org_eclipse_tahu_protobuf_Payload ndeath_payload;
-	get_next_payload(&ndeath_payload);
-
-	uint64_t badSeq_value = 0;
-	add_simple_metric(&ndeath_payload, "bdSeq", false, 0,
-			METRIC_DATA_TYPE_UINT64, false, false, &badSeq_value, sizeof(badSeq_value));
-
-	size_t buffer_length = 1024;
-	uint8_t *binary_buffer = (uint8_t *)malloc(buffer_length * sizeof(uint8_t));
-	if(binary_buffer == NULL)
+	try
 	{
-		DO_LOG_ERROR("Failed to allocate new memory");
-		return;
+		// Create the NDEATH payload
+		org_eclipse_tahu_protobuf_Payload ndeath_payload;
+		get_next_payload(&ndeath_payload);
+
+		add_simple_metric(&ndeath_payload, "bdSeq", false, 0,
+					METRIC_DATA_TYPE_UINT64, false, false, &m_uiBDSeq, sizeof(m_uiBDSeq));
+
+		size_t buffer_length = 0;
+
+		bool encode_passed = pb_get_encoded_size(&buffer_length, org_eclipse_tahu_protobuf_Payload_fields, &ndeath_payload);
+		if(encode_passed == false)
+		{
+			DO_LOG_ERROR("Failed to calculate the payload length");
+			return ;
+		}
+		uint8_t *binary_buffer = (uint8_t *)malloc(buffer_length * sizeof(uint8_t));
+		if(binary_buffer == NULL)
+		{
+			DO_LOG_ERROR("Failed to allocate new memory");
+			return;
+		}
+		size_t message_length = encode_payload(binary_buffer, buffer_length, &ndeath_payload);
+
+		// Publish the DDATA on the appropriate topic
+		mqtt::message_ptr pubmsg = mqtt::make_message(CCommon::getInstance().getDeathTopic(), (void*)binary_buffer, message_length, m_QOS, false);
+
+		//connect options for async m_subscriber
+		m_MQTTClient.setWillMsg(pubmsg);
+		if(true == a_bPublishMsg)
+		{
+			m_MQTTClient.publishMsg(pubmsg);
+		}
+
+		if(binary_buffer != NULL)
+		{
+			free(binary_buffer);
+		}
+		free_payload(&ndeath_payload);
 	}
-	size_t message_length = encode_payload(binary_buffer, buffer_length, &ndeath_payload);
-
-	// Publish the DDATA on the appropriate topic
-	mqtt::message_ptr pubmsg = mqtt::make_message(CCommon::getInstance().getDeathTopic(), (void*)binary_buffer, message_length, m_QOS, false);
-
-	//connect options for async m_subscriber
-	m_subscriberConopts.set_will_message(pubmsg);
-
-	if(binary_buffer != NULL)
+	catch(exception& ex)
 	{
-		free(binary_buffer);
+		DO_LOG_ERROR(ex.what());
 	}
-	free_payload(&ndeath_payload);
 }
 
 /**
@@ -95,124 +309,47 @@ void CSCADAHandler::prepareNodeDeathMsg()
  * @param none
  * @return none
  */
-void CSCADAHandler::publish_births()
+void CSCADAHandler::startSCADAConnectionSuccessProcess()
 {
-	// Publish the NBIRTH
-	publish_node_birth();
-
-	//publish vendor app birth message
-    vendor_app_birth_request();
-
-	// Publish the DBIRTH
-	for(auto &itrDevice : m_deviceDataPoints)
+	try
 	{
-		DO_LOG_DEBUG("Device : " + itrDevice.first);
-
-		publish_device_birth(itrDevice.first, itrDevice.second);
+		sem_post(&m_semSCADAConnSuccess);
+	}
+	catch(exception& ex)
+	{
+		DO_LOG_ERROR(ex.what());
 	}
 }
 
 /**
- * Prepare device birth messages to be published on SCADA system
- * @param dbirth_payload :[out] reference of spark plug message payload in which to store birth messages
- * @param a_dataPoints :[in] map of datapoints corresponding to the device
- * @return true/false depending on the success/failure
+ * Publish device birth message on SCADA for all devices
+ * @param a_deviceName : [in] device for which to publish birth message
+ * @return none
  */
-bool CSCADAHandler::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, stRealDevDataPointRepo>& a_dataPoints, string& a_siteName)
+void CSCADAHandler::publishAllDevBirths()
 {
 	try
 	{
-		for(auto &dataPoint : a_dataPoints)
+		auto vDevList = CSparkPlugDevManager::getInstance().getDeviceList();
+		for(auto &itrDevice : vDevList)
 		{
-			a_siteName = dataPoint.second.m_objUniquePoint.getWellSite().getID();
-
-			string strDeviceName = dataPoint.second.m_objUniquePoint.getDataPoint().getID();
-
-			if(strDeviceName.empty())
-			{
-				DO_LOG_ERROR("Device name is empty while forming DBIRTH message");
-				return false;
-			}
-
-			uint64_t current_time = get_current_timestamp();
-
-			org_eclipse_tahu_protobuf_Payload_Metric metric = {NULL, false, 0, true, current_time , true,
-					METRIC_DATA_TYPE_STRING, false, 0, false, 0, false, true, false,
-					org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
-					false, org_eclipse_tahu_protobuf_Payload_PropertySet_init_default, 0, {0}};
-
-			metric.name = strdup(strDeviceName.c_str());
-			if(metric.name == NULL)
-			{
-				DO_LOG_ERROR("Failed to allocate new memory");
-				return false;
-			};
-			metric.has_is_null = true;
-			metric.is_null = true;
-
-			org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
-
-			int iAddr =  dataPoint.second.m_objUniquePoint.getDataPoint().getAddress().m_iAddress;
-			add_property_to_set(&prop, "Addr", PROPERTY_DATA_TYPE_INT32, &iAddr, sizeof(iAddr));
-
-			int iWidth = dataPoint.second.m_objUniquePoint.getDataPoint().getAddress().m_iWidth;
-			add_property_to_set(&prop, "Width", PROPERTY_DATA_TYPE_INT32, &iWidth, sizeof(iWidth));
-
-			string strDataType = dataPoint.second.m_objUniquePoint.getDataPoint().getAddress().m_sDataType;
-			add_property_to_set(&prop, "DataType", PROPERTY_DATA_TYPE_STRING, strDataType.c_str(), strDataType.length());
-
-			eEndPointType endPointType = dataPoint.second.m_objUniquePoint.getDataPoint().getAddress().m_eType;
-
-			string strType = "";
-			switch(endPointType)
-			{
-			case eEndPointType::eCoil:
-				strType = "COIL";
-				break;
-			case eEndPointType::eDiscrete_Input:
-				strType = "DISCRETE_INPUT";
-				break;
-			case eEndPointType::eHolding_Register:
-				strType = "HOLDING_REGISTER";
-				break;
-			case eEndPointType::eInput_Register:
-				strType = "INPUT_REGISTER";
-				break;
-			default:
-				DO_LOG_ERROR("Invalid type of data-point in yml file");
-				return false;
-			}
-			add_property_to_set(&prop, "Type", PROPERTY_DATA_TYPE_STRING, strType.c_str(), strType.length());
-
-			uint32_t iPollingInterval = dataPoint.second.m_objUniquePoint.getDataPoint().getPollingConfig().m_uiPollFreq;
-			add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, &iPollingInterval, sizeof(iPollingInterval));
-
-			bool bVal = dataPoint.second.m_objUniquePoint.getDataPoint().getPollingConfig().m_bIsRealTime;
-			add_property_to_set(&prop, "Realtime", PROPERTY_DATA_TYPE_BOOLEAN, &bVal, sizeof(bVal));
-
-			add_propertyset_to_metric(&metric, &prop);
-
-			add_metric_to_payload(&dbirth_payload, &metric);
+			DO_LOG_DEBUG("Device : " + itrDevice);
+			publish_device_birth(itrDevice, true);
 		}
-
-		add_simple_metric(&dbirth_payload, "Properties/Site info name", false, 0,
-				METRIC_DATA_TYPE_STRING, false, false, a_siteName.c_str(), a_siteName.size()+1);
 	}
 	catch(exception &ex)
 	{
-		DO_LOG_FATAL(ex.what());
-		return false;
+		DO_LOG_ERROR(ex.what());
 	}
-	return true;
 }
 
 /**
  * Publish device birth message on SCADA
  * @param a_deviceName : [in] device for which to publish birth message
- * @param a_dataPointInfo : [in] device info
+ * @param a_bIsNBIRTHProcess: [in] indicates whether DBIRTH is needed as a part of NBIRTH process
  * @return none
  */
-void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, stRealDevDataPointRepo>& a_dataPointInfo)
+void CSCADAHandler::publish_device_birth(string a_deviceName, bool a_bIsNBIRTHProcess)
 {
 	// Create the DBIRTH payload
 	org_eclipse_tahu_protobuf_Payload dbirth_payload;
@@ -220,25 +357,17 @@ void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, s
 
 	try
 	{
-		string strSiteName = "";
-
-		if(a_dataPointInfo.empty())
-		{
-			DO_LOG_ERROR("No data points are available to publish DBIRTH message");
-			return;
-		}
-
-		if(true == CSparkPlugDevManager::getInstance().prepareDBirthMessage(dbirth_payload, a_deviceName))
+		if(true == CSparkPlugDevManager::getInstance().prepareDBirthMessage(dbirth_payload, a_deviceName, a_bIsNBIRTHProcess))
 		{
 			string strDBirthTopic = CCommon::getInstance().getDBirthTopic() + "/" + a_deviceName;
 
-			CPublisher::instance().publishSparkplugMsg(dbirth_payload, strDBirthTopic);
+			publishSparkplugMsg(dbirth_payload, strDBirthTopic);
 			CSparkPlugDevManager::getInstance().setMsgPublishedStatus(enDEVSTATUS_UP, a_deviceName);
 		}
 	}
 	catch(exception &ex)
 	{
-		DO_LOG_FATAL(ex.what());
+		DO_LOG_ERROR(ex.what());
 	}
 	// Free the memory
 	free_payload(&dbirth_payload);
@@ -252,50 +381,28 @@ void CSCADAHandler::publish_device_birth(string a_deviceName, std::map<string, s
  */
 CSCADAHandler& CSCADAHandler::instance()
 {
+	static bool bIsFirst = true;
 	static string strMqttUrl = CCommon::getInstance().getExtMqttURL();
 	static int nQos = CCommon::getInstance().getMQTTQos();
-
-	if(strMqttUrl.empty())
+	if(bIsFirst)
 	{
-		DO_LOG_ERROR("EXTERNAL_MQTT_URL variable is not set in config file");
-		std::cout << __func__ << ":" << __LINE__ << " Error : EXTERNAL_MQTT_URL variable is not set in config file" <<  std::endl;
-		throw std::runtime_error("Missing required config..");
+		if(strMqttUrl.empty())
+		{
+			DO_LOG_ERROR("EXTERNAL_MQTT_URL variable is not set in config file");
+			std::cout << __func__ << ":" << __LINE__ << " Error : EXTERNAL_MQTT_URL variable is not set in config file" <<  std::endl;
+			throw std::runtime_error("Missing required config..");
+		}
 	}
-
 	DO_LOG_DEBUG("External MQTT subscriber is connecting with QOS : " + to_string(nQos));
-	static CSCADAHandler handler(strMqttUrl.c_str(), nQos);
+	static CSCADAHandler handler(CCommon::getInstance().getExtMqttURL(), nQos);
+
+	if(bIsFirst)
+	{
+		handler.connect();
+		bIsFirst = false;
+	}
+
 	return handler;
-}
-
-/**
- * Connect m_subscriber with MQTT broker
- * @return true/false based on success/failure
- */
-bool CSCADAHandler::connectSubscriber()
-{
-	bool bFlag = true;
-	try
-	{
-		m_conntok = m_subscriber.connect(m_subscriberConopts, nullptr, m_listener);
-		// Wait for 2 seconds to get connected
-		if (false == m_conntok->wait_for(2000))
-		 {
-			 std::cout << "Error::Failed to connect m_subscriber to the platform bus\n";
-			 bFlag = false;
-		 }
-
-		std::cout << __func__ << ":" << __LINE__ << " SCADA Subscriber connected successfully with MQTT broker" << std::endl;
-	}
-	catch (const std::exception &e)
-	{
-		DO_LOG_FATAL(e.what());
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << e.what() << std::endl;
-		bFlag = false;
-	}
-
-	DO_LOG_DEBUG("SCADA m_subscriber connected successfully with MQTT broker");
-
-	return bFlag;
 }
 
 /**
@@ -307,13 +414,6 @@ void CSCADAHandler::cleanup()
 {
 	DO_LOG_DEBUG("Destroying CSCADAHandler instance ...");
 
-	m_subscriberConopts.set_automatic_reconnect(0);
-
-	m_subscriber.disable_callbacks();
-
-	if(m_subscriber.is_connected())
-		m_subscriber.disconnect();
-
 	DO_LOG_DEBUG("Destroyed CSCADAHandler instance");
 }
 
@@ -322,6 +422,8 @@ void CSCADAHandler::cleanup()
  */
 CSCADAHandler::~CSCADAHandler()
 {
+	sem_destroy(&m_semSCADAConnSuccess);
+	sem_destroy(&m_semIntMQTTConnLost);
 }
 
 /**
@@ -331,53 +433,39 @@ CSCADAHandler::~CSCADAHandler()
  */
 void CSCADAHandler::publish_node_birth()
 {
-	// Create the NBIRTH payload
-	string strAppName = CCommon::getInstance().getStrAppName();
-	if(strAppName.empty())
-	{
-		DO_LOG_ERROR("App name is empty");
-		return;
-	}
-
+	reset_sparkplug_sequence();
 	org_eclipse_tahu_protobuf_Payload nbirth_payload;
 	get_next_payload(&nbirth_payload);
-
-	nbirth_payload.uuid = (char*) strAppName.c_str();
-
-	// Add getNBirthTopicsome device metrics
-	add_simple_metric(&nbirth_payload, "Name", false, 0,
-			METRIC_DATA_TYPE_STRING, false, false,
-			CCommon::getInstance().getEdgeNodeID().c_str(), CCommon::getInstance().getEdgeNodeID().length()+1);
-
-	std::cout << "Publishing nbirth message ..." << endl;
-	CPublisher::instance().publishSparkplugMsg(nbirth_payload, CCommon::getInstance().getNBirthTopic());
-
-	nbirth_payload.uuid = NULL;
-	free_payload(&nbirth_payload);
-}
-
-/**
- * Populate data points from all the devices from all the sites
- * and store in data points repository
- * @param none
- * @return none
- */
-void CSCADAHandler::populateDataPoints()
-{
-	using network_info::CUniqueDataPoint;
-
-	const std::map<std::string, CUniqueDataPoint> &mapUniquePoint =
-			network_info::getUniquePointList();
-
-	for (auto &pt : mapUniquePoint)
+	try
 	{
-		stRealDevDataPointRepo stNewDataPoint(pt.second);
+		// Create the NBIRTH payload
+		string strAppName = CCommon::getInstance().getStrAppName();
+		if(strAppName.empty())
+		{
+			DO_LOG_ERROR("App name is empty");
+			return;
+		}
 
-		std::string sUniqueDev(pt.second.getWellSiteDev().getID() + "-" + pt.second.getWellSite().getID());
+		nbirth_payload.uuid = (char*) strAppName.c_str();
 
-		 m_deviceDataPoints[sUniqueDev].insert(
-				 std::make_pair(stNewDataPoint.m_objUniquePoint.getDataPoint().getID(), stNewDataPoint));
+		// Add getNBirthTopicsome device metrics
+		add_simple_metric(&nbirth_payload, "Name", false, 0,
+				METRIC_DATA_TYPE_STRING, false, false,
+				CCommon::getInstance().getEdgeNodeID().c_str(), CCommon::getInstance().getEdgeNodeID().length()+1);
+
+			add_simple_metric(&nbirth_payload, "bdSeq", false, 0, METRIC_DATA_TYPE_UINT64, false, false,
+					&m_uiBDSeq, sizeof(m_uiBDSeq));
+
+		std::cout << "Publishing nbirth message ..." << endl;
+			publishSparkplugMsg(nbirth_payload, CCommon::getInstance().getNBirthTopic());
+
+		nbirth_payload.uuid = NULL;
 	}
+	catch(exception& ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+	free_payload(&nbirth_payload);
 }
 
 /**
@@ -386,7 +474,7 @@ void CSCADAHandler::populateDataPoints()
  * @param none
  * @return true/false depending on success/failure
  */
-bool CSCADAHandler::initDataPoints()
+/*bool CSCADAHandler::initDataPoints()
 {
 	try
 	{
@@ -401,38 +489,87 @@ bool CSCADAHandler::initDataPoints()
 
 		network_info::buildNetworkInfo(strNetWorkType, strSiteListFileName);
 
-		//fill up data points repository
-		populateDataPoints();
+		// Create SparkPlug devices corresponding to Modbus devices
+		CSparkPlugDevManager::getInstance().addRealDevices();
 	}
 	catch(exception &ex)
 	{
-		DO_LOG_FATAL(ex.what());
+		DO_LOG_ERROR(ex.what());
 	}
 	return true;
-}
+}*/
 
 /**
- * Subscribe to topics to accept from SCADA master
+ * Subscribe to required topics for SCADA MQTT
+ * @param none
+ * @return none
  */
 void CSCADAHandler::subscribeTopics()
 {
-	string strDCMDMsg = "+/+/DCMD/+/+";
-	m_subscriber.subscribe(strDCMDMsg, m_QOS, nullptr, m_listener);
+	try
+	{
+		m_MQTTClient.subscribe("+/+/DCMD/+/+");
 
-	DO_LOG_DEBUG("Subscribed with topics from SCADA master");
+		DO_LOG_DEBUG("Subscribed with topics from SCADA master");
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
 }
 
 /**
- * Callback function to publish node and device birth messages
+ * This is a callback function which gets called when subscriber is connected with MQTT broker
+ * @param a_sCause :[in] reason for connect
+ * @return None
  */
-void CSCADAHandler::connected()
+void CSCADAHandler::connected(const std::string &a_sCause)
 {
-	//as per specification, we need to subscribe to the topics first
-    subscribeTopics();
+	try
+	{
+		DO_LOG_ERROR("INFO: Connected");
+		// Publish the NBIRTH and DBIRTH Sparkplug messages
+		CSCADAHandler::instance().startSCADAConnectionSuccessProcess();
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
 
-    // Publish the NBIRTH and DBIRTH Sparkplug messages
-    publish_births();
+/**
+ * This is a callback function which gets called when subscriber is disconnected with MQTT broker
+ * @param a_sCause :[in] reason for disconnect
+ * @return None
+ */
+void CSCADAHandler::disconnected(const std::string &a_sCause)
+{
+	try
+	{
+		DO_LOG_ERROR("INFO: Disconnected");
+		CSCADAHandler::instance().disconnect();
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
 
+/**
+ * This is a callback function which gets called when a msg is received
+ * @param a_pMsg :[in] pointer to received message
+ * @return None
+ */
+void CSCADAHandler::msgRcvd(mqtt::const_message_ptr a_pMsg)
+{
+	try
+	{
+		CSCADAHandler::instance().pushMsgInQ(a_pMsg);
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
 }
 
 /**
@@ -441,11 +578,130 @@ void CSCADAHandler::connected()
  */
 void CSCADAHandler::vendor_app_birth_request()
 {
+	/*try
+	{
     //get birth details from vendor app by publishing messages for them
     //prepare CJSON message to publish on internal MQTT
 	string strPubTopic = "START_BIRTH_PROCESS";
 	string strBlankMsg = "";
-	CPublisher::instance().publishIntMqttMsg(strBlankMsg, strPubTopic);
+		//CPublisher::instance().publishIntMqttMsg(strBlankMsg, strPubTopic);
+		CIntMqttHandler::instance().publishIntMqttMsg(strBlankMsg, strPubTopic);
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}*/
+}
+
+/**
+ * Prepare and publish a DDATA message in sparkplug format for a device in a_stRefAction
+ * @param a_stRefAction :[in] device and respective data-points which need to be
+ * published on External MQTT broker
+ * @return true/false based on success/failure
+ */
+bool CSCADAHandler::publishMsgDDATA(const stRefForSparkPlugAction& a_stRefAction)
+{
+	//prepare and publish one sparkplug msg for this device
+	org_eclipse_tahu_protobuf_Payload sparkplug_payload;
+	get_next_payload(&sparkplug_payload);
+	try
+	{
+		if(enMSG_DATA != a_stRefAction.m_enAction)
+		{
+			return false;
+		}
+		//get this device name to add in topic
+		std::string strDeviceName{a_stRefAction.m_refSparkPlugDev.get().getSparkPlugName()};
+
+		if (strDeviceName.size() == 0)
+		{
+			DO_LOG_ERROR("Device name is blank");
+			return false;
+		}
+
+		string strMsgTopic = CCommon::getInstance().getDDataTopic() + "/" + strDeviceName;
+
+		//these shall be part of a single sparkplug msg
+		for (auto &itrMetric : a_stRefAction.m_mapChangedMetrics)
+		{
+			uint64_t timestamp = itrMetric.second.getTimestamp();
+			string strMetricName = itrMetric.second.getName();
+
+			org_eclipse_tahu_protobuf_Payload_Metric metric =
+					{ NULL, false, 0, true, timestamp, true,
+						(const_cast<CMetric&>(itrMetric.second)).getValue().getDataType(), false, 0, false, 0, false,
+							true, false,
+				org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+							false,
+									org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+							0,
+							{ 0 } };
+
+			if(false == (const_cast<CMetric&>(itrMetric.second)).addMetricNameValue(metric))
+			{
+				DO_LOG_ERROR(itrMetric.second.getName() + ":Failed to add metric name and value");
+			}
+			else
+			{
+				add_metric_to_payload(&sparkplug_payload, &metric);
+			}
+		}//metric ends
+
+		//publish sparkplug message
+		publishSparkplugMsg(sparkplug_payload, strMsgTopic);
+		a_stRefAction.m_refSparkPlugDev.get().setPublishedStatus(enDEVSTATUS_UP);
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+		return false;
+	}
+	free_payload(&sparkplug_payload);
+	return true;
+}
+
+/**
+ * Prepare and publish a DDEATH message in sparkplug format for a device in a_stRefAction
+ * @param a_stRefAction :[in] device and respective data-points which need to be
+ * published on External MQTT broker
+ * @return true/false based on success/failure
+ */
+bool CSCADAHandler::publishMsgDDEATH(const stRefForSparkPlugAction& a_stRefAction)
+{
+	//prepare and publish one sparkplug msg for this device
+	org_eclipse_tahu_protobuf_Payload sparkplug_payload;
+	get_next_payload(&sparkplug_payload);
+	try
+	{
+		if(enMSG_DEATH != a_stRefAction.m_enAction)
+		{
+			return false;
+		}
+		//get this device name to add in topic
+		std::string strDeviceName{a_stRefAction.m_refSparkPlugDev.get().getSparkPlugName()};
+
+		if (strDeviceName.size() == 0)
+		{
+			DO_LOG_ERROR("Device name is blank");
+			return false;
+		}
+
+		string strMsgTopic = CCommon::getInstance().getDDeathTopic() + "/" + strDeviceName;
+
+		sparkplug_payload.has_timestamp = true;
+		sparkplug_payload.timestamp = a_stRefAction.m_refSparkPlugDev.get().getDeathTime();
+
+		//publish sparkplug message
+		publishSparkplugMsg(sparkplug_payload, strMsgTopic);
+		a_stRefAction.m_refSparkPlugDev.get().setPublishedStatus(enDEVSTATUS_DOWN);
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+		return false;
+	}
+	free_payload(&sparkplug_payload);
+	return true;
 }
 
 /**
@@ -458,138 +714,117 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 {
 	try
 	{
+		if(false == getInitStatus())
+		{
+			DO_LOG_ERROR("Node init is not done. SparkPlug message publish is not done");
+			return false;
+		}
 		//for loop having all the devices for which to publish sparkplug message
 		for (auto &itr : a_stRefActionVec)
 		{
-			//prepare and publish one sparkplug msg for this device
-			org_eclipse_tahu_protobuf_Payload sparkplug_payload;
-			get_next_payload(&sparkplug_payload);
-
-			//get this device name to add in topic
-			std::string strDeviceName{itr.m_refSparkPlugDev.get().getSparkPlugName()};
-
-			if (strDeviceName.size() == 0)
-			{
-				DO_LOG_ERROR("Device name is blank");
-				return false;
-			}
-
-			string strMsgTopic = "";
-			metricMap_t m_metricForMsg;
-			eDevStatus enMsgPublishState{enDEVSTATUS_NONE};
-
 			//depending on action, call the topic name
 			switch (itr.m_enAction)
 			{
 			case enMSG_BIRTH:
-				strMsgTopic = CCommon::getInstance().getDBirthTopic() + "/";
-				if(true == CSparkPlugDevManager::getInstance().prepareDBirthMessage(sparkplug_payload, strDeviceName))
-				{
-					strMsgTopic.append(strDeviceName);
-					CPublisher::instance().publishSparkplugMsg(sparkplug_payload, strMsgTopic);
-					itr.m_refSparkPlugDev.get().setPublishedStatus(enDEVSTATUS_UP);
-				}
+				publish_device_birth(itr.m_refSparkPlugDev.get().getSparkPlugName(), false);
 				break;
 			case enMSG_DEATH:
-				strMsgTopic = CCommon::getInstance().getDDeathTopic() + "/";
-				enMsgPublishState = enDEVSTATUS_DOWN;
+				publishMsgDDEATH(itr);
 				break;
 			case enMSG_DATA:
-				strMsgTopic = CCommon::getInstance().getDDataTopic() + "/";
-				m_metricForMsg = std::ref(itr.m_mapChangedMetrics);
-				enMsgPublishState = enDEVSTATUS_UP;
+				publishMsgDDATA(itr);
 				break;
 			default:
-				DO_LOG_ERROR("Invalid message type received from internal MQTT broker");
+				DO_LOG_ERROR("Invalid message type received");
 				return false;
 			}
-
-			strMsgTopic.append(strDeviceName);
-
-			if (itr.m_enAction == enMSG_DEATH)
-			{
-				sparkplug_payload.has_timestamp = true;
-				sparkplug_payload.timestamp = itr.m_refSparkPlugDev.get().getDeathTime();
-			}
-			else if (itr.m_enAction != enMSG_BIRTH)
-			{
-			//these shall be part of a single sparkplug msg
-			for (auto &itrMetric : m_metricForMsg)
-			{
-				uint64_t timestamp = itrMetric.second.getTimestamp();
-				string strMetricName = itrMetric.second.getName();
-
-				org_eclipse_tahu_protobuf_Payload_Metric metric =
-						{ NULL, false, 0, true, timestamp, true,
-								itrMetric.second.getValue().getDataType(), false, 0, false, 0, false,
-								true, false,
-					org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
-								false,
-										org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
-								0,
-								{ 0 } };
-
-				metric.name = strdup(strMetricName.c_str());
-				if(metric.name == NULL)
-				{
-					DO_LOG_ERROR("Failed to allocate new memory");
-					return false;
-				};
-					
-				itrMetric.second.getValue().assignToSparkPlug(metric);
-
-				add_metric_to_payload(&sparkplug_payload, &metric);
-
-			}//metric ends
-			}
-			if (itr.m_enAction != enMSG_BIRTH)
-			{
-				//publish sparkplug message
-				CPublisher::instance().publishSparkplugMsg(sparkplug_payload,
-					strMsgTopic);
-
-				itr.m_refSparkPlugDev.get().setPublishedStatus(enMsgPublishState);
-			}
-
-			free_payload(&sparkplug_payload);
 		}
 	}
 	catch(exception &ex)
 	{
-		DO_LOG_FATAL(ex.what());
+		DO_LOG_ERROR(ex.what());
 		return false;
 	}
 	return true;
 }
 
 /**
- * Checks if external MQTT subscriber has been connected with the  MQTT broker
- * @param none
- * @return true/false as per the connection status of the external MQTT subscriber
+ * Prepare and publish a DDEATH message in sparkplug format for a device 
+ * @param a_sDevName :[in] device name
+ * @return true/false based on success/failure
  */
-bool CSCADAHandler::isExtMqttSubConnected()
+bool CSCADAHandler::publishMsgDDEATH(const std::string &a_sDevName)
 {
-	return m_subscriber.is_connected();
+	//prepare and publish one sparkplug msg for this device
+	org_eclipse_tahu_protobuf_Payload sparkplug_payload;
+	get_next_payload(&sparkplug_payload);
+	try
+	{
+		if (a_sDevName.size() == 0)
+		{
+			DO_LOG_ERROR("Device name is blank");
+			return false;
+		}
+
+		string strMsgTopic = CCommon::getInstance().getDDeathTopic() + "/" + a_sDevName;
+
+		sparkplug_payload.has_timestamp = true;
+		sparkplug_payload.timestamp = get_current_timestamp();
+
+		//publish sparkplug message
+		publishSparkplugMsg(sparkplug_payload, strMsgTopic);
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+		return false;
+	}
+	free_payload(&sparkplug_payload);
+	return true;
 }
 
-/*
+/**
  * Helper function to disconnect MQTT client from External MQTT broker
+ * @param None
+ * @return None
  */
 void CSCADAHandler::disconnect()
 {
-	cout << "Disconnecting from External MQTT ... " << endl;
-	m_subscriber.disconnect();
+	try
+	{
+		if(true == m_MQTTClient.isConnected())
+		{
+			/*this->prepareNodeDeathMsg(true);*/
+			m_MQTTClient.disconnect();
+		}
+
+		++m_uiBDSeq;
+		setInitStatus(false);
+		prepareNodeDeathMsg(false);
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
 }
 
-/*
- * Helper function to connect MQTT client from External MQTT broker
+/**
+ * Helper function to connect MQTT client to External MQTT broker
+ * @param None
+ * @return None
  */
 void CSCADAHandler::connect()
 {
-	cout << "Connecting to External MQTT ... " << endl;
-	m_subscriber.connect();
+	try
+	{
+		DO_LOG_INFO("Connecting to External MQTT ... ");
+		m_MQTTClient.connect();
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
 }
-
 
 /**
  * Process message received from external MQTT broker
@@ -598,7 +833,6 @@ void CSCADAHandler::connect()
  */
 bool CSCADAHandler::processDCMDMsg(mqtt::const_message_ptr a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec)
 {
-
 	org_eclipse_tahu_protobuf_Payload dcmd_payload = org_eclipse_tahu_protobuf_Payload_init_zero;
 	bool bRet = false;
 
@@ -616,16 +850,15 @@ bool CSCADAHandler::processDCMDMsg(mqtt::const_message_ptr a_msg, std::vector<st
 			DO_LOG_ERROR("Failed to decode the sparkplug payload");
 		}
 
-		free_payload(&dcmd_payload);
-		return bRet;
+		bRet = true;
 	}
 	catch(exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
-		free_payload(&dcmd_payload);
-		return false;
+		bRet = false;
 	}
-	return true;
+		free_payload(&dcmd_payload);
+	return bRet;
 }
 
 /**

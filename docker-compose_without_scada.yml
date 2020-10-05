@@ -49,7 +49,6 @@ services:
  # 3. modbus-rtu-master
  # 4. mqtt_container
  # 5. mqtt-export
- # 6. scada-rtu
 
   ## uwc_common image
   uwc_common:
@@ -341,66 +340,6 @@ services:
       timeout: 10s
       retries: 5
 
-  scada-rtu:
-    depends_on:
-      - ia_eisbase
-      - uwc_common
-    build:
-      context: $PWD/../scada-rtu/
-      dockerfile: $PWD/../scada-rtu/Dockerfile
-      args:
-        EIS_VERSION: ${EIS_VERSION}
-        EIS_UID: ${EIS_UID}
-        EIS_USER_NAME: ${EIS_USER_NAME}
-        ETCD_HOST: ${ETCD_HOST}
-    image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
-    container_name: scada-rtu
-    hostname: scada-rtu
-    read_only: true
-    restart: unless-stopped
-    ulimits:
-     rtprio:
-       soft: "99" # these are the maximum values of priorites to be used inside the container application
-       hard: "99"
-    environment:
-      AppName: "SCADA-RTU"
-      DEV_MODE: ${DEV_MODE}
-      no_proxy: ${no_proxy}
-      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
-      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
-      INTERNAL_MQTT_URL: "ssl://mqtt_container:11883"
-      NETWORK_TYPE: "ALL"
-      TOPIC_SEPARATOR: '-'
-      CertType: "zmq"
-      PROFILING_MODE: ${PROFILING_MODE}
-    logging:
-        driver: "json-file"
-        options:
-            max-file: "3"
-            max-size: "10m"
-    user: ${EIS_UID}
-    volumes:
-     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
-     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-     - "${EIS_INSTALL_PATH}/container_logs/scada-rtu:/opt/intel/app/logs"
-    secrets:
-      - ca_etcd
-      - etcd_SCADA-RTU_cert
-      - etcd_SCADA-RTU_key
-      - ca_broker
-      - client_cert
-      - client_key
-      - scadahost_ca_cert
-      - scadahost_client_key
-      - scadahost_client_cert      
-    security_opt:
-      - no-new-privileges
-    healthcheck:
-      test: ["CMD-SHELL", "timeout --foreground 5 echo test"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 5
-
 volumes:
   vol_uwc_socket:
     driver: local
@@ -452,10 +391,4 @@ secrets:
     file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
   client_key:
     file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem
-  scadahost_ca_cert:
-    file: provision/Certificates/scada_ext_certs/ca/root-ca.crt
-  scadahost_client_cert:
-    file: provision/Certificates/scada_ext_certs/client_crt/client.crt
-  scadahost_client_key:
-    file: provision/Certificates/scada_ext_certs/client_key/client.key
 

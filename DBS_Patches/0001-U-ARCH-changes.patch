@@ -1,0 +1,322 @@
+From 78c23f7c10e5fc830d77d1ce33ff1f3af6921c82 Mon Sep 17 00:00:00 2001
+From: Arvind Mohan <arvind.mohan@intel.com>
+Date: Fri, 11 Sep 2020 07:12:53 +0530
+Subject: [PATCH] U-ARCH changes
+
+Note:
+1. Do not merge in mainline. uses a new network model.
+2. EtcdUI wont work.
+3. not tested outside of UWC integration
+4. new env variable EIS_CONTAINER_UID. refer dockremap concept.
+5. pay attention to Certificate "chcon". needs to match lxc_context
+   defined for selinux.
+
+Signed-off-by: Arvind Mohan <arvind.mohan@intel.com>
+---
+ EtcdUI/Dockerfile                             |  8 ++---
+ docker_setup/.env                             |  8 +++--
+ docker_setup/provision/dep/Dockerfile         |  5 +--
+ .../provision/dep/Dockerfile.provision        |  3 +-
+ .../dep/docker-compose-provision.yml          | 31 ++++++++++++++++---
+ .../provision/dep/etcd_create_user.sh         | 14 ++++-----
+ .../provision/dep/etcd_enable_auth.sh         |  8 ++---
+ docker_setup/provision/dep/etcd_provision.py  | 14 +++++----
+ docker_setup/provision/dep/start_etcd.sh      |  2 +-
+ docker_setup/provision/gen_certs.py           |  2 +-
+ docker_setup/provision/provision_eis.sh       |  3 +-
+ 11 files changed, 63 insertions(+), 35 deletions(-)
+
+diff --git a/EtcdUI/Dockerfile b/EtcdUI/Dockerfile
+index b7dd24ed..3473dd13 100644
+--- a/EtcdUI/Dockerfile
++++ b/EtcdUI/Dockerfile
+@@ -34,8 +34,8 @@ RUN apt-get update && \
+     apt-get update && apt-get install -y procps
+ 
+ ARG EIS_UID
+-RUN chown -R ${EIS_UID}:${EIS_UID} /var/log/nginx/ && \
+-    chown -R ${EIS_UID}:${EIS_UID} /var/lib/nginx/
++# RUN chown -R ${EIS_UID}:${EIS_UID} /var/log/nginx/ && \
++#    chown -R ${EIS_UID}:${EIS_UID} /var/lib/nginx/
+ 
+ 
+ FROM ia_common:$EIS_VERSION as common
+@@ -53,8 +53,8 @@ COPY eis_nginx_dev.conf ./
+ RUN touch /run/nginx.pid
+ 
+ ARG EIS_UID
+-RUN chown -R ${EIS_UID}:${EIS_UID} /run/nginx.pid && \
+-    ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log && \
++#RUN chown -R ${EIS_UID}:${EIS_UID} /run/nginx.pid && \
++RUN ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log && \
+     rm -rf /var/lib/nginx && ln -sf /tmp/nginx /var/lib/nginx && \
+     rm -f /etc/nginx/sites-enabled/default
+ 
+diff --git a/docker_setup/.env b/docker_setup/.env
+index 78c497a2..30e9e49e 100644
+--- a/docker_setup/.env
++++ b/docker_setup/.env
+@@ -12,7 +12,8 @@ COMPOSE_PROJECT_NAME=EdgeInsightsSoftware
+ 
+ # Docker security
+ EIS_USER_NAME=eisuser
+-EIS_UID=5319
++EIS_UID=500000
++EIS_CONTAINER_UID=0
+ 
+ # This is the path where EIS package is installed
+ EIS_INSTALL_PATH=/opt/intel/eis
+@@ -50,7 +51,7 @@ ETCD_KEEPER_VERSION=v0.7.5
+ 
+ # Etcd settings
+ # Etcd client host to connect to
+-ETCD_HOST=
++ETCD_HOST=ia_etcd
+ ETCD_NAME=master
+ ETCD_VERSION=v3.4.0
+ ETCD_DATA_DIR=/EIS/etcd/data/
+@@ -65,4 +66,5 @@ eis_no_proxy=localhost,127.0.0.1
+ TLS_CIPHERS=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+ SSL_KEY_LENGTH=3072
+ 
+-HOST_TIME_ZONE=
++HOST_IP=127.0.0.1
++HOST_TIME_ZONE=Asia/Kolkata
+diff --git a/docker_setup/provision/dep/Dockerfile b/docker_setup/provision/dep/Dockerfile
+index 79595dd1..6f257075 100644
+--- a/docker_setup/provision/dep/Dockerfile
++++ b/docker_setup/provision/dep/Dockerfile
+@@ -1,12 +1,13 @@
+ FROM python:3.7-slim
+ RUN  apt update && \
+-     apt install -y curl
++     apt install -y curl etcd-client
+ ARG ETCD_VERSION
+ RUN mkdir -p /EIS/etcd/data
+ RUN curl -L https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz -o /EIS/etcd-${ETCD_VERSION}-linux-amd64.tar.gz && \
+-    tar -xvf /EIS/etcd-${ETCD_VERSION}-linux-amd64.tar.gz -C /EIS/etcd --strip 1 && \
++    tar -xvf /EIS/etcd-${ETCD_VERSION}-linux-amd64.tar.gz -C /EIS/etcd --no-same-owner --strip 1 && \
+     rm -f /EIS/etcd-${ETCD_VERSION}-linux-amd64.tar.gz
+ WORKDIR /EIS/etcd/
+ COPY dep/start_etcd.sh .
+ RUN chmod +x start_etcd.sh
++HEALTHCHECK NONE
+ ENTRYPOINT ["./start_etcd.sh"]
+diff --git a/docker_setup/provision/dep/Dockerfile.provision b/docker_setup/provision/dep/Dockerfile.provision
+index ad190691..d05f66d9 100644
+--- a/docker_setup/provision/dep/Dockerfile.provision
++++ b/docker_setup/provision/dep/Dockerfile.provision
+@@ -10,4 +10,5 @@ COPY dep/put_x509_certs.sh .
+ RUN chmod +x etcd_create_user.sh && \
+     chmod +x etcd_enable_auth.sh && \
+     chmod +x put_x509_certs.sh
+-ENTRYPOINT ["python3", "etcd_provision.py", "docker-compose.yml"]
+\ No newline at end of file
++HEALTHCHECK NONE
++ENTRYPOINT ["python3", "etcd_provision.py", "docker-compose.yml"]
+diff --git a/docker_setup/provision/dep/docker-compose-provision.yml b/docker_setup/provision/dep/docker-compose-provision.yml
+index 2d0ec2f4..e1d84618 100755
+--- a/docker_setup/provision/dep/docker-compose-provision.yml
++++ b/docker_setup/provision/dep/docker-compose-provision.yml
+@@ -16,6 +16,7 @@ services:
+       ETCDCTL_API: 3
+       DEV_MODE: $DEV_MODE
+       ETCD_DATA_DIR: $ETCD_DATA_DIR
++      ETCD_HOST: $ETCD_HOST
+       ETCD_CLIENT_PORT: $ETCD_CLIENT_PORT
+       ETCD_PEER_PORT: $ETCD_PEER_PORT
+       ETCD_NAME: $ETCD_NAME
+@@ -27,8 +28,18 @@ services:
+       https_proxy: $https_proxy
+     volumes:
+       - "vol_etcd:$ETCD_DATA_DIR"
+-    network_mode: host
+-    user: $EIS_UID
++    user: $EIS_CONTAINER_UID
++    # userns_mode: host
++    security_opt:
++      - no-new-privileges
++    healthcheck:
++      test:
++      - CMD-SHELL
++      - etcdctl --cacert=/run/secrets/ca_etcd --cert=/run/secrets/etcd_server_cert --key=/run/secrets/etcd_server_key endpoint health || exit 1
++    ulimits:
++      nofile:
++        soft: "20000"
++        hard: "40000"
+     
+   ia_etcd_provision:
+     depends_on:
+@@ -43,17 +54,27 @@ services:
+     read_only: true
+     image: ia_etcd_provision:$EIS_VERSION
+     volumes:
+-      - "../config:/EIS/etcd/config/"
+-      - "../docker-compose.yml:/EIS/etcd/docker-compose.yml"
++      - "../config:/EIS/etcd/config/:Z"
++      - "../docker-compose.yml:/EIS/etcd/docker-compose.yml:Z"
+     environment:
+       ETCDCTL_API: 3
++      ETCD_HOST: $ETCD_HOST
++      ETCD_CLIENT_PORT: $ETCD_CLIENT_PORT
+       DEV_MODE: ${DEV_MODE}
+       no_proxy: $eis_no_proxy
+       NO_PROXY: $eis_no_proxy
+       http_proxy: $http_proxy
+       https_proxy: $https_proxy
+-    network_mode: host
+     user: $EIS_UID
++    userns_mode: host
++    security_opt:
++      - no-new-privileges
++    healthcheck:
++      disable: true
++    ulimits:
++      nofile:
++        soft: "20000"
++        hard: "40000"
+ 
+ volumes:
+   vol_etcd:
+diff --git a/docker_setup/provision/dep/etcd_create_user.sh b/docker_setup/provision/dep/etcd_create_user.sh
+index 772e97ea..d0150cc4 100755
+--- a/docker_setup/provision/dep/etcd_create_user.sh
++++ b/docker_setup/provision/dep/etcd_create_user.sh
+@@ -1,8 +1,8 @@
+ #!/bin/sh
+-./etcdctl user add $1 --no-password
+-./etcdctl role add $1
+-./etcdctl user grant-role $1 $1
+-./etcdctl role grant-permission $1 read /$1/ --prefix
+-./etcdctl role grant-permission $1 readwrite /$1/datastore --prefix
+-./etcdctl role grant-permission $1 read /Publickeys/ --prefix
+-./etcdctl role grant-permission $1 read /GlobalEnv/ --prefix
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT user add $1 --no-password
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role add $1
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT user grant-role $1 $1
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role grant-permission $1 read /$1/ --prefix
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role grant-permission $1 readwrite /$1/datastore --prefix
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role grant-permission $1 read /Publickeys/ --prefix
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role grant-permission $1 read /GlobalEnv/ --prefix
+diff --git a/docker_setup/provision/dep/etcd_enable_auth.sh b/docker_setup/provision/dep/etcd_enable_auth.sh
+index 1c5b0f59..0b2da650 100644
+--- a/docker_setup/provision/dep/etcd_enable_auth.sh
++++ b/docker_setup/provision/dep/etcd_enable_auth.sh
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+-./etcdctl user add root:$1
+-./etcdctl role add root
+-./etcdctl user grant-role root root
+-./etcdctl auth enable
+\ No newline at end of file
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT user add root:$1
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role add root
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT user grant-role root root
++./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT auth enable
+diff --git a/docker_setup/provision/dep/etcd_provision.py b/docker_setup/provision/dep/etcd_provision.py
+index 8bd419e5..e9d40962 100644
+--- a/docker_setup/provision/dep/etcd_provision.py
++++ b/docker_setup/provision/dep/etcd_provision.py
+@@ -68,18 +68,19 @@ def put_zmqkeys(appname):
+     public_key, secret_key = zmq.curve_keypair()
+     str_public_key = public_key.decode()
+     str_secret_key = secret_key.decode()
++    etcd_endpoint = "--endpoints=" + os.environ['ETCD_HOST'] + ":" + os.environ['ETCD_CLIENT_PORT']
+     while str_public_key[0] is "-" or str_secret_key[0] is "-":
+         logging.info("Re-generating ZMQ keys")
+         public_key, secret_key = zmq.curve_keypair()
+         str_public_key = public_key.decode()
+         str_secret_key = secret_key.decode()
+     try:
+-        subprocess.run(["./etcdctl", "put",
++        subprocess.run(["./etcdctl", etcd_endpoint, "put",
+                         "/Publickeys/" + appname, public_key])
+     except Exception:
+         logging.error("Error putting Etcd public key for" + appname)
+     try:
+-        subprocess.run(["./etcdctl", "put",
++        subprocess.run(["./etcdctl", etcd_endpoint, "put",
+                         "/" + appname + "/private_key", secret_key])
+     except Exception:
+         logging.error("Error putting Etcd private key for" + appname)
+@@ -97,25 +98,26 @@ def load_data_etcd(file):
+     :param file: Full path of json file having etcd initial data
+     :type file: String
+     """
++    etcd_endpoint = "--endpoints=" + os.environ['ETCD_HOST'] + ":" + os.environ['ETCD_CLIENT_PORT']
+     with open(file, 'r') as f:
+         config = json.load(f)
+     logging.info("=======Adding key/values to etcd========")
+     for key, value in config.items():
+         if isinstance(value, str):
+-            subprocess.run(["./etcdctl", "put", key, bytes(value.encode())])
++            subprocess.run(["./etcdctl", etcd_endpoint, "put", key, bytes(value.encode())])
+         elif isinstance(value, dict) and key == '/GlobalEnv/':
+             # Adding DEV_MODE from env
+             value['DEV_MODE'] = os.environ['DEV_MODE']
+-            subprocess.run(["./etcdctl", "put",
++            subprocess.run(["./etcdctl", etcd_endpoint, "put",
+                            key,
+                            bytes(json.dumps(value, indent=4).encode())])
+         elif isinstance(value, dict):
+-            subprocess.run(["./etcdctl", "put",
++            subprocess.run(["./etcdctl", etcd_endpoint, "put",
+                             key, bytes(json.dumps(value, indent=4).encode())])
+ 
+     logging.info("=======Reading key/values to etcd========")
+     for key in config.keys():
+-        value = subprocess.run(["./etcdctl", "get", key])
++        value = subprocess.run(["./etcdctl", etcd_endpoint, "get", key])
+         logging.info(key, '->', value)
+ 
+ 
+diff --git a/docker_setup/provision/dep/start_etcd.sh b/docker_setup/provision/dep/start_etcd.sh
+index 305da7b4..49df9cf2 100644
+--- a/docker_setup/provision/dep/start_etcd.sh
++++ b/docker_setup/provision/dep/start_etcd.sh
+@@ -14,7 +14,7 @@ else
+ 	
+ 	export ETCD_INITIAL_ADVERTISE_PEER_URLS=https://$HOST_IP:$ETCD_PEER_PORT
+ 	export ETCD_LISTEN_PEER_URLS=https://$HOST_IP:$ETCD_PEER_PORT
+-	export ETCD_LISTEN_CLIENT_URLS=https://$HOST_IP:$ETCD_CLIENT_PORT,https://127.0.0.1:$ETCD_CLIENT_PORT
++	export ETCD_LISTEN_CLIENT_URLS=https://0.0.0.0:$ETCD_CLIENT_PORT
+ 	export ETCD_ADVERTISE_CLIENT_URLS=https://$HOST_IP:$ETCD_CLIENT_PORT
+ 	export ETCD_PEER_AUTO_TLS=true
+ 	export ETCD_CERT_FILE="/run/secrets/etcd_server_cert"
+diff --git a/docker_setup/provision/gen_certs.py b/docker_setup/provision/gen_certs.py
+index 39925669..1000555a 100644
+--- a/docker_setup/provision/gen_certs.py
++++ b/docker_setup/provision/gen_certs.py
+@@ -109,7 +109,7 @@ def generate(opts, root_ca_needed=True):
+     for cert in opts["certs"]:
+         print("Generating Certificate for.......... " + str(cert) + "\n\n")
+         os.environ["SAN"] = \
+-            "IP:127.0.0.1,DNS:localhost,URI:urn:unconfigured:application"
++            "IP:127.0.0.1,DNS:localhost,DNS:ia_etcd,URI:urn:unconfigured:application"
+         for component, cert_opts in cert.items():
+             if 'output_format' in cert_opts:
+                 outform = cert_opts['output_format']
+diff --git a/docker_setup/provision/provision_eis.sh b/docker_setup/provision/provision_eis.sh
+index f7e85f88..d0ea3582 100755
+--- a/docker_setup/provision/provision_eis.sh
++++ b/docker_setup/provision/provision_eis.sh
+@@ -118,7 +118,7 @@ if [ $ETCD_NAME != 'master' ]
+ 			else
+ 				chown -R $EIS_USER_NAME:$EIS_UID Certificates/
+ 			fi
+-
++			chcon -R -t container_file_t Certificates
+ 			docker-compose -f dep/docker-compose-provision.yml -f dep/docker-compose-provision.override.prod.slave.yml up --build -d  ia_etcd
+ 	fi
+ 
+@@ -158,6 +158,7 @@ else
+ 			docker-compose -f dep/docker-compose-provision.yml up --build -d
+ 		else
+ 			rm -rf client server
++			chcon -R -t container_file_t Certificates
+ 			docker-compose -f dep/docker-compose-provision.yml -f dep/docker-compose-provision.override.prod.yml up --build -d
+ 		fi
+ 
+-- 
+2.26.2.windows.1
+

@@ -7,7 +7,7 @@
  * property right is granted to or conferred upon you by disclosure or delivery of
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
-
+#if 0
 #include "Publisher.hpp"
 #include "Common.hpp"
 #include "ConfigManager.hpp"
@@ -32,6 +32,19 @@ CPublisher::CPublisher(std::string a_ExtMqttURL, std::string a_IntMqttURL, int a
 		m_connOpts.set_keep_alive_interval(20);
 		m_connOpts.set_clean_session(true);
 		m_connOpts.set_automatic_reconnect(1, 10);
+
+		// set the certificates if dev mode is false
+		if(true == CCommon::getInstance().isScadaTLS())
+		{
+			mqtt::ssl_options sslopts;
+			sslopts.set_trust_store("/run/secrets/scadahost_ca_cert");
+			sslopts.set_key_store("/run/secrets/scadahost_client_cert");
+			sslopts.set_private_key("/run/secrets/scadahost_client_key");
+			sslopts.set_enable_server_cert_auth(true);
+			m_connOpts.set_ssl(sslopts);
+			cout << "External broker is TLS" << endl;
+		}
+
 		m_ExtPublisher.set_callback(m_publisherCB);
 
 		if(connect(m_ExtPublisher, m_connOpts))
@@ -48,7 +61,7 @@ CPublisher::CPublisher(std::string a_ExtMqttURL, std::string a_IntMqttURL, int a
 		m_SSLConnOpts.set_clean_session(true);
 		m_SSLConnOpts.set_automatic_reconnect(1, 10);
 
-		// set the certificates if dev mode is false
+		// set the certificates if TLS is enabled
 		if(false == CCommon::getInstance().isDevMode())
 		{
 			mqtt::ssl_options sslopts;
@@ -137,7 +150,7 @@ bool CPublisher::connect(mqtt::async_client& a_mqttClient, mqtt::connect_options
 	}
 	catch (const std::exception &e)
 	{
-		DO_LOG_FATAL(e.what());
+		DO_LOG_FATAL("Connect failed :: " + std::string(e.what()));
 		bFlag = false;
 	}
 	return bFlag;
@@ -267,3 +280,4 @@ void CPublisher::cleanup()
 CPublisher::~CPublisher()
 {
 }
+#endif

@@ -12,11 +12,15 @@
 #include "Common.hpp"
 #include "ConfigManager.hpp"
 #include "SparkPlugDevices.hpp"
+#include "SCADAHandler.hpp"
 
 #include <chrono>
 #include <ctime>
 
 #define SUBSCRIBER_ID "INTERNAL_MQTT_SUBSCRIBER"
+#define RECONN_TIMEOUT_SEC (60)
+
+extern std::atomic<bool> g_shouldStop;
 
 /**
  * Constructor Initializes MQTT publisher
@@ -25,16 +29,23 @@
  * @param iQOS :[in] QOS value with which publisher will publish messages
  * @return None
  */
-CIntMqttHandler::CIntMqttHandler(std::string strPlBusUrl, int iQOS):
-		m_subscriber(strPlBusUrl, SUBSCRIBER_ID)
+CIntMqttHandler::CIntMqttHandler(const std::string &strPlBusUrl, int iQOS):
+	m_MQTTClient{strPlBusUrl, SUBSCRIBER_ID, iQOS, (false == CCommon::getInstance().isDevMode()), 
+	"/run/secrets/ca_broker", "/run/secrets/client_cert", 
+	"/run/secrets/client_key", "InternalMQTTListener"},
+	m_enLastConStatus{enCON_NONE}, m_bIsInTimeoutState{false}
 {
 	try
 	{
 		m_QOS = iQOS;
 		m_appSeqNo = 0;
 
+		m_MQTTClient.setNotificationConnect(CIntMqttHandler::connected);
+		m_MQTTClient.setNotificationDisConnect(CIntMqttHandler::disconnected);
+		m_MQTTClient.setNotificationMsgRcvd(CIntMqttHandler::msgRcvd);
+
 		//connect options for sync publisher/client
-		m_connOpts.set_keep_alive_interval(20);
+		/*m_connOpts.set_keep_alive_interval(20);
 		m_connOpts.set_clean_session(true);
 		m_connOpts.set_automatic_reconnect(1, 10);
 
@@ -51,13 +62,13 @@ CIntMqttHandler::CIntMqttHandler(std::string strPlBusUrl, int iQOS):
 
 		m_subscriber.set_callback(m_mqttSubscriberCB);
 
-		connect();
+		connect();*/
 
 		DO_LOG_DEBUG("MQTT initialized successfully");
 	}
 	catch (const std::exception &e)
 	{
-		DO_LOG_FATAL(e.what());
+		DO_LOG_ERROR(e.what());
 	}
 }
 
@@ -69,28 +80,313 @@ CIntMqttHandler::CIntMqttHandler(std::string strPlBusUrl, int iQOS):
  */
 CIntMqttHandler& CIntMqttHandler::instance()
 {
+	static bool bIsFirst = true;
 	static string strPlBusUrl = CCommon::getInstance().getIntMqttURL();
 	static int nQos = CCommon::getInstance().getMQTTQos();
 
+	if(bIsFirst)
+	{
 	if(strPlBusUrl.empty())
 	{
 		DO_LOG_ERROR("MQTT_URL Environment variable is not set");
 		std::cout << __func__ << ":" << __LINE__ << " Error : MQTT_URL Environment variable is not set" <<  std::endl;
 		throw std::runtime_error("Missing required config..");
 	}
+	}
 
 	DO_LOG_DEBUG("Internal MQTT subscriber is connecting with QOS : " + to_string(nQos));
 	static CIntMqttHandler handler(strPlBusUrl.c_str(), nQos);
+
+	if(bIsFirst)
+	{
+		handler.init();
+		handler.connect();
+		bIsFirst = false;
+	}
 	return handler;
 }
 
+/**
+ * Helper function to disconnect MQTT client from Internal MQTT broker
+ * @param None
+ * @return None
+ */
+void CIntMqttHandler::disconnect()
+{
+	try
+	{
+		if(true == m_MQTTClient.isConnected())
+		{
+			m_MQTTClient.disconnect();
+		}
+
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
+
+/**
+ * Helper function to connect MQTT client to Internal MQTT broker
+ * @param None
+ * @return None
+ */
+void CIntMqttHandler::connect()
+{
+	try
+	{
+		DO_LOG_INFO("Connecting to Internal MQTT ... ");
+		m_MQTTClient.connect();
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
+
+/**
+ * Subscribe to required topics for SCADA MQTT
+ * @param none
+ * @return none
+ */
+void CIntMqttHandler::subscribeTopics()
+{
+	try
+	{
+		m_MQTTClient.subscribe("BIRTH/#");
+		m_MQTTClient.subscribe("DATA/#");
+		m_MQTTClient.subscribe("DEATH/#");
+		m_MQTTClient.subscribe("/+/+/+/update");
+		//m_MQTTClient.subscribe("ConnectSCADA");
+		//m_MQTTClient.subscribe("StopSCADA");
+
+		DO_LOG_DEBUG("Subscribed topics with internal broker");
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
+
+/**
+ * This is a callback function which gets called when subscriber is connected with MQTT broker
+ * @param a_sCause :[in] reason for connect
+ * @return None
+ */
+void CIntMqttHandler::connected(const std::string &a_sCause)
+{
+	try
+	{
+		CIntMqttHandler::instance().signalIntMQTTConnDoneThread();
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
+
+/**
+ * This is a callback function which gets called when subscriber is disconnected with MQTT broker
+ * @param a_sCause :[in] reason for disconnect
+ * @return None
+ */
+void CIntMqttHandler::disconnected(const std::string &a_sCause)
+{
+	try
+	{
+		//CIntMqttHandler::instance().disconnect();
+		CIntMqttHandler::instance().signalIntMQTTConnLostThread();
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
+
+/**
+ * This is a callback function which gets called when a msg is received
+ * @param a_pMsg :[in] pointer to received message
+ * @return None
+ */
+void CIntMqttHandler::msgRcvd(mqtt::const_message_ptr a_pMsg)
+{
+	try
+	{
+		CIntMqttHandler::instance().pushMsgInQ(a_pMsg);
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
+
+/**
+ * This is a singleton class. Used to handle communication with SCADA master
+ * through external MQTT.
+ * Initiates number of threads, semaphores for handling connection successful
+ * and internal MQTT connection lost scenario.
+ * @param None
+ * @return true on successful init
+ */
+bool CIntMqttHandler::init()
+{
+	// Initiate semaphore for requests
+	int retVal = sem_init(&m_semConnSuccess, 0, 0 /* Initial value of zero*/);
+	if (retVal == -1)
+	{
+		std::cout << "*******Could not create unnamed semaphore for success connection\n";
+		return false;
+	}
+
+	retVal = sem_init(&m_semConnLost, 0, 0 /* Initial value of zero*/);
+	if (retVal == -1)
+	{
+		std::cout << "*******Could not create unnamed semaphore for lost connection\n";
+		return false;
+	}
+
+	retVal = sem_init(&m_semConnSuccessToTimeOut, 0, 0 /* Initial value of zero*/);
+	if (retVal == -1)
+	{
+		std::cout << "*******Could not create unnamed semaphore for monitorig connection timeout\n";
+		return false;
+	}
+	std::thread{ std::bind(&CIntMqttHandler::handleConnMonitoringThread,
+			std::ref(*this)) }.detach();
+
+	std::thread{ std::bind(&CIntMqttHandler::handleConnSuccessThread,
+			std::ref(*this)) }.detach();
+
+	return true;
+}
+
+/**
+ * Thread function to handle SCADA connection success scenario.
+ * It listens on a semaphore to know the connection status.
+ * @return none
+ */
+void CIntMqttHandler::handleConnMonitoringThread()
+{
+	while(false == g_shouldStop.load())
+	{
+		try
+		{
+			do
+			{
+				if((sem_wait(&m_semConnLost)) == -1 && errno == EINTR)
+				{
+					// Continue if interrupted by handler
+					continue;
+				}
+				if(true == g_shouldStop.load())
+				{
+					break;
+				}
+
+				// Connection is lost
+				// Now check for 1 min to see if connection is established
+				struct timespec ts;
+				//int rc = clock_gettime(CLOCK_MONOTONIC, &ts);
+				int rc = clock_gettime(CLOCK_REALTIME, &ts);
+				if(0 != rc)
+				{
+					std::cout << "Fatal error: clock_gettime failed: " << errno << std::endl;
+					break;
+				}
+				// Wait for timeout seconds to declare connection timeout
+				ts.tv_sec += RECONN_TIMEOUT_SEC;
+				
+				setConTimeoutState(true);
+				while ((rc = sem_timedwait(&m_semConnSuccessToTimeOut, &ts)) == -1 && errno == EINTR)
+				{
+               		// Continue if interrupted by handler
+					continue;
+				}
+				setConTimeoutState(false);
+
+				if(true == m_MQTTClient.isConnected())
+				{
+					// Client is connected. So wait for connection-lost
+					break;
+				}
+
+				// Check status
+				if(-1 == rc)
+				{
+					if(ETIMEDOUT == errno)
+					{
+						DO_LOG_ERROR("Connection lost for timeout period. Informing SCADA");
+						// timeout occurred and connection is not yet established
+						// Inform SCADA handler
+						CSCADAHandler::instance().signalIntMQTTConnLostThread();
+					}
+					else
+					{
+						// No action for now
+					}
+				}
+			} while(0);
+		}
+		catch (exception &e)
+		{
+			DO_LOG_ERROR("failed to initiate request :: " + std::string(e.what()));
+		}
+	}
+}
+
+/**
+ * Thread function to handle SCADA connection success scenario.
+ * It listens on a semaphore to know the connection status.
+ * @return none
+ */
+void CIntMqttHandler::handleConnSuccessThread()
+{
+	while(false == g_shouldStop.load())
+	{
+		try
+		{
+			do
+			{
+				if((sem_wait(&m_semConnSuccess)) == -1 && errno == EINTR)
+				{
+					// Continue if interrupted by handler
+					continue;
+				}
+				if(true == g_shouldStop.load())
+				{
+					break;
+				}
+
+				if(true == m_MQTTClient.isConnected())
+				{
+					// Client is connected. So wait for connection-lost
+					// Semaphore got signalled means connection is successful
+					// As a process first subscribe to topics
+					subscribeTopics();
+
+					// If disconnect state is monitoring connection timeout, then signal that
+					if(true == getConTimeoutState())
+					{
+						sem_post(&m_semConnSuccessToTimeOut);
+					}
+				}
+			} while(0);
+
+		}
+		catch (exception &e)
+		{
+			DO_LOG_ERROR("failed to initiate request :: " + std::string(e.what()));
+		}
+	}
+}
 
 /**
  * MQTT publisher connects with MQTT broker
  * @param None
  * @return true/false based on success/failure
  */
-bool CIntMqttHandler::connect()
+/*bool CIntMqttHandler::connect()
 {
 
 	bool bFlag = true;
@@ -121,13 +417,13 @@ bool CIntMqttHandler::connect()
 		bFlag = false;
 	}
 	return bFlag;
-}
+}*/
 
 /**
  * Subscribe with MQTT broker for topics for on-demand operations
  * @return true/false based on success/failure
  */
-bool CIntMqttHandler::subscribeToTopics()
+/*bool CIntMqttHandler::subscribeToTopics()
 {
 	//get list of topics from topic mapper
 	std::vector<std::string> vMqttTopics;
@@ -137,6 +433,9 @@ bool CIntMqttHandler::subscribeToTopics()
 		vMqttTopics.push_back("BIRTH/#");
 		vMqttTopics.push_back("DATA/#");
 		vMqttTopics.push_back("DEATH/#");
+		vMqttTopics.push_back("/+/+/+/update");
+		vMqttTopics.push_back("ConnectSCADA");
+		vMqttTopics.push_back("StopSCADA");
 
 		for (auto &topic : vMqttTopics)
 		{
@@ -160,7 +459,7 @@ bool CIntMqttHandler::subscribeToTopics()
 	DO_LOG_DEBUG("MQTT handler subscribed topics with MQTT broker");
 
 	return true;
-}
+}*/
 
 /**
  * Push message in message queue to send on EIS
@@ -179,7 +478,7 @@ bool CIntMqttHandler::pushMsgInQ(mqtt::const_message_ptr msg)
 	}
 	catch (const std::exception &e)
 	{
-		DO_LOG_FATAL(e.what());
+		DO_LOG_ERROR(e.what());
 		bRet = false;
 	}
 	return bRet;
@@ -194,21 +493,54 @@ void CIntMqttHandler::cleanup()
 {
 	DO_LOG_DEBUG("Destroying CIntMqttHandler instance ...");
 
-	if(m_subscriber.is_connected())
-	{
-		m_subscriber.disconnect();
-	}
 	DO_LOG_DEBUG("Destroyed CIntMqttHandler instance");
 }
 
 /**
- * Checks if external MQTT subscriber has been connected with the  MQTT broker
+ * Checks if internal MQTT subscriber has been connected with the  MQTT broker
  * @param none
  * @return true/false as per the connection status of the external MQTT subscriber
  */
-bool CIntMqttHandler::isIntMqttSubConnected()
+bool CIntMqttHandler::isConnected()
 {
-	return m_subscriber.is_connected();
+	return m_MQTTClient.isConnected();
+}
+
+/**
+ *
+ * Signals that initernal MQTT connection is lost
+ * @return none
+ */
+void CIntMqttHandler::signalIntMQTTConnLostThread()
+{
+	if(enCON_DOWN != getLastConStatus())
+	{
+		sem_post(&m_semConnLost);
+	}
+	else
+	{
+		// No action. Connection is not yet established. 
+		// This callback is being executed from reconnect
+	}
+	setLastConStatus(enCON_DOWN);
+}
+
+/**
+ *
+ * Signals that initernal MQTT connection is established
+ * @return none
+ */
+void CIntMqttHandler::signalIntMQTTConnDoneThread()
+{
+	sem_post(&m_semConnSuccess);
+	setLastConStatus(enCON_UP);
+
+	static bool m_bIsFirstConnectDone = true;
+	if(true == m_bIsFirstConnectDone)
+	{
+		publishIntMqttMsg("", "START_BIRTH_PROCESS");
+		m_bIsFirstConnectDone = false;
+	}
 }
 
 /**
@@ -216,6 +548,9 @@ bool CIntMqttHandler::isIntMqttSubConnected()
  */
 CIntMqttHandler::~CIntMqttHandler()
 {
+	sem_destroy(&m_semConnSuccess);
+	sem_destroy(&m_semConnLost);
+	sem_destroy(&m_semConnSuccessToTimeOut);
 }
 
 /**
@@ -231,6 +566,37 @@ int CIntMqttHandler::getAppSeqNo()
 	}
 
 	return m_appSeqNo;
+}
+
+/**
+ * Publish message on MQTT broker for MQTT-Export
+ * @param a_sMsg :[in] message to publish
+ * @param a_sTopic :[in] topic on which to publish message
+ * @return true/false based on success/failure
+ */
+bool CIntMqttHandler::publishIntMqttMsg(const std::string &a_sMsg, const std::string &a_sTopic)
+{
+	try
+	{
+		// Check if topic is blank
+		if (true == a_sTopic.empty())
+		{
+			DO_LOG_ERROR("Blank topic. Message not posted");
+			return false;
+		}
+		mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, m_QOS, false);
+		m_MQTTClient.publishMsg(pubmsg);
+
+		DO_LOG_DEBUG("Published message on Internal MQTT broker successfully with QOS:"+ std::to_string(m_QOS));
+
+		return true;
+	}
+	catch (const mqtt::exception &exc)
+	{
+		DO_LOG_ERROR(exc.what());
+		//cout << "Exception : " << exc.what() << endl;
+	}
+	return false;
 }
 
 /**
@@ -309,8 +675,7 @@ bool CIntMqttHandler::prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_st
 					DO_LOG_DEBUG("Topic : " + strMsgTopic);
 					DO_LOG_DEBUG("Payload : " + strPubMsg);
 
-					//publish sparkplug message
-					CPublisher::instance().publishIntMqttMsg(strPubMsg, strMsgTopic);
+					publishIntMqttMsg(strPubMsg, strMsgTopic);					
 				}
 			}
 			else
@@ -325,9 +690,8 @@ bool CIntMqttHandler::prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_st
 					{
 						if((root != NULL) && (! strMsgTopic.empty()))
 						{
-							//publish sparkplug message
 							string strPubMsg = cJSON_Print(root);
-							CPublisher::instance().publishIntMqttMsg(strPubMsg, strMsgTopic);
+							publishIntMqttMsg(strPubMsg, strMsgTopic);							
 						}
 					}
 					if (root != NULL)

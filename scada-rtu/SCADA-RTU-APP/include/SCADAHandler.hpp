@@ -12,6 +12,8 @@
 #define SCADAHANDLER_HPP_
 
 #include <mqtt/async_client.h>
+#include <vector>
+#include <semaphore.h>
 #include "MQTTCallback.hpp"
 #include "Common.hpp"
 #include "Logger.hpp"
@@ -36,55 +38,50 @@ using namespace network_info;
 // Declarations used for MQTT
 #define SUBSCRIBERID								"SCADA_SUBSCRIBER"
 
-struct stRealDevDataPointRepo
-{
-	const CUniqueDataPoint& m_objUniquePoint;
-
-	stRealDevDataPointRepo& operator=(const stRealDevDataPointRepo&) = delete;
-
-	stRealDevDataPointRepo(const CUniqueDataPoint& uniqueDataPoint):m_objUniquePoint(uniqueDataPoint)
-	{
-
-	}
-};
-
-
 class CSCADAHandler
 {
+	uint64_t m_uiBDSeq = 0; 
 	int m_QOS;
 
-	mqtt::async_client m_subscriber;
+	CMQTTPubSubClient m_MQTTClient;
 
-	mqtt::connect_options m_subscriberConopts;
-	mqtt::token_ptr m_conntok;
+	sem_t m_semSCADAConnSuccess;
+	sem_t m_semIntMQTTConnLost;
 
-	CScadaCallback m_scadaSubscriberCB;
-	CMQTTActionListener m_listener;
-
-	std::map<string, std::map<string, stRealDevDataPointRepo>> m_deviceDataPoints;
+	std::atomic<bool> m_bIsInitDone = false;
 
 	// Default constructor
-	CSCADAHandler(std::string strPlBusUrl, int iQOS);
+	CSCADAHandler(const std::string &strPlBusUrl, int iQOS);
 
 	// delete copy and move constructors and assign operators
 	CSCADAHandler(const CSCADAHandler&) = delete;	 			// Copy construct
 	CSCADAHandler& operator=(const CSCADAHandler&) = delete;	// Copy assign
-	bool connectSubscriber();
+	//bool connectSubscriber();
 
-	friend class CScadaCallback;
-	friend class CMQTTActionListener;
+	bool getInitStatus() {return m_bIsInitDone.load();}
+	void setInitStatus(bool a_bStatus) {return m_bIsInitDone.store(a_bStatus);}
 
-	void prepareNodeDeathMsg();
-	void publish_births();
+	bool init();
+	void prepareNodeDeathMsg(bool a_bPublishMsg);
+	void startSCADAConnectionSuccessProcess();
+	void handleSCADAConnectionSuccessThread();
+	void handleIntMQTTConnLostThread();
 	void publish_node_birth();
-	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& dbirth_payload, std::map<string, stRealDevDataPointRepo>& a_dataPoints, string& a_siteName);
-	void publish_device_birth(string a_deviceName, std::map<string, stRealDevDataPointRepo>& a_dataPointInfo);
-	bool initDataPoints();
+	void publishAllDevBirths();
+	void publish_device_birth(string a_deviceName, bool a_bIsNBIRTHProcess);
+	bool publishMsgDDEATH(const stRefForSparkPlugAction& a_stRefAction);
+	bool publishMsgDDEATH(const std::string &a_sDevName);
+	bool publishMsgDDATA(const stRefForSparkPlugAction& a_stRefAction);
+	//bool initDataPoints();
 	void populateDataPoints();
 
 	void subscribeTopics();
-	void connected();
+	static void connected(const std::string &a_sCause);
+	static void disconnected(const std::string &a_sCause);
+	static void msgRcvd(mqtt::const_message_ptr a_pMsg);
 	void vendor_app_birth_request();
+
+	bool publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payload, string a_topic);
 
 public:
 	~CSCADAHandler();
@@ -95,8 +92,9 @@ public:
 
 	bool pushMsgInQ(mqtt::const_message_ptr msg);
 	bool prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
-	bool isExtMqttSubConnected();
 	bool processDCMDMsg(mqtt::const_message_ptr a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
+
+	void signalIntMQTTConnLostThread();
 };
 
 #endif

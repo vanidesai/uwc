@@ -45,6 +45,8 @@ enum eDevStatus
 	enDEVSTATUS_NONE, enDEVSTATUS_UP, enDEVSTATUS_DOWN
 };
 
+struct stRefForSparkPlugAction;
+
 class CSparkPlugDev
 {
 	std::string m_sSubDev;
@@ -52,11 +54,21 @@ class CSparkPlugDev
 	bool m_bIsVendorApp;
 	metricMap_t m_mapMetrics;
 	std::atomic<eDevStatus> m_enLastStatetPublishedToSCADA;
+	std::atomic<eDevStatus> m_enLastKnownStateFromDev;
 	uint64_t m_deathTimestamp;
 	var_dev_ref_t m_rDirectDevRef;
 	std::mutex m_mutexMetricList;
 
 	CSparkPlugDev& operator=(const CSparkPlugDev&) = delete;	/// assignmnet operator
+
+	bool parseRealDeviceUpdateMsg(const std::string &a_sPayLoad, 
+		std::string &a_sMetric, std::string &a_sValue, std::string &a_sStatus,
+		uint64_t &a_usec, uint64_t &a_lastGoodUsec, uint32_t &a_error_code);
+
+	bool validateRealDeviceUpdateData(
+		const std::string &a_sValue, std::string a_sStatus,
+		uint32_t a_error_code,
+		bool &a_bIsGood, bool &a_bIsDeathCode);
 
 public:
 	CSparkPlugDev(std::string a_sSubDev, std::string a_sSparkPluName,
@@ -64,6 +76,7 @@ public:
 			m_sSubDev{ a_sSubDev }, m_sSparkPlugName{ a_sSparkPluName },
 			m_bIsVendorApp{ a_bIsVendorApp }, 
 			m_enLastStatetPublishedToSCADA{enDEVSTATUS_NONE},
+			m_enLastKnownStateFromDev{enDEVSTATUS_NONE},
 			m_deathTimestamp {0}, m_mutexMetricList{}
 	{
 		;
@@ -74,6 +87,7 @@ public:
 			m_sSparkPlugName{ a_sSparkPlugName },
 			m_bIsVendorApp{ false },
 			m_enLastStatetPublishedToSCADA{enDEVSTATUS_NONE},
+			m_enLastKnownStateFromDev{enDEVSTATUS_NONE},
 			m_deathTimestamp {0}, m_rDirectDevRef {a_rUniqueDev}, m_mutexMetricList{}
 	{
 		;
@@ -83,6 +97,7 @@ public:
 			m_sSubDev{ a_refObj.m_sSubDev }, m_sSparkPlugName{ a_refObj.m_sSparkPlugName },
 			m_bIsVendorApp{ a_refObj.m_bIsVendorApp }, m_mapMetrics{a_refObj.m_mapMetrics},
 			m_enLastStatetPublishedToSCADA{enDEVSTATUS_NONE},
+			m_enLastKnownStateFromDev{enDEVSTATUS_NONE},
 			m_deathTimestamp {0}, 
 			m_rDirectDevRef{a_refObj.m_rDirectDevRef}, m_mutexMetricList{}
 	{
@@ -132,13 +147,22 @@ public:
 	{
 		return m_enLastStatetPublishedToSCADA.load();
 	}
+	void setKnownDevStatus(eDevStatus a_enStatus)
+	{
+		m_enLastKnownStateFromDev.store(a_enStatus);
+	}	
+	eDevStatus getLastKnownDevStatus()
+	{
+		return m_enLastKnownStateFromDev.load();
+	}
 
 	bool isVendorApp()
 	{
 		return m_bIsVendorApp;
 	}
 	;
-	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload);
+	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, bool a_bIsNBIRTHProcess);
+	bool processRealDeviceUpdateMsg(const std::string a_sPayLoad, std::vector<stRefForSparkPlugAction> &a_stRefActionVec);
 
 	void print()
 	{

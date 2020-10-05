@@ -8,36 +8,27 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#ifndef TEST_INC_METRIC_UT_HPP_
-#define TEST_INC_METRIC_UT_HPP_
+#ifndef TEST_INCLUDE_SCADASPARKPLUGDEV_UT_H_
+#define TEST_INCLUDE_SCADASPARKPLUGDEV_UT_H_
 
 #include <string.h>
-#include "Metric.hpp"
+#include "SparkPlugDevices.hpp"
+#include <ctime>
+
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
 #endif
 
-class Metric_ut : public::testing::Test
+
+class SparkPlugDevices_ut : public::testing::Test
 {
 protected:
 	virtual void SetUp();
 	virtual void TearDown();
 
 public:
-
-	bool B_Res = false;
-	CValObj CValObj_ins;
-	CValObj CValObj_main;
-	org_eclipse_tahu_protobuf_Payload_Metric a_metric = { NULL, false, 0, true, get_current_timestamp(), true,
-			METRIC_DATA_TYPE_UNKNOWN, false, 0, false, 0, false,
-			true, false,
-org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
-			false,
-					org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
-			0,
-			{ 0 } };
+	bool Bool_Res = false;
 
 };
 
-
-#endif /* TEST_INC_METRIC_UT_HPP_ */
+#endif /* TEST_INCLUDE_SCADASPARKPLUGDEV_UT_H_ */

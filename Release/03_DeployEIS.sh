@@ -206,6 +206,17 @@ verifyContainer()
     return 0
 }
 
+function harden()
+{
+	docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 ia_etcd_ui
+	docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 mqtt-export
+	docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 modbus-tcp-master
+	docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 mqtt_container
+	docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 modbus-rtu-master
+	docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 ia_etcd
+	docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 ia_etcd_provision
+}
+
 function main()
 {
     echo "${INFO}Deployment started${NC}"
@@ -218,12 +229,14 @@ function main()
     deployUWC
     installTurtleCreek
     verifyContainer
+    #harden
     echo "${INFO}Deployment Completed${NC}"
     ENDTIME=$(date +%s)
     ELAPSEDTIME=$(( ${ENDTIME} - ${STARTTIME} ))
     echo "${GREEN}Total Elapsed time is : $(( ${ELAPSEDTIME} / 60 )) minutes ${NC}"
 }
 
+export DOCKER_CONTENT_TRUST=1
 main
 
 cd "${Current_Dir}"

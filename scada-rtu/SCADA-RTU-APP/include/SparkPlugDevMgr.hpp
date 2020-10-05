@@ -42,11 +42,8 @@ class CSparkPlugDevManager
 	}
 	;
 
-	CMetric parseRealDeviceUpdateMsg(std::string a_sPayLoad);
-
 	metricMap_t parseVendorAppBirthMessage(std::string a_sPayLoad);
 	bool processMetric(CMetric &a_oMetric, cJSON *a_cjArrayElemMetric);
-	bool processMetricFromUpdateMsg(CMetric &a_oMetric, cJSON *a_cjRoot);
 	bool processDCMDMetric(CMetric &a_oMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric);
 
 	uint64_t parseVendorAppDeathMessage(std::string& a_sPayLoad);
@@ -82,8 +79,10 @@ public:
 
 	bool addRealDevices();
 
-	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, std::string a_sDevName);
+	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, std::string a_sDevName, bool a_bIsNBIRTHProcess);
 	bool setMsgPublishedStatus(eDevStatus a_enStatus, std::string a_sDevName);
+
+	std::vector<std::string> getDeviceList();
 
 	void print()
 	{

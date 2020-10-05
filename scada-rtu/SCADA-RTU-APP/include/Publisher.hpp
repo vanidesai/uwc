@@ -11,6 +11,7 @@
 #ifndef PUBLISHER_HPP_
 #define PUBLISHER_HPP_
 
+#if 0
 #include "mqtt/async_client.h"
 #include "MQTTCallback.hpp"
 #include "Logger.hpp"
@@ -64,5 +65,6 @@ public:
 
  	void cleanup();
  };
+ #endif
 
 #endif

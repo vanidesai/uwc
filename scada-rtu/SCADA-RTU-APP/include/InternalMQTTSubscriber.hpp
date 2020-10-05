@@ -11,6 +11,7 @@
 #ifndef MQTT_HANDLER_HPP_
 #define MQTT_HANDLER_HPP_
 
+#include <semaphore.h>
 #include "mqtt/async_client.h"
 #include "MQTTCallback.hpp"
 #include "Logger.hpp"
@@ -20,22 +21,35 @@
 
 using namespace std;
 
+enum eIntMQTTConStatus
+{
+	enCON_NONE, enCON_UP, enCON_DOWN
+};
+
 class CIntMqttHandler
 {
-	mqtt::async_client m_subscriber;
-	mqtt::connect_options m_connOpts;
-	mqtt::token_ptr m_conntok;
+	CMQTTPubSubClient m_MQTTClient;
+	//mqtt::async_client m_subscriber;
+	//mqtt::connect_options m_connOpts;
+	//mqtt::token_ptr m_conntok;
 	int m_QOS;
 
 	int m_appSeqNo;
 
-	CSubscriberCallback m_mqttSubscriberCB;
-	CMQTTActionListener m_listener;
+	sem_t m_semConnSuccess;
+	sem_t m_semConnLost;
+	sem_t m_semConnSuccessToTimeOut;
 
-	friend class CSubscriberCallback;
-	friend class CMQTTActionListener;
+	std::atomic<eIntMQTTConStatus> m_enLastConStatus;
+	std::atomic<bool> m_bIsInTimeoutState;
 
-	CIntMqttHandler(std::string strPlBusUrl, int iQOS);
+	//CSubscriberCallback m_mqttSubscriberCB;
+	//CMQTTActionListener m_listener;
+
+	//friend class CSubscriberCallback;
+	//friend class CMQTTActionListener;
+
+	CIntMqttHandler(const std::string &strPlBusUrl, int iQOS);
 
 	// delete copy and move constructors and assign operators
 	CIntMqttHandler(const CIntMqttHandler&) = delete;	 			// Copy construct
@@ -46,14 +60,49 @@ class CIntMqttHandler
 
 	int getAppSeqNo();
 
+	void subscribeTopics();
+	static void connected(const std::string &a_sCause);
+	static void disconnected(const std::string &a_sCause);
+	static void msgRcvd(mqtt::const_message_ptr a_pMsg);
+	bool init();
+
+	void handleConnMonitoringThread();
+	void handleConnSuccessThread();
+
+	void signalIntMQTTConnLostThread();
+	void signalIntMQTTConnDoneThread();
+
+	void setLastConStatus(eIntMQTTConStatus a_ConsStatus)
+	{
+		m_enLastConStatus.store(a_ConsStatus);
+	}
+
+	eIntMQTTConStatus getLastConStatus()
+	{
+		return m_enLastConStatus.load();
+	}
+
+	void setConTimeoutState(bool a_bFlag)
+	{
+		m_bIsInTimeoutState.store(a_bFlag);
+	}
+
+	bool getConTimeoutState()
+	{
+		return m_bIsInTimeoutState.load();
+	}
+
 public:
 	~CIntMqttHandler();
 	static CIntMqttHandler& instance(); //function to get single instance of this class
-	bool isIntMqttSubConnected();
+	bool isConnected();
 	bool pushMsgInQ(mqtt::const_message_ptr msg);
 	bool prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
-	bool connect();
+	void connect();
+	void disconnect();
  	void cleanup();
+
+	bool publishIntMqttMsg(const std::string &a_sMsg, const std::string &a_sTopic);
  };
 
 #endif

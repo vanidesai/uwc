@@ -16,6 +16,9 @@ MAGENTA=$(tput setaf 5)
 NC=$(tput sgr0)
 
 eis_working_dir="$Current_Dir/docker_setup"
+CA_DIR=${Current_Dir}/tmp_certs/ca
+CLIENT_CERT_DIR=${Current_Dir}/tmp_certs/client_crt
+CLIENT_KEY_DIR=${Current_Dir}/tmp_certs/client_key
 
 verifyDirectory()
 {
@@ -172,12 +175,72 @@ eisProvision()
     echo "${GREEN}For container deployement,run 03_DeployEIS.sh script${NC}"
     return 0
 }
+
+harden()
+{
+    docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 ia_etcd
+    docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 ia_etcd_provision
+}
+
+#------------------------------------------------------------------
+# configureExternalCerts
+#
+# Description:
+#        Copy external certificates to common directoty required for scada-rtu container
+# Return:
+#        None
+# Usage:
+#        configureExternalCerts
+#------------------------------------------------------------------
+configureExternalCerts()
+{
+	if [ -d ${Current_Dir}/docker_setup/provision/Certificates ] && [ -d ${Current_Dir}/tmp_certs ]; then
+		echo "${GREEN}Copying required certs for scada-rtu.${NC}"
+		cd ${Current_Dir}
+		rm -rf ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs
+		mkdir -p ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs
+		mkdir -p ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs/ca
+		mkdir -p ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs/client_crt
+		mkdir -p ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs/client_key
+		cp $CA_DIR/*  ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs/ca
+		check_for_errors "$?" "Incorrect certificate path is given in command line...Please provide the required command line arguments and re-run the script" \
+                    "${GREEN}"".${NC}"
+
+		cp $CLIENT_CERT_DIR/*  ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs/client_crt
+		check_for_errors "$?" "Incorrect certificate path is given in command line...Please provide the required command line arguments and re-run the script" \
+                    "${GREEN}"".${NC}"
+
+		cp $CLIENT_KEY_DIR/*  ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs/client_key
+		check_for_errors "$?" "Incorrect certificate path is given in command line...Please provide the required command line arguments and re-run the script" \
+                    "${GREEN}Certificates are successfully copied in required directory.${NC}"
+
+		chown -R  eisuser:eisuser ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs
+		echo "${GREEN}Done.${NC}"
+		
+		rm -rf ${Current_Dir}/tmp_certs
+		return 0
+	else
+		echo "${RED}${Current_Dir}/docker_setup/provision/Certificates is not exist.${NC}"
+    	fi
+	
+}
+
+export DOCKER_CONTENT_TRUST=1
 verifyDirectory
 checkrootUser
 checkInternetConnection
 docker_verify
 docker_compose_verify
 eisProvision
+configureExternalCerts
+#harden
 
 cd "${Current_Dir}"
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+	echo ""
+else
+	cd docker_setup/provision
+	chcon -R -t container_file_t Certificates
+	cd -
+fi
 exit 0

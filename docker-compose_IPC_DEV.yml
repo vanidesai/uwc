@@ -22,6 +22,7 @@ services:
           UBUNTU_IMAGE_VERSION: ${UBUNTU_IMAGE_VERSION}
           EIS_VERSION: ${EIS_VERSION}
           HOST_TIME_ZONE: ${HOST_TIME_ZONE}
+          ETCD_HOST: ${ETCD_HOST}
     read_only: true
     image: ${DOCKER_REGISTRY}ia_eisbase:${EIS_VERSION}
 
@@ -36,38 +37,11 @@ services:
           EIS_VERSION: ${EIS_VERSION}
           # set CMAKE_BUILD_TYPE value to "Debug" to generate debug symbols
           CMAKE_BUILD_TYPE: "Release"
+          ETCD_HOST: ${ETCD_HOST}
     read_only: true
     image: ${DOCKER_REGISTRY}ia_common:${EIS_VERSION}
 
   #----End: EIS Base Images---- -- This Base images must be included for building any EIS servcies ----
-
-  ## Define ETCD UI service - must be included to view ETCD data over web UI
-  ia_etcd_ui:
-    depends_on:
-      - ia_common
-    build:
-      context: $PWD/../EtcdUI
-      dockerfile: $PWD/../EtcdUI/Dockerfile
-      args:
-        ETCD_KEEPER_VERSION: ${ETCD_KEEPER_VERSION}
-        EIS_VERSION: ${EIS_VERSION}
-        EIS_UID: ${EIS_UID}
-    read_only: true
-    image: ${DOCKER_REGISTRY}ia_etcd_ui:${EIS_VERSION}
-    container_name: ia_etcd_ui
-    hostname: ia_etcd_ui
-    network_mode: host
-    restart: unless-stopped
-    environment:
-      AppName: "EtcdUi"
-      DEV_MODE: ${DEV_MODE}
-      NGINX_PORT: 7071
-      CertType: "pem"
-      no_proxy: ${eis_no_proxy},${ETCD_HOST}
-      ETCD_HOST: ${ETCD_HOST}
-    volumes:
-      - "vol_etcd_keeper:/tmp/nginx"
-    user: ${EIS_UID}
 
  # UWC containers
  # 1. uwc_common
@@ -100,10 +74,10 @@ services:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
+        ETCD_HOST: ${ETCD_HOST}
     image: ${DOCKER_REGISTRY}modbus-master:${EIS_VERSION}
     container_name: modbus-tcp-master
     hostname: modbus-tcp-master
-    network_mode: host
     read_only: true
     restart: unless-stopped
     ulimits:
@@ -112,6 +86,7 @@ services:
        hard: "99"
     environment:
       AppName: "TCP"
+      ETCD_HOST: ${ETCD_HOST}
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
@@ -119,9 +94,9 @@ services:
       MY_APP_ID: 1
       CUTOFF_INTERVAL_PERCENTAGE: 90
       CertType: "zmq"
-      NETWORK_TYPE: TCP
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
+      NETWORK_TYPE: TCP
       DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
       PubTopics: "TCP_PolledData,TCP_PolledData_RT,TCP_RdResp,TCP_RdResp_RT,TCP_WrResp,TCP_WrResp_RT"
       SubTopics: "MQTT_Export/MQTT_Export_RdReq,MQTT_Export/MQTT_Export_RdReq_RT,MQTT_Export/MQTT_Export_WrReq,MQTT_Export/MQTT_Export_WrReq_RT"
@@ -137,7 +112,6 @@ services:
       TCP_WrResp_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
       MQTT_Export_RdReq_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
       MQTT_Export_WrReq_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
-      
     logging:
         driver: "json-file"
         options:
@@ -145,10 +119,18 @@ services:
             max-size: "10m"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+      - "vol_uwc_socket:${SOCKET_DIR}:z"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-      - "vol_uwc_socket:${SOCKET_DIR}"
       - "${EIS_INSTALL_PATH}/container_logs/modbus-tcp-master:/opt/intel/app/logs"
     user: ${EIS_UID}
+    # userns_mode: host
+    security_opt:
+      - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "timeout --foreground 5 echo test"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 5
 
   modbus-rtu-master:
     depends_on:
@@ -161,10 +143,10 @@ services:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
+        ETCD_HOST: ${ETCD_HOST}
     image: ${DOCKER_REGISTRY}modbus-rtu-master:${EIS_VERSION}
     container_name: modbus-rtu-master
     hostname: modbus-rtu-master
-    network_mode: host
     read_only: true
     restart: unless-stopped
     ulimits:
@@ -173,6 +155,7 @@ services:
        hard: "99"
     environment:
       AppName: "RTU"
+      ETCD_HOST: ${ETCD_HOST}
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
@@ -180,10 +163,10 @@ services:
       CUTOFF_INTERVAL_PERCENTAGE: 90
       SERIAL_PORT_RETRY_INTERVAL: 1
       MY_APP_ID: 2
-      NETWORK_TYPE: RTU
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export"
+      NETWORK_TYPE: RTU
       DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
       PubTopics: "RTU_PolledData,RTU_RdResp,RTU_WrResp,RTU_PolledData_RT,RTU_RdResp_RT,RTU_WrResp_RT"
       SubTopics: "MQTT_Export/MQTT_Export_RdReq,MQTT_Export/MQTT_Export_WrReq,MQTT_Export/MQTT_Export_RdReq_RT,MQTT_Export/MQTT_Export_WrReq_RT"
@@ -207,12 +190,20 @@ services:
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-      - "vol_uwc_socket:${SOCKET_DIR}"
+      - "vol_uwc_socket:${SOCKET_DIR}:z"
       - "${EIS_INSTALL_PATH}/container_logs/modbus-rtu-master:/opt/intel/app/logs"
     user: ${EIS_UID}
+    userns_mode: host
     devices:
       - /dev:/dev
     privileged: true
+    security_opt:
+      - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "timeout --foreground 5 echo test"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 5
 
   mqtt_container:
     depends_on:
@@ -227,7 +218,6 @@ services:
     image: ${DOCKER_REGISTRY}mqtt_container:${EIS_VERSION}
     container_name: mqtt_container
     hostname: mqtt_container
-    network_mode: host
     read_only: true
     restart: unless-stopped
     logging:
@@ -240,6 +230,19 @@ services:
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
     user: ${EIS_UID}
+    # userns_mode: host
+    security_opt:
+      - no-new-privileges
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    healthcheck:
+      test: ["CMD-SHELL", "timeout --foreground 5 mosquitto_sub --cafile /run/secrets/ca_broker -h 127.0.0.1 -p 11883 --cert /run/secrets/broker_cert --key /run/secrets/broker_key -t '$$SYS/#' -C 1 | grep -v Error || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 5
 
   mqtt-export:
     depends_on:
@@ -252,10 +255,10 @@ services:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
+        ETCD_HOST: ${ETCD_HOST}
     image: ${DOCKER_REGISTRY}mqtt-export:${EIS_VERSION}
     container_name: mqtt-export
     hostname: mqtt-export
-    network_mode: host
     read_only: true
     restart: unless-stopped
     ulimits:
@@ -266,9 +269,10 @@ services:
       AppName: "MQTT_Export"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+      ETCD_HOST: ${ETCD_HOST}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000" 
-      MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:11883"
+      MQTT_URL_FOR_EXPORT: "tcp://mqtt_container:11883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "TCP,RTU"
@@ -305,10 +309,18 @@ services:
             max-file: "3"
             max-size: "10m"
     user: ${EIS_UID}
+    # userns_mode: host
     volumes:
-      - "vol_uwc_socket:${SOCKET_DIR}"
+      - "vol_uwc_socket:${SOCKET_DIR}:z"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
       - "${EIS_INSTALL_PATH}/container_logs/mqtt-export:/opt/intel/app/logs"
+    security_opt:
+      - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "timeout --foreground 5 echo test"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 5
 
   scada-rtu:
     depends_on:
@@ -321,10 +333,10 @@ services:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
+        ETCD_HOST: ${ETCD_HOST}
     image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
     container_name: scada-rtu
     hostname: scada-rtu
-    network_mode: host
     read_only: true
     restart: unless-stopped
     ulimits:
@@ -337,7 +349,7 @@ services:
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
-      INTERNAL_MQTT_URL: "tcp://127.0.0.1:1883"
+      INTERNAL_MQTT_URL: "tcp://mqtt_container:11883"
       NETWORK_TYPE: "ALL"
       TOPIC_SEPARATOR: '-'
       CertType: "zmq"
@@ -352,6 +364,13 @@ services:
      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
      - "${EIS_INSTALL_PATH}/container_logs/scada-rtu:/opt/intel/app/logs"
+    security_opt:
+      - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "timeout --foreground 5 echo test"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   vol_uwc_socket:
@@ -365,3 +384,8 @@ volumes:
     driver_opts:
       type: tmpfs
       device: tmpfs
+
+networks:
+  default:
+    external:
+      name: uwc_nw

@@ -389,10 +389,7 @@ services:
       - etcd_SCADA-RTU_key
       - ca_broker
       - client_cert
-      - client_key
-      - scadahost_ca_cert
-      - scadahost_client_key
-      - scadahost_client_cert      
+      - client_key      
     security_opt:
       - no-new-privileges
     healthcheck:
@@ -452,10 +449,4 @@ secrets:
     file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
   client_key:
     file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem
-  scadahost_ca_cert:
-    file: provision/Certificates/scada_ext_certs/ca/root-ca.crt
-  scadahost_client_cert:
-    file: provision/Certificates/scada_ext_certs/client_crt/client.crt
-  scadahost_client_key:
-    file: provision/Certificates/scada_ext_certs/client_key/client.key
 

@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y libmosquitto-dev \
     && cd tahu \ 
     && git checkout 9bf91b69f5e9214e7ec765f2ad20acc7bc41236d \
     &&  cd client_libraries/c \
+    && sed -i 's/#define SPARKPLUG_DEBUG 1/\/\/#define SPARKPLUG_DEBUG 0/g' include/tahu.h \
     &&	make -s 
 
 # Build Paho C Library

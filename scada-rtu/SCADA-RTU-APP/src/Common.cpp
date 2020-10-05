@@ -53,26 +53,69 @@ bool CCommon::loadYMLConfig()
 		return false;
 	}
 
-	if((config["EXTERNAL_MQTT_URL"])
-			&& 0 == globalConfig::validateParam(config, "EXTERNAL_MQTT_URL", globalConfig::eDataType::DT_STRING))
+	do
 	{
-		setExtMqttURL(config["EXTERNAL_MQTT_URL"].as<string>());
-		DO_LOG_INFO("EXTERNAL_MQTT_URL is set to :: " + getExtMqttURL())
-		cout << "EXTERNAL_MQTT_URL is set to :: " + getExtMqttURL() << endl;
-		bRet = true;
-	}
-	else
-	{
-		DO_LOG_ERROR("EXTERNAL_MQTT_URL key is not present or type is invalid");
-		cout << "EXTERNAL_MQTT_URL key is not present or type is invalid" << endl;
-		setExtMqttURL("");
-		bRet = false;
-	}
+		std::string sTemp{""};
 
-	if((config["qos_mqtt_comm"])
-			&& 0 == globalConfig::validateParam(config, "qos_mqtt_comm", globalConfig::eDataType::DT_INTEGER))
+		if((config["isTLS"])
+				&& 0 == globalConfig::validateParam(config, "isTLS", globalConfig::eDataType::DT_BOOL))
+		{
+			if(config["isTLS"].as<bool>() == true)
+			{
+				sTemp = "ssl://";
+				setScadaTLS(true);
+				cout << "Set the scada external broker to TLS" << endl;
+			}
+			else
+			{
+				sTemp = "tcp://";
+				setScadaTLS(false);
+				cout << "Set the scada external broker to non-TLS" << endl;
+			}
+		}
+		else
+		{
+			DO_LOG_ERROR("isTLS key is not present or type is invalid");
+			cout << "isTLS key is not present or type is invalid" << endl;
+			bRet = false;
+			break;
+		}
+
+		if((config["mqttServerAddrSCADA"])
+				&& 0 == globalConfig::validateParam(config, "mqttServerAddrSCADA", globalConfig::eDataType::DT_STRING))
+		{
+			sTemp += config["mqttServerAddrSCADA"].as<string>();
+		}
+		else
+		{
+			DO_LOG_ERROR("mqttServerAddrSCADA key is not present or type is invalid");
+			cout << "mqttServerAddrSCADA key is not present or type is invalid" << endl;
+			bRet = false;
+			break;
+		}
+
+		if((config["mqttServerPortSCADA"])
+				&& 0 == globalConfig::validateParam(config, "mqttServerPortSCADA", globalConfig::eDataType::DT_STRING))
+		{
+			sTemp += (":" + config["mqttServerPortSCADA"].as<string>());
+			setExtMqttURL(sTemp);
+			DO_LOG_INFO("EXTERNAL_MQTT_URL is set to :: " + getExtMqttURL())
+			cout << "EXTERNAL_MQTT_URL is set to :: " + getExtMqttURL() << endl;
+			bRet = true;
+		}
+		else
+		{
+			DO_LOG_ERROR("mqttServerPortSCADA key is not present or type is invalid");
+			cout << "mqttServerPortSCADA key is not present or type is invalid" << endl;
+			bRet = false;
+			break;
+		}
+	} while(0);
+
+	if((config["qos"])
+			&& 0 == globalConfig::validateParam(config, "qos", globalConfig::eDataType::DT_INTEGER))
 	{
-		int nQos = config["qos_mqtt_comm"].as<std::int32_t>();
+		int nQos = config["qos"].as<std::int32_t>();
 		if(nQos >= 0 && nQos <=2)
 		{
 			setMQTTQos(nQos);

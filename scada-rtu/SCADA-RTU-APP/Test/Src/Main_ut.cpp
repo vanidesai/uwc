@@ -197,6 +197,99 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_05)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayload)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"[{\"name\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\", \"dataType\": \"uint8\"}]",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+/*
+TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayloadNameMissing)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"[{\"name_Invalid\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\", \"dataType\": \"uint8\"}]",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+*/
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayloadNameValInv)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"[{\"name\": 100,\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\", \"dataType\": \"uint8\"}]",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayTimestampMissing)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"[{\"name\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp_Invalid\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\", \"dataType\": \"uint8\"}]",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayDataTypeMissing)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"[{\"name\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\", \"dataType_Invalid\": \"uint8\"}]",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayDataTypeValInv)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"[{\"name\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\", \"dataType\": 100}]",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayValueMissing)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"A/B/C/D/Update",
+			"[{\"name\": \"UtData02\",\"command\": \"D1\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\", \"dataType\": \"uint8\"}]",
+			stRefActionVec);
+
+	//Does nothing
+	EXPECT_EQ(true, Bool_Res);
+}
+
 TEST_F(Main_ut, processInternalMQTTMsg_InvalidTopic)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -253,7 +346,5 @@ TEST_F(Main_ut, processExternalMqttMsgs_venderapp)
 	// Setting the value of "g_shouldStop back" to default value
 	g_shouldStop = false;
 }
-
-
 
 

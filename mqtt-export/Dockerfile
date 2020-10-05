@@ -66,5 +66,6 @@ RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
 #set the environment variable
 ENV LD_LIBRARY_PATH ${APP_WORK_DIR}:/usr/local/lib
 
+RUN apt-get update && apt-get install -y socat
 # Run the container
 CMD ./MQTT_Export

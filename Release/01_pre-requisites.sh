@@ -21,6 +21,18 @@ INFO=$(tput setaf 3)   # YELLOW (used for informative messages)
 USER_PROXY=""
 DOCKER_REPO="deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 DOCKER_GPG_KEY="0EBFCD88"
+
+# vars
+CA=""
+CLIENT_CERT=""
+CLIENT_KEY=""
+IS_TLS="false"
+BROKER_HOST=""
+BROKER_PORT=""
+QOS=""
+SCADA_REQUIRED="yes"
+PROXY_EXIST="no"
+IS_INTERACTIVE=""
 	
 
 eis_working_dir="$Current_Dir/docker_setup"
@@ -133,20 +145,14 @@ checkrootUser()
 # ----------------------------
 checkInternetConnection()
 {
-	if [ "$#" -eq 2 ]
+	if [ ! -z $USER_PROXY ] && [ $PROXY_EXIST == "yes" ]
 	then 
-		echo "${GREEN}Script is running with interactive and --proxy mode ${NC}"
-		if [ "$1" != "--proxy" ]
-		then
-			Usage "Invalid argument $1 provided"
-		fi
-		# set proxy through command line
-		USER_PROXY=$2
+		echo "${GREEN}Script is running with --proxy mode ${NC}"
+		
 		sed '/httpProxy/d;/httpsProxy/d;/noProxy/d' -i /etc/environment
 		echo "httpProxy=\"http://${USER_PROXY}\"
 httpsProxy=\"http://${USER_PROXY}\"
 noProxy=\"127.0.0.1,localhost\"" >> /etc/environment
-		echo "${GREEN}Given arguments are :: ${NC}" $1 $2
 	fi
 	    echo "${INFO}Checking for Internet Connection...${NC}"    
 	    wget http://www.google.com > /dev/null 2>&1
@@ -168,7 +174,7 @@ installBasicPackages()
 {
     echo "${INFO}Executing Pre-requisites Edge Insights Software ${iei_version}${NC}"
     # Installing dependent packages
-    apt-get update && apt-get -y install build-essential python3-pip wget curl
+    apt-get update && apt-get -y install build-essential python3-pip wget curl patch diff
     if [ "$?" -ne "0" ]; then
 	echo "${RED}failed to download basic packages.${NC}"
     fi
@@ -264,28 +270,60 @@ function copyDeployComposeFile()
     
     case $DEPLOY_MODE in
       IPC_PROD)
-            cp docker-compose.yml ../docker_setup/docker-compose.yml
-            setDevMode "DEV_MODE=true" "DEV_MODE=false"
+		if [ $SCADA_REQUIRED == "no" ];then
+			cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
+
+		elif [ $IS_TLS == "no" ] || [ $IS_TLS == "false" ]; then
+			cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
+		else
+            		cp docker-compose.yml ../docker_setup/docker-compose.yml
+            		setDevMode "DEV_MODE=true" "DEV_MODE=false"
+		fi
         ;;
       IPC_DEV)
             cp docker-compose_IPC_DEV.yml ../docker_setup/docker-compose.yml
             setDevMode "DEV_MODE=false" "DEV_MODE=true"
         ;;
-      TCP_PROD)
-            cp docker-compose_TCP_PROD.yml ../docker_setup/docker-compose.yml
-            setDevMode "DEV_MODE=true" "DEV_MODE=false"
-        ;;
-      TCP_DEV)
-            cp docker-compose_TCP_DEV.yml ../docker_setup/docker-compose.yml
-            setDevMode "DEV_MODE=false" "DEV_MODE=true"
-        ;;
       *)
             # set default mode to ipc prod
-            cp docker-compose.yml ../docker_setup/docker-compose.yml
-            setDevMode "DEV_MODE=true" "DEV_MODE=false"
+    		if [ $SCADA_REQUIRED == "no" ];then
+			cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
+
+		elif [ $IS_TLS == "no" ] || [ $IS_TLS == "false" ]; then
+			cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
+		else
+            		cp docker-compose.yml ../docker_setup/docker-compose.yml
+            		setDevMode "DEV_MODE=true" "DEV_MODE=false"
+		fi
         ;;
     esac 
 }
+
+# ---------------------------------------
+# Function to apply EIS patch for DBS 
+# --------------------------------------
+applyEISPatch()
+{
+	echo "${GREEN}Applying EIS patch for DBS...${NC}"
+	cd ${working_dir}
+	rm -rf UWC/ && mkdir UWC
+	tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
+	cd UWC/DBS_Patches && cp 0001-U-ARCH-changes.patch ${working_dir}
+	cd ${working_dir}
+	
+	# revert the patch if already applied
+	#patch -d . -f --strip=1 -R  < 0001-U-ARCH-changes.patch || true >/dev/null
+
+	patch -d . -f --strip=1  < 0001-U-ARCH-changes.patch
+	check_for_errors "$?" "Failed to apply EIS patch for DBS. Please check logs" \
+			"${GREEN}Successfuly applied EIS patch for DBS${NC}"
+	cp ${working_dir}/UWC/DBS_Patches/provision_eis.sh ${working_dir}/docker_setup/provision
+	cp ${working_dir}/UWC/DBS_Patches/docker-compose-provision.yml ${working_dir}/docker_setup/provision/dep/
+	chmod +x ${working_dir}/docker_setup/provision/provision_eis.sh
+	# cleanup
+	rm -rf UWC/
+}
+
 
 # ----------------------------
 # Copying UWC Containers in EIS
@@ -301,7 +339,7 @@ addUWCContainersInEIS()
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp Others/Config/UWC/Global_Config.yml /opt/intel/eis/uwc_data/common_config/Global_Config.yml
-    cp Others/Config/UWC/scada_config.yml /opt/intel/eis/uwc_data/scada-rtu/scada_config.yml
+    #cp Others/Config/UWC/scada_config.yml /opt/intel/eis/uwc_data/scada-rtu/scada_config.yml
     copyDeployComposeFile
     copy_verification=$(echo $?)
     if [ "$copy_verification" -eq "0" ]; then
@@ -310,10 +348,6 @@ addUWCContainersInEIS()
         echo "${RED}failed to copy UWC containers.${NC}"
 	    return 1
     fi
-    echo "${GREEN}>>>>>${NC}"
-	echo "${GREEN}************************* This script is sucessfully executed ***************************************************"
-    echo "${INFO}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
-    echo "${INFO}To execute unit test cases, run 06_UnitTestRun.sh script ${NC}"
     cd ${working_dir}/ && rm -rf UWC/
 
     # set execute permissions to all shell scripts
@@ -322,41 +356,27 @@ addUWCContainersInEIS()
     return 0
 }
 
-Usage () {
-    echo "${BOLD}${RED}">&2 "$@${NC}" 
-	echo
-	echo "${BOLD}${MAGENTA}***********************************************************************************************************"
-	echo "${GREEN}Usage : Script can be run with following modes"
-	echo
-	echo "	${GREEN}1. For interactive mode - sudo ./01_pre-requisites.sh "
-	echo "	${GREEN}2. For non-interactive & no-proxy mode - sudo ./01_pre-requisites.sh --no-proxy"
-	echo "	${GREEN}3. For non-interactive & proxy mode - sudo ./01_pre-requisites.sh --proxy <proxy_address>:<proxy_port>"
-	echo
-	echo "${MAGENTA}**********************************************************************************************************************${NC}"
-    exit 1
+endOfScript()
+{
+    echo "${GREEN}>>>>>${NC}"
+	echo "${GREEN}************************* This script is sucessfully executed ***************************************************"
+    echo "${INFO}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
+    echo "${INFO}To execute unit test cases, run 06_UnitTestRun.sh script ${NC}"
 }
 
 validateUserInput()
 {
-	if [ "$#" -eq 0 ]
+	if [ $PROXY_EXIST == "no" ]
 	then
-		echo "${GREEN}Script is running with interactive mode${NC}"
+		echo "${GREEN}Script is running without proxy${NC}"
+		return;
+	elif [ -z USER_PROXY ]
+	then
+		echo "${GREEN}Script is running in interactive mode to take proxy from user${NC}"
 		proxy_settings
-	elif [ "$#" -eq 1 ]
+	elif [ $PROXY_EXIST == "yes" ] && [ ! -z USER_PROXY ]
 	then 
-		echo "${GREEN}Script is running with interactive and no-proxy mode${NC}"
-		if [ "$1" != "--no-proxy" ]
-		then
-			Usage "Invalid argument $1 provided"
-		fi
-		return 0
-	elif [ "$#" -eq 2 ]
-	then 
-		echo "${GREEN}Script is running with interactive and --proxy mode ${NC}"
-		if [ "$1" != "--proxy" ]
-		then
-			Usage "Invalid argument $1 provided"
-		fi
+		echo "${GREEN}Script is running with --proxy mode ${NC}"
 		
 		#Creating config.json
 		if [ ! -d ~/.docker ];then
@@ -367,9 +387,6 @@ validateUserInput()
 			chmod 766 ~/.docker/config.json
 		fi
 		
-		# set proxy through command line
-		USER_PROXY=$2
-		
 		echo "${GREEN}Configuring proxy setting in the system${NC}"
 		echo "Docker services will be restarted after proxy settings configured"
 		proxy_enabled_network
@@ -378,7 +395,7 @@ validateUserInput()
 		dns_server_settings
 		check_for_errors "$?" "Failed to update DNS server settings in the system. Please check logs" \
 			"${GREEN}Updated DNS server settings in the system.${NC}"
-		echo "${GREEN}Given arguments are :: ${NC}" $1 $2
+		echo "${GREEN}proxy is set to :: ${NC}" $USER_PROXY
 	else
 		Usage "Invalid argument, $1 provided"
 	fi
@@ -787,19 +804,208 @@ changeTopicLen()
 	fi
 }
 
+# function to create separate network for uwc containers
+createDockerNw()
+{
+	docker network rm uwc_nw || true
+	docker network create --driver=bridge --subnet=172.168.80.0/24 --gateway=172.168.80.1 --ip-range=172.168.80.128/25 -o "com.docker.network.bridge.enable_ip_masquerade"="1" uwc_nw
+}
+
+#------------------------------------------------------------------
+# ParseCommandLineArgs
+#
+# Description:
+#        This function is used to Parse command line arguments passed to this script
+# Return:
+#        None
+# Usage:
+#        ParseCommandLineArgs <list of arguments>
+#------------------------------------------------------------------
+ParseCommandLineArgs()
+{
+	if [ $# == "0" ];then
+		IS_INTERACTIVE="yes"
+		return;
+	fi
+	
+	echo "${INFO}Reading the command line args...${NC}"
+	for ARGUMENT in "$@"
+	do
+	    KEY=$(echo $ARGUMENT | cut -f1 -d=)
+	    VALUE=$(echo $ARGUMENT | cut -f2 -d=)   
+
+	   #echo ${GREEN}$KEY "=" $VALUE${NC}
+	   #echo "${GREEN}==========================================${NC}"
+
+	    case "$KEY" in
+		    --caFile)    CA=${VALUE} ;;     
+	            --crtFile)   CLIENT_CERT=${VALUE} ;; 
+		    --keyFile)   CLIENT_KEY=${VALUE} ;; 
+		    --isTLS)   	 IS_TLS=${VALUE} ;;
+		    --brokerAddr) BROKER_HOST=${VALUE} ;; 
+		    --brokerPort) BROKER_PORT=${VALUE} ;;
+		    --qos) QOS=${VALUE} ;;  
+		    --proxy) USER_PROXY=${VALUE} PROXY_EXIST="yes";;   
+		    --withoutScada) SCADA_REQUIRED="no" ;;  
+		    --help) Usage ;; 
+		     *) echo "${RED}Invalid arguments passed..${NC}"; Usage; ;;  
+	    esac    
+	done
+	
+	if [ $SCADA_REQUIRED == "yes" ];then
+		if [ $IS_TLS == "1" ] || [ $IS_TLS == "true" ] || [ $IS_TLS == "yes" ];then	
+			if [ ! -z "$CA" ] && [ ! -z "$CLIENT_CERT" ] && [ ! -z "$CLIENT_KEY" ]; then
+				echo ""
+			else 
+				echo "${RED}Missing required certificates needed for TLS..${NC}"
+				echo "${RED}Please provide the required arguments and re-run the script..${NC}"
+				Usage
+			fi
+		fi
+		
+		if [ ! -z "$BROKER_HOST" ] && [ ! -z "$BROKER_PORT" ] && [ ! -z "$QOS" ]; then
+			IS_INTERACTIVE="no"
+		else 
+			echo "${RED}Missing broker addr or port or QOS..${NC}"
+			IS_INTERACTIVE="yes"
+			#Usage
+		fi
+		
+	fi
+	PrintAllArgs
+	
+	#echo "${GREEN}==========================================${NC}"
+}
+
+#------------------------------------------------------------------
+# Usage
+#
+# Description:
+#        Help function 
+# Return:
+#        None
+# Usage:
+#        Usage
+#------------------------------------------------------------------
+Usage()
+{
+	echo 
+	echo "${BOLD}${INFO}==================================================================================${NC}"
+	echo
+	echo "${BOLD}${GREEN}Usage :: sudo ./01_pre-requisites.sh [OPTION...]  -- non-interative mode ${NC}"
+	echo "${BOLD}${GREEN}Usage :: sudo ./01_pre-requisites.sh  -- interative mode ${NC}"
+	echo 
+	echo "${BOLD}${GREEN}Note : If no options provided then script will run with the interactive mode${NC}"
+	echo
+	echo "${INFO}List of available options..."
+	echo
+	echo "${INFO}--isTLS		yes/no to enable/disable TLS for scada-rtu"
+	echo 
+	echo "${INFO}--cafile		Root CA file, required only if isTLS is true"
+	echo
+	echo "${INFO}--crtfile		client certificate file, required only if isTLS is true"
+	echo
+	echo "${INFO}--keyFile		client key crt file, required only if isTLS is true"
+	echo
+	echo "${INFO}--brokerAddr	scada external broker IP address/Hostname"
+	echo
+	echo "${INFO}--brokerPort	scada external broker port number"
+	echo
+	echo "${INFO}--qos		QOS used by scada-rtu container to publish messages, can take values between 0 to 2 inclusive"
+	echo
+	echo "${INFO}--proxy		proxies, required when gateway is connected behind proxy"
+	echo
+	echo "${INFO}--withoutScada	Optional, this will skip the scada-rtu container installation from deployment, can contain value 1/true"
+	echo
+	echo "${INFO}--help		display this help and exit"${NC}
+	echo
+	echo "Different use cases..."
+	echo "${BOLD}${MAGENTA}
+		1. Scada with TLS 
+		sudo ./01_pre-requisites.sh --isTLS=yes  --caFile=\"scada_ext_certs/ca/root-ca.crt\" --crtFile=\"scada_ext_certs/client/client.crt\" --keyFile=\"scada_ext_certs/client/client.key\" --brokerAddr=\"127.0.0.1\" --brokerPort=\"1883\" --qos=1
+
+		2. Scada rtu without TLS
+		sudo ./01_pre-requisites.sh --isTLS=no  --brokerAddr=\"192.168.0.5\" --brokerPort=\"8883\" --qos=1
+
+		3. Without scada-rtu 
+		sudo ./01_pre-requisites.sh --withoutScada=yes
+
+		4. Full interactive
+		sudo ./01_pre-requisites.sh
+
+		5.With proxy and without scada-rtu 
+		sudo ./01_pre-requisites.sh --withoutScada=yes --proxy=\"intel.proxy.com:811\"
+
+		6.With proxy and scada-rtu 
+		sudo ./01_pre-requisites.sh --proxy=\"intel.proxy.com:811\"
+
+		7. With scada, TLS, and with proxy 
+		sudo ./01_pre-requisites.sh --isTLS=yes  --caFile=\"scada_ext_certs/ca/root-ca.crt\" --crtFile=\"scada_ext_certs/client/client.crt\" --keyFile=\"scada_ext_certs/client/client.key\" --brokerAddr=\"127.0.0.1\" --brokerPort=\"1883\" --qos=1 --proxy=\"intel.proxy.com:811\"${NC}
+
+	"
+	echo "${INFO}===================================================================================${NC}"
+	exit 1
+}
+
+#------------------------------------------------------------------
+# PrintAllArgs
+#
+# Description:
+#        This function is used to print all given values on console 
+# Return:
+#        None
+# Usage:
+#        PrintAllArgs
+#------------------------------------------------------------------
+PrintAllArgs()
+{
+	echo "${GREEN}==========================================${NC}"
+	echo "${GREEN}Given values..${NC}"
+	if [ ! -z $IS_TLS ]; then echo "${INFO}--isTLS = $IS_TLS";fi
+	if [ ! -z $CA ]; then echo "${INFO}--cafile = $CA";fi
+	if [ ! -z $CLIENT_CERT ]; then echo "${INFO}--crtfile = $CLIENT_CERT";fi
+	if [ ! -z $CLIENT_KEY ]; then echo "${INFO}--keyFile = $CLIENT_KEY";fi
+	if [ ! -z $BROKER_HOST ]; then echo "${INFO}--bokerAddr = $BROKER_HOST";fi
+	if [ ! -z $BROKER_PORT ]; then echo "${INFO}--bokerPort = $BROKER_PORT";fi
+	if [ ! -z $QOS ]; then echo "${INFO}--qos = $QOS";fi
+	if [ ! -z $USER_PROXY ]; then echo "${INFO}--proxy = $USER_PROXY${NC}";fi
+	echo "${GREEN}==========================================${NC}"
+}
+
+
+echo "${GREEN}============================= Script START ============================================${NC}"
 # Internal function calls to set up Insights
+ParseCommandLineArgs "$@"
 verifyDirectory
 checkrootUser
 checkInternetConnection "$@"
 installBasicPackages
 docker_verification_installation	"$@"
 docker_compose_verify_installation
-setHostIP
+#setHostIP
 configureRTUPorts
 createDockerVolumeDir
 changeTopicLen
 addUWCContainersInEIS
+
+# only works with EIS 2.2 PV
+applyEISPatch
 changeFilePermissions
+createDockerNw
+
+if [ $SCADA_REQUIRED == "yes" ]; then
+	if [ $IS_INTERACTIVE == "yes" ]; then
+		echo "${INFO}Installing scada container with interactive mode${NC}"
+		./1.1_ConfigureScada.sh --interactive=1 "$@"
+	else
+		echo "${INFO}Installing scada container with non-interactive mode${NC}"
+		./1.1_ConfigureScada.sh --nonInteractive=1 "$@"
+	fi
+else
+	echo "${INFO}scada-rtu container is skipped from the installation${NC}"
+fi
+endOfScript
+echo "${GREEN}============================= Script END ============================================${NC}"
 
 cd "${working_dir}"
 exit 0

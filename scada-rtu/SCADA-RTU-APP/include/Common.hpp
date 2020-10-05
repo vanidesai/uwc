@@ -42,6 +42,7 @@ private:
 	string m_strGroupId;
 	string m_strEdgeNodeID;
 	bool m_devMode;
+	bool m_bIsScadaTLS;
 
 	void setScadaRTUIds();
 	string getMACAddress(const string& a_strInterfaceName);
@@ -304,6 +305,27 @@ public:
 	const std::string getVersion()
 	{
 		return std::string(MQTT_EXPORT_VERSION);
+	}
+
+	/**
+	 * Check if application set for TLS mode or not
+	 * @param None
+	 * @return true if set to TLS
+	 * 			false if set to non-TLS
+	 */
+	bool isScadaTLS() const
+	{
+		return m_bIsScadaTLS;
+	}
+
+	/**
+	 * Set TLS mode for scada
+	 * @param a_bIsTLS :[in] value to set for TLS/Non-TLS
+	 * @return None
+	 */
+	void setScadaTLS(bool a_bIsTLS)
+	{
+		m_bIsScadaTLS = a_bIsTLS;
 	}
 
 	bool getTopicParts(std::string a_sTopic, std::vector<std::string> &a_vsTopicParts, const string& a_delimeter);
