@@ -20,12 +20,33 @@ void SparkPlugDevices_ut::TearDown()
 	// TearDown code
 }
 
-/*TEST_F(SparkPlugDevices_ut, getWriteMsg_001)
+TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_FieldMissingInPayload)
 {
 	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
-	cJSON *root = NULL;
-	metricMap_t m_metrics;
-	std::string topic = "Topic";
 
-	CSparkPlugDev_obj.getWriteMsg(topic, root, metricMap_t, 2);
-}*/
+	std::string a_sPayLoad = "{\"metric\": \"UtData02\", \"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}";
+	std::vector<stRefForSparkPlugAction> a_stRefActionVec;
+	EXPECT_EQ( false, CSparkPlugDev_obj.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec) );
+
+}
+
+TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_WrongPayloadVal)
+{
+	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
+
+	std::string a_sPayLoad = "{\"metric\": \"UtData02\", \"status\": \"ON\", \"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}";
+	std::vector<stRefForSparkPlugAction> a_stRefActionVec;
+	EXPECT_EQ( false, CSparkPlugDev_obj.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec) );
+
+}
+
+TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_MetricMapEmpty)
+{
+	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
+
+	std::string a_sPayLoad = "{\"metric\": \"UtData02\", \"status\": \"bad\", \"value\": \"0x00\", \"usec\": \"1571887474111145\", \"lastGoodUsec\": \"val1\", \"error_code\": \"2002\"}";
+	std::vector<stRefForSparkPlugAction> a_stRefActionVec;
+	EXPECT_EQ( false, CSparkPlugDev_obj.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec) );
+
+}
+

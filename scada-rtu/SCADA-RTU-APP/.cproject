@@ -41,7 +41,7 @@
                             							
                             <tool id="cdt.managedbuild.tool.gnu.archiver.base.605465093" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
                             							
-                            <tool command="g++ -std=c++1z" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1136734777" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
+                            <tool command="g++ -std=c++1z  -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security  -fstack-protector-strong" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1136734777" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
                                 								
                                 <option id="gnu.cpp.compiler.exe.debug.option.optimization.level.2025668989" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
                                 								
@@ -56,8 +56,6 @@
                                     <listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include/utils"/>
                                     									
                                     <listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include/tahu"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="/home/user/paho.mqtt.c/src"/>
                                     									
                                     <listOptionValue builtIn="false" value="/usr/local/include"/>
                                     								
@@ -97,6 +95,10 @@
                                     									
                                     <listOptionValue builtIn="false" value="cjson"/>
                                     									
+                                    <listOptionValue builtIn="false" value="ssl"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="crypto"/>
+                                    									
                                     <listOptionValue builtIn="false" value="log4cpp"/>
                                     									
                                     <listOptionValue builtIn="false" value="tahu"/>
@@ -105,11 +107,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqttpp3"/>
                                     									
-                                    <listOptionValue builtIn="false" value="paho-mqtt3a"/>
-                                    									
                                     <listOptionValue builtIn="false" value="pthread"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="paho-mqtt3c"/>
                                     									
                                     <listOptionValue builtIn="false" value="eisconfigmgr"/>
                                     									
@@ -117,7 +115,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="eisutils"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eismsgbus"/>
+                                    <listOptionValue builtIn="false" value="paho-mqtt3as"/>
                                     								
                                 </option>
                                 								
@@ -201,7 +199,7 @@
                             							
                             <tool id="cdt.managedbuild.tool.gnu.archiver.base.1796672377" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
                             							
-                            <tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.408917655" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release">
+                            <tool command="g++ --std=c++1z -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security  -fstack-protector-strong" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.408917655" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release">
                                 								
                                 <option id="gnu.cpp.compiler.exe.release.option.optimization.level.1630837511" name="Optimization Level" superClass="gnu.cpp.compiler.exe.release.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
                                 								
@@ -218,8 +216,6 @@
                                     <listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include/utils"/>
                                     									
                                     <listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include/tahu"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="/home/user/paho.mqtt.c/src"/>
                                     									
                                     <listOptionValue builtIn="false" value="/usr/local/include"/>
                                     								
@@ -253,7 +249,9 @@
                                     									
                                     <listOptionValue builtIn="false" value="cjson"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisutils"/>
+                                    <listOptionValue builtIn="false" value="ssl"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="crypto"/>
                                     									
                                     <listOptionValue builtIn="false" value="log4cpp"/>
                                     									
@@ -263,17 +261,15 @@
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqttpp3"/>
                                     									
-                                    <listOptionValue builtIn="false" value="paho-mqtt3a"/>
-                                    									
                                     <listOptionValue builtIn="false" value="pthread"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="paho-mqtt3c"/>
                                     									
                                     <listOptionValue builtIn="false" value="eisconfigmgr"/>
                                     									
                                     <listOptionValue builtIn="false" value="eismsgenv"/>
                                     									
                                     <listOptionValue builtIn="false" value="eisutils"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3as"/>
                                     								
                                 </option>
                                 								
@@ -373,8 +369,6 @@
                                     									
                                     <listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include/tahu"/>
                                     									
-                                    <listOptionValue builtIn="false" value="/home/user/paho.mqtt.c/src"/>
-                                    									
                                     <listOptionValue builtIn="false" value="/usr/local/include"/>
                                     								
                                 </option>
@@ -417,9 +411,9 @@
                                     									
                                     <listOptionValue builtIn="false" value="cjson"/>
                                     									
-                                    <listOptionValue builtIn="false" value="gtest"/>
+                                    <listOptionValue builtIn="false" value="ssl"/>
                                     									
-                                    <listOptionValue builtIn="false" value="gtest_main"/>
+                                    <listOptionValue builtIn="false" value="crypto"/>
                                     									
                                     <listOptionValue builtIn="false" value="log4cpp"/>
                                     									
@@ -429,11 +423,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqttpp3"/>
                                     									
-                                    <listOptionValue builtIn="false" value="paho-mqtt3a"/>
-                                    									
                                     <listOptionValue builtIn="false" value="pthread"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="paho-mqtt3c"/>
                                     									
                                     <listOptionValue builtIn="false" value="eisconfigmgr"/>
                                     									
@@ -441,7 +431,11 @@
                                     									
                                     <listOptionValue builtIn="false" value="eisutils"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eismsgbus"/>
+                                    <listOptionValue builtIn="false" value="paho-mqtt3as"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="gtest"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="gtest_main"/>
                                     								
                                 </option>
                                 								
@@ -453,7 +447,7 @@
                                     								
                                 </option>
                                 								
-                                <option id="gnu.cpp.link.option.debugging.codecov.359093583" name="Generate gcov information (-ftest-coverage -fprofile-arcs)" superClass="gnu.cpp.link.option.debugging.codecov" value="true" valueType="boolean"/>
+                                <option id="gnu.cpp.link.option.debugging.codecov.359093583" name="Generate gcov information (-ftest-coverage -fprofile-arcs)" superClass="gnu.cpp.link.option.debugging.codecov" useByScannerDiscovery="false" value="true" valueType="boolean"/>
                                 								
                                 <inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1058855219" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
                                     									

@@ -10,5 +10,5 @@
 
 USER_OBJS :=
 
-LIBS := -lcjson -lssl -lcrypto -llog4cpp -ltahu -lyaml-cpp -lpaho-mqttpp3  -lpthread  -leisconfigmgr -leismsgenv -leisutils -lpaho-mqtt3as
+LIBS := -lcjson -lssl -lcrypto -llog4cpp -ltahu -lyaml-cpp -lpaho-mqttpp3 -lpthread -leisconfigmgr -leismsgenv -leisutils -lpaho-mqtt3as
 

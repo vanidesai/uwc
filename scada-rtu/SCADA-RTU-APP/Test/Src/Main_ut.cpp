@@ -39,6 +39,7 @@ void Call_PushMsg(QMgr::CQueueMgr& Qu, mqtt::const_message_ptr& msg)
 }
 /****************************************************************/
 
+#if 0 //Function deleted
 /* updateDataPoints: ? */
 TEST_F(Main_ut, updateDataPoints_StopWhenAppStops)
 {
@@ -51,6 +52,7 @@ TEST_F(Main_ut, updateDataPoints_StopWhenAppStops)
 	// Setting the value of "g_shouldStop back" to default value
 	g_shouldStop = false;
 }
+#endif
 
 TEST_F(Main_ut, processInternalMQTTMsg_DeathMsg)
 {
@@ -99,7 +101,7 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg)
 
 	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
 			"Data/A/B",
-			"{\"metric\": [{\"name\":\"UtData01\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"Uint8\", \"value\": \"0x00\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
 			stRefActionVec);
 
 	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);

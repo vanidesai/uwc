@@ -17,7 +17,6 @@
 #include "Logger.hpp"
 #include "QueueMgr.hpp"
 #include "SparkPlugDevMgr.hpp"
-#include "Publisher.hpp"
 
 using namespace std;
 

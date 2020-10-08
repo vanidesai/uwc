@@ -29,6 +29,26 @@ protected:
 public:
 	bool Bool_Res = false;
 
+	network_info::CWellSiteInfo			CWellSiteInfo_obj;
+		network_info::CWellSiteDevInfo		CWellSiteDevInfo_obj;
+		network_info::CDataPoint			CDataPoint_obj;
+	//	zmq_handler::stZmqContext a_BusContext;
+		//zmq_handler::stZmqPubContext a_objPubContext;
+		//CTimeRecord CTimeRecord_obj;
+		uint8_t a_uiFuncCode;
+		uint32_t U32_code;
+		//std::vector<CRefDataForPolling> m_PolledPoints;
+		//std::mutex m_2vectorMutex;
+		bool bRet = true;
+
+		network_info::CUniqueDataPoint	CUniqueDataPoint_obj
+		{
+			"D1",
+			CWellSiteInfo_obj,
+			CWellSiteDevInfo_obj,
+			CDataPoint_obj
+		};
+
 };
 
 #endif /* TEST_INCLUDE_SCADASPARKPLUGDEV_UT_H_ */

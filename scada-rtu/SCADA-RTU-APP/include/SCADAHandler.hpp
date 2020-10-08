@@ -17,7 +17,6 @@
 #include "MQTTCallback.hpp"
 #include "Common.hpp"
 #include "Logger.hpp"
-#include "Publisher.hpp"
 #include "NetworkInfo.hpp"
 #include "SparkPlugDevMgr.hpp"
 #include "QueueMgr.hpp"

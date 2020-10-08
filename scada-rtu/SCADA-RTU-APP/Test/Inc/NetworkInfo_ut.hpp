@@ -15,8 +15,6 @@
 
 #include "NetworkInfo.hpp"
 #include "Common.hpp"
-#include "Publisher.hpp"
-
 
 class NetworkInfo_ut : public::testing::Test
 {

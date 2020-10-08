@@ -22,7 +22,7 @@
 CCommon::CCommon() :
 	m_strAppName {""}, m_strExtMqttURL{""}, m_nQos{1}, m_strIntMqttURL{""},
 	m_siteListFileName{""}, m_strNodeConfPath{""}, m_strNetworkType{""}, 
-	m_strGroupId{""}, m_strEdgeNodeID{""}, m_devMode{false}
+	m_strGroupId{""}, m_strEdgeNodeID{""}, m_devMode{false}, m_bIsScadaTLS{true}
 {
 	setScadaRTUIds();
 

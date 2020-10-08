@@ -15,7 +15,6 @@
 
 #include "SCADAHandler.hpp"
 #include "InternalMQTTSubscriber.hpp"
-#include "Publisher.hpp"
 #include "SparkPlugDevMgr.hpp"
 
 #ifdef UNIT_TEST
@@ -27,20 +26,6 @@ vector<std::thread> g_vThreads;
 std::atomic<bool> g_shouldStop(false);
 
 #define APP_VERSION "0.0.5.9"
-
-/**
- * Function to keep running this application and check NBIRTH and NDEATH messages
- * where we stop and start the container
- * @param none
- * @return none
- */
-void updateDataPoints()
-{
-	while (false == g_shouldStop.load())
-	{
-		//keep on working till the application is not stopped
-	}
-}
 
 /**
  * Process a message to be sent on internal MQTT broker
@@ -182,21 +167,6 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-				/*try
-				{
-					CPublisher::instance();
-				}
-				catch (std::runtime_error& e)
-				{
-					cout << "ERROR:: EXTERNAL_MQTT_URL is either not set or invalid :: " + std::string(e.what()) << endl;
-					DO_LOG_ERROR("EXTERNAL_MQTT_URL is either not set or invalid" + std::string(e.what()));
-				}*/
-
-				/*if( false == CPublisher::instance().isPublisherConnected())
-				{
-					std::cout << "ERROR:: Publisher failed to connect with MQTT broker" << endl;
-				}
-				else*/
 				{
 					CSparkPlugDevManager::getInstance();
 
@@ -204,8 +174,6 @@ int main(int argc, char *argv[])
 
 					CSCADAHandler::instance();
 					CIntMqttHandler::instance();
-
-					//CIntMqttHandler::instance().publishIntMqttMsg("", "START_BIRTH_PROCESS");
 				}
 		}
 
@@ -214,20 +182,8 @@ int main(int argc, char *argv[])
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 #endif
-		//send messages for SCADA
-		g_vThreads.push_back(std::thread(updateDataPoints));
-
-		//start thread only if internal and external subscribers are connected
-		//if(CSCADAHandler::instance().isExtMqttSubConnected()&& CIntMqttHandler::instance().isIntMqttSubConnected())
-		//{
-			g_vThreads.push_back(std::thread(processInternalMqttMsgs, std::ref(QMgr::getDatapointsQ())));
-			g_vThreads.push_back(std::thread(processExternalMqttMsgs, std::ref(QMgr::getScadaSubQ())));
-		//}
-
-/*		//added for testing of reconnect - it should publish NBIRTH and DBIRTH after connect
-		CSCADAHandler::instance().disconnect();
-		sleep(5);
-		CSCADAHandler::instance().connect();*/
+		g_vThreads.push_back(std::thread(processInternalMqttMsgs, std::ref(QMgr::getDatapointsQ())));
+		g_vThreads.push_back(std::thread(processExternalMqttMsgs, std::ref(QMgr::getScadaSubQ())));
 
 		for (auto &th : g_vThreads)
 		{

@@ -18,7 +18,9 @@ CPP_SRCS += \
 ../Test/Src/Metric_ut.cpp \
 ../Test/Src/MqttHandler_ut.cpp \
 ../Test/Src/NetworkInfo_ut.cpp \
-../Test/Src/Publisher_ut.cpp 
+../Test/Src/Publisher_ut.cpp \
+../Test/Src/SCADAHandler_ut.cpp \
+../Test/Src/SparkPlugDevices_ut.cpp 
 
 OBJS += \
 ./Test/Src/CConfigManager_ut.o \
@@ -29,7 +31,9 @@ OBJS += \
 ./Test/Src/Metric_ut.o \
 ./Test/Src/MqttHandler_ut.o \
 ./Test/Src/NetworkInfo_ut.o \
-./Test/Src/Publisher_ut.o 
+./Test/Src/Publisher_ut.o \
+./Test/Src/SCADAHandler_ut.o \
+./Test/Src/SparkPlugDevices_ut.o 
 
 CPP_DEPS += \
 ./Test/Src/CConfigManager_ut.d \
@@ -40,7 +44,9 @@ CPP_DEPS += \
 ./Test/Src/Metric_ut.d \
 ./Test/Src/MqttHandler_ut.d \
 ./Test/Src/NetworkInfo_ut.d \
-./Test/Src/Publisher_ut.d 
+./Test/Src/Publisher_ut.d \
+./Test/Src/SCADAHandler_ut.d \
+./Test/Src/SparkPlugDevices_ut.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

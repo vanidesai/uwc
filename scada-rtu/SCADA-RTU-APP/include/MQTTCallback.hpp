@@ -13,50 +13,6 @@
 
 #include "mqtt/async_client.h"
 
-#if 0
-/**
- * A callback class for use with the main MQTT client.
- */
-class CSubscriberCallback : public virtual mqtt::callback
-{
-public:
-	void connection_lost(const std::string& cause) override;
-	void connected(const std::string& cause) override;
-	void message_arrived(mqtt::const_message_ptr msg) override;
-};
-
-/**
- * A callback class for use with the main MQTT client.
- */
-class CScadaCallback : public virtual mqtt::callback
-{
-public:
-	void connection_lost(const std::string& cause) override;
-	void connected(const std::string& cause) override;
-	void message_arrived(mqtt::const_message_ptr msg) override;
-};
-
-/**
- * A base action listener.
- */
-class CMQTTActionListener : public virtual mqtt::iaction_listener
-{
-protected:
-	void on_failure(const mqtt::token& tok) override;
-	void on_success(const mqtt::token& tok) override;
-};
-
-// Class to receive sync callbacks
-class CPublisherCallback : public virtual mqtt::callback
-{
-public:
-	void connection_lost(const std::string& cause) override;
-	void delivery_complete(mqtt::delivery_token_ptr tok) override;
-	void connected(const std::string& cause) override;
-};
-#endif
-
-// ---------------------------------------------------
 class action_listener : public virtual mqtt::iaction_listener
 {
 	std::string name_;

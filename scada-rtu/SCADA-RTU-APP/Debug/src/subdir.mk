@@ -18,7 +18,6 @@ CPP_SRCS += \
 ../src/Main.cpp \
 ../src/Metric.cpp \
 ../src/NetworkInfo.cpp \
-../src/Publisher.cpp \
 ../src/QueueMgr.cpp \
 ../src/SCADAHandler.cpp \
 ../src/SparkPlugDevMgr.cpp \
@@ -33,7 +32,6 @@ OBJS += \
 ./src/Main.o \
 ./src/Metric.o \
 ./src/NetworkInfo.o \
-./src/Publisher.o \
 ./src/QueueMgr.o \
 ./src/SCADAHandler.o \
 ./src/SparkPlugDevMgr.o \
@@ -48,7 +46,6 @@ CPP_DEPS += \
 ./src/Main.d \
 ./src/Metric.d \
 ./src/NetworkInfo.d \
-./src/Publisher.d \
 ./src/QueueMgr.d \
 ./src/SCADAHandler.d \
 ./src/SparkPlugDevMgr.d \
@@ -59,7 +56,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ --std=c++1z -DSCADA_RTU -I../$(PROJECT_DIR)/include -I../$(PROJECT_DIR)/include/yaml-cpp -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/include/tahu -I -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++1z  -fPIE -O2 -D_FORTIFY_SOURCE=2 -static -fvisibility=hidden -fvisibility-inlines-hidden -Wformat -Wformat-security  -fstack-protector-strong -DSCADA_RTU -I../$(PROJECT_DIR)/include -I../$(PROJECT_DIR)/include/yaml-cpp -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/include/tahu -I/usr/local/include -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

@@ -26,8 +26,8 @@ protected:
 
 public:
 	bool Bool_Res = false;
-	string msg = "Test_Msg";
-	string topic = "a/b/c";
+	std::string msg = "Test_Msg";
+	std::string topic = "a/b/c";
 
 
 };

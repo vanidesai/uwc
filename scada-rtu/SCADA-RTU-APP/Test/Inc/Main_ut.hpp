@@ -19,7 +19,6 @@
 #include <future>
 
 #include "SCADAHandler.hpp"
-#include "Publisher.hpp"
 #include "SparkPlugDevices.hpp"
 #include "Metric.hpp"
 
