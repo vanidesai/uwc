@@ -131,10 +131,11 @@ services:
     security_opt:
       - no-new-privileges
     healthcheck:
-      test: ["CMD-SHELL", "timeout --foreground 5 echo test"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD-SHELL", "/bin/sh","-c", "ps -C ModbusMaster >/dev/null && echo Running || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
 
   modbus-rtu-master:
     depends_on:
@@ -197,7 +198,7 @@ services:
       - "vol_uwc_socket:${SOCKET_DIR}:z"
       - "${EIS_INSTALL_PATH}/container_logs/modbus-rtu-master:/opt/intel/app/logs"
     user: ${EIS_UID}
-    userns_mode: host
+    #userns_mode: host
     devices:
       - /dev:/dev
     privileged: true
@@ -208,10 +209,11 @@ services:
     security_opt:
       - no-new-privileges
     healthcheck:
-      test: ["CMD-SHELL", "timeout --foreground 5 echo test"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD-SHELL", "/bin/sh","-c", "ps -C ModbusMaster >/dev/null && echo Running || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
 
   mqtt_container:
     depends_on:
@@ -252,9 +254,10 @@ services:
         hard: 40000
     healthcheck:
       test: ["CMD-SHELL", "timeout --foreground 5 mosquitto_sub --cafile /run/secrets/ca_broker -h 127.0.0.1 -p 11883 --cert /run/secrets/broker_cert --key /run/secrets/broker_key -t '$$SYS/#' -C 1 | grep -v Error || exit 1"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 5
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
 
   mqtt-export:
     depends_on:
@@ -336,10 +339,11 @@ services:
     security_opt:
       - no-new-privileges
     healthcheck:
-      test: ["CMD-SHELL", "timeout --foreground 5 echo test"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD-SHELL", "/bin/sh","-c", "ps -C MQTT_Export >/dev/null && echo Running || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
 
   scada-rtu:
     depends_on:
@@ -393,10 +397,11 @@ services:
     security_opt:
       - no-new-privileges
     healthcheck:
-      test: ["CMD-SHELL", "timeout --foreground 5 echo test"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD-SHELL", "/bin/sh","-c", "ps -C SCADARTU >/dev/null && echo Running || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
 
 volumes:
   vol_uwc_socket:
