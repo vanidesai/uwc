@@ -26,12 +26,12 @@
 #include <iostream>
 #include <string>
 
-#include "EISMsgbusHandler.hpp"
 #include "Common.hpp"
 #include "MQTTSubscribeHandler.hpp"
 #include "../include/MQTTPublishHandler.hpp"
 #include "ConfigManager.hpp"
 #include "Logger.hpp"
+#include "ZmqHandler.hpp"
 
 #include "QueueMgr.hpp"
 
@@ -50,11 +50,11 @@ extern vector<std::thread> g_vThreads;
 extern void Temp_Function(string& topic);
 
 
-extern void listenOnEIS(string topic, stZmqContext context,
+/*extern void listenOnEIS(string topic, stZmqContext context,
 		stZmqSubContext subContext);
 
 extern bool publishEISMsg(string eisMsg, stZmqContext &context,
-		stZmqPubContext &pubContext);
+		stZmqPubContext &pubContext);*/
 
 extern void set_thread_priority_for_eis(bool& isRealtime, bool& isRead);
 

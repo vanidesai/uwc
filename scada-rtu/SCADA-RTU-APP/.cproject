@@ -411,9 +411,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="cjson"/>
                                     									
-                                    <listOptionValue builtIn="false" value="ssl"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="crypto"/>
+                                    <listOptionValue builtIn="false" value="uwc-util"/>
                                     									
                                     <listOptionValue builtIn="false" value="log4cpp"/>
                                     									
@@ -422,6 +420,8 @@
                                     <listOptionValue builtIn="false" value="yaml-cpp"/>
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqttpp3"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="eismsgbus"/>
                                     									
                                     <listOptionValue builtIn="false" value="pthread"/>
                                     									

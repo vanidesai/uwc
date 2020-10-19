@@ -25,6 +25,7 @@ void Common_ut::TearDown()
 	// TearDown code
 }
 
+#if 0 //readEnvVariable is shifted to common library
 TEST_F(Common_ut, readEnvVariable_ReadSuccess)
 {
 
@@ -133,6 +134,7 @@ TEST_F(Common_ut, setStrReadRequest_SetstrCorrect)
 	EXPECT_EQ("SetStrForUT", str_temp);
 
 }
+#endif
 
 TEST_F(Common_ut, addTimestampsToMsg_InvMsg)
 {

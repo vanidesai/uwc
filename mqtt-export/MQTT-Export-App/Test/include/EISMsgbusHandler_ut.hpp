@@ -13,10 +13,11 @@
 
 #include <gtest/gtest.h>
 
-#include "../../include/EISMsgbusHandler.hpp"
+//#include "../../include/EISMsgbusHandler.hpp"
 #include "MQTTSubscribeHandler.hpp"
 
 #include "eis/utils/config.h"
+#include "ZmqHandler.hpp"
 
 class EISMsgbusHandler_ut : public ::testing::Test{
 

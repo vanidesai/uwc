@@ -144,7 +144,7 @@ TEST_F(PublishJson_ut, prepareCommonCTX_pub)
 
 /***Test:PublishJson_ut::publishJson_NULL_msgCTX() Gives exception when msgCTX is NULL ***/
 
-
+#if 0 //Shifted to common library
 TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 {
 	try
@@ -166,6 +166,7 @@ TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 		EXPECT_EQ("map::at", (string)e.what());
 	}
 }
+#endif
 
 /***TEST:PublishJson_ut::publishJson_all_notNULL() check when not a single argument is NULL***/
 /*TEST_F(PublishJson_ut, publishJson_all_notNULL)
@@ -232,6 +233,7 @@ TEST_F(PublishJson_ut, publishJson_valid_arguments)
 }
 #endif
 
+#if 0 //Shifted to common library
 /*** Test:PublishJson_ut::publishJson_valid_arguments and pub topic***/
 /* Null msg */
 
@@ -258,7 +260,9 @@ TEST_F(PublishJson_ut, publishJson_null_msg)
 		EXPECT_EQ("map::at", (string)e.what());
 	}
 }
+#endif
 
+#if 0 //Shifted to common library
 /***Test:PublishJson_ut::publishJson_pub() checks for functionality with NULL argument***/
 /* NULL arguments */
 TEST_F(PublishJson_ut, publishJson_pub)
@@ -275,6 +279,7 @@ TEST_F(PublishJson_ut, publishJson_pub)
 		EXPECT_EQ("", e.what());
 	}
 }
+#endif
 
 TEST_F(PublishJson_ut, element_exist_inJSON)
 {

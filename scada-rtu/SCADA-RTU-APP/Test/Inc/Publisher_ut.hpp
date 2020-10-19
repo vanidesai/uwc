@@ -12,10 +12,7 @@
 #define TEST_INCLUDE_PUBLISHER_UT_H_
 
 
-#include "Publisher.hpp"
 #include <gtest/gtest.h>
-
-
 
 
 class Publisher_ut : public::testing::Test

@@ -31,7 +31,7 @@ static void Set_g_shouldStop()
 	g_shouldStop = true;
 }
 
-void Call_PushMsg(QMgr::CQueueMgr& Qu, mqtt::const_message_ptr& msg)
+void Call_PushMsg(CQueueHandler& Qu, mqtt::const_message_ptr& msg)
 {
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	Qu.pushMsg(msg);
@@ -308,7 +308,7 @@ TEST_F(Main_ut, processInternalMQTTMsg_InvalidTopic)
 TEST_F(Main_ut, processInternalMqttMsgs_test)
 {
 	mqtt::const_message_ptr msg = mqtt::make_message("Death/A", "Msg_UT", 0, false);
-	QMgr::CQueueMgr Qu;
+	CQueueHandler Qu;
 
 	std::thread TestTarget( processInternalMqttMsgs, std::ref(Qu) );
 	std::thread TestHelperPostSem( Call_PushMsg, std::ref(Qu), std::ref(msg) );
@@ -336,7 +336,7 @@ TEST_F(Main_ut, processExternalMqttMsgs_venderapp)
 			0,
 			false);
 
-	QMgr::CQueueMgr Qu;
+	CQueueHandler Qu;
 	Qu.pushMsg(msg);
 
 	std::thread TestTarget( processExternalMqttMsgs, std::ref(Qu) );

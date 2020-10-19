@@ -27,7 +27,7 @@ void Main_ut::TearDown()
 }
 
 
-
+#if 0 // Shifted to common library
 TEST_F(Main_ut, read_env_variables)
 {
 	try
@@ -46,6 +46,7 @@ TEST_F(Main_ut, read_env_variables)
 	}
 
 }
+#endif
 
 
 

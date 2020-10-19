@@ -31,5 +31,4 @@ C_DEPS :=
 SUBDIRS := \
 Test/Src \
 src \
-src/utils \
 
