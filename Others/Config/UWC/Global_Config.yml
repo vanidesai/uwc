@@ -49,6 +49,16 @@
 #              nodeName: "SCADA RTU"
 #              generateUniqueName: true
 #
+#  SparkPlug_Operation:
+#     group_id: It defines value to be used for “group_id” element in the Sparkplug™ Topic Namespace.
+#     interface_name: The interface name on which edge node communicates with SCADA-MQTT. E.g. “eth0”
+#     edge_node_id: This is a group field. It defines configuration for forming the value of “edge_node_id” element in the Sparkplug™ Topic Namespace.
+#                   Following is the algorithm for forming the value:
+#                   [value in “nodeName” field] + “-” + [MAC id of interface provided in “interface_name” field].
+#     nodeName: It defines value to be used as a part of “edge_node_id” element in the Sparkplug™ Topic Namespace. 
+#     generateUniqueName: It defines whether a unique name shall be generated for “edge_node_id” using the algorithm.          
+
+# If MAC of given interface is not found, then “00” is used.
 # If configuration parameter or section is missing for any of the sub-operation, then default values mentioned above will be used.
 #
 
