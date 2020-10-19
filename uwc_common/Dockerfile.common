@@ -27,17 +27,6 @@ RUN mkdir -p ${OPENSSL_DIR} \
     && ./config --prefix=/usr/ssl shared -fPIC no-tests  \
     && make install_sw -s 
 
-# Build tahu library
-FROM eisbase as build-tahu
-COPY --from=openssl-build /usr/ssl /usr/
-RUN apt-get update && apt-get install -y libmosquitto-dev \
-    &&  git clone --branch develop https://github.com/eclipse/tahu \
-    && cd tahu \ 
-    && git checkout 9bf91b69f5e9214e7ec765f2ad20acc7bc41236d \
-    &&  cd client_libraries/c \
-    && sed -i 's/#define SPARKPLUG_DEBUG 1/\/\/#define SPARKPLUG_DEBUG 0/g' include/tahu.h \
-    &&	make -s 
-
 # Build Paho C Library
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
@@ -53,9 +42,8 @@ RUN git clone --branch v1.3.5 https://github.com/eclipse/paho.mqtt.c.git \
     &&	make install
 
 # Build Paho CPP Library
-FROM eisbase
+FROM ia_common:$EIS_VERSION
 COPY --from=build-pahoc /usr/paho-c /usr/.
-COPY --from=build-tahu /EIS/tahu /EIS/tahu
 COPY --from=openssl-build /usr/ssl /usr/ssl
 
 RUN wget https://github.com/eclipse/paho.mqtt.cpp/blob/f3a2a52259b5463ab50eee6d1c033cba18d6e84b/src/token.cpp?raw=true -P /tmp/ \
@@ -96,3 +84,22 @@ RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
     &&  cp lib* /usr/yaml/lib \
     &&  cp -r ../include /usr/yaml \
     && cd ../../
+
+COPY uwc_util /uwc_util/.
+
+RUN	cp -r /usr/yaml/include/* /uwc_util/include/yaml-cpp/ \
+	&& cp -r /usr/yaml/lib/* /uwc_util/lib/ \
+ 	&& cp -r /EIS/log4cpp/build/include/* /uwc_util/include/ \
+	&& cp -r /EIS/log4cpp/build/lib/* /uwc_util/lib/ \
+	&& cp -r /usr/paho-cpp/include/mqtt /usr/local/include/mqtt \
+	&& cp -r /usr/ssl/lib/* /usr/local/lib/ \
+	&& cp -r /usr/ssl/include/* /usr/local/include/ \
+	&& cp -r /usr/paho-cpp/lib/lib* /uwc_util/lib/ \
+	&& cp -r /usr/lib/libpaho* /uwc_util/lib/
+
+# compile wuc-lib sources
+RUN cd /uwc_util/Release \
+    &&	export LD_LIBRARY_PATH='/uwc_util/lib' \
+	#:/bin/yaml-cpp/lib' \
+    #&&  export INCLUDE_DIR='/bin' \
+    &&	make clean all -s

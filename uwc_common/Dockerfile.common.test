@@ -27,16 +27,6 @@ RUN mkdir -p ${OPENSSL_DIR} \
     && ./config --prefix=/usr/ssl shared -fPIC no-tests  \
     && make install_sw -s 
 
-# Build tahu library
-FROM eisbase as build-tahu
-COPY --from=openssl-build /usr/ssl /usr/
-RUN apt-get update && apt-get install -y libmosquitto-dev \
-    &&  git clone --branch develop https://github.com/eclipse/tahu \
-    && cd tahu \ 
-    && git checkout 9bf91b69f5e9214e7ec765f2ad20acc7bc41236d \
-    &&  cd client_libraries/c \
-    &&	make -s 
-
 # Build Paho C Library
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
@@ -54,7 +44,6 @@ RUN git clone --branch v1.3.5 https://github.com/eclipse/paho.mqtt.c.git \
 # Build Paho CPP Library
 FROM eisbase
 COPY --from=build-pahoc /usr/paho-c /usr/.
-COPY --from=build-tahu /EIS/tahu /EIS/tahu
 COPY --from=openssl-build /usr/ssl /usr/ssl
 
 RUN wget https://github.com/eclipse/paho.mqtt.cpp/blob/f3a2a52259b5463ab50eee6d1c033cba18d6e84b/src/token.cpp?raw=true -P /tmp/ \

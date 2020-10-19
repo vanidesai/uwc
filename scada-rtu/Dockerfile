@@ -10,11 +10,25 @@
 
 ARG EIS_VERSION
 FROM uwc_common:$EIS_VERSION as uwc_common
+FROM ia_eisbase:$EIS_VERSION as eisbase
 LABEL description="SCADA RTU container"
+
+# Build tahu library
+FROM eisbase as build-tahu
+RUN apt-get update && apt-get install -y libmosquitto-dev \
+    &&  git clone --branch develop https://github.com/eclipse/tahu \
+    && cd tahu \ 
+    && git checkout 9bf91b69f5e9214e7ec765f2ad20acc7bc41236d \
+    &&  cd client_libraries/c \
+    && sed -i 's/#define SPARKPLUG_DEBUG 1/\/\/#define SPARKPLUG_DEBUG 0/g' include/tahu.h \
+    &&	make -s 
 
 # Build SCADA-RTU application
 FROM ia_common:$EIS_VERSION as scada-rtu
 WORKDIR /
+
+# Create utils directory inside include
+RUN mkdir -p /SCADA-RTU-APP/include/utils
 
 # copy required dependencies
 COPY SCADA-RTU-APP /SCADA-RTU-APP/. 
@@ -28,8 +42,11 @@ COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_common /usr/include/MQTT* /SCADA-RTU-APP/include/
 COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /SCADA-RTU-APP/include/log4cpp
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* /SCADA-RTU-APP/lib/
-COPY --from=uwc_common /EIS/tahu/client_libraries/c/lib/libtahu.so /SCADA-RTU-APP/lib/
-COPY --from=uwc_common /EIS/tahu/client_libraries/c/include/* /SCADA-RTU-APP/include/tahu/
+COPY --from=build-tahu /EIS/tahu/client_libraries/c/lib/libtahu.so /SCADA-RTU-APP/lib/
+COPY --from=build-tahu /EIS/tahu/client_libraries/c/include/* /SCADA-RTU-APP/include/tahu/
+COPY --from=uwc_common /uwc_util/Release/libuwc-util.so /SCADA-RTU-APP/lib/
+COPY --from=uwc_common /uwc_util/include/* /SCADA-RTU-APP/include/
+COPY --from=uwc_common /uwc_util/include/utils/* /SCADA-RTU-APP/include/utils/
 
 # build sources
 RUN cd /SCADA-RTU-APP/Release \
@@ -59,9 +76,10 @@ COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
-COPY --from=uwc_common /EIS/tahu/client_libraries/c/lib/libtahu.so ${APP_WORK_DIR}/lib/
-COPY --from=uwc_common /EIS/tahu/client_libraries/c/include/* ${APP_WORK_DIR}/include/tahu/
+COPY --from=build-tahu /EIS/tahu/client_libraries/c/lib/libtahu.so ${APP_WORK_DIR}/lib/
+COPY --from=build-tahu /EIS/tahu/client_libraries/c/include/* ${APP_WORK_DIR}/include/tahu/
 COPY --from=scada-rtu /SCADA-RTU-APP/Config/log4cpp.properties /opt/intel/config
+COPY --from=uwc_common /uwc_util/Release/libuwc-util.so ${APP_WORK_DIR}
 
 # set permissions to working dir for eisuser
 RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \

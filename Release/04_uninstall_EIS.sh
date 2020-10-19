@@ -126,6 +126,7 @@ uninstallContainers()
 	docker rm -f $(docker ps -a -q)
 	docker system prune -af --volumes
 	rm -rf UWC*
+	rm -rf $Current_Dir/.EISPatched
 	rm -rf modbus-master/ MQTT/ mqtt-export/ scada-rtu/
     rm -rf docker_setup/provision/config/UWC/
 	if [ "$?" -ne "0" ];then

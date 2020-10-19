@@ -11,7 +11,18 @@
 ARG EIS_VERSION
 ARG EIS_UID
 FROM uwc_test_common:$EIS_VERSION as uwc_test_common
+FROM ia_eisbase:$EIS_VERSION as eisbase
 LABEL description="Scada-RTU Unit Testing container"
+
+# Build tahu library
+FROM eisbase as build-tahu
+RUN apt-get update && apt-get install -y libmosquitto-dev \
+    &&  git clone --branch develop https://github.com/eclipse/tahu \
+    && cd tahu \ 
+    && git checkout 9bf91b69f5e9214e7ec765f2ad20acc7bc41236d \
+    &&  cd client_libraries/c \
+    && sed -i 's/#define SPARKPLUG_DEBUG 1/\/\/#define SPARKPLUG_DEBUG 0/g' include/tahu.h \
+    &&	make -s
 
 # Build Scada-RTU application
 FROM ia_common:$EIS_VERSION as scada-rtu
@@ -32,8 +43,8 @@ COPY --from=uwc_test_common /EIS/log4cpp/build/include/log4cpp /SCADA-RTU-APP/in
 COPY --from=uwc_test_common /EIS/log4cpp/build/lib/* /SCADA-RTU-APP/lib/
 COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/googletest/include/gtest /usr/local/include/gtest
 COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
-COPY --from=uwc_test_common /EIS/tahu/client_libraries/c/lib/libtahu.so /SCADA-RTU-APP/lib/
-COPY --from=uwc_test_common /EIS/tahu/client_libraries/c/include/* /SCADA-RTU-APP/include/tahu/
+COPY --from=build-tahu /EIS/tahu/client_libraries/c/lib/libtahu.so /SCADA-RTU-APP/lib/
+COPY --from=build-tahu /EIS/tahu/client_libraries/c/include/* /SCADA-RTU-APP/include/tahu/
 
 RUN cd /SCADA-RTU-APP/Build.test \
     &&	export LD_LIBRARY_PATH='/SCADA-RTU-APP/lib:/usr/local/lib' \
