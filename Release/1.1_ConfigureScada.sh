@@ -32,7 +32,9 @@ BROKER_HOST=""
 BROKER_PORT=""
 QOS=""
 SCADA_REQUIRED="yes"
+KPI_APP_REQUIRED="no"
 PROXY_EXIST="no"
+DEPLOY_MODE=""
 
 
 #------------------------------------------------------------------
@@ -85,21 +87,37 @@ setDevMode()
 function copyDeployComposeFile()
 {
     cd $working_dir
-
-    DEPLOY_MODE=$(grep UWC_DEPLOY_MODE $working_dir/docker_setup/.env | cut -d '=' -f 2-)
-    if [ -z "$DEPLOY_MODE" ]; then
-	DEPLOY_MODE="IPC_PROD"
-        echo "Deployment mode is set to default i.e. IPC_PROD"
-    else
-        echo "Deployment mode is set to = " $DEPLOY_MODE
-    fi
     
     rm -rf UWC/ && mkdir UWC
     tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
     cd UWC
 
-      case $DEPLOY_MODE in
+	# check if kpi app needed or not 
+    if [ $KPI_APP_REQUIRED == "yes" ] || [ $KPI_APP_REQUIRED == "Yes" ];then
+		setDevMode "DEV_MODE=true" "DEV_MODE=false"
+		cp docker-compose_with_kpi.yml ../docker_setup/docker-compose.yml
+		return 0
+    fi
+    
+    if [ -z $DEPLOY_MODE ]; then 
+	echo ${INFO}"Deployment mode is not provided hence setting it to = " IPC_PROD ${NC}
+	setDevMode "DEV_MODE=true" "DEV_MODE=false"
+	if [ $SCADA_REQUIRED == "no" ];then
+		cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
+
+	elif [ $IS_TLS == "no" ] || [ $IS_TLS == "false" ]; then
+		cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
+	else
+    		cp docker-compose.yml ../docker_setup/docker-compose.yml
+	fi
+	rm -rf UWC/
+	return 0
+    fi
+
+    case $DEPLOY_MODE in
       IPC_PROD)
+		echo ${INFO}"Deployment mode is set to = " $DEPLOY_MODE  ${NC}
+		setDevMode "DEV_MODE=true" "DEV_MODE=false"
 		if [ $SCADA_REQUIRED == "no" ];then
 			cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
 
@@ -107,24 +125,24 @@ function copyDeployComposeFile()
 			cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
 		else
             		cp docker-compose.yml ../docker_setup/docker-compose.yml
-            		setDevMode "DEV_MODE=true" "DEV_MODE=false"
 		fi
         ;;
       IPC_DEV)
-            cp docker-compose_IPC_DEV.yml ../docker_setup/docker-compose.yml
-            setDevMode "DEV_MODE=false" "DEV_MODE=true"
-        ;;
-      *)
-            # set default mode to ipc prod
-    		if [ $SCADA_REQUIRED == "no" ];then
-			cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
+		echo ${INFO}"Deployment mode is set to = " $DEPLOY_MODE  ${NC}
+		setDevMode "DEV_MODE=false" "DEV_MODE=true"
+		if [ $SCADA_REQUIRED == "no" ];then
+			cp docker-compose_IPC_DEV_without_scada.yml ../docker_setup/docker-compose.yml
 
 		elif [ $IS_TLS == "no" ] || [ $IS_TLS == "false" ]; then
-			cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
+			cp docker-compose_IPC_DEV.yml ../docker_setup/docker-compose.yml
 		else
-            		cp docker-compose.yml ../docker_setup/docker-compose.yml
-            		setDevMode "DEV_MODE=true" "DEV_MODE=false"
+            		cp docker-compose_IPC_DEV_scada_TLS.yml ../docker_setup/docker-compose.yml
 		fi
+        ;;
+      *)
+             echo "${RED}ERROR:: Invalid deployment mode is provided. supported mode are IPC_PROD and IPC_DEV ${NC}"
+	     rm -rf UWC/
+	     exit 1
         ;;
     esac 
 
@@ -188,16 +206,18 @@ ParseCommandLineArgs()
 
 	    case "$KEY" in
 		    --caFile)    	CA=${VALUE} ;;     
-	        --crtFile)   	CLIENT_CERT=${VALUE} ;; 
+	            --crtFile)   	CLIENT_CERT=${VALUE} ;; 
 		    --keyFile)   	CLIENT_KEY=${VALUE} ;; 
 		    --isTLS)   	 	IS_TLS=${VALUE} ;;
 		    --brokerAddr) 	BROKER_HOST=${VALUE} ;; 
 		    --brokerPort) 	BROKER_PORT=${VALUE} ;;
-		    --qos) 			QOS=${VALUE} ;;  
+		    --qos) 		QOS=${VALUE} ;;  
 		    --proxy) 		USER_PROXY=${VALUE} PROXY_EXIST="yes";;   
-		    --withoutScada) SCADA_REQUIRED="no" ;; 
-			--interactive) ;;
-			--nonInteractive) ;;
+		    --withoutScada) 	SCADA_REQUIRED="no" ;; 
+		    --withKpiApp) KPI_APP_REQUIRED=${VALUE} ;;
+                    --deployMode) 	DEPLOY_MODE=${VALUE} ;; 
+                    --interactive) ;;
+                    --nonInteractive) ;;
 		     *) echo "${RED}Invalid arguments passed, ${NC}" $KEY; Usage; ;;  
 	    esac    
 	done
@@ -287,6 +307,8 @@ Usage()
 	echo
 	echo "${INFO}--withoutScada	Optional, this will skip the scada-rtu container installation from deployment, can contain value 1/true"
 	echo
+	echo "${INFO}--withKpiApp	Optional, this will install kpi-app container, can contain value yes/no.." 
+	echo
 	echo "${INFO}--help		display this help and exit"${NC}
 	echo
 	echo "Different use cases..."
@@ -311,6 +333,9 @@ Usage()
 
 		7. With scada, TLS, and with proxy 
 		sudo ./01_pre-requisites.sh --isTLS=true  --caFile=\"scada_ext_certs/ca/root-ca.crt\" --crtFile=\"scada_ext_certs/client/client.crt\" --keyFile=\"scada_ext_certs/client/client.key\" --brokerAddr=\"127.0.0.1\" --brokerPort=\"1883\" --qos=1 --proxy=\"intel.proxy.com:811\"${NC}
+
+		8. With KPI app 
+		sudo ./01_pre-requisites.sh --withKpiApp=yes
 
 	"
 	echo "${INFO}===================================================================================${NC}"
@@ -339,6 +364,7 @@ PrintAllArgs()
 	if [ ! -z $BROKER_PORT ]; then echo "${INFO}--bokerPort = $BROKER_PORT";fi
 	if [ ! -z $QOS ]; then echo "${INFO}--qos = $QOS";fi
 	if [ ! -z $USER_PROXY ]; then echo "${INFO}--proxy = $USER_PROXY${NC}";fi
+	if [ ! -z $KPI_APP_REQUIRED ]; then echo "${INFO}--withKpiApp = $KPI_APP_REQUIRED${NC}";fi
 	echo "${GREEN}==========================================${NC}"
 }
 
@@ -383,24 +409,32 @@ getUserInputs()
 
 	echo "${INFO}Enter the follwing parameters required for scada-rtu container..${NC}"
 
-	while :
-	do 
-		read -p "Is TLS required for scada-rtu (yes/no):" TLS
-		if [ -z $TLS ];then
-			echo "${RED}Empty value entered.${NC}"
-		elif [ $TLS != "yes" ] && [ $TLS != "no" ] ;then
-			echo "${RED}Invalid value entered. Allowed values (yes/no)${NC}"
-		elif [ $TLS == "yes" ];then
-			IS_TLS=true
-			read -p "Enter the CA certificate full path including file name:" CA && if [ -z $CA ]; then echo "${RED}Error:: Empty value entered..${NC}"; echo "${RED}Kindly entered correct values and re-run the script..${NC}"; exit 1; fi 
-			read -p "Enter the client certificate full path including file name:" CLIENT_CERT && if [ -z $CLIENT_CERT ]; then echo "${RED}Error:: Empty value entered..${NC}"; echo "${RED}Kindly entered correct values and re-run the script..${NC}";exit 1; fi
-			read -p "Enter the client key certificate full path including file name:" CLIENT_KEY && if [ -z $CLIENT_KEY ]; then echo "${RED}Error:: Empty value entered..${NC}"; echo "${RED}Kindly entered correct values and re-run the script..${NC}"; exit 1; fi
-			break
-		elif [ $TLS == "no" ];then
-			IS_TLS=false
-			break
-		fi
-	done
+ 	if [ $KPI_APP_REQUIRED == "yes" ] || [ $KPI_APP_REQUIRED == "Yes" ];then
+ 		echo "${INFO}Proceding with kpi app installation${NC}"
+		IS_TLS=true
+		read -p "Enter the CA certificate full path including file name:" CA && if [ -z $CA ]; then echo "${RED}Error:: Empty value entered..${NC}"; echo "${RED}Kindly entered correct values and re-run the script..${NC}"; exit 1; fi 
+		read -p "Enter the client certificate full path including file name:" CLIENT_CERT && if [ -z $CLIENT_CERT ]; then echo "${RED}Error:: Empty value entered..${NC}"; echo "${RED}Kindly entered correct values and re-run the script..${NC}";exit 1; fi
+		read -p "Enter the client key certificate full path including file name:" CLIENT_KEY && if [ -z $CLIENT_KEY ]; then echo "${RED}Error:: Empty value entered..${NC}"; echo "${RED}Kindly entered correct values and re-run the script..${NC}"; exit 1; fi 		
+ 	else
+		while :
+		do 
+			read -p "Is TLS required for scada-rtu (yes/no):" TLS
+			if [ -z $TLS ];then
+				echo "${RED}Empty value entered.${NC}"
+			elif [ $TLS != "yes" ] && [ $TLS != "no" ] ;then
+				echo "${RED}Invalid value entered. Allowed values (yes/no)${NC}"
+			elif [ $TLS == "yes" ];then
+				IS_TLS=true
+				read -p "Enter the CA certificate full path including file name:" CA && if [ -z $CA ]; then echo "${RED}Error:: Empty value entered..${NC}"; echo "${RED}Kindly entered correct values and re-run the script..${NC}"; exit 1; fi 
+				read -p "Enter the client certificate full path including file name:" CLIENT_CERT && if [ -z $CLIENT_CERT ]; then echo "${RED}Error:: Empty value entered..${NC}"; echo "${RED}Kindly entered correct values and re-run the script..${NC}";exit 1; fi
+				read -p "Enter the client key certificate full path including file name:" CLIENT_KEY && if [ -z $CLIENT_KEY ]; then echo "${RED}Error:: Empty value entered..${NC}"; echo "${RED}Kindly entered correct values and re-run the script..${NC}"; exit 1; fi
+				break
+			elif [ $TLS == "no" ];then
+				IS_TLS=false
+				break
+			fi
+		done
+	fi
 
 	while :
 	do 
@@ -440,6 +474,20 @@ getUserInputs()
 	done
 	PrintAllArgs
 }
+
+# get the deployment mode
+if [ $3 == "--deployMode=IPC_DEV" ] ; then
+	DEPLOY_MODE=IPC_DEV
+fi
+
+if [ $3 == "--deployMode=IPC_PROD" ] ; then
+	DEPLOY_MODE=IPC_PROD
+fi
+
+if [ $2 == "--withKpiApp=yes" ] || [ $2 == "--withKpiApp=Yes" ] ;then
+	echo "KPI app is required.."
+	KPI_APP_REQUIRED=yes
+fi
 
 if [ $1 == "--interactive=1" ] ; then 
 	getUserInputs

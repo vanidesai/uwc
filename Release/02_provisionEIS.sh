@@ -178,7 +178,7 @@ eisProvision()
 
 harden()
 {
-    docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 ia_etcd
+    docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 1G --memory-swap -1 ia_etcd
     docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 128M --memory-swap -1 ia_etcd_provision
 }
 
@@ -194,7 +194,7 @@ harden()
 #------------------------------------------------------------------
 configureExternalCerts()
 {
-	if [ -d ${Current_Dir}/docker_setup/provision/Certificates ] && [ -d ${Current_Dir}/tmp_certs ]; then
+	if [ -d ${Current_Dir}/tmp_certs ]; then
 		echo "${GREEN}Copying required certs for scada-rtu.${NC}"
 		cd ${Current_Dir}
 		rm -rf ${Current_Dir}/docker_setup/provision/Certificates/scada_ext_certs
@@ -234,7 +234,7 @@ docker_verify
 docker_compose_verify
 eisProvision
 configureExternalCerts
-#harden
+harden
 
 cd "${Current_Dir}"
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then

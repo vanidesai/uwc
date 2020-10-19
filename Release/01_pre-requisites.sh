@@ -31,8 +31,10 @@ BROKER_HOST=""
 BROKER_PORT=""
 QOS=""
 SCADA_REQUIRED="yes"
+KPI_APP_REQUIRED="no"
 PROXY_EXIST="no"
 IS_INTERACTIVE=""
+DEPLOY_MODE=""
 	
 
 eis_working_dir="$Current_Dir/docker_setup"
@@ -239,6 +241,7 @@ createDockerVolumeDir()
 	mkdir -p /opt/intel/eis/container_logs/modbus-rtu-master
 	mkdir -p /opt/intel/eis/container_logs/mqtt-export
 	mkdir -p /opt/intel/eis/container_logs/scada-rtu
+        mkdir -p /opt/intel/eis/container_logs/kpi-tactic
 	if [ "$?" -eq "0" ]; then
 		echo "${GREEN}/opt/intel/eis/container_logs is sucessfully created. ${NC}"
 	else
@@ -261,15 +264,33 @@ createDockerVolumeDir()
 # function to copy docker-compose.yml as per the deployment mode 
 function copyDeployComposeFile()
 {
-    DEPLOY_MODE=$(grep UWC_DEPLOY_MODE ../docker_setup/.env | cut -d '=' -f 2-)
-    if [ -z "$DEPLOY_MODE" ]; then
-        echo "Deployment mode is set to default i.e. IPC_PROD"
-    else
-        echo "Deployment mode is set to = " $DEPLOY_MODE
+
+	# check if kpi app needed or not 
+    if [ $KPI_APP_REQUIRED == "yes" ] || [ $KPI_APP_REQUIRED == "Yes" ]; then
+
+		cp docker-compose_with_kpi.yml ../docker_setup/docker-compose.yml
+		return 0
     fi
-    
+
+    if [ -z $DEPLOY_MODE ]; then
+	DEPLOY_MODE=IPC_PROD
+	echo "Deployment mode is not provided hence setting it to = " $DEPLOY_MODE
+	setDevMode "DEV_MODE=true" "DEV_MODE=false"
+	if [ $SCADA_REQUIRED == "no" ];then
+		cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
+
+	elif [ $IS_TLS == "no" ] || [ $IS_TLS == "false" ]; then
+		cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
+	else
+    		cp docker-compose.yml ../docker_setup/docker-compose.yml
+	fi
+	return 0
+    fi
+
     case $DEPLOY_MODE in
       IPC_PROD)
+		echo "Deployment mode is set to = " $DEPLOY_MODE
+		setDevMode "DEV_MODE=true" "DEV_MODE=false"
 		if [ $SCADA_REQUIRED == "no" ];then
 			cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
 
@@ -277,24 +298,23 @@ function copyDeployComposeFile()
 			cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
 		else
             		cp docker-compose.yml ../docker_setup/docker-compose.yml
-            		setDevMode "DEV_MODE=true" "DEV_MODE=false"
 		fi
         ;;
       IPC_DEV)
-            cp docker-compose_IPC_DEV.yml ../docker_setup/docker-compose.yml
-            setDevMode "DEV_MODE=false" "DEV_MODE=true"
-        ;;
-      *)
-            # set default mode to ipc prod
-    		if [ $SCADA_REQUIRED == "no" ];then
-			cp docker-compose_without_scada.yml ../docker_setup/docker-compose.yml
+		echo "Deployment mode is set to = " $DEPLOY_MODE
+		setDevMode "DEV_MODE=false" "DEV_MODE=true"
+		if [ $SCADA_REQUIRED == "no" ];then
+			cp docker-compose_IPC_DEV_without_scada.yml ../docker_setup/docker-compose.yml
 
 		elif [ $IS_TLS == "no" ] || [ $IS_TLS == "false" ]; then
-			cp docker-compose_IPC_PROD_nonTLSScada.yml ../docker_setup/docker-compose.yml
+			cp docker-compose_IPC_DEV.yml ../docker_setup/docker-compose.yml
 		else
-            		cp docker-compose.yml ../docker_setup/docker-compose.yml
-            		setDevMode "DEV_MODE=true" "DEV_MODE=false"
+            		cp docker-compose_IPC_DEV_scada_TLS.yml ../docker_setup/docker-compose.yml
 		fi
+        ;;
+      *)
+             echo "${RED}ERROR:: Invalid deployment mode is provided. supported mode are IPC_PROD and IPC_DEV ${NC}"
+	     exit 1
         ;;
     esac 
 }
@@ -312,15 +332,23 @@ applyEISPatch()
 	cd ${working_dir}
 	
 	# revert the patch if already applied
-	#patch -d . -f --strip=1 -R  < 0001-U-ARCH-changes.patch || true >/dev/null
+	if [ -f .EISPatched ];then
+		patch -d . -f --strip=0 -R  < 0001-U-ARCH-changes.patch || true >/dev/null
+	fi
 
-	patch -d . -f --strip=1  < 0001-U-ARCH-changes.patch
+	patch -d . -f --strip=0  < 0001-U-ARCH-changes.patch
 	check_for_errors "$?" "Failed to apply EIS patch for DBS. Please check logs" \
 			"${GREEN}Successfuly applied EIS patch for DBS${NC}"
-	cp ${working_dir}/UWC/DBS_Patches/provision_eis.sh ${working_dir}/docker_setup/provision
-	cp ${working_dir}/UWC/DBS_Patches/docker-compose-provision.yml ${working_dir}/docker_setup/provision/dep/
-	chmod +x ${working_dir}/docker_setup/provision/provision_eis.sh
+	#cp ${working_dir}/UWC/DBS_Patches/provision_eis.sh ${working_dir}/docker_setup/provision
+
+	#if [ $DEPLOY_MODE == "IPC_DEV" ];then
+	#	cp ${working_dir}/UWC/DBS_Patches/docker-compose-provision_dev.yml ${working_dir}/docker_setup/provision/dep/docker-compose-provision.yml
+	#else
+	#	cp ${working_dir}/UWC/DBS_Patches/docker-compose-provision.yml ${working_dir}/docker_setup/provision/dep/docker-compose-provision.yml
+	#fi
+	#chmod +x ${working_dir}/docker_setup/provision/provision_eis.sh
 	# cleanup
+	touch .EISPatched
 	rm -rf UWC/
 }
 
@@ -334,8 +362,7 @@ addUWCContainersInEIS()
     rm -rf UWC/ && mkdir UWC
     tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
     cd UWC
-    cp -r modbus-master/ MQTT/ scada-rtu/ uwc_common/ mqtt-export/ ../
-    cp Others/Config/UWC/x509_cert_config.json ../docker_setup/provision/config/
+    cp -r modbus-master/ MQTT/ scada-rtu/ uwc_common/ mqtt-export/ kpi-tactic/ ../
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp Others/Config/UWC/Global_Config.yml /opt/intel/eis/uwc_data/common_config/Global_Config.yml
@@ -839,14 +866,18 @@ ParseCommandLineArgs()
 
 	    case "$KEY" in
 		    --caFile)    CA=${VALUE} ;;     
-	            --crtFile)   CLIENT_CERT=${VALUE} ;; 
+	        --crtFile)   CLIENT_CERT=${VALUE} ;; 
 		    --keyFile)   CLIENT_KEY=${VALUE} ;; 
 		    --isTLS)   	 IS_TLS=${VALUE} ;;
 		    --brokerAddr) BROKER_HOST=${VALUE} ;; 
 		    --brokerPort) BROKER_PORT=${VALUE} ;;
 		    --qos) QOS=${VALUE} ;;  
 		    --proxy) USER_PROXY=${VALUE} PROXY_EXIST="yes";;   
-		    --withoutScada) SCADA_REQUIRED="no" ;;  
+		    --withoutScada) SCADA_REQUIRED="no" ;;
+		    --withKpiApp) KPI_APP_REQUIRED=${VALUE} ;;
+		    --deployMode) DEPLOY_MODE=${VALUE} ;; 
+            --interactive) ;;
+            --nonInteractive) ;; 
 		    --help) Usage ;; 
 		     *) echo "${RED}Invalid arguments passed..${NC}"; Usage; ;;  
 	    esac    
@@ -866,12 +897,21 @@ ParseCommandLineArgs()
 		if [ ! -z "$BROKER_HOST" ] && [ ! -z "$BROKER_PORT" ] && [ ! -z "$QOS" ]; then
 			IS_INTERACTIVE="no"
 		else 
-			echo "${RED}Missing broker addr or port or QOS..${NC}"
+			echo "${INFO}Missing broker addr or port or QOS..${NC}"
 			IS_INTERACTIVE="yes"
+			echo "Deploy MODE:: " $DEPLOY_MODE
 			#Usage
 		fi
 		
 	fi
+
+	if [ $KPI_APP_REQUIRED == "yes" ] && [ $IS_INTERACTIVE == "no" ];then
+		if [ $IS_TLS == "no" ];then 
+			echo "${RED}ERROR:: incorrect command line options provided.. for running KPI app TLS must be true..${NC}"	 
+			exit 1
+		fi
+	fi
+
 	PrintAllArgs
 	
 	#echo "${GREEN}==========================================${NC}"
@@ -917,6 +957,10 @@ Usage()
 	echo
 	echo "${INFO}--withoutScada	Optional, this will skip the scada-rtu container installation from deployment, can contain value 1/true"
 	echo
+	echo "${INFO}--withKpiApp	Optional, this will install kpi-app container, can contain value yes/no.." 
+	echo
+	echo "${INFO}--deployMode	Supported deployment modes are IPC_PROD and IPC_DEV. Default mode is IPC_MODE, if not provided by user"
+	echo
 	echo "${INFO}--help		display this help and exit"${NC}
 	echo
 	echo "Different use cases..."
@@ -941,6 +985,12 @@ Usage()
 
 		7. With scada, TLS, and with proxy 
 		sudo ./01_pre-requisites.sh --isTLS=yes  --caFile=\"scada_ext_certs/ca/root-ca.crt\" --crtFile=\"scada_ext_certs/client/client.crt\" --keyFile=\"scada_ext_certs/client/client.key\" --brokerAddr=\"127.0.0.1\" --brokerPort=\"1883\" --qos=1 --proxy=\"intel.proxy.com:811\"${NC}
+		
+		8. deployment with IPC DEV mode (Not yet supported)
+		sudo ./01_pre-requisites.sh --deployMode=IPC_DEV
+
+		9. With KPI app 
+		sudo ./01_pre-requisites.sh --withKpiApp=yes
 
 	"
 	echo "${INFO}===================================================================================${NC}"
@@ -969,6 +1019,8 @@ PrintAllArgs()
 	if [ ! -z $BROKER_PORT ]; then echo "${INFO}--bokerPort = $BROKER_PORT";fi
 	if [ ! -z $QOS ]; then echo "${INFO}--qos = $QOS";fi
 	if [ ! -z $USER_PROXY ]; then echo "${INFO}--proxy = $USER_PROXY${NC}";fi
+	if [ ! -z $KPI_APP_REQUIRED ]; then echo "${INFO}--withKpiApp = $KPI_APP_REQUIRED${NC}";fi
+
 	echo "${GREEN}==========================================${NC}"
 }
 
@@ -985,7 +1037,7 @@ docker_compose_verify_installation
 #setHostIP
 configureRTUPorts
 createDockerVolumeDir
-changeTopicLen
+#changeTopicLen
 addUWCContainersInEIS
 
 # only works with EIS 2.2 PV
@@ -996,7 +1048,7 @@ createDockerNw
 if [ $SCADA_REQUIRED == "yes" ]; then
 	if [ $IS_INTERACTIVE == "yes" ]; then
 		echo "${INFO}Installing scada container with interactive mode${NC}"
-		./1.1_ConfigureScada.sh --interactive=1 "$@"
+		./1.1_ConfigureScada.sh --interactive=1 --withKpiApp=$KPI_APP_REQUIRED --deployMode=$DEPLOY_MODE"$@" 
 	else
 		echo "${INFO}Installing scada container with non-interactive mode${NC}"
 		./1.1_ConfigureScada.sh --nonInteractive=1 "$@"
