@@ -1,36 +1,8 @@
-From 78c23f7c10e5fc830d77d1ce33ff1f3af6921c82 Mon Sep 17 00:00:00 2001
-From: Arvind Mohan <arvind.mohan@intel.com>
-Date: Fri, 11 Sep 2020 07:12:53 +0530
-Subject: [PATCH] U-ARCH changes
-
-Note:
-1. Do not merge in mainline. uses a new network model.
-2. EtcdUI wont work.
-3. not tested outside of UWC integration
-4. new env variable EIS_CONTAINER_UID. refer dockremap concept.
-5. pay attention to Certificate "chcon". needs to match lxc_context
-   defined for selinux.
-
-Signed-off-by: Arvind Mohan <arvind.mohan@intel.com>
----
- EtcdUI/Dockerfile                             |  8 ++---
- docker_setup/.env                             |  8 +++--
- docker_setup/provision/dep/Dockerfile         |  5 +--
- .../provision/dep/Dockerfile.provision        |  3 +-
- .../dep/docker-compose-provision.yml          | 31 ++++++++++++++++---
- .../provision/dep/etcd_create_user.sh         | 14 ++++-----
- .../provision/dep/etcd_enable_auth.sh         |  8 ++---
- docker_setup/provision/dep/etcd_provision.py  | 14 +++++----
- docker_setup/provision/dep/start_etcd.sh      |  2 +-
- docker_setup/provision/gen_certs.py           |  2 +-
- docker_setup/provision/provision_eis.sh       |  3 +-
- 11 files changed, 63 insertions(+), 35 deletions(-)
-
-diff --git a/EtcdUI/Dockerfile b/EtcdUI/Dockerfile
-index b7dd24ed..3473dd13 100644
---- a/EtcdUI/Dockerfile
-+++ b/EtcdUI/Dockerfile
-@@ -34,8 +34,8 @@ RUN apt-get update && \
+Index: EtcdUI/Dockerfile
+===================================================================
+--- EtcdUI/Dockerfile	(revision 2105)
++++ EtcdUI/Dockerfile	(working copy)
+@@ -34,8 +34,8 @@
      apt-get update && apt-get install -y procps
  
  ARG EIS_UID
@@ -41,7 +13,7 @@ index b7dd24ed..3473dd13 100644
  
  
  FROM ia_common:$EIS_VERSION as common
-@@ -53,8 +53,8 @@ COPY eis_nginx_dev.conf ./
+@@ -53,8 +53,8 @@
  RUN touch /run/nginx.pid
  
  ARG EIS_UID
@@ -52,11 +24,24 @@ index b7dd24ed..3473dd13 100644
      rm -rf /var/lib/nginx && ln -sf /tmp/nginx /var/lib/nginx && \
      rm -f /etc/nginx/sites-enabled/default
  
-diff --git a/docker_setup/.env b/docker_setup/.env
-index 78c497a2..30e9e49e 100644
---- a/docker_setup/.env
-+++ b/docker_setup/.env
-@@ -12,7 +12,8 @@ COMPOSE_PROJECT_NAME=EdgeInsightsSoftware
+Index: common/libs/ConfigManager/c/src/env_config.c
+===================================================================
+--- common/libs/ConfigManager/c/src/env_config.c	(revision 2105)
++++ common/libs/ConfigManager/c/src/env_config.c	(working copy)
+@@ -27,7 +27,7 @@
+ #include "eis/config_manager/env_config.h"
+ #include <safe_str_lib.h>
+ 
+-#define SIZE 500
++#define SIZE 1000
+ #define PUB "pub"
+ #define SUB "sub"
+ #define CLIENTS_ENV "Clients"
+Index: docker_setup/.env
+===================================================================
+--- docker_setup/.env	(revision 2105)
++++ docker_setup/.env	(working copy)
+@@ -12,7 +12,8 @@
  
  # Docker security
  EIS_USER_NAME=eisuser
@@ -66,7 +51,7 @@ index 78c497a2..30e9e49e 100644
  
  # This is the path where EIS package is installed
  EIS_INSTALL_PATH=/opt/intel/eis
-@@ -50,7 +51,7 @@ ETCD_KEEPER_VERSION=v0.7.5
+@@ -50,7 +51,7 @@
  
  # Etcd settings
  # Etcd client host to connect to
@@ -75,17 +60,185 @@ index 78c497a2..30e9e49e 100644
  ETCD_NAME=master
  ETCD_VERSION=v3.4.0
  ETCD_DATA_DIR=/EIS/etcd/data/
-@@ -65,4 +66,5 @@ eis_no_proxy=localhost,127.0.0.1
+@@ -65,4 +66,5 @@
  TLS_CIPHERS=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
  SSL_KEY_LENGTH=3072
  
 -HOST_TIME_ZONE=
 +HOST_IP=127.0.0.1
 +HOST_TIME_ZONE=Asia/Kolkata
-diff --git a/docker_setup/provision/dep/Dockerfile b/docker_setup/provision/dep/Dockerfile
-index 79595dd1..6f257075 100644
---- a/docker_setup/provision/dep/Dockerfile
-+++ b/docker_setup/provision/dep/Dockerfile
+Index: docker_setup/provision/config/etcd_pre_load.json
+===================================================================
+--- docker_setup/provision/config/etcd_pre_load.json	(revision 2105)
++++ docker_setup/provision/config/etcd_pre_load.json	(working copy)
+@@ -1,137 +1,10 @@
+ {
+-    "/VideoIngestion/config": {
+-        "encoding": {
+-            "type": "jpeg",
+-            "level": 96
+-        },
+-        "ingestor": {
+-            "type": "opencv",
+-            "pipeline": "./test_videos/pcb_d2000.avi",
+-            "loop_video": "true",
+-            "queue_size": 10,
+-            "poll_interval": 0.2
+-        },
+-        "max_jobs": 20,
+-        "max_workers":4,
+-        "udfs": [{
+-            "name": "pcb.pcb_filter",
+-            "type": "python",
+-            "scale_ratio": 4,
+-            "training_mode": "false",
+-            "n_total_px": 300000,
+-            "n_left_px": 1000,
+-            "n_right_px": 1000
+-        }]
+-    },
+-    "/VideoAnalytics/config": {
+-        "encoding": {
+-            "type": "jpeg",
+-            "level": 95
+-        },
+-        "queue_size": 10,
+-        "max_jobs": 20,
+-        "max_workers":4,
+-        "udfs": [{
+-            "name": "pcb.pcb_classifier",
+-            "type": "python",
+-            "ref_img": "common/udfs/python/pcb/ref/ref.png",
+-            "ref_config_roi": "common/udfs/python/pcb/ref/roi_2.json",
+-            "model_xml": "common/udfs/python/pcb/ref/model_2.xml",
+-            "model_bin": "common/udfs/python/pcb/ref/model_2.bin",
+-            "device": "CPU"
+-        }]
+-    },
+-    "/Visualizer/config": {
+-        "display": "true",
+-        "save_image": "false",
+-        "labels" : {
+-            "camera1_stream_results": {
+-                "0": "MISSING",
+-                "1": "SHORT"
+-            },
+-            "camera2_stream_results":{
+-                "1": "safety_helmet",
+-                "2": "safety_jacket",
+-                "3": "Safe",
+-                "4": "Violation"
+-            }
+-        }
+-    },
+-    "/WebVisualizer/config": {
+-        "username": "admin",
+-        "password": "admin@123",
+-        "port": 5000,
+-        "labels" : {
+-            "camera1_stream_results": {
+-                "0": "MISSING",
+-                "1": "SHORT"
+-            },
+-            "camera2_stream_results":{
+-                "1": "safety_helmet",
+-                "2": "safety_jacket",
+-                "3": "Safe",
+-                "4": "Violation"
+-            }
+-        }
+-    },
+-    "/InfluxDBConnector/config": {
+-        "influxdb": {
+-            "retention": "1h30m5s",
+-            "username": "admin",
+-            "password": "admin123",
+-            "dbname": "datain",
+-            "ssl": "True",
+-            "verifySsl": "False",
+-            "port": "8086"
+-        },
+-        "pub_workers": "5",
+-        "sub_workers": "5",
+-        "ignore_keys": [ "defects" ],
+-        "tag_keys": []
+-    },
+-    "/Kapacitor/config": {
+-        "influxdb": {
+-            "username": "admin",
+-            "password": "admin123"
+-        }
+-    },
+-    "/FactoryControlApp/config": {
+-        "io_module_ip": "localhost",
+-        "io_module_port": 502,
+-        "red_bit_register": 20,
+-        "green_bit_register": 19
+-    },
+-    "/ImageStore/config": {
+-        "minio": {
+-            "accessKey": "admin",
+-            "secretKey": "password",
+-            "retentionTime": "1h",
+-            "retentionPollInterval": "60s",
+-            "ssl": "false"
+-        }
+-    },
+-    "/RestDataExport/config": {
+-        "camera1_stream_results": "http://localhost:8082",
+-        "camera1_stream": "http://localhost:8082",
+-        "http_server_ca": "/opt/intel/eis/cert.pem",
+-        "rest_export_server_host": "localhost",
+-        "rest_export_server_port": "8087"
+-    },
+-    "/GlobalEnv/": {
++    "/GlobalEnv/": 
++    {
+         "PY_LOG_LEVEL": "INFO",
+         "GO_LOG_LEVEL": "INFO",
+         "C_LOG_LEVEL": "INFO",
+         "GO_VERBOSE": "0",
+         "ETCD_KEEPER_PORT": "7070"
+-    },
+-    "/TLS_RemoteAgent/config": {
+-        "cert_path": "",
+-        "tls_host": "localhost",
+-        "user_labels": [{
+-            "VideoAnalytics": {
+-                "0": "D_MISSING",
+-                "1": "D_SHORT"
+-            }
+-        }]
+     }
+ }
+Index: docker_setup/provision/config/x509_cert_config.json
+===================================================================
+--- docker_setup/provision/config/x509_cert_config.json	(revision 2105)
++++ docker_setup/provision/config/x509_cert_config.json	(working copy)
+@@ -10,7 +10,16 @@
+        "root": {
+          "client_alt_name": ""
+        }
+-     }
++     },
++    {
++        "mymqttcerts": {
++
++         "server_alt_name": "",
++
++        "client_alt_name": ""
++
++       }
++    }
+    ]
+  }
+- 
+\ No newline at end of file
++ 
+Index: docker_setup/provision/dep/Dockerfile
+===================================================================
+--- docker_setup/provision/dep/Dockerfile	(revision 2105)
++++ docker_setup/provision/dep/Dockerfile	(working copy)
 @@ -1,12 +1,13 @@
  FROM python:3.7-slim
  RUN  apt update && \
@@ -102,11 +255,11 @@ index 79595dd1..6f257075 100644
  RUN chmod +x start_etcd.sh
 +HEALTHCHECK NONE
  ENTRYPOINT ["./start_etcd.sh"]
-diff --git a/docker_setup/provision/dep/Dockerfile.provision b/docker_setup/provision/dep/Dockerfile.provision
-index ad190691..d05f66d9 100644
---- a/docker_setup/provision/dep/Dockerfile.provision
-+++ b/docker_setup/provision/dep/Dockerfile.provision
-@@ -10,4 +10,5 @@ COPY dep/put_x509_certs.sh .
+Index: docker_setup/provision/dep/Dockerfile.provision
+===================================================================
+--- docker_setup/provision/dep/Dockerfile.provision	(revision 2105)
++++ docker_setup/provision/dep/Dockerfile.provision	(working copy)
+@@ -10,4 +10,5 @@
  RUN chmod +x etcd_create_user.sh && \
      chmod +x etcd_enable_auth.sh && \
      chmod +x put_x509_certs.sh
@@ -114,11 +267,11 @@ index ad190691..d05f66d9 100644
 \ No newline at end of file
 +HEALTHCHECK NONE
 +ENTRYPOINT ["python3", "etcd_provision.py", "docker-compose.yml"]
-diff --git a/docker_setup/provision/dep/docker-compose-provision.yml b/docker_setup/provision/dep/docker-compose-provision.yml
-index 2d0ec2f4..e1d84618 100755
---- a/docker_setup/provision/dep/docker-compose-provision.yml
-+++ b/docker_setup/provision/dep/docker-compose-provision.yml
-@@ -16,6 +16,7 @@ services:
+Index: docker_setup/provision/dep/docker-compose-provision.yml
+===================================================================
+--- docker_setup/provision/dep/docker-compose-provision.yml	(revision 2105)
++++ docker_setup/provision/dep/docker-compose-provision.yml	(working copy)
+@@ -16,6 +16,7 @@
        ETCDCTL_API: 3
        DEV_MODE: $DEV_MODE
        ETCD_DATA_DIR: $ETCD_DATA_DIR
@@ -126,13 +279,12 @@ index 2d0ec2f4..e1d84618 100755
        ETCD_CLIENT_PORT: $ETCD_CLIENT_PORT
        ETCD_PEER_PORT: $ETCD_PEER_PORT
        ETCD_NAME: $ETCD_NAME
-@@ -27,8 +28,18 @@ services:
+@@ -27,8 +28,18 @@
        https_proxy: $https_proxy
      volumes:
        - "vol_etcd:$ETCD_DATA_DIR"
 -    network_mode: host
--    user: $EIS_UID
-+    user: $EIS_CONTAINER_UID
+     user: $EIS_UID
 +    # userns_mode: host
 +    security_opt:
 +      - no-new-privileges
@@ -147,7 +299,7 @@ index 2d0ec2f4..e1d84618 100755
      
    ia_etcd_provision:
      depends_on:
-@@ -43,17 +54,27 @@ services:
+@@ -43,17 +54,31 @@
      read_only: true
      image: ia_etcd_provision:$EIS_VERSION
      volumes:
@@ -175,13 +327,17 @@ index 2d0ec2f4..e1d84618 100755
 +      nofile:
 +        soft: "20000"
 +        hard: "40000"
++networks:
++  default:
++    external:
++      name: uwc_nw
  
  volumes:
    vol_etcd:
-diff --git a/docker_setup/provision/dep/etcd_create_user.sh b/docker_setup/provision/dep/etcd_create_user.sh
-index 772e97ea..d0150cc4 100755
---- a/docker_setup/provision/dep/etcd_create_user.sh
-+++ b/docker_setup/provision/dep/etcd_create_user.sh
+Index: docker_setup/provision/dep/etcd_create_user.sh
+===================================================================
+--- docker_setup/provision/dep/etcd_create_user.sh	(revision 2105)
++++ docker_setup/provision/dep/etcd_create_user.sh	(working copy)
 @@ -1,8 +1,8 @@
  #!/bin/sh
 -./etcdctl user add $1 --no-password
@@ -198,10 +354,10 @@ index 772e97ea..d0150cc4 100755
 +./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role grant-permission $1 readwrite /$1/datastore --prefix
 +./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role grant-permission $1 read /Publickeys/ --prefix
 +./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role grant-permission $1 read /GlobalEnv/ --prefix
-diff --git a/docker_setup/provision/dep/etcd_enable_auth.sh b/docker_setup/provision/dep/etcd_enable_auth.sh
-index 1c5b0f59..0b2da650 100644
---- a/docker_setup/provision/dep/etcd_enable_auth.sh
-+++ b/docker_setup/provision/dep/etcd_enable_auth.sh
+Index: docker_setup/provision/dep/etcd_enable_auth.sh
+===================================================================
+--- docker_setup/provision/dep/etcd_enable_auth.sh	(revision 2105)
++++ docker_setup/provision/dep/etcd_enable_auth.sh	(working copy)
 @@ -1,5 +1,5 @@
  #!/bin/sh
 -./etcdctl user add root:$1
@@ -213,11 +369,11 @@ index 1c5b0f59..0b2da650 100644
 +./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT role add root
 +./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT user grant-role root root
 +./etcdctl --endpoints=$ETCD_HOST:$ETCD_CLIENT_PORT auth enable
-diff --git a/docker_setup/provision/dep/etcd_provision.py b/docker_setup/provision/dep/etcd_provision.py
-index 8bd419e5..e9d40962 100644
---- a/docker_setup/provision/dep/etcd_provision.py
-+++ b/docker_setup/provision/dep/etcd_provision.py
-@@ -68,18 +68,19 @@ def put_zmqkeys(appname):
+Index: docker_setup/provision/dep/etcd_provision.py
+===================================================================
+--- docker_setup/provision/dep/etcd_provision.py	(revision 2105)
++++ docker_setup/provision/dep/etcd_provision.py	(working copy)
+@@ -68,6 +68,7 @@
      public_key, secret_key = zmq.curve_keypair()
      str_public_key = public_key.decode()
      str_secret_key = secret_key.decode()
@@ -225,6 +381,7 @@ index 8bd419e5..e9d40962 100644
      while str_public_key[0] is "-" or str_secret_key[0] is "-":
          logging.info("Re-generating ZMQ keys")
          public_key, secret_key = zmq.curve_keypair()
+@@ -74,12 +75,12 @@
          str_public_key = public_key.decode()
          str_secret_key = secret_key.decode()
      try:
@@ -239,7 +396,7 @@ index 8bd419e5..e9d40962 100644
                          "/" + appname + "/private_key", secret_key])
      except Exception:
          logging.error("Error putting Etcd private key for" + appname)
-@@ -97,25 +98,26 @@ def load_data_etcd(file):
+@@ -97,25 +98,26 @@
      :param file: Full path of json file having etcd initial data
      :type file: String
      """
@@ -270,11 +427,11 @@ index 8bd419e5..e9d40962 100644
          logging.info(key, '->', value)
  
  
-diff --git a/docker_setup/provision/dep/start_etcd.sh b/docker_setup/provision/dep/start_etcd.sh
-index 305da7b4..49df9cf2 100644
---- a/docker_setup/provision/dep/start_etcd.sh
-+++ b/docker_setup/provision/dep/start_etcd.sh
-@@ -14,7 +14,7 @@ else
+Index: docker_setup/provision/dep/start_etcd.sh
+===================================================================
+--- docker_setup/provision/dep/start_etcd.sh	(revision 2105)
++++ docker_setup/provision/dep/start_etcd.sh	(working copy)
+@@ -14,7 +14,7 @@
  	
  	export ETCD_INITIAL_ADVERTISE_PEER_URLS=https://$HOST_IP:$ETCD_PEER_PORT
  	export ETCD_LISTEN_PEER_URLS=https://$HOST_IP:$ETCD_PEER_PORT
@@ -283,11 +440,11 @@ index 305da7b4..49df9cf2 100644
  	export ETCD_ADVERTISE_CLIENT_URLS=https://$HOST_IP:$ETCD_CLIENT_PORT
  	export ETCD_PEER_AUTO_TLS=true
  	export ETCD_CERT_FILE="/run/secrets/etcd_server_cert"
-diff --git a/docker_setup/provision/gen_certs.py b/docker_setup/provision/gen_certs.py
-index 39925669..1000555a 100644
---- a/docker_setup/provision/gen_certs.py
-+++ b/docker_setup/provision/gen_certs.py
-@@ -109,7 +109,7 @@ def generate(opts, root_ca_needed=True):
+Index: docker_setup/provision/gen_certs.py
+===================================================================
+--- docker_setup/provision/gen_certs.py	(revision 2105)
++++ docker_setup/provision/gen_certs.py	(working copy)
+@@ -109,7 +109,7 @@
      for cert in opts["certs"]:
          print("Generating Certificate for.......... " + str(cert) + "\n\n")
          os.environ["SAN"] = \
@@ -296,27 +453,34 @@ index 39925669..1000555a 100644
          for component, cert_opts in cert.items():
              if 'output_format' in cert_opts:
                  outform = cert_opts['output_format']
-diff --git a/docker_setup/provision/provision_eis.sh b/docker_setup/provision/provision_eis.sh
-index f7e85f88..d0ea3582 100755
---- a/docker_setup/provision/provision_eis.sh
-+++ b/docker_setup/provision/provision_eis.sh
-@@ -118,7 +118,7 @@ if [ $ETCD_NAME != 'master' ]
+Index: docker_setup/provision/provision_eis.sh
+===================================================================
+--- docker_setup/provision/provision_eis.sh	(revision 2105)
++++ docker_setup/provision/provision_eis.sh	(working copy)
+@@ -118,7 +118,12 @@
  			else
  				chown -R $EIS_USER_NAME:$EIS_UID Certificates/
  			fi
 -
-+			chcon -R -t container_file_t Certificates
++			if [[ "$OSTYPE" == "linux-gnu"* ]]; then
++				echo ""
++			else
++				chcon -R -t container_file_t Certificates
++			fi
++			#chcon -R -t container_file_t Certificates
  			docker-compose -f dep/docker-compose-provision.yml -f dep/docker-compose-provision.override.prod.slave.yml up --build -d  ia_etcd
  	fi
  
-@@ -158,6 +158,7 @@ else
+@@ -158,6 +163,12 @@
  			docker-compose -f dep/docker-compose-provision.yml up --build -d
  		else
  			rm -rf client server
-+			chcon -R -t container_file_t Certificates
++			if [[ "$OSTYPE" == "linux-gnu"* ]]; then
++				echo ""
++			else
++				chcon -R -t container_file_t Certificates
++			fi
++			#chcon -R -t container_file_t Certificates
  			docker-compose -f dep/docker-compose-provision.yml -f dep/docker-compose-provision.override.prod.yml up --build -d
  		fi
  
--- 
-2.26.2.windows.1
-
