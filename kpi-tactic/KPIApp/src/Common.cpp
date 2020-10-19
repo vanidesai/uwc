@@ -1,0 +1,310 @@
+/************************************************************************************
+ * The source code contained or described herein and all documents related to
+ * the source code ("Material") are owned by Intel Corporation. Title to the
+ * Material remains with Intel Corporation.
+ *
+ * No license under any patent, copyright, trade secret or other intellectual
+ * property right is granted to or conferred upon you by disclosure or delivery of
+ * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+ ************************************************************************************/
+#include "Common.hpp"
+#include <cjson/cJSON.h>
+
+/**
+ * Get current time in micro seconds
+ * @param ts :[in] timestamp to get microsecond value
+ * @return time in micro seconds
+ */
+unsigned long commonUtilKPI::get_micros(struct timespec ts)
+{
+	return (unsigned long)ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+}
+
+/**
+ * Get current epoch time in string
+ * @param strCurTime :[out] set current epoch time in string format
+ * @return None
+ */
+void commonUtilKPI::getCurrentTimestampsInString(std::string &strCurTime)
+{
+	try
+	{
+		struct timespec tsMsgReceived;
+		timespec_get(&tsMsgReceived, TIME_UTC);
+		strCurTime = std::to_string(commonUtilKPI::get_micros(tsMsgReceived));
+	}
+	catch(exception &e)
+	{
+		DO_LOG_ERROR("Cannot get current time in string :: " + std::string(e.what()));
+	}
+}
+
+/**
+ * For logging control loop analysis data, a separate logger is used.
+ * This function does creates teh analysis message and logs it into required logger.
+ * @param a_msgPoll		[in]  polling message
+ * @param a_msgWrResp	[in]  write response message
+ * @return none
+ */
+void commonUtilKPI::logAnalysisMsg(CMessageObject &a_msgPoll, CMessageObject &a_msgWrResp)
+{
+	std::string sMsg = commonUtilKPI::createAnalysisMsg(a_msgPoll, a_msgWrResp);
+	log4cpp::Category::getInstance(std::string("analysis")).info(sMsg);
+}
+
+/**
+ * This function extracts the value of a key from given JSON payload 
+ * @param a_sMsg 	:[in] JSON payload in string form
+ * @param a_sKey 	:[in] Key name for which value is needed
+ * @return string: extracted value
+ */
+std::string commonUtilKPI::getValueofKeyFromJSONMsg(const std::string &a_sMsg, const std::string &a_sKey)
+{
+	// 
+	std::string sKeyToSearch{"\"" + a_sKey + "\""};
+	std::string sValue{""};
+	try
+	{
+		do
+		{
+			// Format in JSON is:
+			// "Key":"value"
+			auto keyLocation = a_sMsg.find(sKeyToSearch);
+			if(std::string::npos == keyLocation)
+			{
+				break;
+			}
+			auto valSearchLoc = keyLocation + sKeyToSearch.length();
+			valSearchLoc = a_sMsg.find(":", valSearchLoc);
+			if(std::string::npos == valSearchLoc)
+			{
+				break;
+			}
+			valSearchLoc = a_sMsg.find("\"", valSearchLoc);
+			if(std::string::npos == valSearchLoc)
+			{
+				break;
+			}
+			auto valEndQuoteLoc = a_sMsg.find("\"", valSearchLoc+1);
+			if(std::string::npos != valEndQuoteLoc)
+			{
+				sValue.assign(a_sMsg.substr(valSearchLoc+1, valEndQuoteLoc-valSearchLoc-1));
+				DO_LOG_DEBUG("Key: " + a_sKey + ", extracted value: " + sValue);
+			}
+		} while(0);
+	}
+	catch(const std::exception& e)
+	{
+		DO_LOG_ERROR(e.what());
+	}
+	return sValue;
+}
+
+/**
+ * Add field to a JSON payload being formed
+ * @param a_sMsg	[out] The message updated by this function
+ * @param a_sKey	[in]  Key name to be added in JSON
+ * @param a_sVal	[in]  value to be added in JSON
+ * @param a_bIsLastField [in]  Indicates whether it is a last field in JSON
+ * @return true/false based on success/failure
+ */
+void commonUtilKPI::addFieldToMsg(std::string& a_sMsg, const std::string& a_sKey, const std::string& a_sVal, bool a_bIsLastField)
+{
+	if(a_sKey.empty() || a_sVal.empty())
+	{
+		DO_LOG_ERROR("One or more parameters are empty, needed for adding to JSON message.");
+		return ;
+	}
+	a_sMsg = a_sMsg + '"' + a_sKey + '"' + ':' + '"' + a_sVal + '"';
+	if(false == a_bIsLastField)
+	{
+		a_sMsg = a_sMsg + ',';
+	}		
+};
+
+/**
+ * Function to get usec and timestamp to fill in write request
+ *
+ * @param a_sTimeStamp	[out] timestamp value
+ * @param a_sUsec		[in]  usec value
+ * @return none
+ */
+void commonUtilKPI::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
+{
+	a_sTimeStamp.clear();
+	a_sUsec.clear();
+
+	const auto p1 = std::chrono::system_clock::now();
+
+	std::time_t rawtime = std::chrono::system_clock::to_time_t(p1);
+	std::tm* timeinfo = std::gmtime(&rawtime);
+	if(NULL == timeinfo)
+	{
+		return;
+	}
+	char buffer [80];
+
+	std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
+	a_sTimeStamp.insert(0, buffer);
+
+	{
+		std::stringstream ss;
+		ss << std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count();
+		a_sUsec.insert(0, ss.str());
+	}
+}
+
+/**
+ * Function to create a write message to be sent as a part of control loop
+ *
+ * @param a_sMsg	[out] The write message created by this function
+ * @param a_sKey	[in]  application sequence number
+ * @param a_sWell	[in]  wellhead to be passed in JSON
+ * @param a_sPoint	[in]  point name to be passed in JSON
+ * @param a_sVal	[in]  value to be passed in JSON
+ * @param a_sRT		[in]  RT status to be passed in JSON
+ * @return true/false based on success/failure
+ */
+bool commonUtilKPI::createWriteRequest(std::string& a_sMsg, const std::string& a_sKey,
+		const std::string& a_sWell, const std::string& a_sPoint,
+		const std::string& a_sVal, const std::string& a_sRT,
+		const std::string& a_sTopic, bool a_bIsMQTTModeOn)
+{
+	try
+	{
+		a_sMsg.clear();
+
+		if(a_sKey.empty() || a_sWell.empty() || a_sPoint.empty() 
+			|| a_sVal.empty() || a_sRT.empty() || a_sTopic.empty())
+		{
+			DO_LOG_ERROR("One or more parameters are empty, needed for creating a write request");	
+			return false;
+		}
+
+		//std::string sSrcTopic("/" + a_sDev + "/" + a_sWell + "/" + a_sPoint + "/write");
+		addFieldToMsg(a_sMsg, "app_seq", 		a_sKey,		false);
+		addFieldToMsg(a_sMsg, "wellhead", 		a_sWell, 	false);
+		addFieldToMsg(a_sMsg, "command", 		a_sPoint, 	false);
+		addFieldToMsg(a_sMsg, "value", 			a_sVal, 	false);
+		addFieldToMsg(a_sMsg, "version", 		"2.0", 		false);
+		addFieldToMsg(a_sMsg, "realtime", 		a_sRT, 		false);
+		
+		std::string sTs{""}, sUsec{""};
+		getTimeParams(sTs, sUsec);
+		if(false == a_bIsMQTTModeOn)
+		{
+			addFieldToMsg(a_sMsg, "sourcetopic", 	a_sTopic, 	false);
+			addFieldToMsg(a_sMsg, "tsMsgRcvdFromMQTT", sUsec, false);
+		}
+
+		addFieldToMsg(a_sMsg, "timestamp", 	sTs, 	false);
+		addFieldToMsg(a_sMsg, "usec", 		sUsec, 	true);
+		
+		a_sMsg = "{" + a_sMsg + "}";
+	}
+	catch(const std::exception& e)
+	{
+		DO_LOG_ERROR(e.what());
+	}
+
+	return true;
+}
+
+/**
+ * Function to create a analysis message for a control loop
+ * @param a_msgPoll		[in]  polling message
+ * @param a_msgWrResp	[in]  write response message
+ * @return string: analysis message
+ */
+std::string commonUtilKPI::createAnalysisMsg(CMessageObject &a_msgPoll, CMessageObject &a_msgWrResp)
+{
+	std::string sMsg{""};
+
+	auto answer = [](std::string &a_sMsg, cJSON *a_pSrcMsgRoot, const std::string &a_sSrcKey, std::string a_sFinalKey, bool a_bIsLastField)
+	{
+		if(NULL != a_pSrcMsgRoot)
+		{
+			if(! cJSON_HasObjectItem(a_pSrcMsgRoot, a_sSrcKey.c_str()))
+			{
+				DO_LOG_DEBUG(a_sSrcKey + ": Key not found in message");
+				return ;
+			}
+
+			char *pcVal = cJSON_GetObjectItem(a_pSrcMsgRoot, a_sSrcKey.c_str())->valuestring;
+			if (NULL == pcVal)
+			{
+				DO_LOG_DEBUG(a_sSrcKey + ": Value for key not found in message");
+				return ;
+			}
+			else
+			{
+				std::string sData{pcVal};
+				addFieldToMsg(a_sMsg, a_sFinalKey, sData, a_bIsLastField);
+			}
+		}
+	};
+
+	try
+	{
+		cJSON *pRootPollMsg = cJSON_Parse(a_msgPoll.getMsg().c_str());
+		if (NULL == pRootPollMsg)
+		{
+			DO_LOG_ERROR(a_msgPoll.getMsg() + ": Message could not be parsed in json format");
+			return "";
+		}
+
+		// Process poll message
+		answer(sMsg, pRootPollMsg,	"driver_seq",	"pollSeq",	 	false);
+		answer(sMsg, pRootPollMsg,	"data_topic",	"pollTopic", 	false);
+		answer(sMsg, pRootPollMsg, 	"status", 		"pollStatus", 	false);
+		//answer(sMsg, pRootPollMsg, 	"retryCount",	"pollRetry", 	false);
+		answer(sMsg, pRootPollMsg, 	"value", 		"pollValue", 	false);
+		answer(sMsg, pRootPollMsg, 	"error_code",	"pollError", 	false);
+		answer(sMsg, pRootPollMsg, 	"tsPollingTime", 		"tsPollingTime", 		false);
+		answer(sMsg, pRootPollMsg, 	"reqRcvdInStack", 		"pollReqRcvdInStack", 	false);
+		answer(sMsg, pRootPollMsg, 	"reqSentByStack", 		"pollReqSentByStack", 	false);
+		answer(sMsg, pRootPollMsg, 	"respRcvdByStack", 		"pollRespRcvdByStack", 	false);
+		answer(sMsg, pRootPollMsg, 	"respPostedByStack", 	"pollRespPostedByStack",false);
+		answer(sMsg, pRootPollMsg, 	"usec",			 		"pollPostedToEIS",	 	false);
+
+		cJSON_Delete(pRootPollMsg);
+		pRootPollMsg = NULL;
+		
+		addFieldToMsg(sMsg, "pollRespRcvInApp", (std::to_string(commonUtilKPI::get_micros(a_msgPoll.getTimestamp()))).c_str(), false);
+
+		cJSON *pRootWrRspMsg = cJSON_Parse(a_msgWrResp.getMsg().c_str());
+		if (NULL == pRootWrRspMsg)
+		{
+			DO_LOG_ERROR(a_msgWrResp.getMsg() + ": Message could not be parsed in json format");
+			return "";
+		}
+		
+		// Process write-response message
+		answer(sMsg, pRootWrRspMsg,	"app_seq",				"appSeq",	 		false);
+		answer(sMsg, pRootWrRspMsg, "tsMsgRcvdFromMQTT", 	"pollMsgRcvInApp",	false);
+		answer(sMsg, pRootWrRspMsg,	"data_topic",			"wrRspTopic", 		false);
+		answer(sMsg, pRootWrRspMsg, "status", 				"wrRspStatus", 		false);
+		//answer(sMsg, pRootWrRspMsg, "retryCount",			"wrRspRetry", 		false);
+		answer(sMsg, pRootWrRspMsg, "error_code",			"wrRspError", 		false);
+		answer(sMsg, pRootWrRspMsg, "tsMsgPublishOnEIS", 	"wrReqPublishOnEIS",	false);
+		answer(sMsg, pRootWrRspMsg, "reqRcvdByApp", 		"wrReqRcvdByModbus",	false);
+		answer(sMsg, pRootWrRspMsg, "reqRcvdInStack", 		"wrReqRcvdInStack", 	false);
+		answer(sMsg, pRootWrRspMsg, "reqSentByStack", 		"wrReqSentByStack", 	false);
+		answer(sMsg, pRootWrRspMsg, "respRcvdByStack", 		"wrRespRcvdByStack", 	false);
+		answer(sMsg, pRootWrRspMsg, "respPostedByStack", 	"wrRespPostedByStack",	false);
+		answer(sMsg, pRootWrRspMsg, "usec",			 		"wrRespPostedToEIS",	false);
+
+		cJSON_Delete(pRootWrRspMsg);
+		pRootWrRspMsg = NULL;
+
+		// Add last timestamp
+		addFieldToMsg(sMsg, "wrRespRcvInApp", (std::to_string(commonUtilKPI::get_micros(a_msgWrResp.getTimestamp()))).c_str(), true);
+	}
+	catch(const std::exception& e)
+	{
+		DO_LOG_ERROR(e.what());
+	}
+
+	//sMsg = "{" + sMsg + "}";
+	return sMsg;
+}
