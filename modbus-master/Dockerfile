@@ -29,11 +29,17 @@ WORKDIR /
 # Copy built library from images
 COPY --from=uwc_common /usr/yaml /bin/yaml-cpp/.
 
+# Create utils directory inside include
+RUN mkdir -p /Modbus-App/include/utils
+
 COPY Modbus-App /Modbus-App/. 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
 COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
 COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* /Modbus-App/lib/
+COPY --from=uwc_common /uwc_util/Release/libuwc-util.so /Modbus-App/lib/
+COPY --from=uwc_common /uwc_util/include/* /Modbus-App/include/
+COPY --from=uwc_common /uwc_util/include/utils/* /Modbus-App/include/utils/
 
 # compile modbus app sources
 RUN cd /Modbus-App/Release \
@@ -60,6 +66,7 @@ COPY --from=modbus-app /Modbus-App/Release/ModbusMaster ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=modbus-app /Modbus-App/Config/log4cpp.properties /opt/intel/config
+COPY --from=uwc_common /uwc_util/Release/libuwc-util.so ${APP_WORK_DIR}
 
 # set permissions to working dir for eisuser
 RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
@@ -69,6 +76,5 @@ RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
 #set the environment variable
 ENV LD_LIBRARY_PATH ${APP_WORK_DIR}:/usr/local/lib
 
-RUN apt-get update && apt-get install -y socat
 # Run Modbus container
 CMD ./ModbusMaster

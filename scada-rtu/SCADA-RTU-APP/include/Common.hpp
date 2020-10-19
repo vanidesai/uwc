@@ -17,6 +17,7 @@
 #include "Constants.hpp"
 #include "Logger.hpp"
 #include "ConfigManager.hpp"
+#include "EnvironmentVarHandler.hpp"
 
 using namespace std;
 using namespace globalConfig;
@@ -27,18 +28,16 @@ using namespace globalConfig;
 class CCommon
 {
 private:
+	std::vector<string> m_vecEnv{"AppName", "INTERNAL_MQTT_URL", "DEV_MODE", "NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME", "MY_APP_ID"};
 	// Private constructor so that no objects can be created.
 	CCommon();
 	CCommon(const CCommon & obj) = delete;
 	CCommon& operator=(CCommon const&) = delete;
 
-	string m_strAppName;
 	string m_strExtMqttURL;
 	int m_nQos;
-	string m_strIntMqttURL;
-	string m_siteListFileName;
+	char m_delimeter;
 	string m_strNodeConfPath;
-	string m_strNetworkType;
 	string m_strGroupId;
 	string m_strEdgeNodeID;
 	bool m_devMode;
@@ -49,18 +48,6 @@ private:
 
 public:
 	~CCommon();
-	bool readCommonEnvVariables();
-	bool readEnvVariable(const char *pEnvVarName, std::string &storeVal);
-
-	/**
-	 * Set application name
-	 * @param strAppName :[in] Application name to set
-	 * @return None
-	 */
-	void setStrAppName(const std::string &strAppName)
-	{
-		m_strAppName = strAppName;
-	}
 
 	/**
 	 * load config required for scada-rtu container from scada_config.yml file
@@ -68,16 +55,6 @@ public:
 	 * @return true/false based on condition
 	 */
 	bool loadYMLConfig();
-
-	/**
-	 * Get application name
-	 * @param None
-	 * @return application name in string
-	 */
-	const std::string& getStrAppName() const
-	{
-		return m_strAppName;
-	}
 
 	/**
 	 * Set MQTT Export URL to connect with MQTT broker
@@ -129,27 +106,6 @@ public:
 		return m_nQos;
 	}
 
-
-	/**
-	 * Set MQTT Export URL to connect with MQTT broker
-	 * @param strMqttExportURL
-	 * @return None
-	 */
-	void setIntMqttURL(const std::string &strMqttURL)
-	{
-		m_strIntMqttURL = strMqttURL;
-	}
-
-	/**
-	 * Get MQTT-Export broker connection URL
-	 * @param None
-	 * @return connection URL in string
-	 */
-	const std::string& getIntMqttURL() const
-	{
-		return m_strIntMqttURL;
-	}
-
 	/**
 	 * Get single instance of this class
 	 * @param None
@@ -180,24 +136,6 @@ public:
 	void setDevMode(bool devMode)
 	{
 		m_devMode = devMode;
-	}
-
-	/**
-	 * get site list from file name
-	 * @return site list
-	 */
-	const std::string& getSiteListFileName() const
-	{
-		return m_siteListFileName;
-	}
-
-	/**
-	 * set site list from file name
-	 * @param siteListFileName	:[in] site list to set
-	 */
-	void setSiteListFileName(const std::string &siteListFileName)
-	{
-		m_siteListFileName = siteListFileName;
 	}
 
 	/**
@@ -282,24 +220,6 @@ public:
 	std::string getEdgeNodeID()
 	{
 		return m_strEdgeNodeID;
-	}
-
-	/**
-	 * get network type
-	 * @return network type in string (ALL, TCP or RTU)
-	 */
-	const std::string& getNetworkType() const
-	{
-		return m_strNetworkType;
-	}
-
-	/**
-	 * Set network type
-	 * @param strNodeConfPath	:[in] node configuration file path to set
-	 */
-	void setNetworkType(const std::string &strNetworkType)
-	{
-		m_strNetworkType = strNetworkType;
 	}
 
 	const std::string getVersion()

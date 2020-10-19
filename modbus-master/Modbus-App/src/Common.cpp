@@ -20,7 +20,6 @@ namespace
 	std::map<unsigned short, MbusAPI_t> g_mapRequest;
 }
 
-//std::mutex __appSeqMapLock;
 std::mutex __appReqJsonLock;
 
 

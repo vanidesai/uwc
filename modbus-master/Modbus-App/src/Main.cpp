@@ -24,6 +24,7 @@
 #include "YamlUtil.hpp"
 #include "ConfigManager.hpp"
 #include "Logger.hpp"
+#include "CommonDataShare.hpp"
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
 #endif
@@ -41,6 +42,13 @@ bool g_stop = false;
 
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
+
+std::vector<string> m_vecEnv{"DEVICES_GROUP_LIST_FILE_NAME",
+							"DEV_MODE",
+							"NETWORK_TYPE",
+							"AppName",
+							"MY_APP_ID"
+							};
 
 /**
  * Populate polling data
@@ -144,109 +152,6 @@ bool isElementExistInJson(cJSON *root, std::string a_sKeyName)
 	return bRetVal;
 }
 
-/** This function is used to read environment variable
- *
- * @sEnvVarName : environment variable to be read
- * @storeVal : variable to store env variable value
- * @return: true/false based on success or error
- */
-bool CommonUtils::readEnvVariable(const char *pEnvVarName, string &storeVal)
-{
-	if(NULL == pEnvVarName)
-	{
-		return false;
-	}
-	bool bRetVal = false;
-	char *cEvar = getenv(pEnvVarName);
-	if (NULL != cEvar)
-	{
-		bRetVal = true;
-		std::string tmp (cEvar);
-		storeVal = tmp;
-		DO_LOG_INFO(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal);
-		std::cout << std::string(pEnvVarName) + " environment variable is set to ::" + storeVal << endl;
-	}
-	else
-	{
-		DO_LOG_ERROR(std::string(pEnvVarName) + " environment variable is not found");
-		cout << std::string(pEnvVarName) + " environment variable is not found" <<endl;
-	}
-	return bRetVal;
-}
-
-/** This function is used to read common environment variables
- *
- * @return: true/false based on success or error
- */
-bool CommonUtils::readCommonEnvVariables()
-{
-	bool bRetVal = false;
-	string devMode;
-	std::list<std::string> topicList{"DEVICES_GROUP_LIST_FILE_NAME", "DEV_MODE", "NETWORK_TYPE"};
-	std::map <std::string, std::string> envTopics;
-
-	try
-	{
-		for (auto &topic : topicList)
-		{
-			std::string envVar = "";
-			bRetVal = readEnvVariable(topic.c_str(), envVar);
-			if(!bRetVal)
-			{
-				//return false;
-				bRetVal = true;
-			}
-			else
-			{
-				envTopics.emplace(topic, envVar);
-			}
-		}
-
-		if(envTopics.find("DEVICES_GROUP_LIST_FILE_NAME") != envTopics.end())
-		{
-			PublishJsonHandler::instance().setSiteListFileName(envTopics.at("DEVICES_GROUP_LIST_FILE_NAME"));
-		}
-		if(envTopics.find("NETWORK_TYPE") != envTopics.end())
-		{
-			PublishJsonHandler::instance().setnetworkType(envTopics.at("NETWORK_TYPE"));
-		}
-		if(envTopics.find("DEV_MODE") != envTopics.end())
-		{
-			devMode = envTopics.at("DEV_MODE");
-		}
-
-		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
-
-		if (devMode == "TRUE")
-		{
-			PublishJsonHandler::instance().setDevMode(true);
-			DO_LOG_INFO("DEV_MODE is set to true");
-			cout << "DEV_MODE is set to true\n";
-
-		}
-		else if (devMode == "FALSE")
-		{
-			PublishJsonHandler::instance().setDevMode(false);
-			DO_LOG_INFO("DEV_MODE is set to false");
-			cout << "DEV_MODE is set to false\n";
-		}
-		else
-		{
-			/// default set to false
-			DO_LOG_ERROR("Invalid value for DEV_MODE env variable");
-			DO_LOG_INFO("Set the dev mode to default (i.e. true)");
-			cout << "DEV_MODE is set to default false\n";
-		}
-	}
-	catch (std::exception &e)
-	{
-		DO_LOG_ERROR("Error while reading env. variable. "+ std::string(e.what()));
-		bRetVal = false;
-	}
-
-	return bRetVal;
-}
-
 /**
  * Populate device contexts
  */
@@ -346,6 +251,50 @@ void setDevContexts()
 /**
  *
  * DESCRIPTION
+ * Function to initialise the structure values of stUWCComnDataVal_t of uwc-lib
+ *
+ * @param strDevMode	[in] describes is devMode enabled
+ * @param strAppName	[in] application name
+ *
+ * @return
+ */
+void initializeCommonData(string strDevMode, string strAppName)
+{
+	stUWCComnDataVal_t stUwcData;
+	stUwcData.m_devMode = false;
+	stUwcData.m_sAppName = strAppName;
+	stUwcData.m_isCommonDataInitialised = true;
+	transform(strDevMode.begin(), strDevMode.end(), strDevMode.begin(), ::toupper);
+	if("TRUE" == strDevMode)
+	{
+		stUwcData.m_devMode = true;
+	}
+	CcommonEnvManager::Instance().ShareToLibUwcCmnData(stUwcData);
+}
+
+/**
+ * Function to read all common environment variables
+ *
+ * @return
+ */
+void readEnvData()
+{
+	EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
+	string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
+
+	string strAppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
+	initializeCommonData(strDevMode, strAppName);
+	if(strAppName.empty())
+	{
+		exit(1);
+	}
+
+	PublishJsonHandler::instance().setAppName(strAppName);
+}
+
+/**
+ *
+ * DESCRIPTION
  * This function is entry point for application
  *
  * @param argc [in] argument count
@@ -355,10 +304,9 @@ void setDevContexts()
  */
 int main(int argc, char* argv[])
 {
-	DO_LOG_DEBUG("Start");
-
 	try
 	{
+		CLogger::initLogger(std::getenv("Log4cppPropsFile"));
 		DO_LOG_DEBUG("Starting Modbus_App ...");
 
 		DO_LOG_INFO("Modbus container app version is set to :: " + std::string(APP_VERSION));
@@ -377,19 +325,7 @@ int main(int argc, char* argv[])
 			cout << "\nGlobal configuration for container real-time is set successfully\n\n";
 		}
 
-		string sAppName;
-		if(!CommonUtils::readEnvVariable("AppName", sAppName))
-		{
-			exit(1);
-		}
-
-		PublishJsonHandler::instance().setAppName(sAppName);
-
-		if (!CommonUtils::readCommonEnvVariables())
-		{
-			DO_LOG_ERROR("Required env variables are not set.");
-			std::cout << "Required common env variables are not set.\n";
-		}
+		readEnvData();
 
 		string cutOff;
 		if(!CommonUtils::readEnvVariable("CUTOFF_INTERVAL_PERCENTAGE", cutOff))
@@ -412,20 +348,38 @@ int main(int argc, char* argv[])
 		{
 			DO_LOG_INFO("List of topic configured for Pub are :: " + std::string(pcPubTopic));
 
-			bool bRes = zmq_handler::prepareCommonContext("pub");
-			if(!bRes)
+			if(true != zmq_handler::prepareCommonContext("pub"))
 			{
 				DO_LOG_ERROR("Context creation failed for pub topic ");
 			}
+			else
+			{
+				std::stringstream ss(pcPubTopic);
+				std::string item;
+				char dele = ',';
+				while (std::getline(ss, item, dele))
+				{
+					PublishJsonHandler::instance().setTopicForOperation(item);
+				}
+			}
 		}
-		if(const char* pcSubTopic = std::getenv("SubTopics"))
+		if(char* pcSubTopic = std::getenv("SubTopics"))
 		{
 			DO_LOG_INFO("List of topic configured for Sub are :: " + std::string(pcSubTopic));
 
-			bool bRetVal = zmq_handler::prepareCommonContext("sub");
-			if(!bRetVal)
+			if( true != zmq_handler::prepareCommonContext("sub"))
 			{
 				DO_LOG_ERROR("Context creation failed for sub topic ");
+			}
+			else
+			{
+				std::stringstream ss(pcSubTopic);
+				std::string item;
+				while (std::getline(ss, item, ','))
+				{
+					PublishJsonHandler::instance().setTopicForOperation(item);
+				}
+				CcommonEnvManager::Instance().splitString(static_cast<std::string>(pcSubTopic),',');
 			}
 		}
 
@@ -434,10 +388,11 @@ int main(int argc, char* argv[])
 		//network_info::buildNetworkInfo(true);
 
 		// Setting RTU mode
-		if(!PublishJsonHandler::instance().getSiteListFileName().empty())
+		if(!EnvironmentInfo::getInstance().getDataFromEnvMap("DEVICES_GROUP_LIST_FILE_NAME").empty())
 		{
-			network_info::buildNetworkInfo(PublishJsonHandler::instance().getnetworkType(),
-					PublishJsonHandler::instance().getSiteListFileName());
+			network_info::buildNetworkInfo(EnvironmentInfo::getInstance().getDataFromEnvMap("NETWORK_TYPE"),
+					EnvironmentInfo::getInstance().getDataFromEnvMap("DEVICES_GROUP_LIST_FILE_NAME"),
+					EnvironmentInfo::getInstance().getDataFromEnvMap("MY_APP_ID"));
 			DO_LOG_INFO("Modbus container application is set to TCP mode");
 			cout << "Modbus container application is set to TCP mode.." << endl;
 		}
@@ -450,10 +405,12 @@ int main(int argc, char* argv[])
 #else
 
 		// Setting RTU mode
-		if(!PublishJsonHandler::instance().getSiteListFileName().empty())
+		if(!EnvironmentInfo::getInstance().getDataFromEnvMap("DEVICES_GROUP_LIST_FILE_NAME").empty())
 		{
-			network_info::buildNetworkInfo(PublishJsonHandler::instance().getnetworkType(),
-					PublishJsonHandler::instance().getSiteListFileName());
+			network_info::buildNetworkInfo(EnvironmentInfo::getInstance().getDataFromEnvMap("NETWORK_TYPE"),
+					EnvironmentInfo::getInstance().getDataFromEnvMap("DEVICES_GROUP_LIST_FILE_NAME"),
+					EnvironmentInfo::getInstance().getDataFromEnvMap("MY_APP_ID"));
+
 			DO_LOG_INFO("Modbus container application is set to RTU mode");
 			cout << "Modbus container application is set to RTU mode.." << endl;
 		}

@@ -18,6 +18,7 @@
 #include "Common.hpp"
 #include <queue>
 #include <string>
+#include "QueueHandler.hpp"
 
 using namespace std;
 /**
@@ -95,86 +96,52 @@ struct stMqttMsg
 	}
 
 	/**
-		 * Insert keys and values received in MQTT payload in map
-		 * @param key :[in] param name in payload
-		 * @param value :[in] value of param in payload
-		 * return none
-		 */
-		void insertParam(string key, string value)
-		{
-			m_datapoint_key_val.insert(pair<string, string> (key, value));
-		}
+	 * Insert keys and values received in MQTT payload in map
+	 * @param key :[in] param name in payload
+	 * @param value :[in] value of param in payload
+	 * return none
+	 */
+	void insertParam(string key, string value)
+	{
+		m_datapoint_key_val.insert(pair<string, string> (key, value));
+	}
 
-		/**
-		 * Get key-value pair received in MQTT payload in map depending on the index
-		 * @param a_index :[in] key-value pair at index from the map
-		 * @return pair of key and value
-		 */
-		std::pair<string, string> getParam(int a_index)
-		{
-			int i = 0;
-			if( m_datapoint_key_val.size() > (size_t)a_index)
-			{
-				for( auto it = m_datapoint_key_val.begin(); it != m_datapoint_key_val.end(); ++it, ++i )
+	/**
+	 * Get key-value pair received in MQTT payload in map depending on the index
+	 * @param a_index :[in] key-value pair at index from the map
+	 * @return pair of key and value
+	 */
+	std::pair<string, string> getParam(int a_index)
 				{
-					if(i == a_index)
-					{
-						return make_pair(it->first, it->second);
-					}
+		int i = 0;
+		if( m_datapoint_key_val.size() > (size_t)a_index)
+		{
+			for( auto it = m_datapoint_key_val.begin(); it != m_datapoint_key_val.end(); ++it, ++i )
+			{
+				if(i == a_index)
+				{
+					return make_pair(it->first, it->second);
 				}
 			}
-			return make_pair("", "");
 		}
+		return make_pair("", "");
+				}
 
-		/**
-		 * Get length of map formed with MQTT msg payload values
-		 * @param none
-		 * @return length of map
-		 */
-		int getLength()
-		{
-			return m_datapoint_key_val.size();
-		}
-};
-/*
-struct qMsg
-{
-	string topic;
-	mqtt::const_message_ptr msg;
-};*/
-
-/**
- * Queue manager class to manage instances of on-demand operations for msg handling
- */
-class CQueueMgr
+	/**
+	 * Get length of map formed with MQTT msg payload values
+	 * @param none
+	 * @return length of map
+	 */
+	int getLength()
 	{
-		bool initSem();
+		return m_datapoint_key_val.size();
+	}
+};
 
-		std::mutex m_queueMutex;
-		std::queue<mqtt::const_message_ptr> m_msgQueue;
-
-		// delete copy and move constructors and assign operators
-		CQueueMgr& operator=(const CQueueMgr&)=delete;	// Copy assign
-		CQueueMgr(const CQueueMgr&)=delete;	 			// Copy construct
-
-	public:
-		sem_t m_semaphore;
-
-		CQueueMgr();
-		~CQueueMgr();
-
-		bool pushMsg(mqtt::const_message_ptr msg);
-		bool isMsgArrived(mqtt::const_message_ptr& msg);
-		bool getSubMsgFromQ(mqtt::const_message_ptr& msg);
-
-		void cleanup();
-		void clear();
-	};
-
-	//functions to get on-demand operation instances
-	CQueueMgr& getDatapointsQ();
-	CQueueMgr& getScadaSubQ();
-	CQueueMgr& getScadaPubQ();
-	CQueueMgr& getPubMqttExportQ();
+//functions to get on-demand operation instances
+CQueueHandler& getDatapointsQ();
+CQueueHandler& getScadaSubQ();
+CQueueHandler& getScadaPubQ();
+CQueueHandler& getPubMqttExportQ();
 }
 #endif

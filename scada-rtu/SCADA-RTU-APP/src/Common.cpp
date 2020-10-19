@@ -13,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 #include <bits/stdc++.h>
+
 /**
  * Constructor initializes CCommon instance and retrieves common environment variables
  * @param None
@@ -20,15 +21,21 @@
  * 			In case of error or exception, application exits
  */
 CCommon::CCommon() :
-	m_strAppName {""}, m_strExtMqttURL{""}, m_nQos{1}, m_strIntMqttURL{""},
-	m_siteListFileName{""}, m_strNodeConfPath{""}, m_strNetworkType{""}, 
+	m_strExtMqttURL{""}, m_nQos{1}, m_strNodeConfPath{""},
 	m_strGroupId{""}, m_strEdgeNodeID{""}, m_devMode{false}, m_bIsScadaTLS{true}
 {
 	setScadaRTUIds();
 
-	if(false == readCommonEnvVariables())
+	EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
+	string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
+	transform(strDevMode.begin(), strDevMode.end(), strDevMode.begin(), ::toupper);
+	if(strDevMode == "TRUE")
 	{
-		std::cout << "Error while reading common environment variables" << std::endl;
+		setDevMode(true);
+	}
+	else
+	{
+		setDevMode(false);
 	}
 }
 
@@ -116,23 +123,14 @@ bool CCommon::loadYMLConfig()
 			&& 0 == globalConfig::validateParam(config, "qos", globalConfig::eDataType::DT_INTEGER))
 	{
 		int nQos = config["qos"].as<std::int32_t>();
-		if(nQos >= 0 && nQos <=2)
-		{
-			setMQTTQos(nQos);
-			DO_LOG_INFO("QOS is set to :: " + to_string(getMQTTQos()))
-			cout << "QOS is set to :: " + to_string(getMQTTQos()) << endl;
-		}
-		else
-		{
-			setMQTTQos(1);	// default QOS value is 1
-			DO_LOG_ERROR("QOS key is not within valid range, set to default value 1");
-			cout << "QOS key is not within valid range, set to default value :: " << to_string(getMQTTQos()) << endl;
-		}
+		setMQTTQos(nQos);
+		DO_LOG_INFO("QOS is set to :: " + to_string(getMQTTQos()));
+		cout << "QOS is set to :: " + to_string(getMQTTQos()) << endl;
 	}
 	else
 	{
 		setMQTTQos(1);	// default QOS value is 1
-		DO_LOG_ERROR("QOS key is not present, set to default value 1");
+		DO_LOG_ERROR("QOS key is not present, set to default value " + to_string(getMQTTQos()));
 		cout << "QOS key is not present, set to default value :: " << to_string(getMQTTQos()) << endl;
 	}
 
@@ -185,105 +183,6 @@ void CCommon::setScadaRTUIds()
 
 		m_strEdgeNodeID.append(getMACAddress(strInterfaceName));
 	}
-}
-
-/**
- * Retrieve value of a given environment variable
- * @param pEnvVarName :[in] environment variable name to be read
- * @param storeVal :[out] variable to store env variable value
- * @return true/false based on success/failure
- */
-bool CCommon::readEnvVariable(const char *pEnvVarName, string &storeVal)
-{
-	if(NULL == pEnvVarName)
-	{
-		DO_LOG_ERROR("Environment variable to read is NULL");
-		return false;
-	}
-	bool bRetVal = false;
-
-	char *cEvar = getenv(pEnvVarName);
-	if (NULL != cEvar)
-	{
-		bRetVal = true;
-		std::string tmp (cEvar);
-		storeVal = tmp;
-		DO_LOG_DEBUG(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal);
-	}
-	else
-	{
-		DO_LOG_ERROR(std::string(pEnvVarName) + " environment variable is not found");
-		std::cout << __func__ << ":" << __LINE__ << " Error : " + std::string(pEnvVarName) + " environment variable is not found" <<  std::endl;
-
-	}
-	return bRetVal;
-}
-
-/**
- * Retrieve and store all common environment variables in CCommon instance.
- * @param None
- * @return true/false based on success/failure
- */
-bool CCommon::readCommonEnvVariables()
-{
-	try
-	{
-		bool bRetVal = false;
-
-		std::list<std::string> topicList{"AppName", "INTERNAL_MQTT_URL" , "DEV_MODE",
-			"NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME"};
-
-		std::map <std::string, std::string> envTopics;
-
-		for (auto &topic : topicList)
-		{
-			std::string envVar = "";
-			bRetVal = readEnvVariable(topic.c_str(), envVar);
-			if(!bRetVal)
-			{
-				return false;
-			}
-			else
-			{
-				envTopics.emplace(topic, envVar);
-			}
-		}
-
-		setStrAppName(envTopics.at("AppName"));
-		setIntMqttURL(envTopics.at("INTERNAL_MQTT_URL"));
-		setNetworkType(envTopics.at("NETWORK_TYPE"));
-		setSiteListFileName(envTopics.at("DEVICES_GROUP_LIST_FILE_NAME"));
-
-		string devMode = envTopics.at("DEV_MODE");
-		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
-
-		if (devMode == "TRUE")
-		{
-			setDevMode(true);
-			DO_LOG_INFO("DEV_MODE is set to true");
-			cout << "DEV_MODE is set to true\n";
-
-		}
-		else if (devMode == "FALSE")
-		{
-			setDevMode(false);
-			DO_LOG_INFO("DEV_MODE is set to false");
-			cout << "DEV_MODE is set to false\n";
-		}
-		else
-		{
-			// default set to false
-			DO_LOG_ERROR("Invalid value for DEV_MODE env variable");
-			DO_LOG_INFO("Set the dev mode to default (i.e. true)");
-			cout << "DEV_MODE is set to default false\n";
-		}
-	}
-	catch(exception &ex)
-	{
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
-		return false;
-	}
-	return true;
 }
 
 /**

@@ -11,39 +11,27 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/Common.cpp \
-../src/ConfigManager.cpp \
-../src/Logger.cpp \
 ../src/Main.cpp \
 ../src/ModbusOnDemandHandler.cpp \
 ../src/ModbusStackInterface.cpp \
-../src/NetworkInfo.cpp \
 ../src/PeriodicRead.cpp \
-../src/PublishJson.cpp \
-../src/ZmqHandler.cpp 
+../src/PublishJson.cpp 
 
 OBJS += \
 ./src/Common.o \
-./src/ConfigManager.o \
-./src/Logger.o \
 ./src/Main.o \
 ./src/ModbusOnDemandHandler.o \
 ./src/ModbusStackInterface.o \
-./src/NetworkInfo.o \
 ./src/PeriodicRead.o \
-./src/PublishJson.o \
-./src/ZmqHandler.o 
+./src/PublishJson.o 
 
 CPP_DEPS += \
 ./src/Common.d \
-./src/ConfigManager.d \
-./src/Logger.d \
 ./src/Main.d \
 ./src/ModbusOnDemandHandler.d \
 ./src/ModbusStackInterface.d \
-./src/NetworkInfo.d \
 ./src/PeriodicRead.d \
-./src/PublishJson.d \
-./src/ZmqHandler.d 
+./src/PublishJson.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

@@ -33,7 +33,7 @@ std::atomic<bool> g_shouldStop(false);
  * @param a_qMgr :[in] reference of queue from which message is to be processed
  * @return none
  */
-void processExternalMqttMsgs(QMgr::CQueueMgr& a_qMgr)
+void processExternalMqttMsgs(CQueueHandler& a_qMgr)
 {
 	mqtt::const_message_ptr recvdMsg;
 
@@ -61,7 +61,7 @@ void processExternalMqttMsgs(QMgr::CQueueMgr& a_qMgr)
  * @param a_qMgr :[in] reference of queue from which message is to be processed
  * @return none
  */
-void processInternalMqttMsgs(QMgr::CQueueMgr& a_qMgr)
+void processInternalMqttMsgs(CQueueHandler& a_qMgr)
 {
 	string eisTopic = "";
 
@@ -103,8 +103,9 @@ bool initDataPoints()
 {
 	try
 	{
-		string strNetWorkType = CCommon::getInstance().getNetworkType();
-		string strSiteListFileName = CCommon::getInstance().getSiteListFileName();
+		string strNetWorkType = EnvironmentInfo::getInstance().getDataFromEnvMap("NETWORK_TYPE");
+		string strSiteListFileName = EnvironmentInfo::getInstance().getDataFromEnvMap("DEVICES_GROUP_LIST_FILE_NAME");
+		string strAppId = "";
 
 		if(strNetWorkType.empty() || strSiteListFileName.empty())
 		{
@@ -112,7 +113,7 @@ bool initDataPoints()
 			return false;
 		}
 
-		network_info::buildNetworkInfo(strNetWorkType, strSiteListFileName);
+		network_info::buildNetworkInfo(strNetWorkType, strSiteListFileName, strAppId);
 
 		// Create SparkPlug devices corresponding to Modbus devices
 		CSparkPlugDevManager::getInstance().addRealDevices();
@@ -138,6 +139,8 @@ int main(int argc, char *argv[])
 		std::cout << __func__ << ":" << __LINE__ << " ------------- Starting SCADA RTU Container -------------" << std::endl;
 		std::cout << "SCADA RTU container app version is set to :: "+  std::string(APP_VERSION) << endl;
 
+		CLogger::initLogger(std::getenv("Log4cppPropsFile"));
+
 		DO_LOG_DEBUG("Starting SCADA RTU ...");
 		DO_LOG_INFO("SCADA RTU container app version is set to :: "+  std::string(APP_VERSION));
 		if(!CCommon::getInstance().loadYMLConfig())
@@ -148,7 +151,7 @@ int main(int argc, char *argv[])
 		}
 
 		//initialize CCommon class to get common variables
-		string AppName = CCommon::getInstance().getStrAppName();
+		string AppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
 		if(AppName.empty())
 		{
 			DO_LOG_ERROR("AppName Environment Variable is not set");
@@ -157,7 +160,8 @@ int main(int argc, char *argv[])
 			return -1;
 		}
 
-		if(CCommon::getInstance().getExtMqttURL().empty() || CCommon::getInstance().getIntMqttURL().empty())
+		if(CCommon::getInstance().getExtMqttURL().empty() ||
+				EnvironmentInfo::getInstance().getDataFromEnvMap("INTERNAL_MQTT_URL").empty())
 		{
 			while(true)
 			{

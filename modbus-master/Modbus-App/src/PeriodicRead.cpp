@@ -395,7 +395,7 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 				common_Handler::removeReqData(a_stResp.u16TransacID);	/// removing request structure from map
 			}
 			std::string sUsec{""};
-			if(true == PublishJsonHandler::instance().publishJson(sUsec, g_msg, a_stResp.m_strResponseTopic))
+			if(true == zmq_handler::publishJson(sUsec, g_msg, a_stResp.m_strResponseTopic, "usec"))
 			{
 				// Message is successfully published
 				// For polling operation having value field, store it as last known value and usec

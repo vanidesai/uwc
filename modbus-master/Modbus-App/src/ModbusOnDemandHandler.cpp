@@ -658,7 +658,7 @@ void onDemandHandler::createOnDemandListener()
 	long a_lPriority;
 	bool a_bIsWriteReq = false;
 
-	std::vector<std::string> stTopics = PublishJsonHandler::instance().getSubTopicList();
+	std::vector<std::string> stTopics = CcommonEnvManager::Instance().getTopicList();
 	for(std::vector<std::string>::iterator it = stTopics.begin(); it != stTopics.end(); ++it)
 	{
 		if(it->empty()) {

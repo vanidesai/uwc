@@ -67,8 +67,6 @@ class CMQTTPublishHandler
 	static std::atomic<uint32_t> m_ui32DelComplete;
 	static std::atomic<uint32_t> m_uiQReqTried;
 #endif
-
-	//bool addTimestampsToMsg(std::string &a_sMsg, struct timespec a_tsMsgRcvd);
 	
 public:
 	CMQTTPublishHandler(std::string strPlBusUrl, std::string strClientID, int iQOS);

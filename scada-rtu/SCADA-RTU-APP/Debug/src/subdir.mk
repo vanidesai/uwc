@@ -11,13 +11,10 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/Common.cpp \
-../src/ConfigManager.cpp \
 ../src/InternalMQTTSubscriber.cpp \
-../src/Logger.cpp \
 ../src/MQTTCallback.cpp \
 ../src/Main.cpp \
 ../src/Metric.cpp \
-../src/NetworkInfo.cpp \
 ../src/QueueMgr.cpp \
 ../src/SCADAHandler.cpp \
 ../src/SparkPlugDevMgr.cpp \
@@ -25,13 +22,10 @@ CPP_SRCS += \
 
 OBJS += \
 ./src/Common.o \
-./src/ConfigManager.o \
 ./src/InternalMQTTSubscriber.o \
-./src/Logger.o \
 ./src/MQTTCallback.o \
 ./src/Main.o \
 ./src/Metric.o \
-./src/NetworkInfo.o \
 ./src/QueueMgr.o \
 ./src/SCADAHandler.o \
 ./src/SparkPlugDevMgr.o \
@@ -39,13 +33,10 @@ OBJS += \
 
 CPP_DEPS += \
 ./src/Common.d \
-./src/ConfigManager.d \
 ./src/InternalMQTTSubscriber.d \
-./src/Logger.d \
 ./src/MQTTCallback.d \
 ./src/Main.d \
 ./src/Metric.d \
-./src/NetworkInfo.d \
 ./src/QueueMgr.d \
 ./src/SCADAHandler.d \
 ./src/SparkPlugDevMgr.d \

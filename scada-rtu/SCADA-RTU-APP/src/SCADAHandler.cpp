@@ -439,7 +439,7 @@ void CSCADAHandler::publish_node_birth()
 	try
 	{
 		// Create the NBIRTH payload
-		string strAppName = CCommon::getInstance().getStrAppName();
+		string strAppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
 		if(strAppName.empty())
 		{
 			DO_LOG_ERROR("App name is empty");

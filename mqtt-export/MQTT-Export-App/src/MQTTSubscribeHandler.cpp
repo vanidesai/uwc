@@ -62,7 +62,7 @@ CMQTTHandler::CMQTTHandler(std::string strPlBusUrl) :
  */
 CMQTTHandler& CMQTTHandler::instance()
 {
-	static string strPlBusUrl = CCommon::getInstance().getStrMqttExportURL();
+	static string strPlBusUrl = EnvironmentInfo::getInstance().getDataFromEnvMap("MQTT_URL_FOR_EXPORT");
 
 	if(strPlBusUrl.empty())
 	{

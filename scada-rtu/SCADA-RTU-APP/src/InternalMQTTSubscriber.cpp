@@ -81,7 +81,7 @@ CIntMqttHandler::CIntMqttHandler(const std::string &strPlBusUrl, int iQOS):
 CIntMqttHandler& CIntMqttHandler::instance()
 {
 	static bool bIsFirst = true;
-	static string strPlBusUrl = CCommon::getInstance().getIntMqttURL();
+	static string strPlBusUrl = EnvironmentInfo::getInstance().getDataFromEnvMap("INTERNAL_MQTT_URL");
 	static int nQos = CCommon::getInstance().getMQTTQos();
 
 	if(bIsFirst)

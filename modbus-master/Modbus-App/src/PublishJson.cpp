@@ -28,7 +28,6 @@ using namespace zmq_handler;
  */
 PublishJsonHandler::PublishJsonHandler()
 {
-	m_devMode = true;
 	u32CutoffIntervalPercentage = 0;
 }
 
@@ -43,50 +42,64 @@ PublishJsonHandler& PublishJsonHandler::instance()
 }
 
 /**
- * Publish json
- * @param a_sUsec		:[out] USEC timestamp value at which a message is published
- * @param msg			:[in] message to publish
- * @param a_sTopic		:[in] topic on which to publish
+ * Set the topic name as per specified patterns
+ * @param a_sTopic		:[in] Topic for which pub or sub context needs to be created
  * @return 	true : on success,
  * 			false : on error
  */
-bool PublishJsonHandler::publishJson(std::string &a_sUsec, msg_envelope_t* msg, const std::string &a_sTopic)
+bool PublishJsonHandler::setTopicForOperation(std::string a_sTopic)
 {
-	if(NULL == msg)
+	bool bRet = true;
+	if(regExFun(a_sTopic, READ_RES))
 	{
-		DO_LOG_ERROR(": Failed to publish message - Input message is NULL");
-		return false;
+		PublishJsonHandler::instance().setSReadResponseTopic(a_sTopic);
+		cout << "read Res topic = " << a_sTopic << endl;
+		DO_LOG_INFO("read res topic = " + a_sTopic);
 	}
-
-	DO_LOG_DEBUG("msg to publish :: Topic :: " + a_sTopic);
-
-	zmq_handler::stZmqContext& msgbus_ctx = zmq_handler::getCTX(a_sTopic);
-	void* pub_ctx = zmq_handler::getPubCTX(a_sTopic).m_pContext;
-	if((NULL == msgbus_ctx.m_pContext) || (NULL == pub_ctx))
+	else if(regExFun(a_sTopic, READ_RES_RT))
 	{
-		DO_LOG_ERROR(": Failed to publish message - context is NULL: " + a_sTopic);
-		return false;
+		PublishJsonHandler::instance().setSReadResponseTopicRT(a_sTopic);
+		cout << "read Res RT topic = " << a_sTopic << endl;
+		DO_LOG_INFO("read res RT topic = " + a_sTopic);
 	}
-
-	msgbus_ret_t ret;
-
+	else if(regExFun(a_sTopic, WRITE_RES))
 	{
-		std::lock_guard<std::mutex> lock(msgbus_ctx.m_mutex);
-		auto p1 = std::chrono::system_clock::now();
-		unsigned long uTime = (unsigned long)(std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count());
-		a_sUsec = std::to_string(uTime);
-		msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(a_sUsec.c_str());
-		if(NULL != ptUsec)
-		{
-			msgbus_msg_envelope_put(msg, "usec", ptUsec);
-		}
-		ret = msgbus_publisher_publish(msgbus_ctx.m_pContext, (publisher_ctx_t*)pub_ctx, msg);
+		PublishJsonHandler::instance().setSWriteResponseTopic(a_sTopic);
+		cout << "write res topic = " << a_sTopic << endl;
+		DO_LOG_INFO("write res topic = " + a_sTopic);
 	}
-
-	if(ret != MSG_SUCCESS)
+	else if(regExFun(a_sTopic, WRITE_RES_RT))
 	{
-		DO_LOG_ERROR(" Failed to publish message errno: " + std::to_string(ret));
-		return false;
+		PublishJsonHandler::instance().setSWriteResponseTopicRT(a_sTopic);
+		cout << "write res RT topic = " << a_sTopic << endl;
+		DO_LOG_INFO("write res RT topic = " + a_sTopic);
 	}
-	return true;
+	else if(regExFun(a_sTopic, POLLDATA))
+	{
+		PublishJsonHandler::instance().setPolledDataTopic(a_sTopic);
+		cout << "poll topic = " << a_sTopic << endl;
+		DO_LOG_INFO("poll topic = " + a_sTopic);
+	}
+	else if(regExFun(a_sTopic, POLLDATA_RT))
+	{
+		PublishJsonHandler::instance().setPolledDataTopicRT(a_sTopic);
+		cout << "poll topic RT = " << a_sTopic << endl;
+		DO_LOG_INFO("poll topic RT = " + a_sTopic);
+	}
+	else if(regExFun(a_sTopic, READ_REQ) or
+			regExFun(a_sTopic, READ_REQ_RT) or
+			regExFun(a_sTopic, WRITE_REQ) or
+			regExFun(a_sTopic, WRITE_REQ_RT))
+	{
+		// Do nothing it just to check the correct pattern
+	}
+	else
+	{
+		DO_LOG_ERROR("Invalid topic name in SubTopics/PubTopics. hence ignoring :: " + a_sTopic);
+		cout << "Invalid topic name in SubTopics/PubTopics. hence ignoring :: " << a_sTopic << endl;
+		DO_LOG_ERROR("Kindly specify correct topic name as per specification :: " + a_sTopic);
+		cout << "Kindly specify correct topic name as per specification :: " << a_sTopic << endl;
+		bRet = false;
+	}
+	return bRet;
 }

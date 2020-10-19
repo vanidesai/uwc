@@ -1,0 +1,49 @@
+---
+file:
+  version: "1.0.0"
+  author: "Intel"
+  date: "Sun Sep 1 13:34:13 PDT 2020"
+  description: "KPI App Config File"
+
+# This field tells whether application runs based on ZMQ or MQTT
+# Default value is false i.e. ZMQ based app.
+# Value can be true or false. Set to true for using MQTT based model
+isMQTTModeApp: false
+
+# This field tells the duration (in minutes) for which this app will run.
+# Set to 0 for no limit. 
+# Default value is 0 if this field is missing or has incorrect value.
+timeToRun_Minutes: 0
+
+# Following fields tell which mode (RT or Non-RT) needs to be used for control loop
+# Value true = RT, false = Non-RT
+# Default value is true if this field is missing or has incorrect value.
+# isRTModeForPolledPoints: For ZMQ-based app, RT polling topics will be scanned if set to true.
+#           This field has no effect in case of MQTT-based app
+# isRTModeForWriteOp: When initiatiating a write request, "realtime" field in JSON payload
+#           will be set if RT is needed.
+#           For ZMQ-based app, RT write-reponse topics will be scanned if set to true.
+isRTModeForPolledPoints: true
+isRTModeForWriteOp: true
+
+# A control loop consists of a polled point and a corresponding write operation.
+# This section lists down number of control loops. 
+# For each control loop, following information is presented:
+# 1. Point being polled 
+# 2. Point and value to be used for writing 
+# 3. Delay to be used before sending a write operation. 
+#    Default value of delay is 5 msec if this field is missing or has incorrect value
+controlLoopDataPointMapping:
+- polled_point: "/flowmeter/PL0/P1"
+  delay_msec: 5
+  write_operation:
+    datapoint: "/iou/PL0/D1"
+    dataval: "0x01"
+
+- polled_point: "/flowmeter/PL0/P2"
+  delay_msec: 15
+  write_operation:
+    datapoint: "/flowmeter/PL0/D2"
+    dataval: "0x1234"
+
+

@@ -19,12 +19,12 @@
 #include "Logger.hpp"
 #include "NetworkInfo.hpp"
 #include "SparkPlugDevMgr.hpp"
-#include "QueueMgr.hpp"
-//
 #include <tahu.pb.h>
 #include <pb_decode.h>
 #include <pb_encode.h>
 #include <inttypes.h>
+
+#include "QueueMgr.hpp"
 extern "C"
 {
 #include <tahu.h>

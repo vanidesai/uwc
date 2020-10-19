@@ -15,6 +15,21 @@
 #include <atomic>
 #include "ZmqHandler.hpp"
 
+#define READ_REQ	 	"RdReq"
+#define READ_REQ_RT 	"_RdReq_RT"
+
+#define READ_RES	"_RdResp"
+#define READ_RES_RT	"_RdResp_RT"
+
+#define WRITE_REQ 		"_WrReq"
+#define WRITE_REQ_RT 	"_WrReq_RT"
+
+#define WRITE_RES 	"_WrResp"
+#define WRITE_RES_RT "_WrResp_RT"
+
+#define POLLDATA	"PolledData"
+#define POLLDATA_RT	"PolledData_RT"
+
 /**
  * Structure to contain state for a publisher thread
  */
@@ -40,20 +55,17 @@ class PublishJsonHandler
 	std::string m_sWriteResponseTopic;
 	std::string m_sWriteResponseTopic_RT;
 
-	// topic for subscription
-	std::string m_siteListFileName;
-	std::string m_snetworkType;
 	uint32_t u32CutoffIntervalPercentage;
-	std::vector<std::string> subTopicList;
 
 	std::string m_sAppName;
-	bool m_devMode;
 	std::atomic<unsigned short> m_u16TxId;
+
+	std::mutex m_mutexPublish;
 
 public:
 	// function to get single instance of this class
 	static PublishJsonHandler& instance();
-	bool publishJson(std::string &a_sUsec, msg_envelope_t* msg, const std::string &str_Topic);
+	bool setTopicForOperation(std::string a_sTopic);
 
 	/**
 	 * Retrieve polled data topic
@@ -168,22 +180,6 @@ public:
 	}
 
 	/**
-	 * get site list from file name
-	 * @return site list
-	 */
-	const std::string& getSiteListFileName() const {
-		return m_siteListFileName;
-	}
-
-	/**
-	 * set site list from file name
-	 * @param siteListFileName	:[in] site list to set
-	 */
-	void setSiteListFileName(const std::string &siteListFileName) {
-		m_siteListFileName = siteListFileName;
-	}
-
-	/**
 	 * get transaction id
 	 */
 	unsigned short getTxId()
@@ -192,52 +188,12 @@ public:
 		//return m_u16TxId.load();
 	}
 
-	/**
-	 * check if it is dev mode
-	 * @return whether dev mode
-	 */
-	bool isDevMode() const {
-		return m_devMode;
-	}
-
-	/**
-	 * set dev mode
-	 * @param devMode :[in] dev mode to set
-	 */
-	void setDevMode(bool devMode) {
-		m_devMode = devMode;
-	}
-
-	/**
-	 * get sub topic list
-	 * @return sub topic list
-	 */
-	const std::vector<std::string>& getSubTopicList() const {
-		return subTopicList;
-	}
-
-	/**
-	 *insert sub topic in list
-	 * @param a_sTopic :[in] topic to insert in list
-	 */
-	void insertSubTopicInList(const std::string &a_sTopic) {
-		subTopicList.push_back(a_sTopic);
-	}
-
 	uint32_t getCutoffIntervalPercentage() const {
 		return u32CutoffIntervalPercentage;
 	}
 
 	void setCutoffIntervalPercentage(uint32_t cutoffIntervalPercentage) {
 		u32CutoffIntervalPercentage = cutoffIntervalPercentage;
-	}
-
-	const std::string& getnetworkType() const {
-		return m_snetworkType;
-	}
-
-	void setnetworkType(const std::string &mSnetworkType) {
-		m_snetworkType = mSnetworkType;
 	}
 };
 

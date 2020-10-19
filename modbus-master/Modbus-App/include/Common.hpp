@@ -15,6 +15,8 @@
 #include "ConfigManager.hpp"
 #include <string>
 #include <iostream>
+#include "EnvironmentVarHandler.hpp"
+#include <vector>
 #ifdef __cplusplus
 extern "C" {
 #include "API.h"
@@ -139,10 +141,6 @@ void OnDemandRead_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParam
 void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
 void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
 void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
-
-using std::string;
-#include <string>
-#include <vector>
 
 namespace common_Handler
 {

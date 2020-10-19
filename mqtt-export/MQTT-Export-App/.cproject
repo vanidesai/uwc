@@ -409,9 +409,13 @@
                                     									
                                     <listOptionValue builtIn="false" value="gtest"/>
                                     									
+                                    <listOptionValue builtIn="false" value="log4cpp"/>
+                                    									
                                     <listOptionValue builtIn="false" value="gtest_main"/>
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqttpp3"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="uwc-util"/>
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqtt3a"/>
                                     									

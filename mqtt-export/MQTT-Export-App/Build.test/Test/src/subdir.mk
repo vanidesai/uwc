@@ -11,9 +11,6 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../Test/src/Common_ut.cpp \
-../Test/src/ConfigManager_ut.cpp \
-../Test/src/EISMsgbusHandler_ut.cpp \
-../Test/src/Logger_ut.cpp \
 ../Test/src/MQTTCallback_ut.cpp \
 ../Test/src/MQTTPublishHandler_ut.cpp \
 ../Test/src/MQTTSubscribeHandler_ut.cpp \
@@ -22,9 +19,6 @@ CPP_SRCS += \
 
 OBJS += \
 ./Test/src/Common_ut.o \
-./Test/src/ConfigManager_ut.o \
-./Test/src/EISMsgbusHandler_ut.o \
-./Test/src/Logger_ut.o \
 ./Test/src/MQTTCallback_ut.o \
 ./Test/src/MQTTPublishHandler_ut.o \
 ./Test/src/MQTTSubscribeHandler_ut.o \
@@ -33,9 +27,6 @@ OBJS += \
 
 CPP_DEPS += \
 ./Test/src/Common_ut.d \
-./Test/src/ConfigManager_ut.d \
-./Test/src/EISMsgbusHandler_ut.d \
-./Test/src/Logger_ut.d \
 ./Test/src/MQTTCallback_ut.d \
 ./Test/src/MQTTPublishHandler_ut.d \
 ./Test/src/MQTTSubscribeHandler_ut.d \

@@ -16,7 +16,7 @@
 #include <mqtt/client.h>
 #include "MQTTCallback.hpp"
 #include "Common.hpp"
-#include "EISMsgbusHandler.hpp"
+#include "ZmqHandler.hpp"
 #include <eis/msgbus/msgbus.h>
 #include "QueueMgr.hpp"
 

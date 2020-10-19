@@ -19,117 +19,62 @@
  */
 CCommon::CCommon()
 {
-
-	if(false == readCommonEnvVariables())
+	EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
+	string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
+	transform(strDevMode.begin(), strDevMode.end(), strDevMode.begin(), ::toupper);
+	if (strDevMode == "TRUE")
 	{
-		std::cout << "Error while reading common environment variables, exiting application" << std::endl;
-		exit(-1);
+		setDevMode(true);
+		DO_LOG_INFO("DEV_MODE is set to true");
+		cout << "DEV_MODE is set to true\n";
+
 	}
-}
-
-/**
- * Retrieve value of a given environment variable
- * @param pEnvVarName :[in] environment variable name to be read
- * @param storeVal :[out] variable to store env variable value
- * @return true/false based on success/failure
- */
-bool CCommon::readEnvVariable(const char *pEnvVarName, string &storeVal)
-{
-	if(NULL == pEnvVarName)
+	else if (strDevMode == "FALSE")
 	{
-		DO_LOG_ERROR("Environment variable to read is NULL");
-		return false;
-	}
-	bool bRetVal = false;
-
-	char *cEvar = getenv(pEnvVarName);
-	if (NULL != cEvar)
-	{
-		bRetVal = true;
-		std::string tmp (cEvar);
-		storeVal = tmp;
-		DO_LOG_DEBUG(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal);
+		setDevMode(false);
+		DO_LOG_INFO("DEV_MODE is set to false");
+		cout << "DEV_MODE is set to false\n";
 	}
 	else
 	{
-		DO_LOG_ERROR(std::string(pEnvVarName) + " environment variable is not found");
-		std::cout << __func__ << ":" << __LINE__ << " Error : " + std::string(pEnvVarName) + " environment variable is not found" <<  std::endl;
-
+		// default set to false
+		DO_LOG_ERROR("Invalid value for DEV_MODE env variable");
+		DO_LOG_INFO("Set the dev mode to default (i.e. true)");
+		cout << "DEV_MODE is set to default false\n";
 	}
-	return bRetVal;
+
+	string strAppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
+	if(strAppName.empty())
+	{
+		DO_LOG_ERROR("AppName Environment Variable is not set");
+		std::cout << __func__ << ":" << __LINE__ << " Error : AppName Environment Variable is not set" <<  std::endl;
+		exit(1);
+	}
+	initializeCommonData(strDevMode, strAppName);
 }
 
 /**
- * Retrieve and store all common environment variables in CCommon instance.
- * @param None
- * @return true/false based on success/failure
+ *
+ * DESCRIPTION
+ * Function to initialise the structure values of stUWCComnDataVal_t of uwc-lib
+ *
+ * @param strDevMode	[in] describes is devMode enabled
+ * @param strAppName	[in] application name
+ *
+ * @return
  */
-bool CCommon::readCommonEnvVariables()
+void CCommon::initializeCommonData(string strDevMode, string strAppName)
 {
-	try
+	stUWCComnDataVal_t stUwcData;
+	stUwcData.m_devMode = false;
+	stUwcData.m_sAppName = strAppName;
+	stUwcData.m_isCommonDataInitialised = true;
+	transform(strDevMode.begin(), strDevMode.end(), strDevMode.begin(), ::toupper);
+	if("TRUE" == strDevMode)
 	{
-		bool bRetVal = false;
-
-		std::list<std::string> topicList{"ReadRequest", "WriteRequest",
-			"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE", "ReadRequest_RT", "WriteRequest_RT"};
-
-		std::map <std::string, std::string> envTopics;
-
-		for (auto &topic : topicList)
-		{
-			std::string envVar = "";
-			bRetVal = readEnvVariable(topic.c_str(), envVar);
-			if(!bRetVal)
-			{
-				return false;
-			}
-			else
-			{
-				envTopics.emplace(topic, envVar);
-			}
-		}
-
-		setStrReadRequest(envTopics.at("ReadRequest"));
-		setStrWriteRequest(envTopics.at("WriteRequest"));
-
-		//for RT
-		setStrRTReadRequest(envTopics.at("ReadRequest_RT"));
-		setStrRTWriteRequest(envTopics.at("WriteRequest_RT"));
-		//end
-
-		setStrAppName(envTopics.at("AppName"));
-		setStrMqttExportURL(envTopics.at("MQTT_URL_FOR_EXPORT"));
-
-		string devMode = envTopics.at("DEV_MODE");
-		transform(devMode.begin(), devMode.end(), devMode.begin(), ::toupper);
-
-		if (devMode == "TRUE")
-		{
-			setDevMode(true);
-			DO_LOG_INFO("DEV_MODE is set to true");
-			cout << "DEV_MODE is set to true\n";
-
-		}
-		else if (devMode == "FALSE")
-		{
-			setDevMode(false);
-			DO_LOG_INFO("DEV_MODE is set to false");
-			cout << "DEV_MODE is set to false\n";
-		}
-		else
-		{
-			// default set to false
-			DO_LOG_ERROR("Invalid value for DEV_MODE env variable");
-			DO_LOG_INFO("Set the dev mode to default (i.e. true)");
-			cout << "DEV_MODE is set to default false\n";
-		}
+		stUwcData.m_devMode = true;
 	}
-	catch(exception &ex)
-	{
-		std::cout << __func__ << ":" << __LINE__ << " Exception : " << ex.what() << std::endl;
-		return false;
-	}
-	return true;
+	CcommonEnvManager::Instance().ShareToLibUwcCmnData(stUwcData);
 }
 
 /**

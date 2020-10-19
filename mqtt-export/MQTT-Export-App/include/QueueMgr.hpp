@@ -17,6 +17,7 @@
 #include "mqtt/async_client.h"
 #include "Common.hpp"
 #include <queue>
+#include "QueueHandler.hpp"
 
 using namespace std;
 /**
@@ -27,40 +28,22 @@ namespace QMgr
 /**
  * Queue manager class to manage instances of on-demand operations for msg handling
  */
-class CQueueMgr
-	{
-		bool initSem();
+class CQueueMgr : public CQueueHandler
+{
+	bool m_bIsRead;
+	bool m_bIsRealTime;
+public:
+	CQueueMgr(bool isRead, bool isRealTime);
+	~CQueueMgr();
 
-		std::mutex m_queueMutex;
-		std::queue <mqtt::const_message_ptr> m_msgQueue;
-		bool m_bIsRead;
-		bool m_bIsRealTime;
+	bool isRead() {return m_bIsRead;};
+	bool isRealTime() {return m_bIsRealTime;};
+};
 
-		// delete copy and move constructors and assign operators
-		CQueueMgr& operator=(const CQueueMgr&)=delete;	// Copy assign
-		CQueueMgr(const CQueueMgr&)=delete;	 			// Copy construct
-
-	public:
-		sem_t m_semaphore;
-
-		bool isRead() {return m_bIsRead;};
-		bool isRealTime() {return m_bIsRealTime;};
-
-		bool pushMsg(mqtt::const_message_ptr &msg);
-		CQueueMgr(bool isRead, bool isRealTime);
-		bool isMsgArrived(mqtt::const_message_ptr& msg);
-
-		~CQueueMgr();
-
-		bool getSubMsgFromQ(mqtt::const_message_ptr &msg);
-
-		void cleanup();
-	};
-
-	//functions to get on-demand operation instances
-	CQueueMgr& getRead();
-	CQueueMgr& getWrite();
-	CQueueMgr& getRTRead();
-	CQueueMgr& getRTWrite();
+//functions to get on-demand operation instances
+CQueueMgr& getRead();
+CQueueMgr& getWrite();
+CQueueMgr& getRTRead();
+CQueueMgr& getRTWrite();
 }
 #endif

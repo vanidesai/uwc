@@ -8,10 +8,10 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
+#include "ZmqHandler.hpp"
 #include "Common.hpp"
 #include "QueueMgr.hpp"
 #include "MQTTSubscribeHandler.hpp"
-#include "EISMsgbusHandler.hpp"
 #include "ConfigManager.hpp"
 #include "Logger.hpp"
 #include "MQTTPublishHandler.hpp"
@@ -223,13 +223,13 @@ void getOperation(string topic, globalConfig::COperation& operation)
  * @param operation :[in] operation type this thread needs to perform
  * @return None
  */
-void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext, globalConfig::COperation operation)
+void listenOnEIS(string topic, zmq_handler::stZmqContext context, zmq_handler::stZmqSubContext subContext, globalConfig::COperation operation)
 {
 	globalConfig::set_thread_sched_param(operation);
 	globalConfig::display_thread_sched_attr(topic + " listenOnEIS");
 	int qos = operation.getQos();
 
-	if(context.m_pContext == NULL || subContext.m_pContext == NULL)
+	if(context.m_pContext == NULL || subContext.sub_ctx == NULL)
 	{
 		std::cout << "Cannot start listening on EIS for topic : " << topic << endl;
 		DO_LOG_ERROR("Cannot start listening on EIS for topic : " + topic);
@@ -237,10 +237,12 @@ void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext,
 	}
 
 	void *msgbus_ctx = context.m_pContext;
-	recv_ctx_t *sub_ctx = subContext.m_pContext;
+	recv_ctx_t *sub_ctx = subContext.sub_ctx;
 
 	//consider topic name as distinguishing factor for publisher
-	CMQTTPublishHandler mqttPublisher(CCommon::getInstance().getStrMqttExportURL().c_str(), topic, qos);
+	CMQTTPublishHandler mqttPublisher(EnvironmentInfo::getInstance().getDataFromEnvMap("MQTT_URL_FOR_EXPORT").c_str(),
+										topic,
+										qos);
 
 	DO_LOG_INFO("ZMQ listening for topic : " + topic);
 
@@ -284,8 +286,8 @@ void listenOnEIS(string topic, stZmqContext context, stZmqSubContext subContext,
  * @param pubContext :[in] pub context
  * @return true/false based on success/failure
  */
-bool publishEISMsg(string eisMsg, stZmqContext &context,
-		stZmqPubContext &pubContext)
+bool publishEISMsg(string eisMsg, zmq_handler::stZmqContext &context,
+		zmq_handler::stZmqPubContext &pubContext)
 {
 	bool retVal = false;
 
@@ -417,22 +419,22 @@ void processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 		{
 			if(isRealtime)
 			{
-				eisTopic.assign(CCommon::getInstance().getStrRTWriteRequest());
+				eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest_RT"));
 			}
 			else
 			{
-				eisTopic.assign(CCommon::getInstance().getStrWriteRequest());
+				eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest"));
 			}
 		}
 		else//read request
 		{
 			if(isRealtime)
 			{
-				eisTopic.assign(CCommon::getInstance().getStrRTReadRequest());
+				eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest_RT"));
 			}
 			else
 			{
-				eisTopic.assign(CCommon::getInstance().getStrReadRequest());
+				eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest"));
 			}
 		}
 
@@ -455,25 +457,14 @@ void processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 			}
 
 			//get EIS msg bus context
-			stZmqContext context;
-			if (!CEISMsgbusHandler::Instance().getCTX(eisTopic, context)) {
-				DO_LOG_ERROR("cannot find msgbus context for topic : "+ eisTopic);
-				return;
-			}
+			zmq_handler::stZmqContext& context = zmq_handler::getCTX(eisTopic);
 
 			//will give topic context
-			stZmqPubContext pubContext;
-			if (!CEISMsgbusHandler::Instance().getPubCTX(eisTopic,
-					pubContext))
-			{
-				DO_LOG_ERROR("cannot find pub context for topic : "+ eisTopic)
-				return;
-			}
+			zmq_handler::stZmqPubContext& pubContext = zmq_handler::getPubCTX(eisTopic);
 
 			if(publishEISMsg(strMsg, context, pubContext))
 			{
 				DO_LOG_DEBUG("Published EIS message : "	+ strMsg + " on topic :" + eisTopic);
-				//std::cout << "Published EIS message : "	<< strMsg << " on topic :" << eisTopic << std::endl;
 			}
 			else
 			{
@@ -587,7 +578,7 @@ void postMsgstoMQTT()
 	DO_LOG_DEBUG("Initializing threads to start listening on EIS topics...");
 
 	// get sub topic list
-	vector<string> vFullTopics = CEISMsgbusHandler::Instance().getSubTopicList();
+	vector<string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
 
 	for (auto &topic : vFullTopics)
 	{
@@ -597,22 +588,10 @@ void postMsgstoMQTT()
 			continue;
 		}
 
-		stZmqContext context;
-
-		if (!CEISMsgbusHandler::Instance().getCTX(topic, context))
-		{
-			DO_LOG_ERROR("cannot find msgbus context for topic : " + topic);
-			continue;		//go to next topic
-		}
+		zmq_handler::stZmqContext& context = zmq_handler::getCTX(topic);
 
 		//will give topic context
-		stZmqSubContext subContext;
-		if (!CEISMsgbusHandler::Instance().getSubCTX(topic,
-				subContext))
-		{
-			DO_LOG_ERROR("cannot find sub context context for topic : "+ topic);
-			continue;		//go to next topic
-		}
+		zmq_handler::stZmqSubContext& subContext = zmq_handler::getSubCTX(topic);
 
 		DO_LOG_DEBUG("Full topic - " + topic + " AND listening on: " + topic);
 
@@ -639,9 +618,7 @@ bool initEISContext()
 	if (env_pubTopics != NULL)
 	{
 		DO_LOG_DEBUG("List of topic configured for Pub are :: "+ (std::string)(env_pubTopics));
-		bool bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext(
-				"pub");
-		if (!bRetVal)
+		if (true != zmq_handler::prepareCommonContext("pub"))
 		{
 			DO_LOG_ERROR("Context creation failed for sub topic ");
 			std::cout << __func__ << ":" << __LINE__ << " Error : Context creation failed for sub topic" <<  std::endl;
@@ -659,12 +636,16 @@ bool initEISContext()
 	if(env_subTopics != NULL)
 	{
 		DO_LOG_DEBUG("List of topic configured for Sub are :: "+ (std::string)(env_subTopics));
-		bool bRetVal = CEISMsgbusHandler::Instance().prepareCommonContext("sub");
-		if (!bRetVal)
+		if (true != zmq_handler::prepareCommonContext("sub"))
 		{
 			DO_LOG_ERROR("Context creation failed for sub topic");
 			std::cout << __func__ << ":" << __LINE__ << " Error : Context creation failed for sub topic" <<  std::endl;
 			retVal = false;
+		}
+		else
+		{
+			cout << "***** Sub Topics :: " << static_cast<std::string>(env_subTopics) << endl;
+			CcommonEnvManager::Instance().splitString(static_cast<std::string>(env_subTopics),',');
 		}
 	}
 	else
@@ -690,14 +671,8 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		//initialize CCommon class to get common variables
-		string AppName = CCommon::getInstance().getStrAppName();
-		if(AppName.empty())
-		{
-			DO_LOG_ERROR("AppName Environment Variable is not set");
-			std::cout << __func__ << ":" << __LINE__ << " Error : AppName Environment Variable is not set" <<  std::endl;
-			return -1;
-		}
+		CLogger::initLogger(std::getenv("Log4cppPropsFile"));
+		DO_LOG_DEBUG("Starting MQTT Export ...");
 
 		DO_LOG_INFO("MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION));
 		cout << "MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION) << endl;

@@ -96,7 +96,5 @@ public:
 	bool postLastResponseForCutoff(CRefDataForPolling& a_objReqData);
 };
 
-//eMbusAppErrorCode SubscibeOrUnSubPeriodicRead(RestRdPeriodicTagPart_t &lRdPeridList);
-
 
 #endif /* INCLUDE_INC_PERIODICREAD_HPP_ */
