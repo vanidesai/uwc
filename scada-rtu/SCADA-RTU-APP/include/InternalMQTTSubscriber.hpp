@@ -97,6 +97,10 @@ public:
 	bool isConnected();
 	bool pushMsgInQ(mqtt::const_message_ptr msg);
 	bool prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
+	bool prepareCMDMsg(std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev,
+						metricMap_t& a_mapChangedMetrics);
+	bool prepareWriteMsg(std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev,
+							metricMap_t& a_mapChangedMetrics);
 	void connect();
 	void disconnect();
  	void cleanup();

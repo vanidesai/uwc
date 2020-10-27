@@ -14,8 +14,7 @@
 #include <semaphore.h>
 #include <string>
 #include "mqtt/async_client.h"
-#include "MQTTCallback.hpp"
-//#include "Logger.hpp"
+#include "MQTTPubSubClient.hpp"
 #include "QueueMgr.hpp"
 
 enum eIntMQTTConStatus

@@ -17,17 +17,23 @@
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/UWC_Utils"/>
                         						
+                        <entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/uwc-util"/>
+                        						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/common/Debug"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/UWC_Common/Debug"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/UWC_Utils/Debug"/>
                         						
+                        <entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/uwc-util/Debug"/>
+                        						
                         <entry flags="RESOLVED" kind="libraryFile" name="common" srcPrefixMapping="" srcRootPath=""/>
                         						
                         <entry flags="RESOLVED" kind="libraryFile" name="UWC_Common" srcPrefixMapping="" srcRootPath=""/>
                         						
                         <entry flags="RESOLVED" kind="libraryFile" name="UWC_Utils" srcPrefixMapping="" srcRootPath=""/>
+                        						
+                        <entry flags="RESOLVED" kind="libraryFile" name="uwc-util" srcPrefixMapping="" srcRootPath=""/>
                         					
                     </externalSetting>
                     				
@@ -149,7 +155,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="Src/LibErrCodeManager.cpp|Src/ContextUtils.cpp|UnitTest" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="Test|Src/LibErrCodeManager.cpp|Src/ContextUtils.cpp|UnitTest" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				
@@ -211,7 +217,7 @@
                             							
                             <tool id="cdt.managedbuild.tool.gnu.archiver.base.887077163" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
                             							
-                            <tool command="g++ -std=c++11" id="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug.1400282853" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug">
+                            <tool command="g++ -std=c++1z" id="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug.1400282853" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug">
                                 								
                                 <option id="gnu.cpp.compiler.so.debug.option.optimization.level.228824241" name="Optimization Level" superClass="gnu.cpp.compiler.so.debug.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
                                 								
@@ -221,7 +227,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="/usr/local/include"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../$(PROJECT_DIR)/Inc"/>
+                                    <listOptionValue builtIn="false" value="../$(PROJECT_DIR)/include"/>
                                     								
                                 </option>
                                 								
@@ -471,7 +477,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="Src/LibErrCodeManager.cpp|Src/ContextUtils.cpp|UnitTest" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="Test|Src/LibErrCodeManager.cpp|Src/ContextUtils.cpp|UnitTest" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				

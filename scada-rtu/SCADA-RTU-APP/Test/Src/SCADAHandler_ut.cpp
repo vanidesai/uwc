@@ -20,7 +20,24 @@ void SCADAHandler_ut::TearDown()
 	// TearDown code
 }
 
-TEST_F(SCADAHandler_ut, prepareSparkPlugMsg_001)
+/************************Helper functions************************/
+
+void TargetFunctionCaller( std::vector<stRefForSparkPlugAction> stRefActionVec, bool& bRes )
+{
+
+	CIntMqttHandler::instance().disconnect();
+	bRes = CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+}
+
+void PostSem_semIntMQTTConnLost()
+{
+	CSCADAHandler::instance().signalIntMQTTConnLostThread();
+}
+
+/***************************************************************/
+
+
+TEST_F(SCADAHandler_ut, prepareSparkPlugMsg_InitStatusFalse)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
 
@@ -34,7 +51,13 @@ TEST_F(SCADAHandler_ut, prepareSparkPlugMsg_001)
 			"{\"metrics\": [{\"name\":\"UT_UniqueName\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
 			stRefActionVec);*/
 
-	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+	bool Bool_Res_Local = true;
+	std::thread TestTarget( TargetFunctionCaller, stRefActionVec, std::ref(Bool_Res_Local) );
+	std::thread TestHelper( PostSem_semIntMQTTConnLost );
 
-	//EXPECT_EQ(true, Bool_Res);
+	TestTarget.join();
+	TestHelper.join();
+
+	EXPECT_EQ( false, Bool_Res_Local );
 }
+

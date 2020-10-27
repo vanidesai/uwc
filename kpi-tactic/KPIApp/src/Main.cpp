@@ -29,7 +29,7 @@ vector<std::thread> g_vThreads;
  * @param qMgr 	:[in] pointer to respective queue manager
  * @return None
  */
-void postMsgsToWriteOnMQTT(CQueueHandler1& qMgr)
+void postMsgsToWriteOnMQTT(CQueueHandler& qMgr)
 {
 	DO_LOG_DEBUG("Starting thread to send messages on EIS");
 
@@ -61,7 +61,7 @@ void postMsgsToWriteOnMQTT(CQueueHandler1& qMgr)
  * @param qMgr 	:[in] pointer to respective queue manager
  * @return None
  */
-void analyzeControlLoopData(CQueueHandler1& qMgr)
+void analyzeControlLoopData(CQueueHandler& qMgr)
 {
 	try
 	{
@@ -86,10 +86,10 @@ void analyzeControlLoopData(CQueueHandler1& qMgr)
 					continue;
 				}
 
-				CMessageObject oTempMsg{};
-				if(true == CPollNWriteReqMapper::getInstace().getForProcessing(sAppSeqVal, oTempMsg))
+				struct stPollWrData oTempData{};
+				if(true == CPollNWriteReqMapper::getInstace().getForProcessing(sAppSeqVal, oTempData))
 				{
-					commonUtilKPI::logAnalysisMsg(oTempMsg, recvdMsg);
+					commonUtilKPI::logAnalysisMsg(oTempData, recvdMsg);
 				}
 				else
 				{
@@ -163,7 +163,12 @@ int main(int argc, char* argv[])
 
 		std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
 
-		CKPIAppConfig::getInstance().parseYMLFile("");
+		if(false == CKPIAppConfig::getInstance().parseYMLFile(""))
+		{
+			DO_LOG_ERROR("Error while loading the configuration file");
+			return EXIT_FAILURE;
+
+		}
 		CKPIAppConfig::getInstance().getControlLoopMapper().configControlLoopOps(CKPIAppConfig::getInstance().isRTModeForWriteOp());
 
 		PlBusMgr::initPlatformBusHandler(CKPIAppConfig::getInstance().isMQTTModeOn());

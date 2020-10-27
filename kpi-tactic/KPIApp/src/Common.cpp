@@ -9,6 +9,7 @@
  ************************************************************************************/
 #include "Common.hpp"
 #include <cjson/cJSON.h>
+#include "CommonDataShare.hpp"
 
 /**
  * Get current time in micro seconds
@@ -42,13 +43,13 @@ void commonUtilKPI::getCurrentTimestampsInString(std::string &strCurTime)
 /**
  * For logging control loop analysis data, a separate logger is used.
  * This function does creates teh analysis message and logs it into required logger.
- * @param a_msgPoll		[in]  polling message
+ * @param a_stPollWrData[in]  polling and write data
  * @param a_msgWrResp	[in]  write response message
  * @return none
  */
-void commonUtilKPI::logAnalysisMsg(CMessageObject &a_msgPoll, CMessageObject &a_msgWrResp)
+void commonUtilKPI::logAnalysisMsg(struct stPollWrData &a_stPollWrData, CMessageObject &a_msgWrResp)
 {
-	std::string sMsg = commonUtilKPI::createAnalysisMsg(a_msgPoll, a_msgWrResp);
+	std::string sMsg = commonUtilKPI::createAnalysisMsg(a_stPollWrData, a_msgWrResp);
 	log4cpp::Category::getInstance(std::string("analysis")).info(sMsg);
 }
 
@@ -129,7 +130,7 @@ void commonUtilKPI::addFieldToMsg(std::string& a_sMsg, const std::string& a_sKey
  * @param a_sUsec		[in]  usec value
  * @return none
  */
-void commonUtilKPI::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
+/*void commonUtilKPI::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
 {
 	a_sTimeStamp.clear();
 	a_sUsec.clear();
@@ -152,7 +153,7 @@ void commonUtilKPI::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUse
 		ss << std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count();
 		a_sUsec.insert(0, ss.str());
 	}
-}
+}*/
 
 /**
  * Function to create a write message to be sent as a part of control loop
@@ -190,7 +191,7 @@ bool commonUtilKPI::createWriteRequest(std::string& a_sMsg, const std::string& a
 		addFieldToMsg(a_sMsg, "realtime", 		a_sRT, 		false);
 		
 		std::string sTs{""}, sUsec{""};
-		getTimeParams(sTs, sUsec);
+		CcommonEnvManager::Instance().getTimeParams(sTs, sUsec);
 		if(false == a_bIsMQTTModeOn)
 		{
 			addFieldToMsg(a_sMsg, "sourcetopic", 	a_sTopic, 	false);
@@ -212,11 +213,11 @@ bool commonUtilKPI::createWriteRequest(std::string& a_sMsg, const std::string& a
 
 /**
  * Function to create a analysis message for a control loop
- * @param a_msgPoll		[in]  polling message
+ * @param a_stPollWrData[in]  polling and write data
  * @param a_msgWrResp	[in]  write response message
  * @return string: analysis message
  */
-std::string commonUtilKPI::createAnalysisMsg(CMessageObject &a_msgPoll, CMessageObject &a_msgWrResp)
+std::string commonUtilKPI::createAnalysisMsg(struct stPollWrData &a_stPollWrData, CMessageObject &a_msgWrResp)
 {
 	std::string sMsg{""};
 
@@ -246,16 +247,17 @@ std::string commonUtilKPI::createAnalysisMsg(CMessageObject &a_msgPoll, CMessage
 
 	try
 	{
-		cJSON *pRootPollMsg = cJSON_Parse(a_msgPoll.getMsg().c_str());
+		cJSON *pRootPollMsg = cJSON_Parse(a_stPollWrData.m_oPollData.getMsg().c_str());
 		if (NULL == pRootPollMsg)
 		{
-			DO_LOG_ERROR(a_msgPoll.getMsg() + ": Message could not be parsed in json format");
+			DO_LOG_ERROR(a_stPollWrData.m_oPollData.getMsg() + ": Message could not be parsed in json format");
 			return "";
 		}
 
 		// Process poll message
 		answer(sMsg, pRootPollMsg,	"driver_seq",	"pollSeq",	 	false);
 		answer(sMsg, pRootPollMsg,	"data_topic",	"pollTopic", 	false);
+		answer(sMsg, pRootPollMsg,	"realtime",		"pollRT", 	false);
 		answer(sMsg, pRootPollMsg, 	"status", 		"pollStatus", 	false);
 		//answer(sMsg, pRootPollMsg, 	"retryCount",	"pollRetry", 	false);
 		answer(sMsg, pRootPollMsg, 	"value", 		"pollValue", 	false);
@@ -265,12 +267,14 @@ std::string commonUtilKPI::createAnalysisMsg(CMessageObject &a_msgPoll, CMessage
 		answer(sMsg, pRootPollMsg, 	"reqSentByStack", 		"pollReqSentByStack", 	false);
 		answer(sMsg, pRootPollMsg, 	"respRcvdByStack", 		"pollRespRcvdByStack", 	false);
 		answer(sMsg, pRootPollMsg, 	"respPostedByStack", 	"pollRespPostedByStack",false);
-		answer(sMsg, pRootPollMsg, 	"usec",			 		"pollPostedToEIS",	 	false);
+		answer(sMsg, pRootPollMsg, 	"tsMsgRcvdForProcessing","pollDataRcvdInExport",false);
+		answer(sMsg, pRootPollMsg, 	"tsMsgReadyForPublish",	"pollDataPostedToMQTT",	false);
 
 		cJSON_Delete(pRootPollMsg);
 		pRootPollMsg = NULL;
 		
-		addFieldToMsg(sMsg, "pollRespRcvInApp", (std::to_string(commonUtilKPI::get_micros(a_msgPoll.getTimestamp()))).c_str(), false);
+		addFieldToMsg(sMsg, "pollDataRcvdInApp", (std::to_string(commonUtilKPI::get_micros(a_stPollWrData.m_oPollData.getTimestamp()))).c_str(), false);
+		addFieldToMsg(sMsg, "wrReqCreation", (std::to_string(commonUtilKPI::get_micros(a_stPollWrData.m_tsStartWrReqCreate))).c_str(), false);
 
 		cJSON *pRootWrRspMsg = cJSON_Parse(a_msgWrResp.getMsg().c_str());
 		if (NULL == pRootWrRspMsg)
@@ -280,12 +284,13 @@ std::string commonUtilKPI::createAnalysisMsg(CMessageObject &a_msgPoll, CMessage
 		}
 		
 		// Process write-response message
-		answer(sMsg, pRootWrRspMsg,	"app_seq",				"appSeq",	 		false);
-		answer(sMsg, pRootWrRspMsg, "tsMsgRcvdFromMQTT", 	"pollMsgRcvInApp",	false);
+		answer(sMsg, pRootWrRspMsg,	"app_seq",				"wrSeq",	 		false);
 		answer(sMsg, pRootWrRspMsg,	"data_topic",			"wrRspTopic", 		false);
+		answer(sMsg, pRootWrRspMsg,	"realtime",				"wrOpRT", 		false);
 		answer(sMsg, pRootWrRspMsg, "status", 				"wrRspStatus", 		false);
 		//answer(sMsg, pRootWrRspMsg, "retryCount",			"wrRspRetry", 		false);
 		answer(sMsg, pRootWrRspMsg, "error_code",			"wrRspError", 		false);
+		answer(sMsg, pRootWrRspMsg, "tsMsgRcvdFromMQTT", 	"wrReqRcvdInExport",	false);
 		answer(sMsg, pRootWrRspMsg, "tsMsgPublishOnEIS", 	"wrReqPublishOnEIS",	false);
 		answer(sMsg, pRootWrRspMsg, "reqRcvdByApp", 		"wrReqRcvdByModbus",	false);
 		answer(sMsg, pRootWrRspMsg, "reqRcvdInStack", 		"wrReqRcvdInStack", 	false);
@@ -293,12 +298,14 @@ std::string commonUtilKPI::createAnalysisMsg(CMessageObject &a_msgPoll, CMessage
 		answer(sMsg, pRootWrRspMsg, "respRcvdByStack", 		"wrRespRcvdByStack", 	false);
 		answer(sMsg, pRootWrRspMsg, "respPostedByStack", 	"wrRespPostedByStack",	false);
 		answer(sMsg, pRootWrRspMsg, "usec",			 		"wrRespPostedToEIS",	false);
+		answer(sMsg, pRootWrRspMsg,	"tsMsgRcvdForProcessing","wrRespRcvdInExport",	false);
+		answer(sMsg, pRootWrRspMsg,	"tsMsgReadyForPublish",	"wrRespPostedToMQTT",	false);
 
 		cJSON_Delete(pRootWrRspMsg);
 		pRootWrRspMsg = NULL;
 
 		// Add last timestamp
-		addFieldToMsg(sMsg, "wrRespRcvInApp", (std::to_string(commonUtilKPI::get_micros(a_msgWrResp.getTimestamp()))).c_str(), true);
+		addFieldToMsg(sMsg, "wrRespRcvdInApp", (std::to_string(commonUtilKPI::get_micros(a_msgWrResp.getTimestamp()))).c_str(), true);
 	}
 	catch(const std::exception& e)
 	{

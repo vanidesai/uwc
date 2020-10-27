@@ -30,6 +30,9 @@ WORKDIR /
 
 RUN mkdir -p reports/scada-rtu
 
+# Create utils directory inside include
+RUN mkdir -p /SCADA-RTU-APP/include/utils
+
 # copy required dependencies
 COPY SCADA-RTU-APP /SCADA-RTU-APP/. 
 
@@ -45,6 +48,9 @@ COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/googletest/include/gte
 COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
 COPY --from=build-tahu /EIS/tahu/client_libraries/c/lib/libtahu.so /SCADA-RTU-APP/lib/
 COPY --from=build-tahu /EIS/tahu/client_libraries/c/include/* /SCADA-RTU-APP/include/tahu/
+COPY --from=uwc_test_common /uwc_util/Release/libuwc-util.so /SCADA-RTU-APP/lib/
+COPY --from=uwc_test_common /uwc_util/include/* /SCADA-RTU-APP/include/
+COPY --from=uwc_test_common /uwc_util/include/utils/* /SCADA-RTU-APP/include/utils/
 
 RUN cd /SCADA-RTU-APP/Build.test \
     &&	export LD_LIBRARY_PATH='/SCADA-RTU-APP/lib:/usr/local/lib' \

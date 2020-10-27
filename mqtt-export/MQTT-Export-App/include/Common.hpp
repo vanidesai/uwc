@@ -12,13 +12,7 @@
 #define INCLUDE_COMMON_HPP_
 
 #include <string>
-#include <map>
 #include <vector>
-#include <algorithm>
-#include <list>
-#include "EnvironmentVarHandler.hpp"
-
-using namespace std;
 
 class CCommon
 {
@@ -29,15 +23,15 @@ private:
 	CCommon& operator=(CCommon const&);
 
 	bool m_devMode;
-	std::vector<string> m_vecEnv{"ReadRequest", "WriteRequest",
+	std::vector<std::string> m_vecEnv{"ReadRequest", "WriteRequest",
 		"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE", "ReadRequest_RT", "WriteRequest_RT"};
 
 public:
 	virtual ~CCommon();
 
-	void initializeCommonData(string strDevMode, string strAppName);
+	void initializeCommonData(std::string strDevMode, std::string strAppName);
 
-	bool addTimestampsToMsg(std::string &a_sMsg, string tsKey, string strTimestamp);
+	bool addTimestampsToMsg(std::string &a_sMsg, std::string tsKey, std::string strTimestamp);
 	void getCurrentTimestampsInString(std::string &a_sMsg);
 
 	/**

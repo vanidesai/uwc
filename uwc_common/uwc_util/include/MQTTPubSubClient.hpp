@@ -8,8 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
-#ifndef MQTTCALLBACK_HPP_
-#define MQTTCALLBACK_HPP_
+#ifndef MQTTPUBSUBCLIENT_HPP_
+#define MQTTPUBSUBCLIENT_HPP_
 
 #include "mqtt/async_client.h"
 #include <mutex>
@@ -119,6 +119,33 @@ public:
 		m_fcbMsgRcvd = a_fcbMsgRcvd;
 		m_bNotifyMsgRcvd = true;
 	}
+};
+
+class CMQTTBaseHandler
+{
+protected: 
+	CMQTTPubSubClient m_MQTTClient;
+	int m_QOS;
+
+	// delete copy and move constructors and assign operators
+	CMQTTBaseHandler(const CMQTTBaseHandler&) = delete;	 			// Copy construct
+	CMQTTBaseHandler& operator=(const CMQTTBaseHandler&) = delete;	// Copy assign
+
+public:
+	CMQTTBaseHandler(const std::string &a_sBrokerURL, const std::string &a_sClientID,
+		int a_iQOS, bool a_bIsTLS, const std::string &a_sCaCert, const std::string &a_sClientCert,
+		const std::string &a_sClientKey, const std::string &a_sListener);
+	virtual ~CMQTTBaseHandler();
+
+	virtual void connected(const std::string &a_sCause);
+	virtual void disconnected(const std::string &a_sCause);
+	virtual void msgRcvd(mqtt::const_message_ptr a_pMsg);
+	
+	bool isConnected();
+	void connect();
+	void disconnect();
+
+	bool publishMsg(const std::string &a_sMsg, const std::string &a_sTopic);
 };
 
 #endif

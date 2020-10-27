@@ -7,9 +7,14 @@
 * property right is granted to or conferred upon you by disclosure or delivery of
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
-#include "MQTTCallback.hpp"
+#include "MQTTPubSubClient.hpp"
 #include "Logger.hpp"
 
+/**
+ * This is a callback function to inform action failure related to mqtt
+ * @param tok :[in] mqtt token
+ * @return None
+ */
 void action_listener::on_failure(const mqtt::token& tok)  
 {
 	auto top = tok.get_topics();
@@ -24,6 +29,11 @@ void action_listener::on_failure(const mqtt::token& tok)
 	}
 }
 
+/**
+ * This is a callback function to inform action success related to mqtt
+ * @param tok :[in] mqtt token
+ * @return None
+ */
 void action_listener::on_success(const mqtt::token& tok)  
 {
 	auto top = tok.get_topics();
@@ -66,7 +76,7 @@ CMQTTPubSubClient::CMQTTPubSubClient(const std::string &a_sBrokerURL, std::strin
 		}
 		//
 		//connect options for sync publisher/client
-		m_ConOptions.set_keep_alive_interval(20);
+		m_ConOptions.set_keep_alive_interval(60);
 		m_ConOptions.set_clean_session(true);
 		//m_ConOptions.set_automatic_reconnect(1, 10);
 		//m_ConOptions.set_will_message(a_willMsg);
@@ -104,7 +114,10 @@ bool CMQTTPubSubClient::connect()
 {
 	try
 	{
-		auto oToken = m_Client.connect(m_ConOptions, nullptr, *this);
+		if(false == m_Client.is_connected())
+		{
+			m_Client.connect(m_ConOptions, nullptr, *this);
+		}
 	}
 	catch (const std::exception &e)
 	{
@@ -122,7 +135,10 @@ bool CMQTTPubSubClient::disconnect()
 {
 	try
 	{
-		auto oToken = m_Client.disconnect();
+		if(true == m_Client.is_connected())
+		{
+			m_Client.disconnect();
+		}
 	}
 	catch (const std::exception &e)
 	{
@@ -159,11 +175,7 @@ void CMQTTPubSubClient::subscribe(const std::string &a_sTopic)
 {
 	try
 	{
-		//if( std::find(m_sTopicList.begin(), m_sTopicList.end(), a_sTopic) == m_sTopicList.end() )
-		{
-			m_Client.subscribe(a_sTopic, m_iQOS, nullptr, m_Listener);
-			//m_sTopicList.push_back(a_sTopic);
-		}
+		m_Client.subscribe(a_sTopic, m_iQOS, nullptr, m_Listener);
 	}
 	catch (const std::exception &e)
 	{
@@ -316,3 +328,155 @@ void CMQTTPubSubClient::message_arrived(mqtt::const_message_ptr msg)
 		DO_LOG_ERROR(e.what());
 	}
 }
+
+//----------------------------------------------------------
+
+/**
+ * Constructor: Sets all parameters needed to set a connection with MQTT broker
+ * @param a_sBrokerURL :[in] MQTT broker URL
+ * @param a_sClientID: [in] Client id to be used to establish a connection
+ * @param a_iQOS :[in] QOS level to be used for communication with broker
+ * @param a_bIsTLS :[in] Tells whether TLS connection is needed
+ * @param a_sCaCert :[in] MQTT CA certificate, needed when TLS = true
+ * @param a_sClientCert :[in] MQTT client certificate, needed when TLS = true
+ * @param a_sClientKey :[in] MQTT client private key, needed when TLS = true
+ * @param a_sListener :[in] Action listener name to be used
+ */
+CMQTTBaseHandler::CMQTTBaseHandler(const std::string &a_sBrokerURL, const std::string &a_sClientID,
+			int a_iQOS, bool a_bIsTLS, const std::string &a_sCaCert, const std::string &a_sClientCert,
+			const std::string &a_sClientKey, const std::string &a_sListener):
+	m_MQTTClient(a_sBrokerURL, a_sClientID, a_iQOS, a_bIsTLS, 
+	a_sCaCert, a_sClientCert, a_sClientKey, a_sListener)
+{
+	try
+	{
+		m_QOS = a_iQOS;
+
+		m_MQTTClient.setNotificationConnect(std::bind(&CMQTTBaseHandler::connected, this, std::placeholders::_1));
+		m_MQTTClient.setNotificationDisConnect(std::bind(&CMQTTBaseHandler::disconnected, this, std::placeholders::_1));
+		m_MQTTClient.setNotificationMsgRcvd(std::bind(&CMQTTBaseHandler::msgRcvd, this, std::placeholders::_1));
+
+		DO_LOG_DEBUG("MQTT initialized successfully");
+	}
+	catch (const std::exception &e)
+	{
+		DO_LOG_ERROR(e.what());
+	}
+}
+
+/**
+ * Destructor
+ */
+CMQTTBaseHandler::~CMQTTBaseHandler()
+{
+	disconnect();
+}
+
+/**
+ * This is a callback function which gets called when subscriber is connected with MQTT broker
+ * @param a_sCause :[in] reason for connect
+ * @return None
+ */
+void CMQTTBaseHandler::connected(const std::string &a_sCause)
+{
+	DO_LOG_DEBUG(a_sCause);
+}
+
+/**
+ * This is a callback function which gets called when subscriber is disconnected with MQTT broker
+ * @param a_sCause :[in] reason for disconnect
+ * @return None
+ */
+void CMQTTBaseHandler::disconnected(const std::string &a_sCause)
+{
+	DO_LOG_DEBUG(a_sCause);
+}
+
+/**
+ * This is a callback function which gets called when a msg is received
+ * @param a_pMsg :[in] pointer to received message
+ * @return None
+ */
+void CMQTTBaseHandler::msgRcvd(mqtt::const_message_ptr a_pMsg)
+{
+	DO_LOG_DEBUG(a_pMsg->get_topic() + ", Msg: " + a_pMsg->get_payload());
+}
+
+/**
+ * Helper function to disconnect MQTT client from Internal MQTT broker
+ * @param None
+ * @return None
+ */
+void CMQTTBaseHandler::disconnect()
+{
+	try
+	{
+		if(true == m_MQTTClient.isConnected())
+		{
+			m_MQTTClient.disconnect();
+		}
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
+
+/**
+ * Helper function to connect MQTT client to Internal MQTT broker
+ * @param None
+ * @return None
+ */
+void CMQTTBaseHandler::connect()
+{
+	try
+	{
+		DO_LOG_INFO("Connecting to Internal MQTT ... ");
+		m_MQTTClient.connect();
+	}
+	catch(exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+	}
+}
+
+/**
+ * Checks if internal MQTT subscriber has been connected with the  MQTT broker
+ * @param none
+ * @return true/false as per the connection status of the external MQTT subscriber
+ */
+bool CMQTTBaseHandler::isConnected()
+{
+	return m_MQTTClient.isConnected();
+}
+
+/**
+ * Publish message on MQTT broker for MQTT-Export
+ * @param a_sMsg :[in] message to publish
+ * @param a_sTopic :[in] topic on which to publish message
+ * @return true/false based on success/failure
+ */
+bool CMQTTBaseHandler::publishMsg(const std::string &a_sMsg, const std::string &a_sTopic)
+{
+	try
+	{
+		// Check if topic is blank
+		if (true == a_sTopic.empty())
+		{
+			DO_LOG_ERROR("Blank topic. Message not posted");
+			return false;
+		}
+		mqtt::message_ptr pubmsg = mqtt::make_message(a_sTopic, a_sMsg, m_QOS, false);
+		m_MQTTClient.publishMsg(pubmsg);
+
+		DO_LOG_DEBUG("Published message on Internal MQTT broker successfully with QOS:"+ std::to_string(m_QOS));
+
+		return true;
+	}
+	catch (const mqtt::exception &exc)
+	{
+		DO_LOG_ERROR(exc.what());
+	}
+	return false;
+}
+

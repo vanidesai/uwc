@@ -82,6 +82,9 @@ public:
 	void addTopicToList(const std::string a_sTopic) {
 		m_vect_TopicList.push_back(a_sTopic);
 	}
+
+	/// function to read current time and usec
+	void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
 };
 
 

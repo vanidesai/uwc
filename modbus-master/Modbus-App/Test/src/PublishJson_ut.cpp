@@ -27,58 +27,9 @@ void PublishJson_ut::TearDown()
 	// TearDown code
 }
 
-//#if  1
-/*************************************publishJson()********************************************/
-//#if 0
-/*** Test:PublishJson_ut::publishJson_functioncall() **/
-/*
-TEST_F(PublishJson_ut, with_all_parameters)
-{
-
-	MsgbusManager msgbusMgr;
-
-	zmq_handler::zmqHandler zmqhandler(msgbusMgr, CallerObj, CallerConfigobj);
-
-	try{
-		// Creating message to be published
-		msg_envelope_elem_body_t* msgCommand = msgbus_msg_envelope_new_string("DValve");
-		msg_envelope_elem_body_t* msgAppSeq = msgbus_msg_envelope_new_string("1234");
-		msg_envelope_elem_body_t* msgValue = msgbus_msg_envelope_new_string("0x1234");
-		msg = msgbus_msg_envelope_new(CT_JSON);
-		msgbus_msg_envelope_put(msg, "command", msgCommand);
-		msgbus_msg_envelope_put(msg, "app_seq", msgAppSeq);
-		msgbus_msg_envelope_put(msg, "value", msgValue);
-
-
-		std::string topic = "PL0_flowmeter1_write";
-		std::string topictype = "pub";
-
-
-		msgbus_ret_t retVal = MSG_SUCCESS;
-		publisher_ctx_t* g_pub_ctx;
-
-		zmq_handler::stZmqContext MsgbusCtx = zmqhandler.getCTX(topic);
-		zmq_handler::stZmqPubContext pubCtx = zmqhandler.getPubCTX(topic);
-
-		PublishJsonHandler::instance(msgbusMgr).publishJson(msg, MsgbusCtx.m_pContext, pubCtx.m_pContext, topic);
-		msgCommand = msgbus_msg_envelope_new_string("Arrival");
-		msgbus_msg_envelope_put(msg, "command", msgCommand);
 
 
 
-	//	PublishJsonHandler::instance(msgbusMgr).publishJson(msg, MsgbusCtx.m_pContext, pubCtx.m_pContext, "PL0_flowmeter1_write");
-
-	}
-	catch(std::exception &e)
-	{
-		EXPECT_EQ("map::at", (string)e.what());
-	}
-
-
-}
-*/
-
-//#if 1
 TEST_F(PublishJson_ut, publishJson_functioncall)
 {
 	try
@@ -167,30 +118,6 @@ TEST_F(PublishJson_ut, publishJson_NULL_msgCTX)
 	}
 }
 #endif
-
-/***TEST:PublishJson_ut::publishJson_all_notNULL() check when not a single argument is NULL***/
-/*TEST_F(PublishJson_ut, publishJson_all_notNULL)
-{
-
-	MsgbusManager msgbusMgr;
-	zmq_handler::zmqHandler zmqhandler(msgbusMgr, CallerObj, CallerConfigobj);
-	try
-	{
-		std::string sTopic("");
-		const CRefDataForPolling& objReqData = CRequestInitiator::instance().getTxIDReqData(res.u16TransacID);
-
-		uint8_t va =PublishJsonHandler::instance(msgbusMgr).publishJson(g_msg, objReqData.getBusContext().m_pContext,
-				objReqData.getDataPoint().getID());
-
-	}
-	catch(std::exception &e)
-	{
-
-		EXPECT_EQ("map::at", (string)e.what());
-	}
-}*/
-//#endif
-
 
 /*** Test:PublishJson_ut::publishJson_valid_arguments and pub topic***/
 /* Valid arguments */
@@ -297,5 +224,63 @@ TEST_F(PublishJson_ut, element_exist_inJSON)
 	}
 }
 //#endif
+
+
+TEST_F(PublishJson_ut, Set_Topic_null)
+{
+	bool result;
+	std::string topic;
+	result = PublishJsonHandler::instance().setTopicForOperation(topic);
+	EXPECT_EQ(false, result);
+}
+
+
+TEST_F(PublishJson_ut, Set_Topic_ReadRes)
+{
+	bool result;
+	std::string topic = "TCP1_RdResp";
+	result = PublishJsonHandler::instance().setTopicForOperation(topic);
+	EXPECT_EQ(true, result);
+}
+
+TEST_F(PublishJson_ut, Set_Topic_ReadRes_RT)
+{
+	bool result;
+	std::string topic = "TCP1_RdResp_RT";
+	result = PublishJsonHandler::instance().setTopicForOperation(topic);
+	EXPECT_EQ(true, result);
+}
+
+TEST_F(PublishJson_ut, Set_Topic_WRITE_RES)
+{
+	bool result;
+	std::string topic = "TCP1_WrResp";
+	result = PublishJsonHandler::instance().setTopicForOperation(topic);
+	EXPECT_EQ(true, result);
+}
+
+TEST_F(PublishJson_ut, Set_Topic_WRITE_RES_RT)
+{
+	bool result;
+	std::string topic = "TCP1_WrResp_RT";
+	result = PublishJsonHandler::instance().setTopicForOperation(topic);
+	EXPECT_EQ(true, result);
+}
+
+TEST_F(PublishJson_ut, Set_Topic_PolledData)
+{
+	bool result;
+	std::string topic = "TCP1_PolledData";
+	result = PublishJsonHandler::instance().setTopicForOperation(topic);
+	EXPECT_EQ(true, result);
+}
+
+TEST_F(PublishJson_ut, Set_Topic_PolledData_RT)
+{
+	bool result;
+	std::string topic = "TCP1_PolledData_RT";
+	result = PublishJsonHandler::instance().setTopicForOperation(topic);
+	EXPECT_EQ(true, result);
+}
 
 #endif

@@ -15,19 +15,41 @@
 #include <map>
 #include <semaphore.h>
 #include "mqtt/async_client.h"
-//#include "Common.hpp"
 #include <queue>
 #include <string>
 
-//using namespace std;
-/**
- * namespace for Queue manager
- */
-//namespace QMgr
-//{
+	class CMessageObject
+	{
+		std::string m_sTopic;
+		std::string m_Msg;
+		struct timespec m_stTs;
 
+		public:
+		CMessageObject() : m_sTopic{""}, m_Msg{""}, m_stTs{}
+		{
+			timespec_get(&m_stTs, TIME_UTC);
+		}
+
+		CMessageObject(const std::string &a_sTopic, const std::string &a_Msg) 
+			: m_sTopic{a_sTopic}, m_Msg{a_Msg}, m_stTs{}
+		{
+			timespec_get(&m_stTs, TIME_UTC);
+		}
+
+		CMessageObject(const std::string &a_sTopic, const std::string &a_Msg, struct timespec a_stRcvdMsgTs) 
+			: m_sTopic{a_sTopic}, m_Msg{a_Msg}, m_stTs{m_stTs} 
+		{}
+
+		CMessageObject(const CMessageObject& a_obj)
+		: m_sTopic{a_obj.m_sTopic}, m_Msg{a_obj.m_Msg}, m_stTs{a_obj.m_stTs}
+		{}
+
+		std::string getTopic() {return m_sTopic;}
+		std::string getMsg() {return m_Msg;}
+		struct timespec getTimestamp() {return m_stTs;}
+	};
 	/**
-	 * Queue manager class to manage instances of on-demand operations for msg handling
+	 * Queue handler class which implements queue operations to be used across modules
 	 */
 	class CQueueHandler
 	{
@@ -35,6 +57,7 @@
 
 		std::mutex m_queueMutex;
 		std::queue<mqtt::const_message_ptr> m_msgQueue;
+		std::queue<CMessageObject> m_msgQ;
 		sem_t m_semaphore;
 
 		// delete copy and move constructors and assign operators
@@ -43,14 +66,19 @@
 
 	public:
 		CQueueHandler();
-		~CQueueHandler();
+		virtual ~CQueueHandler();
 
 		bool pushMsg(mqtt::const_message_ptr msg);
 		bool isMsgArrived(mqtt::const_message_ptr& msg);
 		bool getSubMsgFromQ(mqtt::const_message_ptr& msg);
 
+		bool pushMsg(CMessageObject msg);
+		bool isMsgArrived(CMessageObject& msg);
+		bool getSubMsgFromQ(CMessageObject& msg);
+
+		bool breakWaitOnQ();
+
 		void cleanup();
 		void clear();
 	};
-//}
 #endif

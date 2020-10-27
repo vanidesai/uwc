@@ -21,6 +21,9 @@ services:
       args:
           UBUNTU_IMAGE_VERSION: ${UBUNTU_IMAGE_VERSION}
           EIS_VERSION: ${EIS_VERSION}
+          HOST_TIME_ZONE: ${HOST_TIME_ZONE}
+          ETCD_HOST: ${ETCD_HOST}
+    read_only: true
     image: ${DOCKER_REGISTRY}ia_eisbase:${EIS_VERSION}
 
   ## Define ia_common service
@@ -34,6 +37,7 @@ services:
           EIS_VERSION: ${EIS_VERSION}
           # set CMAKE_BUILD_TYPE value to "Debug" to generate debug symbols
           CMAKE_BUILD_TYPE: "Release"
+          ETCD_HOST: ${ETCD_HOST}
     read_only: true
     image: ${DOCKER_REGISTRY}ia_common:${EIS_VERSION}
 
@@ -70,10 +74,10 @@ services:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
+        ETCD_HOST: ${ETCD_HOST}
     image: ${DOCKER_REGISTRY}modbus-master-test:${EIS_VERSION}
     container_name: modbus-tcp-master-test
     hostname: modbus-tcp-master-test
-    network_mode: host
     ulimits:
      rtprio:
        soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -84,6 +88,7 @@ services:
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/Modbus-App/Config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
+      ETCD_HOST: ${ETCD_HOST}
       MY_APP_ID: 1
       NETWORK_TYPE: TCP
       CertType: "zmq"
@@ -93,21 +98,29 @@ services:
       PubTopics: "TCP_PolledData,TCP_PolledData_RT,TCP_RdResp,TCP_RdResp_RT,TCP_WrResp,TCP_WrResp_RT"
       SubTopics: "MQTT_Export/MQTT_Export_RdReq,MQTT_Export/MQTT_Export_RdReq_RT,MQTT_Export/MQTT_Export_WrReq,MQTT_Export/MQTT_Export_WrReq_RT"
       # non-realtime topics
-      TCP_PolledData_cfg: "zmq_tcp,127.0.0.1:6000"
-      TCP_RdResp_cfg: "zmq_tcp,127.0.0.1:6001"
-      TCP_WrResp_cfg: "zmq_tcp,127.0.0.1:6002"
-      MQTT_Export_RdReq_cfg: "zmq_tcp,127.0.0.1:6003"
-      MQTT_Export_WrReq_cfg: "zmq_tcp,127.0.0.1:6004"
+      TCP_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      TCP_RdResp_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      TCP_WrResp_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_RdReq_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WrReq_cfg: "zmq_ipc,${SOCKET_DIR}/"
       # realtime topics
-      TCP_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:6005"
-      TCP_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:6006"
-      TCP_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:6007"
-      MQTT_Export_RdReq_RT_cfg: "zmq_tcp,127.0.0.1:6008"
-      MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:6009"
+      TCP_PolledData_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      TCP_RdResp_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      TCP_WrResp_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_RdReq_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WrReq_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+      - "vol_uwc_socket:${SOCKET_DIR}:z"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
       - "$PWD/unit_test_reports/modbus-tcp-master:/reports/modbus-tcp-master"
+    secrets:
+      - ca_etcd
+      - etcd_TCP_cert
+      - etcd_TCP_key
+      - ca_broker
+      - client_cert
+      - client_key
 
   modbus-rtu-test-master:
     depends_on:
@@ -120,10 +133,10 @@ services:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
+        ETCD_HOST: ${ETCD_HOST}
     image: ${DOCKER_REGISTRY}modbus-rtu-test-master:${EIS_VERSION}
     container_name: modbus-rtu-test-master
     hostname: modbus-rtu-test-master
-    network_mode: host
     ulimits:
      rtprio:
        soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -132,6 +145,7 @@ services:
       AppName: "RTU"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+      ETCD_HOST: ${ETCD_HOST}
       Log4cppPropsFile: "/Modbus-App/Config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
       SERIAL_PORT_RETRY_INTERVAL: 1
@@ -144,21 +158,34 @@ services:
       PubTopics: "RTU_PolledData,RTU_RdResp,RTU_WrResp,RTU_PolledData_RT,RTU_RdResp_RT,RTU_WrResp_RT"
       SubTopics: "MQTT_Export/MQTT_Export_RdReq,MQTT_Export/MQTT_Export_WrReq,MQTT_Export/MQTT_Export_RdReq_RT,MQTT_Export/MQTT_Export_WrReq_RT"
       # non-realtime topics
-      RTU_PolledData_cfg: "zmq_tcp,127.0.0.1:6010"
-      RTU_RdResp_cfg: "zmq_tcp,127.0.0.1:6011"
-      RTU_WrResp_cfg: "zmq_tcp,127.0.0.1:6012"
-      MQTT_Export_RdReq_cfg: "zmq_tcp,127.0.0.1:6003"
-      MQTT_Export_WrReq_cfg: "zmq_tcp,127.0.0.1:6004"
+      RTU_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_RdResp_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_WrResp_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_RdReq_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WrReq_cfg: "zmq_ipc,${SOCKET_DIR}/"
       # realtime topics
-      RTU_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:6013"
-      RTU_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:6014"
-      RTU_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:6015"
-      MQTT_Export_RdReq_RT_cfg: "zmq_tcp,127.0.0.1:6008"
-      MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:6009"
+      RTU_PolledData_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_RdResp_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_WrResp_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_RdReq_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WrReq_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "3"
+            max-size: "10m"
     volumes:
+      - "vol_uwc_socket:${SOCKET_DIR}:z"
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
       - "$PWD/unit_test_reports/modbus-rtu-master:/reports/modbus-rtu-master"
+    secrets:
+      - ca_etcd
+      - etcd_RTU_cert
+      - etcd_RTU_key
+      - ca_broker
+      - client_cert
+      - client_key
     devices:
       - /dev:/dev
     privileged: true
@@ -176,11 +203,16 @@ services:
     image: ${DOCKER_REGISTRY}mqtt_test_container:${EIS_VERSION}
     container_name: mqtt_test_container
     hostname: mqtt_test_container
-    network_mode: host
     environment:
       AppName: "MQTT"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+    user: ${EIS_UID}
+    # userns_mode: host
+    secrets:
+      - ca_broker
+      - broker_cert
+      - broker_key
 
   mqtt-export-test:
     depends_on:
@@ -193,54 +225,63 @@ services:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
+        ETCD_HOST: ${ETCD_HOST}
     image: ${DOCKER_REGISTRY}mqtt-export-test:${EIS_VERSION}
     container_name: mqtt-export-test
     hostname: mqtt-export-test
-    network_mode: host
     ulimits:
      rtprio:
        soft: "99" # these are the maximum values of priorites to be used inside the container application
        hard: "99"
     environment:
-      AppName: "MQTT_Export_TEST"
+      AppName: "MQTT_Export"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+      ETCD_HOST: ${ETCD_HOST}
       Log4cppPropsFile: "/MQTT-Export-App/Config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000" 
-      MQTT_URL_FOR_EXPORT: "tcp://127.0.0.1:11883"
+      MQTT_URL_FOR_EXPORT: "ssl://mqtt_test_container:11883"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "TCP,RTU"
       SubTopics: "TCP/TCP_PolledData,TCP/TCP_RdResp,TCP/TCP_WrResp,RTU/RTU_PolledData,RTU/RTU_RdResp,RTU/RTU_WrResp,TCP/TCP_PolledData_RT,TCP/TCP_RdResp_RT,TCP/TCP_WrResp_RT,RTU/RTU_PolledData_RT,RTU/RTU_RdResp_RT,RTU/RTU_WrResp_RT"
       PubTopics: "MQTT_Export_RdReq,MQTT_Export_WrReq,MQTT_Export_RdReq_RT,MQTT_Export_WrReq_RT"
       # non-realtime topics
-      TCP_PolledData_cfg: "zmq_tcp,127.0.0.1:6000"
-      TCP_RdResp_cfg: "zmq_tcp,127.0.0.1:6001"
-      TCP_WrResp_cfg: "zmq_tcp,127.0.0.1:6002"
-      RTU_PolledData_cfg: "zmq_tcp,127.0.0.1:6010"
-      RTU_RdResp_cfg: "zmq_tcp,127.0.0.1:6011"
-      RTU_WrResp_cfg: "zmq_tcp,127.0.0.1:6012"
-      ReadRequest: "MQTT_Export_RdReq"
-      WriteRequest: "MQTT_Export_WrReq"
-      MQTT_Export_RdReq_cfg: "zmq_tcp,127.0.0.1:6003"
-      MQTT_Export_WrReq_cfg: "zmq_tcp,127.0.0.1:6004"
+      TCP_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_RdReq_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WrReq_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      TCP_RdResp_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      TCP_WrResp_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_PolledData_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_RdResp_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_WrResp_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      ReadRequest: MQTT_Export_RdReq
+      WriteRequest: MQTT_Export_WrReq
       # realtime topics
-      TCP_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:6005"
-      TCP_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:6006"
-      TCP_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:6007"
-      RTU_PolledData_RT_cfg: "zmq_tcp,127.0.0.1:6013"
-      RTU_RdResp_RT_cfg: "zmq_tcp,127.0.0.1:6014"
-      RTU_WrResp_RT_cfg: "zmq_tcp,127.0.0.1:6015"
-      ReadRequest_RT: "MQTT_Export_RdReq_RT"
-      WriteRequest_RT: "MQTT_Export_WrReq_RT"
-      MQTT_Export_RdReq_RT_cfg: "zmq_tcp,127.0.0.1:6008"
-      MQTT_Export_WrReq_RT_cfg: "zmq_tcp,127.0.0.1:6009"
+      TCP_PolledData_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_RdReq_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      MQTT_Export_WrReq_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      TCP_RdResp_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      TCP_WrResp_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_PolledData_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_RdResp_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      RTU_WrResp_RT_cfg: "zmq_ipc,${SOCKET_DIR}/"
+      ReadRequest_RT: MQTT_Export_RdReq_RT
+      WriteRequest_RT: MQTT_Export_WrReq_RT
       # general topics
       mqtt_SubReadTopic: "/+/+/+/read"
       mqtt_SubWriteTopic: "/+/+/+/write"
     volumes:
+      - "vol_uwc_socket:${SOCKET_DIR}:z"
       - "$PWD/unit_test_reports/mqtt-export:/reports/mqtt-export"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+    secrets:
+      - ca_etcd
+      - etcd_MQTT_Export_cert
+      - etcd_MQTT_Export_key
+      - ca_broker
+      - client_cert
+      - client_key
 
   scada-rtu-test:
     depends_on:
@@ -256,7 +297,6 @@ services:
     image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
     container_name: scada-rtu-test
     hostname: scada-rtu-test
-    network_mode: host
     ulimits:
      rtprio:
        soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -267,7 +307,7 @@ services:
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/SCADA-RTU-APP/Config/log4cpp.properties"
       DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
-      INTERNAL_MQTT_URL: "tcp://127.0.0.1:1883"
+      INTERNAL_MQTT_URL: "ssl://mqtt_test_container:11883"
       NETWORK_TYPE: "ALL"
       TOPIC_SEPARATOR: '-'
       CertType: "zmq"
@@ -282,3 +322,62 @@ services:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
       - "${EIS_INSTALL_PATH}/container_logs/scada-rtu:/opt/intel/app/logs"
+    secrets:
+      - ca_etcd
+      - etcd_SCADA-RTU_cert
+      - etcd_SCADA-RTU_key
+      - ca_broker
+      - client_cert
+      - client_key
+
+volumes:
+  vol_uwc_socket:
+    driver: local
+    driver_opts:
+      type: local
+      o: bind
+      device: ${EIS_INSTALL_PATH}/sockets
+  vol_etcd_keeper:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+
+networks:
+  default:
+    external:
+      name: uwc_nw
+
+secrets:
+  ca_etcd:
+    file: provision/Certificates/ca/ca_certificate.pem
+  etcd_root_cert:
+    file: provision/Certificates/root/root_client_certificate.pem
+  etcd_root_key:
+    file: provision/Certificates/root/root_client_key.pem
+  etcd_TCP_cert:
+    file: provision/Certificates/TCP/TCP_client_certificate.pem
+  etcd_TCP_key:
+    file: provision/Certificates/TCP/TCP_client_key.pem
+  etcd_RTU_cert:
+    file: provision/Certificates/RTU/RTU_client_certificate.pem
+  etcd_RTU_key:
+    file: provision/Certificates/RTU/RTU_client_key.pem
+  etcd_MQTT_Export_cert:
+    file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
+  etcd_MQTT_Export_key:
+    file: provision/Certificates/MQTT_Export/MQTT_Export_client_key.pem
+  etcd_SCADA-RTU_cert:
+    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_certificate.pem
+  etcd_SCADA-RTU_key:
+    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_key.pem
+  ca_broker:
+    file: provision/Certificates/ca/ca_certificate.pem
+  broker_cert:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_server_certificate.pem
+  broker_key:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_server_key.pem
+  client_cert:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
+  client_key:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem

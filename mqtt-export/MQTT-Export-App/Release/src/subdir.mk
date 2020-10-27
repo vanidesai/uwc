@@ -11,28 +11,25 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/MQTTCallback.cpp \
-../src/MQTTSubscribeHandler.cpp \
-../src/MQTTPublishHandler.cpp \
-../src/Main.cpp \
 ../src/Common.cpp \
-../src/QueueMgr.cpp
+../src/MQTTPublishHandler.cpp \
+../src/MQTTSubscribeHandler.cpp \
+../src/Main.cpp \
+../src/QueueMgr.cpp 
 
 OBJS += \
-./src/MQTTCallback.o \
-./src/MQTTSubscribeHandler.o \
-./src/MQTTPublishHandler.o \
-./src/Main.o \
 ./src/Common.o \
-./src/QueueMgr.o
+./src/MQTTPublishHandler.o \
+./src/MQTTSubscribeHandler.o \
+./src/Main.o \
+./src/QueueMgr.o 
 
 CPP_DEPS += \
-./src/MQTTCallback.d \
-./src/MQTTSubscribeHandler.d \
-./src/MQTTPublishHandler.d \
-./src/Main.d \
 ./src/Common.d \
-./src/QueueMgr.d
+./src/MQTTPublishHandler.d \
+./src/MQTTSubscribeHandler.d \
+./src/Main.d \
+./src/QueueMgr.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

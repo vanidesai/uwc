@@ -27,9 +27,9 @@ static CEISPlBusHandler& getEISPlBusHandler()
  * @param None
  * @return reference of on-demand read operation instance
  */
-CQueueHandler1& QMgr::PollMsgQ()
+CQueueHandler& QMgr::PollMsgQ()
 {
-	static CQueueHandler1 ng_qPollMsgs;
+	static CQueueHandler ng_qPollMsgs;
 	return ng_qPollMsgs;
 }
 
@@ -38,9 +38,9 @@ CQueueHandler1& QMgr::PollMsgQ()
  * @param None
  * @return reference of on-demand read operation instance
  */
-CQueueHandler1& QMgr::WriteRespMsgQ()
+CQueueHandler& QMgr::WriteRespMsgQ()
 {
-	static CQueueHandler1 ng_qWrRespMsgs;
+	static CQueueHandler ng_qWrRespMsgs;
 	return ng_qWrRespMsgs;
 }
 
@@ -109,7 +109,7 @@ bool PlBusMgr::publishWriteReq(const CControlLoopOp& a_rCtrlLoop,
 		std::string sWrRT{"0"};
 		if(true == CKPIAppConfig::getInstance().isRTModeForWriteOp())
 		{
-			sWrRT.assign("0");
+			sWrRT.assign("1");
 		}
 		std::string sPubTopic{a_rCtrlLoop.getWritePoint()+"/write"};
 		std::string sMsg{""};
@@ -149,7 +149,7 @@ void PlBusMgr::stopListeners()
 	{
 		if(true == CKPIAppConfig::getInstance().isMQTTModeOn())
 		{
-			//return publishWriteReqOnMQTT(sPubTopic, sMsg);
+			;
 		}
 		else
 		{

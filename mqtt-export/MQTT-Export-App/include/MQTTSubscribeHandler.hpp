@@ -12,93 +12,40 @@
 #define MQTTHANDLER_HPP_
 
 #include <atomic>
-#include <mqtt/async_client.h>
-#include <mqtt/client.h>
-#include "MQTTCallback.hpp"
 #include "Common.hpp"
-#include "ZmqHandler.hpp"
-#include <eis/msgbus/msgbus.h>
-#include "QueueMgr.hpp"
+#include <semaphore.h>
+#include <string>
+#include "mqtt/async_client.h"
+#include "MQTTPubSubClient.hpp"
 
-using namespace std;
-
-// Declarations used for MQTT
-#define SUBSCRIBERID								"MQTT_SUBSCRIBER"
-#define CLIENTID    							    "MQTT_EXPORT"
-#define LWT_PAYLOAD	                                "MQTT Export - Last will and testament."
-#define QOS         							    0
-#define ON_DEMAND_WRITE_PRIORITY					1 	//Write-On Demand Priority set as highest(1)
-#define ON_DEMAND_READ_PRIORITY						2 	//Read-On Demand Priority set as 2
-
-typedef enum MQTT_SUBSCRIBER_CONFIG_STATE
+class CMQTTHandler : public CMQTTBaseHandler
 {
-	MQTT_SUSCRIBER_CONNECT_STATE,
-	MQTT_SUSCRIBER_SUBSCRIBE_STATE
-}Mqtt_Sub_Config_state_t;
+	sem_t m_semConnSuccess;
 
-class CMQTTHandler
-{
-	// Default constructor
-	CMQTTHandler(std::string strPlBusUrl) ;
+	CMQTTHandler(const std::string &strPlBusUrl, int iQOS);
 
 	// delete copy and move constructors and assign operators
 	CMQTTHandler(const CMQTTHandler&) = delete;	 			// Copy construct
 	CMQTTHandler& operator=(const CMQTTHandler&) = delete;	// Copy assign
 
-	mqtt::async_client subscriber;
+	void subscribeTopics();
+	bool init();
 
-	mqtt::connect_options conopts;
-	mqtt::token_ptr conntok;
-	mqtt::delivery_token_ptr pubtok;
+	void handleConnSuccessThread();
+	void signalIntMQTTConnDoneThread();
 
-	CMQTTCallback callback;
-	CMQTTActionListener listener;
+	bool parseMQTTMsg(const std::string &sJson, bool &isRealtime, const bool bIsDefault);
 
-	std::atomic<Mqtt_Sub_Config_state_t> subConfigState;
+	bool pushMsgInQ(mqtt::const_message_ptr& msg);
 
- 	bool connectSubscriber();
- 	bool subscribeToTopics();
-
-	void setMQTTSubConfigState(Mqtt_Sub_Config_state_t tempConfigState);
- 	Mqtt_Sub_Config_state_t getMQTTSubConfigState();
-
-	friend class CMQTTCallback;
-	friend class CMQTTActionListener;
-
-	/**
-	* fill the default realtime from global config
-	* @param isWrite	:[in] opearation type
-	* @return realtime value
-	*/
-	bool fillDefaultRealtime(const bool isWrite);
-
-#ifdef PERFTESTING
-	// For testing
-	static std::atomic<uint32_t> m_ui32ConnectionLost;
-	static std::atomic<uint32_t> m_ui32Connection;
-	static std::atomic<uint32_t> m_ui32Disconnected;
-	static std::atomic<uint32_t> m_ui32MessageArrived;
-	static std::atomic<uint32_t> m_uiQReqTried;
-	static std::atomic<uint32_t> m_uiSubscribeQReqTried;
-	static std::atomic<uint32_t> m_ui32SubscribeSkipped;
-#endif
-	
 public:
-
 	~CMQTTHandler();
 	static CMQTTHandler& instance(); //function to get single instance of this class
 
-	bool getOperation(string &topic, bool &isWrite);
- 	bool parseMQTTMsg(const char *json, bool &isRealtime, const bool isWrite);
+	void connected(const std::string &a_sCause) override;
+	void msgRcvd(mqtt::const_message_ptr a_pMsg) override;
 
-	bool pushSubMsgInQ(mqtt::const_message_ptr msg);
- 	void cleanup();
-
-#ifdef PERFTESTING
- 	void incSubQTried() { m_uiSubscribeQReqTried++; }
- 	void incSubQSkipped() { m_ui32SubscribeSkipped++; }
-	static void printCounters();
-#endif
- };
+	void cleanup();
+};
 
 #endif

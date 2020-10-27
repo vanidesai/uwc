@@ -10,6 +10,9 @@
 
 #include "ConfigManager.hpp"
 #include "Common.hpp"
+#include <cjson/cJSON.h>
+#include <algorithm>
+#include "EnvironmentVarHandler.hpp"
 
 /**
  * Constructor initializes CCommon instance and retrieves common environment variables
@@ -20,7 +23,7 @@
 CCommon::CCommon()
 {
 	EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
-	string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
+	std::string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
 	transform(strDevMode.begin(), strDevMode.end(), strDevMode.begin(), ::toupper);
 	if (strDevMode == "TRUE")
 	{
@@ -43,7 +46,7 @@ CCommon::CCommon()
 		cout << "DEV_MODE is set to default false\n";
 	}
 
-	string strAppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
+	std::string strAppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
 	if(strAppName.empty())
 	{
 		DO_LOG_ERROR("AppName Environment Variable is not set");
@@ -63,7 +66,7 @@ CCommon::CCommon()
  *
  * @return
  */
-void CCommon::initializeCommonData(string strDevMode, string strAppName)
+void CCommon::initializeCommonData(std::string strDevMode, std::string strAppName)
 {
 	stUWCComnDataVal_t stUwcData;
 	stUwcData.m_devMode = false;
@@ -111,7 +114,7 @@ void CCommon::getCurrentTimestampsInString(std::string &strCurTime)
  * @param strTimestamp	:[in] time stamp in string format
  * @return true/false based on success/failure
  */
-bool CCommon::addTimestampsToMsg(std::string &a_sMsg, string tsKey, string strTimestamp)
+bool CCommon::addTimestampsToMsg(std::string &a_sMsg, std::string tsKey, std::string strTimestamp)
 {
 	cJSON *root = NULL;
 	try

@@ -10,36 +10,30 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/KPIAppConfigMgr.cpp \
 ../src/Common.cpp \
 ../src/ControlLoopHandler.cpp \
-../src/MQTTCallback.cpp \
-../src/MqttHandler.cpp \
 ../src/EISPlBusHandler.cpp \
+../src/KPIAppConfigMgr.cpp \
 ../src/Main.cpp \
-../src/QueueHandler.cpp \
+../src/MqttHandler.cpp \
 ../src/QueueMgr.cpp 
 
 OBJS += \
-./src/KPIAppConfigMgr.o \
 ./src/Common.o \
 ./src/ControlLoopHandler.o \
-./src/MQTTCallback.o \
-./src/MqttHandler.o \
 ./src/EISPlBusHandler.o \
+./src/KPIAppConfigMgr.o \
 ./src/Main.o \
-./src/QueueHandler.o \
+./src/MqttHandler.o \
 ./src/QueueMgr.o 
 
 CPP_DEPS += \
-./src/KPIAppConfigMgr.d \
 ./src/Common.d \
 ./src/ControlLoopHandler.d \
-./src/MQTTCallback.d \
-./src/MqttHandler.d \
 ./src/EISPlBusHandler.d \
+./src/KPIAppConfigMgr.d \
 ./src/Main.d \
-./src/QueueHandler.d \
+./src/MqttHandler.d \
 ./src/QueueMgr.d 
 
 

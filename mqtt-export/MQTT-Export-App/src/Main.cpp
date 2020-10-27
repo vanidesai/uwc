@@ -16,6 +16,7 @@
 #include "Logger.hpp"
 #include "MQTTPublishHandler.hpp"
 #include "ConfigManager.hpp"
+#include "EnvironmentVarHandler.hpp"
 
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
@@ -37,64 +38,6 @@ std::atomic<bool> g_shouldStop(false);
 #define READ_RESPONSE_RT		"_RdResp_RT"
 #define WRITE_RESPONSE 			"_WrResp"
 #define WRITE_RESPONSE_RT		"_WrResp_RT"
-
-/**
- * Add sourcetopic key in message payload to publish on EIS
- * @param json	:[in] json string in which to add topic name
- * @param topic	:[in] topic name to add
- * @return true/false based on success/failure
- */
-bool addSrTopic(string &json, string& topic)
-{
-	cJSON *root = NULL;
-	try
-	{
-		root = cJSON_Parse(json.c_str());
-		if (NULL == root)
-		{
-			DO_LOG_ERROR("Message received from ZMQ could not be parsed in json format");
-			return false;
-		}
-
-		if(NULL == cJSON_AddStringToObject(root, "sourcetopic", topic.c_str()))
-		{
-			DO_LOG_ERROR("Could not add sourcetopic in message");
-			if(root != NULL)
-			{
-				cJSON_Delete(root);
-			}
-			return false;
-		}
-
-		json.clear();
-		char *psNewJson = cJSON_Print(root);
-		if(NULL != psNewJson)
-		{
-			json.assign(psNewJson);
-			free(psNewJson);
-			psNewJson = NULL;
-		}
-
-		if(root != NULL)
-		{
-			cJSON_Delete(root);
-		}
-
-		DO_LOG_DEBUG("Added sourcetopic " + topic + " in payload for EIS");
-		return true;
-
-	}
-	catch (exception &ex)
-	{
-		DO_LOG_DEBUG("Failed to add sourcetopic " + topic + " in payload for EIS: " + ex.what());
-
-		if(root != NULL)
-		{
-			cJSON_Delete(root);
-		}
-		return false;
-	}
-}
 
 /**
  * Process message received from EIS and send for publishing on MQTT
@@ -142,8 +85,8 @@ bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
 		{
 			if(NULL != parts[0].bytes)
 			{
-				string mqttMsg(parts[0].bytes);
-				mqttPublisher.publish(mqttMsg, revdTopic);
+				std::string mqttMsg(parts[0].bytes);
+				mqttPublisher.createNPubMsg(mqttMsg, revdTopic);
 
 				bRetVal = true;
 			}
@@ -241,9 +184,9 @@ void listenOnEIS(string topic, zmq_handler::stZmqContext context, zmq_handler::s
 
 	//consider topic name as distinguishing factor for publisher
 	CMQTTPublishHandler mqttPublisher(EnvironmentInfo::getInstance().getDataFromEnvMap("MQTT_URL_FOR_EXPORT").c_str(),
-										topic,
-										qos);
-
+					topic, qos);
+	mqttPublisher.connect();
+	
 	DO_LOG_INFO("ZMQ listening for topic : " + topic);
 
 	while ((false == g_shouldStop.load()) && (msgbus_ctx != NULL) && (sub_ctx != NULL))
@@ -280,35 +223,38 @@ void listenOnEIS(string topic, zmq_handler::stZmqContext context, zmq_handler::s
 }
 
 /**
+ * Get current time in micro seconds
+ * @param ts :[in] timestamp to get microsecond value
+ * @return time in micro seconds
+ */
+unsigned long get_micros(struct timespec ts)
+{
+	return (unsigned long)ts.tv_sec * 1000000L + ts.tv_nsec/1000;
+}
+
+/**
  * publish message to EIS
- * @param eisMsg :[in] message to publish on EIS
- * @param context :[in] msg bus context
- * @param pubContext :[in] pub context
+ * @param a_oRcvdMsg  :[in] message to publish on EIS
+ * @param a_sEisTopic :[in] EIS topic
  * @return true/false based on success/failure
  */
-bool publishEISMsg(string eisMsg, zmq_handler::stZmqContext &context,
-		zmq_handler::stZmqPubContext &pubContext)
+bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 {
 	bool retVal = false;
 
-	if(context.m_pContext == NULL || pubContext.m_pContext == NULL)
-	{
-		DO_LOG_ERROR("Cannot publish on EIS as topic context or msgbus context is/are NULL");
-		return retVal;
-	}
-
 	// Creating message to be published
-	msg_envelope_t *msg = msgbus_msg_envelope_new(CT_JSON);
-	if(msg == NULL)
-	{
-		DO_LOG_ERROR("could not create new msg envelope");
-		return retVal;
-	}
-
+	msg_envelope_t *msg = NULL;
 	cJSON *root = NULL;
 
 	try
 	{
+		msg = msgbus_msg_envelope_new(CT_JSON);
+		if(msg == NULL)
+		{
+			DO_LOG_ERROR("could not create new msg envelope");
+			return retVal;
+		}
+		std::string eisMsg = a_oRcvdMsg.getMsg();
 		//parse from root element
 		root = cJSON_Parse(eisMsg.c_str());
 		if (NULL == root)
@@ -323,24 +269,25 @@ bool publishEISMsg(string eisMsg, zmq_handler::stZmqContext &context,
 			return retVal;
 		}
 
+		auto addField = [&msg](const std::string &a_sFieldName, const std::string &a_sValue) {
+			DO_LOG_DEBUG(a_sFieldName + " : " + a_sValue);
+			msg_envelope_elem_body_t *value = msgbus_msg_envelope_new_string(a_sValue.c_str());
+			if((NULL != value) && (NULL != msg))
+			{
+				msgbus_msg_envelope_put(msg, a_sFieldName.c_str(), value);
+			}
+		};
+
 		cJSON *device = root->child;
 		while (device)
 		{
-
 			if(cJSON_IsString(device))
 			{
-				DO_LOG_DEBUG((std::string)(device->string)+" : "+device->valuestring);
-
-				msg_envelope_elem_body_t *value = msgbus_msg_envelope_new_string(
-						device->valuestring);
-				if(value != NULL)
-				{
-					msgbus_msg_envelope_put(msg, device->string, value);
-				}
+				addField(device->string, device->valuestring);
 			}
 			else
 			{
-				throw string("Invalid JSON");
+				throw std::string("Invalid JSON");
 			}
 			// get and print key
 			device = device->next;
@@ -350,31 +297,53 @@ bool publishEISMsg(string eisMsg, zmq_handler::stZmqContext &context,
 		{
 			cJSON_Delete(root);
 		}
+		root = NULL;
 
 		//add time stamp before publishing msg on EIS
 		std::string strTsReceived;
 		CCommon::getInstance().getCurrentTimestampsInString(strTsReceived);
 
-		msg_envelope_elem_body_t* msgPublishOnEIS = msgbus_msg_envelope_new_string(strTsReceived.c_str());
-		if(msgPublishOnEIS != NULL)
+		addField("tsMsgRcvdFromMQTT", (std::to_string(get_micros(a_oRcvdMsg.getTimestamp()))).c_str());
+		addField("tsMsgPublishOnEIS", strTsReceived);
+		addField("sourcetopic", a_oRcvdMsg.getTopic());
+
+		// Publish a message
+		//get EIS msg bus context
+		zmq_handler::stZmqContext& context = zmq_handler::getCTX(a_sEisTopic);
+
+		//will give topic context
+		zmq_handler::stZmqPubContext& pubContext = zmq_handler::getPubCTX(a_sEisTopic);
+		if(context.m_pContext != NULL && pubContext.m_pContext != NULL)
 		{
-			msgbus_msg_envelope_put(msg, "tsMsgPublishOnEIS", msgPublishOnEIS);
+			msgbus_publisher_publish(context.m_pContext,
+				(publisher_ctx_t*) pubContext.m_pContext, msg);
 		}
 
-		msgbus_publisher_publish(context.m_pContext,
-				(publisher_ctx_t*) pubContext.m_pContext, msg);
-		if(msg != NULL)
-			msgbus_msg_envelope_destroy(msg);
+		#if 0
+		msg_envelope_serialized_part_t* parts = NULL;
+		int num_parts = msgbus_msg_envelope_serialize(msg, &parts);
+		if(num_parts > 0)
+		{
+			if(NULL != parts[0].bytes)
+			{
+				std::string s(parts[0].bytes);
+				DO_LOG_DEBUG("zmq msg to string: " + s);
+			}
+			msgbus_msg_envelope_serialize_destroy(parts, num_parts);
+		}
+		#endif
+		msgbus_msg_envelope_destroy(msg);
+		msg = NULL;
 
 		return true;
 	}
-	catch(string& strException)
+	catch(std::string& strException)
 	{
-		DO_LOG_FATAL(strException);
+		DO_LOG_ERROR(strException);
 	}
 	catch(exception &ex)
 	{
-		DO_LOG_FATAL(ex.what());
+		DO_LOG_ERROR(ex.what());
 	}
 
 	if(msg != NULL)
@@ -392,17 +361,16 @@ bool publishEISMsg(string eisMsg, zmq_handler::stZmqContext &context,
 /**
  * Process message received from MQTT and send it on EIS
  * @param recvdMsg :[in] message to publish on EIS
- * @param isWrite :[in] is write request or read
- * @param isRealtime :[in] is real-time request or non-real-time
+ * @param a_sEisTopic :[in] EIS topic
  * @return true/false based on success/failure
  */
-void processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool &isRealtime)
+void processMsgToSendOnEIS(CMessageObject &recvdMsg, const std::string a_sEisTopic)
 {
 	try
 	{
 		//received msg from queue
-		string rcvdTopic = recvdMsg->get_topic();
-		string strMsg = recvdMsg->get_payload();
+		std::string rcvdTopic = recvdMsg.getTopic();
+		std::string strMsg = recvdMsg.getMsg();
 
 		//this should be present in each incoming request
 		if (rcvdTopic.empty()) //will not be the case ever
@@ -413,32 +381,7 @@ void processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 
 		DO_LOG_DEBUG("Request received from MQTT for topic "+ rcvdTopic);
 
-		std::string eisTopic = "";
-		//compare if request received for write or read
-		if(! isRead)//write request
-		{
-			if(isRealtime)
-			{
-				eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest_RT"));
-			}
-			else
-			{
-				eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest"));
-			}
-		}
-		else//read request
-		{
-			if(isRealtime)
-			{
-				eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest_RT"));
-			}
-			else
-			{
-				eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest"));
-			}
-		}
-
-		if (eisTopic.empty())
+		if (a_sEisTopic.empty())
 		{
 			DO_LOG_ERROR("EIS topic is not set to publish on EIS"+ rcvdTopic);
 			return;
@@ -446,42 +389,21 @@ void processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool
 		else
 		{
 			//publish data to EIS
-			DO_LOG_DEBUG("Received mapped EIS topic : " + eisTopic);
+			DO_LOG_DEBUG("Received mapped EIS topic : " + a_sEisTopic);
 
-			//add source topic name in payload
-			bool bRes = addSrTopic(strMsg, rcvdTopic);
-			if(bRes == false)
+			if(publishEISMsg(recvdMsg, a_sEisTopic))
 			{
-				DO_LOG_ERROR("Failed to add sourcetopic " + rcvdTopic + " in payload for EIS");
-				return;
-			}
-
-			//get EIS msg bus context
-			zmq_handler::stZmqContext& context = zmq_handler::getCTX(eisTopic);
-
-			//will give topic context
-			zmq_handler::stZmqPubContext& pubContext = zmq_handler::getPubCTX(eisTopic);
-
-			if(publishEISMsg(strMsg, context, pubContext))
-			{
-				DO_LOG_DEBUG("Published EIS message : "	+ strMsg + " on topic :" + eisTopic);
+				DO_LOG_DEBUG("Published EIS message : "	+ strMsg + " on topic :" + a_sEisTopic);
 			}
 			else
 			{
-				DO_LOG_ERROR("Failed to publish EIS message : "	+ strMsg + " on topic :" + eisTopic);
-
-#ifdef PERFTESTING
-			CMQTTHandler::instance().incSubQTried();
-#endif
+				DO_LOG_ERROR("Failed to publish EIS message : "	+ strMsg + " on topic :" + a_sEisTopic);
 			}
 		}
 	}
 	catch(exception &ex)
 	{
-		DO_LOG_FATAL(ex.what());
-#ifdef PERFTESTING
-		CMQTTHandler::instance().incSubQSkipped();
-#endif
+		DO_LOG_ERROR(ex.what());
 	}
 
 	return;
@@ -549,15 +471,38 @@ void postMsgsToEIS(QMgr::CQueueMgr& qMgr)
 
 	globalConfig::display_thread_sched_attr("postMsgsToEIS");
 
+	std::string eisTopic = "";
+	if(! isRead)//write request
+	{
+		if(isRealtime)
+		{
+			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest_RT"));
+		}
+		else
+		{
+			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest"));
+		}
+	}
+	else//read request
+	{
+		if(isRealtime)
+		{
+			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest_RT"));
+		}
+		else
+		{
+			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest"));
+		}
+	}
+
 	try
 	{
-		mqtt::const_message_ptr recvdMsg;
-
 		while (false == g_shouldStop.load())
 		{
-			if(true == qMgr.isMsgArrived(recvdMsg))
+			CMessageObject oTemp;
+			if(true == qMgr.isMsgArrived(oTemp))
 			{
-				processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
+				processMsgToSendOnEIS(oTemp, eisTopic);
 			}
 		}
 	}

@@ -10,43 +10,37 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../Test/Src/CConfigManager_ut.cpp \
 ../Test/Src/Common_ut.cpp \
 ../Test/Src/InternalMQTTSubscriber_ut.cpp \
-../Test/Src/Logger_ut.cpp \
 ../Test/Src/Main_ut.cpp \
 ../Test/Src/Metric_ut.cpp \
 ../Test/Src/MqttHandler_ut.cpp \
-../Test/Src/NetworkInfo_ut.cpp \
 ../Test/Src/Publisher_ut.cpp \
 ../Test/Src/SCADAHandler_ut.cpp \
-../Test/Src/SparkPlugDevices_ut.cpp 
+../Test/Src/SparkPlugDevices_ut.cpp \
+../Test/Src/SparklugDevMgr_ut.cpp 
 
 OBJS += \
-./Test/Src/CConfigManager_ut.o \
 ./Test/Src/Common_ut.o \
 ./Test/Src/InternalMQTTSubscriber_ut.o \
-./Test/Src/Logger_ut.o \
 ./Test/Src/Main_ut.o \
 ./Test/Src/Metric_ut.o \
 ./Test/Src/MqttHandler_ut.o \
-./Test/Src/NetworkInfo_ut.o \
 ./Test/Src/Publisher_ut.o \
 ./Test/Src/SCADAHandler_ut.o \
-./Test/Src/SparkPlugDevices_ut.o 
+./Test/Src/SparkPlugDevices_ut.o \
+./Test/Src/SparklugDevMgr_ut.o 
 
 CPP_DEPS += \
-./Test/Src/CConfigManager_ut.d \
 ./Test/Src/Common_ut.d \
 ./Test/Src/InternalMQTTSubscriber_ut.d \
-./Test/Src/Logger_ut.d \
 ./Test/Src/Main_ut.d \
 ./Test/Src/Metric_ut.d \
 ./Test/Src/MqttHandler_ut.d \
-./Test/Src/NetworkInfo_ut.d \
 ./Test/Src/Publisher_ut.d \
 ./Test/Src/SCADAHandler_ut.d \
-./Test/Src/SparkPlugDevices_ut.d 
+./Test/Src/SparkPlugDevices_ut.d \
+./Test/Src/SparklugDevMgr_ut.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

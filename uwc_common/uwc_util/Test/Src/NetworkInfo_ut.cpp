@@ -8,7 +8,7 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "../Inc/NetworkInfo_ut.hpp"
+#include "../include/NetworkInfo_ut.hpp"
 
 void NetworkInfo_ut::SetUp()
 {
@@ -39,10 +39,9 @@ TEST_F(NetworkInfo_ut, addDataPoint_AlreadyPresent)
 
 #if 0 //In progress
 // addDevice: Network type doesnt match
-
 TEST_F(NetworkInfo_ut, addDevice_NwMisMatch)
 {
-	YAML::Node a_oData = YAML::LoadFile("UT_Yml/Device_group1.yml");
+	YAML::Node a_oData = CommonUtils::loadYamlFile("Device_group1.yml");
 
 	//Setting network type as TCP
 	//network_info::buildNetworkInfo("TCP", "Devices_group_list.yml", false);
@@ -54,11 +53,11 @@ TEST_F(NetworkInfo_ut, addDevice_NwMisMatch)
 			const YAML::Node& list = test.second;
 			for (auto nodes : list)
 			{
-				network_info::CWellSiteDevInfo::build(nodes, CWellSiteDevInfo_obj);
+				network_info::CWellSiteDevInfo::build(nodes, CWellSiteDevInfo_obj, false);
 
 				Int_Res = CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
 
-				if( network_info::eNetworkType::eALL != CWellSiteDevInfo_obj.getAddressInfo().m_NwType )
+				if( network_info::eNetworkType::eTCP != CWellSiteDevInfo_obj.getAddressInfo().m_NwType )
 				{
 					EXPECT_EQ(-2, Int_Res);
 				}

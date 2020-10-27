@@ -26,15 +26,15 @@ void CControlLoopOp::postDummyAnalysisMsg(const std::string &a_sAppSeq, const st
 {
 	try
 	{
-		CMessageObject oTempMsg{};
-		CPollNWriteReqMapper::getInstace().getForProcessing(a_sAppSeq, oTempMsg);
+		struct stPollWrData oTempData{};
+		CPollNWriteReqMapper::getInstace().getForProcessing(a_sAppSeq, oTempData);
 		std::string sDummyErrorRep;
 		commonUtilKPI::addFieldToMsg(sDummyErrorRep, "app_seq", a_sAppSeq, false);
 		commonUtilKPI::addFieldToMsg(sDummyErrorRep, "data_topic", m_sWritePointFullPath + "/writeResponse", false);
 		commonUtilKPI::addFieldToMsg(sDummyErrorRep, "error_code", a_sError + "/writeResponse", true);
 		sDummyErrorRep = "{" + sDummyErrorRep + "}";
 		CMessageObject oDummyMsg{"errorDummyTopic", sDummyErrorRep};
-		commonUtilKPI::logAnalysisMsg(oTempMsg, oDummyMsg);
+		commonUtilKPI::logAnalysisMsg(oTempData, oDummyMsg);
 	}
 	catch (exception &ex)
 	{
@@ -361,7 +361,10 @@ bool CControlLoopMapper::publishWriteReq(const CControlLoopOp& a_rCtrlLoop,
 {
 	try
 	{
-		CPollNWriteReqMapper::getInstace().insertForTracking(a_sWrSeq, a_oPollMsg);
+		struct timespec tsStartWrReqCreate;
+		timespec_get(&tsStartWrReqCreate, TIME_UTC);
+		struct stPollWrData oTemp{a_oPollMsg, tsStartWrReqCreate};
+		CPollNWriteReqMapper::getInstace().insertForTracking(a_sWrSeq, oTemp);
 		if(false == PlBusMgr::publishWriteReq(a_rCtrlLoop, a_sWrSeq, a_oPollMsg))
 		{
 			DO_LOG_ERROR("Failed publishing for point: " + a_rCtrlLoop.getWritePoint());

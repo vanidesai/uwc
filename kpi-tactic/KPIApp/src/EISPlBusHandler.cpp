@@ -91,7 +91,7 @@ bool CEISPlBusHandler::initEISContext()
  * @param a_bIsPollMsg :[in] true = polling msg, false = write response
  * returns true/false based on success/failure
  */
-bool CEISPlBusHandler::processMsg(msg_envelope_t *msg, CQueueHandler1 &a_rQ,
+bool CEISPlBusHandler::processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
 		const std::function<bool(const std::string &)> &a_fPointListChecker)
 {
 	bool bRetVal = false;
@@ -173,7 +173,7 @@ void CEISPlBusHandler::listenOnEIS(string sTopic, zmq_handler::stZmqContext cont
 	std::function<bool(const std::string &)> fPointListChecker = 
 		std::bind(&CControlLoopMapper::isControlLoopPollPoint,
 			&CKPIAppConfig::getInstance().getControlLoopMapper(), std::placeholders::_1);
-	std::reference_wrapper<CQueueHandler1> refQ{QMgr::PollMsgQ()};
+	std::reference_wrapper<CQueueHandler> refQ{QMgr::PollMsgQ()};
 	if(false == a_bIsPolling)
 	{
 		refQ = QMgr::WriteRespMsgQ();

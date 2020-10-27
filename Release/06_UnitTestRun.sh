@@ -295,7 +295,7 @@ checkInternetConnection
 docker_verify
 docker_compose_verify
 createTestDir
-setDevMode "true"
+setDevMode "false"
 runETCDContainer
 generateUnitTestReport
 setDevMode "false"

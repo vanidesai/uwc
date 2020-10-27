@@ -12,6 +12,7 @@
 #define TEST_INCLUDE_SCADAHANDLER_UT_H_
 
 #include "SCADAHandler.hpp"
+#include "InternalMQTTSubscriber.hpp"
 
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>

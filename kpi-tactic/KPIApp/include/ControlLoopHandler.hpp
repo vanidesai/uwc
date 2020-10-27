@@ -15,7 +15,7 @@
 #include <map>
 #include <vector>
 #include <thread>
-#include "QueueHandler1.hpp"
+#include "QueueHandler.hpp"
 #include "Logger.hpp"
 
 class CControlLoopOp
@@ -29,7 +29,7 @@ private:
 	std::string m_sWritePointName;
 	uint32_t m_uiDelayMs;
 	std::string m_sVal;
-	CQueueHandler1 m_q;
+	CQueueHandler m_q;
 	std::thread m_thread;
 
 	void threadPollMonitoring();
@@ -76,7 +76,7 @@ public:
 	std::string getPointNameForWrReq() const {return m_sWritePointName;}
 	uint32_t getDelay() const {return m_uiDelayMs;}
 	
-	CQueueHandler1& getQueue() {return m_q;}
+	CQueueHandler& getQueue() {return m_q;}
 
 	void postDummyAnalysisMsg(const std::string &a_sAppSeq, const std::string &a_sError) const;
 };
@@ -117,10 +117,25 @@ public:
 	bool publishWriteReq(const CControlLoopOp& a_rCtrlLoop, const std::string &a_sWrSeq, CMessageObject &a_oPollMsg);
 };
 
+struct stPollWrData
+{
+	CMessageObject m_oPollData;
+	struct timespec m_tsStartWrReqCreate;
+
+	stPollWrData() 
+	: m_oPollData{}, m_tsStartWrReqCreate{}
+	{
+	}
+	stPollWrData(CMessageObject &a_oPollData, struct timespec &a_tsStartWrReqCreate) 
+	: m_oPollData{a_oPollData}, m_tsStartWrReqCreate{a_tsStartWrReqCreate}
+	{
+	}
+};
+
 class CPollNWriteReqMapper
 {
 private:
-	std::map<std::string, CMessageObject> m_mapPollWrite;
+	std::map<std::string, struct stPollWrData> m_mapPollWrite;
 	std::mutex m_mapMutex;
 
 	CPollNWriteReqMapper() {};
@@ -130,18 +145,18 @@ public:
 		static CPollNWriteReqMapper _self;
 		return _self;
 	}
-	bool insertForTracking(std::string a_sKey, CMessageObject &a_oMsg)
+	bool insertForTracking(std::string a_sKey, struct stPollWrData &a_oData)
 	{
 		std::unique_lock<std::mutex> lck(m_mapMutex);
-		m_mapPollWrite.insert(std::pair <std::string, CMessageObject> (a_sKey, a_oMsg));
+		m_mapPollWrite.insert(std::pair <std::string, struct stPollWrData> (a_sKey, a_oData));
 		return true;
 	}
-	bool getForProcessing(std::string a_sKey, CMessageObject &a_oMsg)
+	bool getForProcessing(std::string a_sKey, struct stPollWrData &a_oData)
 	{
 		try
 		{
 			std::unique_lock<std::mutex> lck(m_mapMutex);
-			a_oMsg = m_mapPollWrite.at(a_sKey);
+			a_oData = m_mapPollWrite.at(a_sKey);
 			m_mapPollWrite.erase(a_sKey);
 		}
 		catch(std::exception &ex)

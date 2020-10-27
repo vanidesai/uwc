@@ -458,6 +458,7 @@ TEST_F(Main_ut, set_thread_priority_for_eis_NonRTWrite)
 
 }
 
+#if 0 // In progress
 // Check that code doesnt hang
 TEST_F(Main_ut, postMsgsToEIS_InValArg)
 {
@@ -467,6 +468,7 @@ TEST_F(Main_ut, postMsgsToEIS_InValArg)
 
 	postMsgsToEIS(CQueueMgr_obj);
 }
+#endif
 
 #if 0
 // Check that code doesnt hang

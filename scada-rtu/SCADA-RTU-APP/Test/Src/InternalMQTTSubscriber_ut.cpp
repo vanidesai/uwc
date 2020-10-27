@@ -34,4 +34,10 @@ TEST_F(InternalMQTTSubscriber_ut, pushMsgInQ_Success)
 	EXPECT_EQ( true, CIntMqttHandler::instance().pushMsgInQ(msg) );
 }
 
+TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_test)
+{
+	bool result = CIntMqttHandler::instance().prepareCJSONMsg(stRefActionVec);
+	EXPECT_EQ(true, result);
+}
+
 

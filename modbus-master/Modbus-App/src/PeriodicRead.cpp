@@ -22,6 +22,7 @@
 #include <poll.h>
 #include <unistd.h>
 #include <time.h>
+#include "CommonDataShare.hpp"
 
 /// flag to check thread stop condition
 std::atomic<bool> g_stopThread;
@@ -88,7 +89,7 @@ timer_t gTimerid;
 void getTimeBasedParams(const CRefDataForPolling& a_objReqData, std::string &a_sTimeStamp, std::string &a_sUsec, std::string &a_sTxID)
 {
 	a_sTxID.clear();
-	common_Handler::getTimeParams(a_sTimeStamp, a_sUsec);
+	CcommonEnvManager::Instance().getTimeParams(a_sTimeStamp, a_sUsec);
 	const auto p1 = std::chrono::system_clock::now();
 
 	{
@@ -345,7 +346,7 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 		}
 		else
 		{
-			common_Handler::getTimeParams(sTimestamp, sUsec);
+			CcommonEnvManager::Instance().getTimeParams(sTimestamp, sUsec);
 		}
 
 		msg_envelope_elem_body_t* ptTimeStamp = msgbus_msg_envelope_new_string(sTimestamp.c_str());

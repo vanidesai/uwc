@@ -11,15 +11,8 @@
 #ifndef QMGR_HPP_
 #define QMGR_HPP_
 
-#include <atomic>
-#include <vector>
-#include <semaphore.h>
-#include "mqtt/async_client.h"
-#include "Common.hpp"
-#include <queue>
 #include "QueueHandler.hpp"
 
-using namespace std;
 /**
  * namespace for Queue manager
  */

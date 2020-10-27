@@ -14,7 +14,8 @@
 #include <gtest/gtest.h>
 
 #include "NetworkInfo.hpp"
-#include "Common.hpp"
+//#include "Common.hpp"
+
 
 class NetworkInfo_ut : public::testing::Test
 {

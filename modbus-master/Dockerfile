@@ -40,6 +40,9 @@ COPY --from=uwc_common /EIS/log4cpp/build/lib/* /Modbus-App/lib/
 COPY --from=uwc_common /uwc_util/Release/libuwc-util.so /Modbus-App/lib/
 COPY --from=uwc_common /uwc_util/include/* /Modbus-App/include/
 COPY --from=uwc_common /uwc_util/include/utils/* /Modbus-App/include/utils/
+COPY --from=uwc_common /usr/paho-cpp/lib/lib* /Modbus-App/lib/
+COPY --from=uwc_common /usr/lib/libpaho* /Modbus-App/lib/
+COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 
 # compile modbus app sources
 RUN cd /Modbus-App/Release \
@@ -67,6 +70,8 @@ COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=modbus-app /Modbus-App/Config/log4cpp.properties /opt/intel/config
 COPY --from=uwc_common /uwc_util/Release/libuwc-util.so ${APP_WORK_DIR}
+COPY --from=uwc_common /usr/lib/libpaho* ${APP_WORK_DIR}
+COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 
 # set permissions to working dir for eisuser
 RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \

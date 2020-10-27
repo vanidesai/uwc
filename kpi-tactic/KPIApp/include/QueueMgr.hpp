@@ -11,7 +11,7 @@
 #ifndef QMGR_HPP_
 #define QMGR_HPP_
 
-#include "QueueHandler1.hpp"
+#include "QueueHandler.hpp"
 #include "ControlLoopHandler.hpp"
 
 using namespace std;
@@ -23,8 +23,8 @@ namespace QMgr
 /**
  * Queue manager class to manage instances of on-demand operations for msg handling
  */
-	CQueueHandler1& PollMsgQ();
-	CQueueHandler1& WriteRespMsgQ();
+	CQueueHandler& PollMsgQ();
+	CQueueHandler& WriteRespMsgQ();
 }
 
 namespace PlBusMgr

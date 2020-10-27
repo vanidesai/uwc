@@ -28,7 +28,7 @@ std::mutex __appReqJsonLock;
  * @param a_sTimeStamp	:[in] reference to store time stamp
  * @param a_sUsec		:[in] reference to store time in usec
  */
-void common_Handler::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
+/*void common_Handler::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
 {
 	a_sTimeStamp.clear();
 	a_sUsec.clear();
@@ -51,7 +51,7 @@ void common_Handler::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUs
 		ss << std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count();
 		a_sUsec.insert(0, ss.str());
 	}
-}
+}*/
 
 /**
  * Swap conversion

@@ -14,7 +14,8 @@
 #include <gtest/gtest.h>
 #include <string.h>
 #include "ConfigManager.hpp"
-#include "Common.hpp"
+
+//#include "PublishJson.hpp"
 
 void etcdOnChangeKeyCb(char* key, char * val);
 void etcdOnChangeDirCb(char* key, char * val);

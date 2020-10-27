@@ -26,6 +26,7 @@ public:
 
 	std::string			Test_Str = "";
 	std::string			Expected_output = "";
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
 
 };
 

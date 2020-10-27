@@ -148,7 +148,7 @@ namespace common_Handler
 std::string swapConversion(std::vector<unsigned char> vt, bool a_bIsByteSwap = false, bool a_bIsWordSwap = false);
 
 /// function to read current time and usec
-void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
+//void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
 
 /// function to get request json
 bool getReqData(unsigned short seqno, MbusAPI_t& reqData);

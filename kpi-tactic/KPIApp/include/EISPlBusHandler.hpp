@@ -24,7 +24,7 @@ class CEISPlBusHandler
     void listenOnEIS(string topic, zmq_handler::stZmqContext context, 
 			zmq_handler::stZmqSubContext subContext, bool a_bIsPolling);
     
-    bool processMsg(msg_envelope_t *msg, CQueueHandler1 &a_rQ,
+    bool processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
 		const std::function<bool(const std::string &)> &a_fPointListChecker);
 
 public:

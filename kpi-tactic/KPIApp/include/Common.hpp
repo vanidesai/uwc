@@ -14,7 +14,8 @@
 #include "Logger.hpp"
 #include "EnvironmentVarHandler.hpp"
 #include <string>
-#include "QueueHandler1.hpp"
+#include "QueueHandler.hpp"
+#include "ControlLoopHandler.hpp"
 
 namespace commonUtilKPI
 {
@@ -25,13 +26,13 @@ namespace commonUtilKPI
 		const std::string& a_sVal, const std::string& a_sRT,
 		const std::string& a_sTopic, bool a_bIsMQTTModeOn);
 	
-	std::string createAnalysisMsg(CMessageObject &a_msgPoll, CMessageObject &a_msgWrResp);
+	std::string createAnalysisMsg(struct stPollWrData &a_stPollWrData, CMessageObject &a_msgWrResp);
 
 	unsigned long get_micros(struct timespec ts);
 	void getCurrentTimestampsInString(std::string &strCurTime);
 	void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
 
-	void logAnalysisMsg(CMessageObject &a_msgPoll, CMessageObject &a_msgWrResp);
+	void logAnalysisMsg(struct stPollWrData &a_stPollWrData, CMessageObject &a_msgWrResp);
 }
 
 class commonSettings
