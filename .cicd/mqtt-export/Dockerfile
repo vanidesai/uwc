@@ -16,6 +16,9 @@ LABEL description="MQTT Export Application"
 FROM ia_common:$EIS_VERSION as mqtt-export
 WORKDIR /
 
+# Create utils directory inside include
+RUN mkdir -p /MQTT-Export-App/include/utils
+
 # copy required dependencies
 COPY MQTT-Export-App /MQTT-Export-App/. 
 COPY --from=uwc_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
@@ -28,6 +31,10 @@ COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_common /usr/include/MQTT* /MQTT-Export-App/include/
 COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
+COPY --from=uwc_common /uwc_util/Release/libuwc-util.so /MQTT-Export-App/lib/
+COPY --from=uwc_common /uwc_util/include/* /MQTT-Export-App/include/
+COPY --from=uwc_common /uwc_util/include/utils/* /MQTT-Export-App/include/utils/
+
 
 RUN mkdir kw10 ; \
        export http_proxy="http://proxy-chain.intel.com:911"; \
@@ -55,12 +62,14 @@ ADD  ltoken .klocwork/
 RUN mv .klocwork ~
 RUN ls -la ~/.klocwork
 
+
 # build sources
 RUN cd /MQTT-Export-App/Release \
     &&	export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
     &&	/kw10/bin/kwinject make clean all -s
-    
+
+
 RUN cd /MQTT-Export-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
        /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
        /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
@@ -87,6 +96,7 @@ COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=mqtt-export /MQTT-Export-App/Config/log4cpp.properties /opt/intel/config
+COPY --from=uwc_common /uwc_util/Release/libuwc-util.so ${APP_WORK_DIR}
 
 # set permissions to working dir for eisuser
 RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
