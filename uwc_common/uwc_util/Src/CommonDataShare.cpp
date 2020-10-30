@@ -14,10 +14,6 @@
  */
 CcommonEnvManager::CcommonEnvManager()
 {
-	if(false == CommonDataFromApp.m_isCommonDataInitialised)
-	{
-		DO_LOG_ERROR("Critical data has not been initialized");
-	}
 }
 
 /** Returns the single instance of this class

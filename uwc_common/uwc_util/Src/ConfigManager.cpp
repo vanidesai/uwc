@@ -28,7 +28,7 @@ CfgManager:: CfgManager()
 	}
 
 	// based on DEV_MODE env variable this will create config_mgr_client instance
-	if(true == CcommonEnvManager::Instance().gEtDevMode())
+	if(true == CcommonEnvManager::Instance().getDevMode())
 	{
 		/// create client without certificates
 		config_mgr_client = config_mgr_new((char *)"etcd", (char *)"", (char *)"", (char *)"");
@@ -36,8 +36,8 @@ CfgManager:: CfgManager()
 	else
 	{
 		/// create client with certificates
-		string sCert = "/run/secrets/etcd_" + CcommonEnvManager::Instance().gEtAppName() + "_cert";
-		string sKey = "/run/secrets/etcd_" + CcommonEnvManager::Instance().gEtAppName() + "_key";
+		string sCert = "/run/secrets/etcd_" + CcommonEnvManager::Instance().getAppName() + "_cert";
+		string sKey = "/run/secrets/etcd_" + CcommonEnvManager::Instance().getAppName() + "_key";
 		config_mgr_client = config_mgr_new((char *)"etcd", (char *)sCert.c_str(),
 				(char *)sKey.c_str(),
 				(char *)"/run/secrets/ca_etcd");
@@ -459,44 +459,21 @@ void globalConfig::CSparkplugData::buildSparkPlugInfo(const YAML::Node& a_baseNo
 		a_refOpration.m_sGroupId = a_baseNode["group_id"].as<string>();
 	}
 
-	if (validateParam(a_baseNode, "interface_name", DT_STRING) != 0)
+	if (validateParam(a_baseNode, "edge_node_id", DT_STRING) != 0)
 	{
-		a_refOpration.m_sInterfaceName = DEFAULT_INTERFACE_NAME;
+		a_refOpration.m_stNodeName = DEFAULT_NODE_NAME;
 	}
 	else
 	{
-		a_refOpration.m_sInterfaceName = a_baseNode["interface_name"].as<string>();
-	}
-	if (validateParam(a_baseNode["edge_node_id"], "nodeName", DT_STRING) != 0)
-	{
-		a_refOpration.m_objEdgeNodeId.m_stNodeName = DEFAULT_NODE_NAME;
-	}
-	else
-	{
-		a_refOpration.m_objEdgeNodeId.m_stNodeName =
-				a_baseNode["edge_node_id"]["nodeName"].as<string>();
-	}
-
-	if (validateParam(a_baseNode["edge_node_id"], "generateUniqueName", DT_STRING) != 0)
-	{
-		a_refOpration.m_objEdgeNodeId.m_stGenUniquename = true;
-	}
-	else
-	{
-		a_refOpration.m_objEdgeNodeId.m_stGenUniquename =
-				a_baseNode["edge_node_id"]["generateUniqueName"].as<bool>();
+		a_refOpration.m_stNodeName = a_baseNode["edge_node_id"].as<string>();
 	}
 
 	cout << "	group_id : " << a_refOpration.getGroupId() << endl;
 	DO_LOG_INFO("	group_id : " + a_refOpration.getGroupId());
 	cout << "	edge_node_id : " << endl;
 	DO_LOG_INFO("	edge_node_id : ");
-	cout << "		nodeName : " << a_refOpration.getObjEdgeNodeId().m_stNodeName << endl;
-	DO_LOG_INFO("		nodeName : " + a_refOpration.getObjEdgeNodeId().m_stNodeName);
-	cout << "		generateUniqueName : " << a_refOpration.getObjEdgeNodeId().m_stGenUniquename << endl;
-	DO_LOG_INFO("		generateUniqueName : " + to_string(a_refOpration.getObjEdgeNodeId().m_stGenUniquename));
-	cout << "	interface_name : " << a_refOpration.getInterfaceName() << endl;
-	DO_LOG_INFO("	interface_name : " + a_refOpration.getInterfaceName());
+	cout << "		nodeName : " << a_refOpration.m_stNodeName << endl;
+	DO_LOG_INFO("		nodeName : " + a_refOpration.m_stNodeName);
 
 }
 

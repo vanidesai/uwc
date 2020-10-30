@@ -12,32 +12,6 @@
 #include "Logger.hpp"
 
 /**
- * Retrieve non-RT read message from message queue to publish on EIS
- * @param msg :[in] reference to message to retrieve from queue
- * @return true/false based on success/failure
- */
-bool CQueueHandler::getSubMsgFromQ(mqtt::const_message_ptr& msg)
-{
-	try
-	{
-		if(m_msgQueue.empty())
-		{
-			return false;
-		}
-
-		std::lock_guard<std::mutex> lock(m_queueMutex);
-		msg = m_msgQueue.front();
-		m_msgQueue.pop();
-	}
-	catch (const std::exception &e)
-	{
-		DO_LOG_ERROR(e.what());
-		return false;
-	}
-	return true;
-}
-
-/**
  * Clean up, destroy semaphores, disables callback, disconnect from MQTT broker
  * @param None
  * @return None
@@ -56,9 +30,8 @@ void CQueueHandler::cleanup()
 void CQueueHandler::clear()
 {
 	std::lock_guard<std::mutex> lock(m_queueMutex);
-	m_msgQueue = {};
+	m_msgQ = {};
 }
-
 
 /**
  * Constructor of queue manager
@@ -98,59 +71,6 @@ bool CQueueHandler::initSem()
 
 	DO_LOG_DEBUG("Semaphore initialized successfully");
 
-	return true;
-}
-
-/**
- * Push message in operational queue
- * @param msg :[in] MQTT message to push in message queue
- * @return true/false based on success/failure
- */
-bool CQueueHandler::pushMsg(mqtt::const_message_ptr msg)
-{
-	try
-	{
-		std::lock_guard<std::mutex> lock(m_queueMutex);
-		m_msgQueue.push(msg);
-
-		sem_post(&m_semaphore);
-	}
-	catch(exception &ex)
-	{
-		DO_LOG_ERROR(ex.what());
-		return false;
-	}
-	return true;
-}
-
-/**
- * Checks if a new message has arrived and retrieves the message
- * @param msg :[out] reference to new message
- * @return	true/false based on success/failure
- */
-bool CQueueHandler::isMsgArrived(mqtt::const_message_ptr& msg)
-{
-	try
-	{
-		if((sem_wait(&m_semaphore)) == -1 && errno == EINTR)
-		{
-			// Continue if interrupted by handler
-			return false;
-		}
-		else
-		{
-			if (false == getSubMsgFromQ(msg))
-			{
-				DO_LOG_INFO("No message to send to EIS in queue");
-				return false;
-			}
-		}
-	}
-	catch(exception &e)
-	{
-		DO_LOG_ERROR(e.what());
-		return false;
-	}
 	return true;
 }
 

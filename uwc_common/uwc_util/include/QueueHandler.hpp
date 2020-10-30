@@ -20,32 +20,36 @@
 
 	class CMessageObject
 	{
-		std::string m_sTopic;
-		std::string m_Msg;
+		mqtt::const_message_ptr m_mqttMsg;
 		struct timespec m_stTs;
 
 		public:
-		CMessageObject() : m_sTopic{""}, m_Msg{""}, m_stTs{}
+		CMessageObject() : m_mqttMsg{}, m_stTs{}
 		{
 			timespec_get(&m_stTs, TIME_UTC);
 		}
 
-		CMessageObject(const std::string &a_sTopic, const std::string &a_Msg) 
-			: m_sTopic{a_sTopic}, m_Msg{a_Msg}, m_stTs{}
+		CMessageObject(const std::string &a_sTopic, const std::string &a_sMsg) 
+			: m_stTs{}
+		{
+			m_mqttMsg = mqtt::make_message(a_sTopic, a_sMsg);
+			timespec_get(&m_stTs, TIME_UTC);
+		}
+		
+		CMessageObject(mqtt::const_message_ptr a_mqttMsg) 
+			: m_mqttMsg{a_mqttMsg}, m_stTs{}
 		{
 			timespec_get(&m_stTs, TIME_UTC);
 		}
 
-		CMessageObject(const std::string &a_sTopic, const std::string &a_Msg, struct timespec a_stRcvdMsgTs) 
-			: m_sTopic{a_sTopic}, m_Msg{a_Msg}, m_stTs{m_stTs} 
-		{}
-
+		
 		CMessageObject(const CMessageObject& a_obj)
-		: m_sTopic{a_obj.m_sTopic}, m_Msg{a_obj.m_Msg}, m_stTs{a_obj.m_stTs}
+		: m_mqttMsg{a_obj.m_mqttMsg}, m_stTs{a_obj.m_stTs}
 		{}
 
-		std::string getTopic() {return m_sTopic;}
-		std::string getMsg() {return m_Msg;}
+		std::string getTopic() {return m_mqttMsg->get_topic();}
+		std::string getStrMsg() {return m_mqttMsg->get_payload();}
+		mqtt::const_message_ptr& getMqttMsg() {return m_mqttMsg;}
 		struct timespec getTimestamp() {return m_stTs;}
 	};
 	/**
@@ -56,7 +60,6 @@
 		bool initSem();
 
 		std::mutex m_queueMutex;
-		std::queue<mqtt::const_message_ptr> m_msgQueue;
 		std::queue<CMessageObject> m_msgQ;
 		sem_t m_semaphore;
 
@@ -67,10 +70,6 @@
 	public:
 		CQueueHandler();
 		virtual ~CQueueHandler();
-
-		bool pushMsg(mqtt::const_message_ptr msg);
-		bool isMsgArrived(mqtt::const_message_ptr& msg);
-		bool getSubMsgFromQ(mqtt::const_message_ptr& msg);
 
 		bool pushMsg(CMessageObject msg);
 		bool isMsgArrived(CMessageObject& msg);

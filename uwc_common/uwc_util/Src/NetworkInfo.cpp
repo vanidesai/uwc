@@ -231,28 +231,39 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 
 				for (auto nodes : list)
 				{
-					CWellSiteDevInfo objWellsiteDev;
-					int32_t i32RetVal = 0;
-					CWellSiteDevInfo::build(nodes, objWellsiteDev);
-					i32RetVal = a_oWellSite.addDevice(objWellsiteDev);
-					if(0 == i32RetVal)
+					try
 					{
-						DO_LOG_INFO(" : Added device with id: " +
-									objWellsiteDev.getID());
+						CWellSiteDevInfo objWellsiteDev;
+						int32_t i32RetVal = 0;
+						CWellSiteDevInfo::build(nodes, objWellsiteDev);
+						i32RetVal = a_oWellSite.addDevice(objWellsiteDev);
+						if(0 == i32RetVal)
+						{
+							DO_LOG_INFO(" : Added device with id: " +
+										objWellsiteDev.getID());
+						}
+						else if(-1 == i32RetVal)
+						{
+							DO_LOG_ERROR("Ignoring device with id : " +
+							objWellsiteDev.getID() +
+							", since this point name is already present. Ignore this point.");
+							std::cout << "Ignoring device with id : " << objWellsiteDev.getID() << ", since this point name is already present. Ignore this point."<< endl;
+						}
+						else if(-2 == i32RetVal)
+						{
+							DO_LOG_ERROR("Ignoring device with id : " +
+							objWellsiteDev.getID() +
+							", since Device type and network type are not matching.");
+							std::cout << "Ignoring device with id : " << objWellsiteDev.getID() << ", since Device type and network type are not matching."<< endl;
+						}
 					}
-					else if(-1 == i32RetVal)
+					catch (YAML::Exception& ye)
 					{
-						DO_LOG_ERROR("Ignoring device with id : " + 
-						objWellsiteDev.getID() +
-						", since this point name is already present. Ignore this point.");
-						std::cout << "Ignoring device with id : " << objWellsiteDev.getID() << ", since this point name is already present. Ignore this point."<< endl;
+						DO_LOG_ERROR("Error while parsing device with Exception :: " + std::string(ye.what()));
 					}
-					else if(-2 == i32RetVal)
+					catch (std::exception& e)
 					{
-						DO_LOG_ERROR("Ignoring device with id : " + 
-						objWellsiteDev.getID() +
-						", since Device type and network type are not matching.");
-						std::cout << "Ignoring device with id : " << objWellsiteDev.getID() << ", since Device type and network type are not matching."<< endl;
+						DO_LOG_ERROR("Error while parsing device with Exception :: " + std::string(e.what()));
 					}
 				}
 			}
@@ -538,17 +549,28 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 						const YAML::Node& points =  it.second;
 						for (auto it1 : points)
 						{
-							CDataPoint objCDataPoint;
-							CDataPoint::build(it1, objCDataPoint, globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
-							if(0 == a_oCDeviceInfo.addDataPoint(objCDataPoint))
+							try
 							{
-								DO_LOG_INFO("Added point with id: " +
+								CDataPoint objCDataPoint;
+								CDataPoint::build(it1, objCDataPoint, globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
+								if(0 == a_oCDeviceInfo.addDataPoint(objCDataPoint))
+								{
+									DO_LOG_INFO("Added point with id: " +
 											objCDataPoint.getID());
+								}
+								else
+								{
+									DO_LOG_ERROR("Ignoring duplicate point ID from polling :"+ objCDataPoint.getID());
+									std::cout << "ERROR: Ignoring duplicate point ID from polling :"<< objCDataPoint.getID() <<endl;
+								}
 							}
-							else
+							catch (YAML::Exception& ye)
 							{
-								DO_LOG_ERROR("Ignoring duplicate point ID from polling :"+ objCDataPoint.getID());
-								std::cout << "ERROR: Ignoring duplicate point ID from polling :"<< objCDataPoint.getID() <<endl;
+								DO_LOG_ERROR("Error while parsing datapoint with Exception :: " + std::string(ye.what()));
+							}
+							catch (std::exception& e)
+							{
+								DO_LOG_ERROR("Error while parsing datapoint with Exception :: " + std::string(e.what()));
 							}
 						}
 					}

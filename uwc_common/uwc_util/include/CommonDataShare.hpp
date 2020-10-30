@@ -49,12 +49,12 @@ public:
 	static CcommonEnvManager& Instance();
 
 	/// Get app name
-	std::string gEtAppName(){
+	std::string getAppName(){
 		return CommonDataFromApp.m_sAppName;
 	}
 
 	/// Get Dev mode
-	bool gEtDevMode(){
+	bool getDevMode(){
 		return CommonDataFromApp.m_devMode;
 	}
 

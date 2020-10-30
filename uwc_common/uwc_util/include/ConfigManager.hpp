@@ -99,7 +99,6 @@ namespace globalConfig
 #define DEFAULT_QOS 0
 #define DEFAULT_GRP_ID "UWC Nodes"
 #define DEFAULT_NODE_NAME "SCADA RTU"
-#define DEFAULT_INTERFACE_NAME "eth0"
 
 /**
  * Enum of operation types and hierarchy
@@ -143,13 +142,6 @@ enum eDataType
 	DT_MAP          //!< DT_MAP
 };
 
-// structure used to store edge Node ID for scada RTU
-struct stEdgeNodeId
-{
-	std::string m_stNodeName;
-	bool m_stGenUniquename;
-};
-
 /**
  * Class holds information about sparkplug operation
  */
@@ -161,8 +153,7 @@ public:
 	CSparkplugData()
 {
 		m_sGroupId = "";
-		m_sInterfaceName = "";
-		m_objEdgeNodeId = {};
+		m_stNodeName = "";
 }
 
 	static void buildSparkPlugInfo(const YAML::Node& a_baseNode,
@@ -178,30 +169,19 @@ public:
 		return m_sGroupId;
 	}
 
-	/** Returns Node Id
+	/** Returns Node name
 	 *
 	 * @param : Nothing
-	 * @return: EdgeNodeId structure
+	 * @return: string containing node name
 	 */
-	const struct stEdgeNodeId& getObjEdgeNodeId() const
+	const std::string& getNodeName() const
 	{
-		return m_objEdgeNodeId;
-	}
-
-	/** Returns Interface name
-	 *
-	 * @param : Nothing
-	 * @return: string containing interface name
-	 */
-	const std::string& getInterfaceName() const
-	{
-		return m_sInterfaceName;
+		return m_stNodeName;
 	}
 
 private:
 	std::string m_sGroupId;
-	std::string m_sInterfaceName;
-	struct stEdgeNodeId m_objEdgeNodeId;
+	std::string m_stNodeName;
 };
 
 /**
