@@ -223,16 +223,6 @@ void listenOnEIS(string topic, zmq_handler::stZmqContext context, zmq_handler::s
 }
 
 /**
- * Get current time in micro seconds
- * @param ts :[in] timestamp to get microsecond value
- * @return time in micro seconds
- */
-unsigned long get_micros(struct timespec ts)
-{
-	return (unsigned long)ts.tv_sec * 1000000L + ts.tv_nsec/1000;
-}
-
-/**
  * publish message to EIS
  * @param a_oRcvdMsg  :[in] message to publish on EIS
  * @param a_sEisTopic :[in] EIS topic
@@ -254,7 +244,7 @@ bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 			DO_LOG_ERROR("could not create new msg envelope");
 			return retVal;
 		}
-		std::string eisMsg = a_oRcvdMsg.getMsg();
+		std::string eisMsg = a_oRcvdMsg.getStrMsg();
 		//parse from root element
 		root = cJSON_Parse(eisMsg.c_str());
 		if (NULL == root)
@@ -303,7 +293,7 @@ bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 		std::string strTsReceived;
 		CCommon::getInstance().getCurrentTimestampsInString(strTsReceived);
 
-		addField("tsMsgRcvdFromMQTT", (std::to_string(get_micros(a_oRcvdMsg.getTimestamp()))).c_str());
+		addField("tsMsgRcvdFromMQTT", (std::to_string(CCommon::getInstance().get_micros(a_oRcvdMsg.getTimestamp()))).c_str());
 		addField("tsMsgPublishOnEIS", strTsReceived);
 		addField("sourcetopic", a_oRcvdMsg.getTopic());
 
@@ -370,7 +360,7 @@ void processMsgToSendOnEIS(CMessageObject &recvdMsg, const std::string a_sEisTop
 	{
 		//received msg from queue
 		std::string rcvdTopic = recvdMsg.getTopic();
-		std::string strMsg = recvdMsg.getMsg();
+		std::string strMsg = recvdMsg.getStrMsg();
 
 		//this should be present in each incoming request
 		if (rcvdTopic.empty()) //will not be the case ever

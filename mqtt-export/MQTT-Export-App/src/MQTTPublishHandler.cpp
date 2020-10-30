@@ -21,7 +21,7 @@
  * @return None
  */
 CMQTTPublishHandler::CMQTTPublishHandler(std::string strPlBusUrl, std::string strClientID, int iQOS):
-	CMQTTBaseHandler(strPlBusUrl, strClientID, iQOS, (false == CcommonEnvManager::Instance().gEtDevMode()),
+	CMQTTBaseHandler(strPlBusUrl, strClientID, iQOS, (false == CcommonEnvManager::Instance().getDevMode()),
 	"/run/secrets/ca_broker", "/run/secrets/client_cert", 
 	"/run/secrets/client_key", "MQTTSubListener")
 {

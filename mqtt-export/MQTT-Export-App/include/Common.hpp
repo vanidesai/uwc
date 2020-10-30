@@ -22,7 +22,6 @@ private:
 	CCommon(const CCommon & obj){}
 	CCommon& operator=(CCommon const&);
 
-	bool m_devMode;
 	std::vector<std::string> m_vecEnv{"ReadRequest", "WriteRequest",
 		"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE", "ReadRequest_RT", "WriteRequest_RT"};
 
@@ -42,25 +41,6 @@ public:
 	static CCommon& getInstance() {
 		static CCommon _self;
 			return _self;
-	}
-
-	/**
-	 * Check if application set for dev mode or not
-	 * @param None
-	 * @return true if set to devMode
-	 * 			false if not set to devMode
-	 */
-	bool isDevMode() const {
-		return m_devMode;
-	}
-
-	/**
-	 * Set dev mode
-	 * @param devMode :[in] value to set for dev_mode
-	 * @return None
-	 */
-	void setDevMode(bool devMode) {
-		m_devMode = devMode;
 	}
 
 	/**

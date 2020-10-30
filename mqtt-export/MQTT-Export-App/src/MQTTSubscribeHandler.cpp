@@ -30,7 +30,7 @@ extern std::atomic<bool> g_shouldStop;
  * @return None
  */
 CMQTTHandler::CMQTTHandler(const std::string &strPlBusUrl, int iQOS):
-	CMQTTBaseHandler(strPlBusUrl, SUBSCRIBER_ID, iQOS, (false == CcommonEnvManager::Instance().gEtDevMode()),
+	CMQTTBaseHandler(strPlBusUrl, SUBSCRIBER_ID, iQOS, (false == CcommonEnvManager::Instance().getDevMode()),
 	"/run/secrets/ca_broker", "/run/secrets/client_cert", 
 	"/run/secrets/client_key", "MQTTSubListener")
 {
@@ -294,7 +294,7 @@ bool CMQTTHandler::pushMsgInQ(mqtt::const_message_ptr& a_msgMQTT)
 		};
 		std::string sTopic{a_msgMQTT->get_topic()};
 		std::string payload{a_msgMQTT->get_payload()};
-		CMessageObject oTemp{sTopic, payload};
+		CMessageObject oTemp{a_msgMQTT};
 		bool bDefRT = false;
 		bool isWrite = false;
 		// Decide whether to use polling queue or writeResponse queue

@@ -25,26 +25,6 @@ CCommon::CCommon()
 	EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
 	std::string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
 	transform(strDevMode.begin(), strDevMode.end(), strDevMode.begin(), ::toupper);
-	if (strDevMode == "TRUE")
-	{
-		setDevMode(true);
-		DO_LOG_INFO("DEV_MODE is set to true");
-		cout << "DEV_MODE is set to true\n";
-
-	}
-	else if (strDevMode == "FALSE")
-	{
-		setDevMode(false);
-		DO_LOG_INFO("DEV_MODE is set to false");
-		cout << "DEV_MODE is set to false\n";
-	}
-	else
-	{
-		// default set to false
-		DO_LOG_ERROR("Invalid value for DEV_MODE env variable");
-		DO_LOG_INFO("Set the dev mode to default (i.e. true)");
-		cout << "DEV_MODE is set to default false\n";
-	}
 
 	std::string strAppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
 	if(strAppName.empty())
