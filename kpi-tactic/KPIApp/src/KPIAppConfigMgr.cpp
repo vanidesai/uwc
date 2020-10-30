@@ -17,11 +17,11 @@
  * @param a_sFileName	:[in] YML file name
  * @return true/false based on success/failure
  */
-bool CKPIAppConfig::parseYMLFile(std::string a_sFileName)
+bool CKPIAppConfig::parseYMLFile(const std::string &a_sFileName)
 {
 	try
 	{
-		YAML::Node node = CommonUtils::loadYamlFile("ControlLoopConfig.yml");
+		YAML::Node node = CommonUtils::loadYamlFile(a_sFileName);
 		
 		if(0 != globalConfig::validateParam(node, "timeToRun_Minutes", globalConfig::DT_UNSIGNED_INT))
 		{

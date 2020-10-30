@@ -118,7 +118,7 @@ bool PlBusMgr::publishWriteReq(const CControlLoopOp& a_rCtrlLoop,
 			a_rCtrlLoop.getPointNameForWrReq(), a_rCtrlLoop.getValue(), sWrRT,
 			sPubTopic, CKPIAppConfig::getInstance().isMQTTModeOn()))
 		{
-			DO_LOG_ERROR(a_oPollMsg.getMsg() + ": Unable to create a write request. Ignoring the message");
+			DO_LOG_ERROR(a_oPollMsg.getStrMsg() + ": Unable to create a write request. Ignoring the message");
 			return false;
 		}
 

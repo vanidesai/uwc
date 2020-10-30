@@ -37,7 +37,7 @@ public:
 		static CKPIAppConfig _self;
 		return _self;
 	}
-	bool parseYMLFile(std::string a_sFileName);
+	bool parseYMLFile(const std::string &a_sFileName);
 	uint32_t getExecutionTime() {return m_uiExecTimeMin;}
 	bool isMQTTModeOn() {return m_bIsMQTTModeApp;}
 	bool isRTModeForPolledPoints() {return m_bIsRTModeForPolledPoints;}

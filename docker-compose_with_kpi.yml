@@ -438,6 +438,7 @@ services:
       no_proxy: ${no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       MQTT_URL: "ssl://mqtt_container:11883"
+      KPIAPPConfigFile: "ControlLoopConfig.yml"
       Clients: "TCP,RTU"
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}

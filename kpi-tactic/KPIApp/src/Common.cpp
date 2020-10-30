@@ -247,10 +247,10 @@ std::string commonUtilKPI::createAnalysisMsg(struct stPollWrData &a_stPollWrData
 
 	try
 	{
-		cJSON *pRootPollMsg = cJSON_Parse(a_stPollWrData.m_oPollData.getMsg().c_str());
+		cJSON *pRootPollMsg = cJSON_Parse(a_stPollWrData.m_oPollData.getStrMsg().c_str());
 		if (NULL == pRootPollMsg)
 		{
-			DO_LOG_ERROR(a_stPollWrData.m_oPollData.getMsg() + ": Message could not be parsed in json format");
+			DO_LOG_ERROR(a_stPollWrData.m_oPollData.getStrMsg() + ": Message could not be parsed in json format");
 			return "";
 		}
 
@@ -267,6 +267,7 @@ std::string commonUtilKPI::createAnalysisMsg(struct stPollWrData &a_stPollWrData
 		answer(sMsg, pRootPollMsg, 	"reqSentByStack", 		"pollReqSentByStack", 	false);
 		answer(sMsg, pRootPollMsg, 	"respRcvdByStack", 		"pollRespRcvdByStack", 	false);
 		answer(sMsg, pRootPollMsg, 	"respPostedByStack", 	"pollRespPostedByStack",false);
+		answer(sMsg, pRootPollMsg, 	"usec",				 	"pollRespPostedToEIS",false);
 		answer(sMsg, pRootPollMsg, 	"tsMsgRcvdForProcessing","pollDataRcvdInExport",false);
 		answer(sMsg, pRootPollMsg, 	"tsMsgReadyForPublish",	"pollDataPostedToMQTT",	false);
 
@@ -276,10 +277,10 @@ std::string commonUtilKPI::createAnalysisMsg(struct stPollWrData &a_stPollWrData
 		addFieldToMsg(sMsg, "pollDataRcvdInApp", (std::to_string(commonUtilKPI::get_micros(a_stPollWrData.m_oPollData.getTimestamp()))).c_str(), false);
 		addFieldToMsg(sMsg, "wrReqCreation", (std::to_string(commonUtilKPI::get_micros(a_stPollWrData.m_tsStartWrReqCreate))).c_str(), false);
 
-		cJSON *pRootWrRspMsg = cJSON_Parse(a_msgWrResp.getMsg().c_str());
+		cJSON *pRootWrRspMsg = cJSON_Parse(a_msgWrResp.getStrMsg().c_str());
 		if (NULL == pRootWrRspMsg)
 		{
-			DO_LOG_ERROR(a_msgWrResp.getMsg() + ": Message could not be parsed in json format");
+			DO_LOG_ERROR(a_msgWrResp.getStrMsg() + ": Message could not be parsed in json format");
 			return "";
 		}
 		

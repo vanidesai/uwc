@@ -13,6 +13,8 @@
 #include "Common.hpp"
 #include "KPIAppConfigMgr.hpp"
 #include <algorithm>
+#include "eis/msgbus/msg_envelope.h"
+#include "ZmqHandler.hpp"
 
 extern std::atomic<bool> g_stopThread;
 
@@ -69,13 +71,13 @@ void CControlLoopOp::threadPollMonitoring()
 					postDummyAnalysisMsg(sLastWrSeqVal, "WrRespNotRcvd");
 				}
 				
-				std::string sWrSeqVal{commonUtilKPI::getValueofKeyFromJSONMsg(recvdMsg.getMsg(), "driver_seq")};
+				std::string sWrSeqVal{commonUtilKPI::getValueofKeyFromJSONMsg(recvdMsg.getStrMsg(), "driver_seq")};
 				if(true == sWrSeqVal.empty())
 				{
-					DO_LOG_ERROR(recvdMsg.getMsg() + ": driver_seq key not found. Ignoring the message");
+					DO_LOG_ERROR(recvdMsg.getStrMsg() + ": driver_seq key not found. Ignoring the message");
 					continue;
 				}
-				sWrSeqVal.append("-KPI-" + m_sId);
+				sWrSeqVal.append("-" + EnvironmentInfo::getInstance().getDataFromEnvMap("AppName")+ "-" + m_sId);
 				// Sleep for configured delay
 				this_thread::sleep_for(std::chrono::milliseconds(m_uiDelayMs));
 
@@ -287,6 +289,45 @@ bool CControlLoopMapper::configControlLoopOps(bool a_bIsRTWrite)
 
 	std::cout << "Control loop threads are set. Now start listening\n";
 	return true;
+}
+
+/**
+ * Destroys the sub contexts
+ * @return true/false based on success/failure
+ */
+bool CControlLoopMapper::destroySubCtx()
+{
+	bool retVal = false;
+	try
+	{
+		std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
+		for(auto sTopic : vFullTopics)
+		{
+			zmq_handler::stZmqContext& ctx = zmq_handler::getCTX(sTopic);
+			zmq_handler::stZmqSubContext& subContext = zmq_handler::getSubCTX(sTopic);
+			if(NULL != subContext.sub_ctx && NULL != ctx.m_pContext)
+			{
+				zmq_handler::removeSubCTX(sTopic);
+				msgbus_recv_ctx_destroy(ctx.m_pContext, subContext.sub_ctx);
+			}
+			/// free msg bus context
+			if(ctx.m_pContext != NULL)
+			{
+				zmq_handler::removeCTX(sTopic);
+				msgbus_destroy(ctx.m_pContext);
+				ctx.m_pContext = NULL;
+			}
+		}
+		retVal = true;
+	}
+	catch(const std::exception& e)
+	{
+		DO_LOG_ERROR(e.what());
+		std::cout << "Exception while destroying contexts..." << std::endl;
+		retVal = false;
+	}
+
+	return retVal;
 }
 
 /**

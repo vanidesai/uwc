@@ -108,6 +108,7 @@ public:
 	bool triggerControlLoops(std::string& a_sPolledPoint, CMessageObject a_oMsg);
 	bool configControlLoopOps(bool a_bIsRTWrite);
 	bool stopControlLoopOps();
+	bool destroySubCtx();
 	bool isControlLoopPollPoint(const std::string &a_sPollTopic);
 	bool isControlLoopWrRspPoint(const std::string &a_sWrRspTopic);
 

@@ -35,10 +35,9 @@ void postMsgsToWriteOnMQTT(CQueueHandler& qMgr)
 
 	try
 	{
-		CMessageObject recvdMsg;
-
 		while (false == g_stopThread.load())
 		{
+			CMessageObject recvdMsg;
 			if(true == qMgr.isMsgArrived(recvdMsg))
 			{
 				std::string sTopic{recvdMsg.getTopic()};
@@ -65,13 +64,12 @@ void analyzeControlLoopData(CQueueHandler& qMgr)
 {
 	try
 	{
-		CMessageObject recvdMsg;
-
 		while (false == g_stopThread.load())
 		{
+			CMessageObject recvdMsg;
 			if(true == qMgr.isMsgArrived(recvdMsg))
 			{
-				string strMsg = recvdMsg.getMsg();
+				//string strMsg = recvdMsg.getStrMsg();
 
 				if(false == CKPIAppConfig::getInstance().getControlLoopMapper().isControlLoopWrRspPoint(recvdMsg.getTopic()))
 				{
@@ -79,10 +77,10 @@ void analyzeControlLoopData(CQueueHandler& qMgr)
 					continue;
 				}
 
-				std::string sAppSeqVal{commonUtilKPI::getValueofKeyFromJSONMsg(recvdMsg.getMsg(), "app_seq")};
+				std::string sAppSeqVal{commonUtilKPI::getValueofKeyFromJSONMsg(recvdMsg.getStrMsg(), "app_seq")};
 				if(true == sAppSeqVal.empty())
 				{
-					DO_LOG_ERROR(recvdMsg.getMsg() + ": app_seq key not found. Ignoring the message");
+					DO_LOG_ERROR(recvdMsg.getStrMsg() + ": app_seq key not found. Ignoring the message");
 					continue;
 				}
 
@@ -137,7 +135,7 @@ void initializeCommonData(string strDevMode, string strAppName)
  */
 void setEnvData()
 {
-	std::vector<std::string> vecEnv{"AppName", "MQTT_URL", "DEV_MODE", "WriteRequest_RT", "WriteRequest"};
+	std::vector<std::string> vecEnv{"AppName", "MQTT_URL", "DEV_MODE", "WriteRequest_RT", "WriteRequest", "KPIAPPConfigFile"};
 	EnvironmentInfo::getInstance().readCommonEnvVariables(vecEnv);
 	std::string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
 	std::string strAppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
@@ -163,7 +161,7 @@ int main(int argc, char* argv[])
 
 		std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
 
-		if(false == CKPIAppConfig::getInstance().parseYMLFile(""))
+		if(false == CKPIAppConfig::getInstance().parseYMLFile(EnvironmentInfo::getInstance().getDataFromEnvMap("KPIAPPConfigFile")))
 		{
 			DO_LOG_ERROR("Error while loading the configuration file");
 			return EXIT_FAILURE;
@@ -185,6 +183,10 @@ int main(int argc, char* argv[])
 			this_thread::sleep_for(std::chrono::minutes(uiTime));
 			g_stopThread.store(true);
 
+			if(!CKPIAppConfig::getInstance().isMQTTModeOn())
+			{
+				CKPIAppConfig::getInstance().getControlLoopMapper().destroySubCtx();
+			}
 			CKPIAppConfig::getInstance().getControlLoopMapper().stopControlLoopOps();
 			QMgr::PollMsgQ().breakWaitOnQ();
 			QMgr::WriteRespMsgQ().breakWaitOnQ();

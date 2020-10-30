@@ -12,28 +12,12 @@
 #define MQTT_PUBLISH_HANDLER_HPP_
 
 #include <semaphore.h>
-#include <string>
-#include "mqtt/async_client.h"
 #include "MQTTPubSubClient.hpp"
 #include "QueueMgr.hpp"
 
-enum eIntMQTTConStatus
+class CMqttHandler : public CMQTTBaseHandler
 {
-	enCON_NONE, enCON_UP, enCON_DOWN
-};
-
-class CMqttHandler
-{
-	CMQTTPubSubClient m_MQTTClient;
-	int m_QOS;
-
-	int m_appSeqNo;
-
 	sem_t m_semConnSuccess;
-	sem_t m_semConnLost;
-
-	std::atomic<eIntMQTTConStatus> m_enLastConStatus;
-	std::atomic<bool> m_bIsInTimeoutState;
 
 	CMqttHandler(const std::string &strPlBusUrl, int iQOS);
 
@@ -41,51 +25,18 @@ class CMqttHandler
 	CMqttHandler(const CMqttHandler&) = delete;	 			// Copy construct
 	CMqttHandler& operator=(const CMqttHandler&) = delete;	// Copy assign
 
-	bool subscribeToTopics();
-	string getDatatypeInString(uint32_t a_uiDatatype);
-
 	void subscribeTopics();
-	static void connected(const std::string &a_sCause);
-	static void disconnected(const std::string &a_sCause);
-	static void msgRcvd(mqtt::const_message_ptr a_pMsg);
+	void connected(const std::string &a_sCause) override;
+	void msgRcvd(mqtt::const_message_ptr a_pMsg) override;
 	bool init();
 
-	void handleConnMonitoringThread();
 	void handleConnSuccessThread();
 
-	void signalIntMQTTConnLostThread();
-	void signalIntMQTTConnDoneThread();
-
-	void setLastConStatus(eIntMQTTConStatus a_ConsStatus)
-	{
-		m_enLastConStatus.store(a_ConsStatus);
-	}
-
-	eIntMQTTConStatus getLastConStatus()
-	{
-		return m_enLastConStatus.load();
-	}
-
-	void setConTimeoutState(bool a_bFlag)
-	{
-		m_bIsInTimeoutState.store(a_bFlag);
-	}
-
-	bool getConTimeoutState()
-	{
-		return m_bIsInTimeoutState.load();
-	}
+	bool pushMsgInQ(mqtt::const_message_ptr& a_msgMQTT);
 
 public:
 	~CMqttHandler();
 	static CMqttHandler& instance(); //function to get single instance of this class
-	bool isConnected();
-	bool pushMsgInQ(mqtt::const_message_ptr& msg);
-	void connect();
-	void disconnect();
- 	void cleanup();
-
-	bool publishMsg(const std::string &a_sMsg, const std::string &a_sTopic);
- };
+};
 
 #endif
