@@ -96,7 +96,4 @@ Global:
               qos: 0
         - SparkPlug_Operation:
             group_id: "UWC nodes"
-            edge_node_id:
-              nodeName: "RBOX510"
-              generateUniqueName: true
-            interface_name: "eth0" 
+            edge_node_id: "RBOX510"
