@@ -475,7 +475,12 @@ getUserInputs()
 	PrintAllArgs
 }
 
+echo "${GREEN}============================= Script 1.1 START ============================================${NC}"
 # get the deployment mode
+echo "arg1 :: "$1
+echo "arg2 :: "$2
+echo "arg1 :: "$3
+
 if [ $3 == "--deployMode=IPC_DEV" ] ; then
 	DEPLOY_MODE=IPC_DEV
 fi
@@ -508,4 +513,5 @@ createScadaConfigFile
 copyDeployComposeFile
 
 cd "${Current_Dir}"
+echo "${GREEN}============================= Script 1.1 END ============================================${NC}"
 exit 0

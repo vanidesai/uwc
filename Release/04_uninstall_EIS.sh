@@ -76,10 +76,18 @@ checkrootUser()
 
 function uninstallDockerCompose()
 {
-    # UNINSTALLING DOCKER-COMPOSE
-    echo -e "${INFO}--------------------------------------Uninstalling Docker-compose--------------------------------${NC}"
-    rm -rf $(which docker-compose)
-    pip3 uninstall -y docker-compose >>/dev/null
+    	# UNINSTALLING DOCKER-COMPOSE
+    	echo -e "${INFO}--------------------------------------Uninstalling Docker-compose--------------------------------${NC}"
+    	rm -rf $(which docker-compose)
+
+	pip3 show docker-compose 1>/dev/null
+	if [ $? == 0 ]; then
+		pip3 uninstall -y docker-compose >>/dev/null
+	else
+	   echo "" 
+	fi
+
+    #pip3 uninstall -y docker-compose >>/dev/null
     echo -e "${SUCCESS}---------------------------Docker-compose uninstalled successfully-------------------------------${NC}"   
 }
 
@@ -122,13 +130,13 @@ removeEISUser()
 }
 uninstallContainers()
 {
-    echo "${INFO}Removing all containers from this machine${NC}"
+    	echo "${INFO}Removing all containers from this machine${NC}"
 	docker rm -f $(docker ps -a -q)
 	docker system prune -af --volumes
 	rm -rf UWC*
-	rm -rf $Current_Dir/.EISPatched
-	rm -rf modbus-master/ MQTT/ mqtt-export/ scada-rtu/
-    rm -rf docker_setup/provision/config/UWC/
+	rm -rf $Current_Dir/EISPatched.txt
+	rm -rf modbus-master/ MQTT/ mqtt-export/ scada-rtu/ uwc_common/ UWC/ kpi-tactic/
+    	rm -rf docker_setup/provision/config/UWC/
 	if [ "$?" -ne "0" ];then
 		echo "${RED}Failed to uninstall UWC contatiners.${NC}"
 		exit 1

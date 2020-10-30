@@ -174,11 +174,12 @@ noProxy=\"127.0.0.1,localhost\"" >> /etc/environment
 
 installBasicPackages()
 {
-    echo "${INFO}Executing Pre-requisites Edge Insights Software ${iei_version}${NC}"
+    echo "${INFO}Installing basic packages required for UWC${NC}"
     # Installing dependent packages
-    apt-get update && apt-get -y install build-essential python3-pip wget curl patch
+    apt-get update > /dev/null && apt-get -y install build-essential python3-pip wget curl patch > /dev/null
     if [ "$?" -ne "0" ]; then
-	echo "${RED}failed to download basic packages.${NC}"
+	echo "${RED}failed to download basic packages. Please check if your basic package manager is working or not using apt-get update command and try to re-run the script${NC}"
+	exit 1
     fi
     return 0
 }
@@ -319,39 +320,6 @@ function copyDeployComposeFile()
     esac 
 }
 
-# ---------------------------------------
-# Function to apply EIS patch for DBS 
-# --------------------------------------
-applyEISPatch()
-{
-	echo "${GREEN}Applying EIS patch for DBS...${NC}"
-	cd ${working_dir}
-	rm -rf UWC/ && mkdir UWC
-	tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
-	cd UWC/DBS_Patches && cp 0001-U-ARCH-changes.patch ${working_dir}
-	cd ${working_dir}
-	
-	# revert the patch if already applied
-	if [ -f .EISPatched ];then
-		patch -d . -f --strip=0 -R  < 0001-U-ARCH-changes.patch || true >/dev/null
-	fi
-
-	patch -d . -f --strip=0  < 0001-U-ARCH-changes.patch
-	check_for_errors "$?" "Failed to apply EIS patch for DBS. Please check logs" \
-			"${GREEN}Successfuly applied EIS patch for DBS${NC}"
-	#cp ${working_dir}/UWC/DBS_Patches/provision_eis.sh ${working_dir}/docker_setup/provision
-
-	#if [ $DEPLOY_MODE == "IPC_DEV" ];then
-	#	cp ${working_dir}/UWC/DBS_Patches/docker-compose-provision_dev.yml ${working_dir}/docker_setup/provision/dep/docker-compose-provision.yml
-	#else
-	#	cp ${working_dir}/UWC/DBS_Patches/docker-compose-provision.yml ${working_dir}/docker_setup/provision/dep/docker-compose-provision.yml
-	#fi
-	#chmod +x ${working_dir}/docker_setup/provision/provision_eis.sh
-	# cleanup
-	touch .EISPatched
-	rm -rf UWC/
-}
-
 
 # ----------------------------
 # Copying UWC Containers in EIS
@@ -385,10 +353,14 @@ addUWCContainersInEIS()
 
 endOfScript()
 {
-    echo "${GREEN}>>>>>${NC}"
-	echo "${GREEN}************************* This script is sucessfully executed ***************************************************"
-    echo "${INFO}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
-    echo "${INFO}To execute unit test cases, run 06_UnitTestRun.sh script ${NC}"
+	rm -rf UWC/
+    	echo "${GREEN}>>>>>${NC}"
+	echo "${GREEN}====================================================================="
+	echo "${GREEN}============= All pre-requisites are successfully installed ========="
+	echo "${GREEN}====================================================================="
+	echo
+    	echo "${INFO}Next script to be run for provisioning EIS is 02_provisionEIS.sh ${NC}"
+    	echo "${INFO}To execute unit test cases, run 06_UnitTestRun.sh script ${NC}"
 }
 
 validateUserInput()
@@ -834,6 +806,18 @@ changeTopicLen()
 # function to create separate network for uwc containers
 createDockerNw()
 {
+	# disconnect old containers from network 
+	echo "disconnecting old containers from network"
+	for i in `docker network inspect -f '{{range.Containers}}{{.Name}} {{end}}' uwc_nw`;\
+	do \
+		echo "Disconnecting "$i
+		docker network disconnect -f uwc_nw $i;\
+	done;
+	echo "Done.."
+
+	# stop the running containers
+	stopRunningContainers
+
 	docker network rm uwc_nw || true
 	docker network create --driver=bridge --subnet=172.168.80.0/24 --gateway=172.168.80.1 --ip-range=172.168.80.128/25 -o "com.docker.network.bridge.enable_ip_masquerade"="1" uwc_nw
 }
@@ -986,7 +970,7 @@ Usage()
 		7. With scada, TLS, and with proxy 
 		sudo ./01_pre-requisites.sh --isTLS=yes  --caFile=\"scada_ext_certs/ca/root-ca.crt\" --crtFile=\"scada_ext_certs/client/client.crt\" --keyFile=\"scada_ext_certs/client/client.key\" --brokerAddr=\"127.0.0.1\" --brokerPort=\"1883\" --qos=1 --proxy=\"intel.proxy.com:811\"${NC}
 		
-		8. deployment with IPC DEV mode (Not yet supported)
+		8. deployment with IPC DEV mode
 		sudo ./01_pre-requisites.sh --deployMode=IPC_DEV
 
 		9. With KPI app 
@@ -1024,8 +1008,62 @@ PrintAllArgs()
 	echo "${GREEN}==========================================${NC}"
 }
 
+#------------------------------------------------------------------
+# callDBSScript
+#
+# Description:
+#        This function is used to apply all changes for DBS and EIS
+# Return:
+#        None
+# Usage:
+#        callDBSScript
+#------------------------------------------------------------------
+callDBSScript()
+{
+	cd $working_dir
+	echo "Calling 1.2 script to apply EIS changes"
+	chmod +x 1.2_ApplyDBSChanges.sh
+	if [ $DEPLOY_MODE == "IPC_PROD" ];then 
+		./1.2_ApplyDBSChanges.sh "false"
+	else
+		./1.2_ApplyDBSChanges.sh "true"
+	fi
 
-echo "${GREEN}============================= Script START ============================================${NC}"
+	if [ "$?" -ne "0" ];then
+		echo ${RED}"Failed to apply EIS patch..${NC}"
+		exit 1
+	fi	
+}
+
+#------------------------------------------------------------------
+# stopRunningContainers
+#
+# Description:
+#        This function is used to stop existing container if already running
+# Return:
+#        None
+# Usage:
+#        stopRunningContainers
+#------------------------------------------------------------------
+stopRunningContainers()
+{
+	echo "Stopping the running UWC containers..."
+	docker ps -q --filter "name=scada-rtu" | grep -q . && docker stop scada-rtu
+	docker ps -q --filter "name=modbus-tcp-master" | grep -q . && docker stop modbus-tcp-master
+	docker ps -q --filter "name=modbus-rtu-master" | grep -q . && docker stop modbus-rtu-master
+	docker ps -q --filter "name=mqtt-export" | grep -q . && docker stop mqtt-export
+	docker ps -q --filter "name=mqtt_container" | grep -q . && docker stop mqtt_container
+	docker ps -q --filter "name=ia_etcd_ui" | grep -q . && docker stop ia_etcd_ui
+	docker ps -q --filter "name=ia_etcd" | grep -q . && docker stop ia_etcd
+	docker ps -q --filter "name=kpi-tactic-app" | grep -q . && docker stop kpi-tactic-app
+	docker ps -q -a --filter "name=edgeinsightssoftware_ia_eisbase_1" | grep -q . && docker rm -f edgeinsightssoftware_ia_eisbase_1
+	docker ps -q -a --filter "name=edgeinsightssoftware_ia_common_1" | grep -q . && docker rm -f edgeinsightssoftware_ia_common_1
+	docker ps -q -a --filter "name=edgeinsightssoftware_uwc_common_1" | grep -q . && docker rm -f edgeinsightssoftware_uwc_common_1
+	echo "${GREEN}All containers are stopped successfully"
+
+}
+
+echo "${GREEN}============================= Script 01 START ============================================${NC}"
 # Internal function calls to set up Insights
 ParseCommandLineArgs "$@"
 verifyDirectory
@@ -1040,15 +1078,16 @@ createDockerVolumeDir
 #changeTopicLen
 addUWCContainersInEIS
 
-# only works with EIS 2.2 PV
-applyEISPatch
 changeFilePermissions
 createDockerNw
+
+# call 1.2 script to apply DBS and EIS changes 
+callDBSScript
 
 if [ $SCADA_REQUIRED == "yes" ]; then
 	if [ $IS_INTERACTIVE == "yes" ]; then
 		echo "${INFO}Installing scada container with interactive mode${NC}"
-		./1.1_ConfigureScada.sh --interactive=1 --withKpiApp=$KPI_APP_REQUIRED --deployMode=$DEPLOY_MODE"$@" 
+		./1.1_ConfigureScada.sh --interactive=1 --withKpiApp=$KPI_APP_REQUIRED --deployMode=$DEPLOY_MODE "$@" 
 	else
 		echo "${INFO}Installing scada container with non-interactive mode${NC}"
 		./1.1_ConfigureScada.sh --nonInteractive=1 "$@"
@@ -1057,7 +1096,7 @@ else
 	echo "${INFO}scada-rtu container is skipped from the installation${NC}"
 fi
 endOfScript
-echo "${GREEN}============================= Script END ============================================${NC}"
+echo "${GREEN}============================= Script 01 END ============================================${NC}"
 
 cd "${working_dir}"
 exit 0
