@@ -20,11 +20,6 @@ void Metric_ut::TearDown()
 	// TearDown code
 }
 
-//TEST_F(Metric_ut, assignToSparkPlug_UnsupportedDataType)
-//{
-//	EXPECT_EQ( false, CValObj_main.assignToSparkPlug(a_metric) );
-//}
-#if 1 // In progress
 TEST_F(Metric_ut, assignToSparkPlug_METRIC_DATA_TYPE_BOOLEAN)
 {
 	try
@@ -106,23 +101,4 @@ TEST_F(Metric_ut, assignToSparkPlug_METRIC_DATA_TYPE_STRING)
 	EXPECT_EQ( false, CValObj_main.assignToSparkPlug(a_metric) );
 }
 
-TEST_F(Metric_ut, assignToPlug_test)
-{
-	bool Rtval = CValObj_ins.assignToSparkPlug(a_metric);
 
-	EXPECT_EQ(Rtval, false);
-}
-
-/*
-TEST_F(Metric_ut, assignToCjson_test)
-{
-	bool Rtval = CValObj_main.assignToCJSON(a_root);
-	cout<<"###########################################"<<endl;
-	cout<<Rtval<<endl;
-	cout<<"###########################################"<<endl;
-
-}*/
-
-
-
-#endif

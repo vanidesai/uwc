@@ -24,7 +24,7 @@ TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_FieldMissingInPayload)
 {
 	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
 
-	std::string a_sPayLoad = "{\"metric\": \"UtData02\", \"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}";
+	std::string a_sPayLoad = "{\"metrics\": \"UtData02\", \"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}";
 	std::vector<stRefForSparkPlugAction> a_stRefActionVec;
 	EXPECT_EQ( false, CSparkPlugDev_obj.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec) );
 
@@ -49,4 +49,25 @@ TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_MetricMapEmpty)
 	EXPECT_EQ( false, CSparkPlugDev_obj.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec) );
 
 }
+
+TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_DeviceMapEmpty)
+{
+	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
+
+	std::string a_sPayLoad = "{\"metric\": \"UtData01\", \"status\": \"bad\", \"value\": \"0x00\", \"usec\": \"1571887474111145\", \"lastGoodUsec\": \"val1\", \"error_code\": \"2002\"}";
+	std::vector<stRefForSparkPlugAction> a_stRefActionVec;
+	EXPECT_EQ( false, CSparkPlugDev_obj.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec) );
+
+}
+
+TEST_F(SparkPlugDevices_ut, processNewData_EmptyMetricList)
+{
+	metricMap_t a_MetricList;
+	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
+
+	metricMap_t oMetricMap = CSparkPlugDev_obj.processNewData(a_MetricList);
+
+}
+
+
 

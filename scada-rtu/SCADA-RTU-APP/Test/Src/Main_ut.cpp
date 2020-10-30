@@ -39,21 +39,6 @@ void Call_PushMsg(CQueueHandler& Qu, mqtt::const_message_ptr& msg)
 }
 /****************************************************************/
 
-#if 0 //Function deleted
-/* updateDataPoints: ? */
-TEST_F(Main_ut, updateDataPoints_StopWhenAppStops)
-{
-	std::thread TestTarget( updateDataPoints );
-	std::thread TestHelper(Set_g_shouldStop);
-
-	TestTarget.join();
-	TestHelper.join();
-
-	// Setting the value of "g_shouldStop back" to default value
-	g_shouldStop = false;
-}
-#endif
-
 TEST_F(Main_ut, processInternalMQTTMsg_DeathMsg)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -89,19 +74,223 @@ TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg)
 
 	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
 			"Birth/A/B",
-			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"uint8\", \"value\": 100}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
 			stRefActionVec);
 
 	EXPECT_EQ(true, Bool_Res);
 }
 
-TEST_F(Main_ut, processInternalMQTTMsg_DataMsg)
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_Uint8)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
 
 	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
 			"Data/A/B",
-			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"Uint8\", \"value\": \"0x00\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"uint8\", \"value\": 100}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg_repeated_sameDataType)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Birth/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"uint8\", \"value\": 100}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg_repeated_DifferentDataType)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Birth/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"int8\", \"value\": 9211}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg_repeated_DifferentValue)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Birth/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"int8\", \"value\": 420}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_Bool)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"boolean\", \"value\": true}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_uint16)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"uint16\", \"value\": 111}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_uint32)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"uint32\", \"value\": 111}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_uint64)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"uint64\", \"value\": 111}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int8)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"int8\", \"value\": 111}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int16)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"int16\", \"value\": 111}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int32)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"int32\", \"value\": 111}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int64)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"int64\", \"value\": 111}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_float)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"float\", \"value\": 111}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_double)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"double\", \"value\": 111}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_string)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"string\", \"value\": \"StringValue\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+			stRefActionVec);
+
+	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+
+	EXPECT_EQ(true, Bool_Res);
+}
+
+TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_InvVal)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"Data/A/B",
+			"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"double\", \"value\": \"111\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
 			stRefActionVec);
 
 	CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
@@ -125,10 +314,15 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageData)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
 
-	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
-			"A/B/C/D/Update",
+	/*Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+			"RealDev/A/B/D/Update",
 			"{\"metric\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
-			stRefActionVec);
+			stRefActionVec);*/
+
+	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+				"RealDev/A/B/D/Update",
+				"{\"metric\": \"UtData01\", \"status\": \"bad\", \"value\": \"0x00\", \"usec\": \"1571887474111145\", \"lastGoodUsec\": \"val1\", \"error_code\": \"2002\"}",
+				stRefActionVec);
 
 	//Does nothing
 	EXPECT_EQ(true, Bool_Res);
@@ -212,7 +406,7 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayload)
 	EXPECT_EQ(true, Bool_Res);
 }
 
-/*
+
 TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayloadNameMissing)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -225,7 +419,7 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayloadNameMissing)
 	//Does nothing
 	EXPECT_EQ(true, Bool_Res);
 }
-*/
+
 
 TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayloadNameValInv)
 {
@@ -305,9 +499,25 @@ TEST_F(Main_ut, processInternalMQTTMsg_InvalidTopic)
 	EXPECT_EQ(false, Bool_Res);
 }
 
-TEST_F(Main_ut, processInternalMqttMsgs_test)
+TEST_F(Main_ut, processInternalMqttMsgs_DeathMsg)
 {
 	mqtt::const_message_ptr msg = mqtt::make_message("Death/A", "Msg_UT", 0, false);
+	CQueueHandler Qu;
+
+	std::thread TestTarget( processInternalMqttMsgs, std::ref(Qu) );
+	std::thread TestHelperPostSem( Call_PushMsg, std::ref(Qu), std::ref(msg) );
+
+	TestTarget.join();
+	TestHelperPostSem.join();
+
+	// Setting the value of "g_shouldStop back" to default value
+	g_shouldStop = false;
+	Qu.cleanup();
+}
+
+TEST_F(Main_ut, processInternalMqttMsgs_BirthMsg)
+{
+	mqtt::const_message_ptr msg = mqtt::make_message("Birth/A", "Msg_UT", 0, false);
 	CQueueHandler Qu;
 
 	std::thread TestTarget( processInternalMqttMsgs, std::ref(Qu) );

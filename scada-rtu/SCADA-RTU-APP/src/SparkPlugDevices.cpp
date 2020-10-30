@@ -683,6 +683,7 @@ bool CSparkPlugDev::processRealDeviceUpdateMsg(const std::string a_sPayLoad, std
  * @param a_sTopic :[in] topic on which to publish the message
  * @param a_root :[out] cJSON reference containing message payload
  * @param a_metrics :[in] changed metrics for which to publish WOD message
+ * @param a_appSeqNo :[in] app seq number to be used
  * @return true/false based on success/failure
  */
 bool CSparkPlugDev::getWriteMsg(string& a_sTopic, cJSON *a_root, pair<const string,CMetric>& a_metric, const int& a_appSeqNo)
@@ -746,8 +747,8 @@ bool CSparkPlugDev::getWriteMsg(string& a_sTopic, cJSON *a_root, pair<const stri
 			cJSON_AddItemToObject(a_root, "usec", cJSON_CreateString(std::to_string(a_metric.second.getTimestamp()).c_str()));
 
 			cJSON_AddItemToObject(a_root, "version", cJSON_CreateString(CCommon::getInstance().getVersion().c_str()));
-
-			cJSON_AddItemToObject(a_root, "app_seq", cJSON_CreateString(std::to_string(a_appSeqNo).c_str()));
+			std::string sAppSeq{"SCADA_RTU_" + std::to_string(a_appSeqNo)};
+			cJSON_AddItemToObject(a_root, "app_seq", cJSON_CreateString(sAppSeq.c_str()));
 		}
 	}
 	catch(exception& ex)

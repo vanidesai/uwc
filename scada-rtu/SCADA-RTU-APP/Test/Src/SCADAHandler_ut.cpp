@@ -24,32 +24,38 @@ void SCADAHandler_ut::TearDown()
 
 void TargetFunctionCaller( std::vector<stRefForSparkPlugAction> stRefActionVec, bool& bRes )
 {
-
-	CIntMqttHandler::instance().disconnect();
+	cout<<"<<<<<<<<<<<<<<<<<<Target calling start"<<endl;
+	//CIntMqttHandler::instance().disconnect();
 	bRes = CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
+	cout<<"<<<<<<<<<<<<<<<<<<Target called"<<endl;
 }
 
 void PostSem_semIntMQTTConnLost()
 {
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+	cout<<"<<<<<<<<<<<<<<<<<<Before Semaphore"<<endl;
 	CSCADAHandler::instance().signalIntMQTTConnLostThread();
+	cout<<"<<<<<<<<<<<<<<<<<<After Semaphore"<<endl;
 }
 
 /***************************************************************/
 
 
-TEST_F(SCADAHandler_ut, prepareSparkPlugMsg_InitStatusFalse)
+TEST_F(SCADAHandler_ut, prepareSparkPlugMsg_DeathMsg)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
 
-	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
-				"Birth/SCADA-RTU/B",
-				"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
-				stRefActionVec);
+	//CIntMqttHandler::instance().disconnect();
 
-	/*Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
-			"Data/A/B",
-			"{\"metrics\": [{\"name\":\"UT_UniqueName\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
-			stRefActionVec);*/
+	/*CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+				"Death/A/B",
+				"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"Uint8\", \"value\": \"0x00\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+				stRefActionVec);*/
+
+	CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+					"Data/A/B",
+					"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"boolean\", \"value\": true}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+					stRefActionVec);
 
 	bool Bool_Res_Local = true;
 	std::thread TestTarget( TargetFunctionCaller, stRefActionVec, std::ref(Bool_Res_Local) );
@@ -58,6 +64,32 @@ TEST_F(SCADAHandler_ut, prepareSparkPlugMsg_InitStatusFalse)
 	TestTarget.join();
 	TestHelper.join();
 
-	EXPECT_EQ( false, Bool_Res_Local );
+	EXPECT_EQ( true, Bool_Res_Local );
+}
+
+TEST_F(SCADAHandler_ut, prepareSparkPlugMsg_DataMsg)
+{
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+	//CIntMqttHandler::instance().disconnect();
+
+	/*CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+				"Death/A/B",
+				"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"Uint8\", \"value\": \"0x00\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+				stRefActionVec);*/
+
+	CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
+					"Data/A/B",
+					"{\"metrics\": [{\"name\":\"UtData02\", \"dataType\":\"boolean\", \"value\": true}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
+					stRefActionVec);
+
+	bool Bool_Res_Local = true;
+	std::thread TestTarget( TargetFunctionCaller, stRefActionVec, std::ref(Bool_Res_Local) );
+	std::thread TestHelper( PostSem_semIntMQTTConnLost );
+
+	TestTarget.join();
+	TestHelper.join();
+
+	EXPECT_EQ( true, Bool_Res_Local );
 }
 

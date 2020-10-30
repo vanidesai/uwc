@@ -23,7 +23,7 @@ using namespace std;
 using namespace globalConfig;
 
 #define SCADA_CONFIG_FILE_PATH "/opt/intel/eis/uwc_data/scada-rtu/scada_config.yml"
-#define MQTT_EXPORT_VERSION "2.0"
+#define SCADA_SPARKPLUG_VERSION "2.0"
 
 class CCommon
 {
@@ -36,15 +36,23 @@ private:
 
 	string m_strExtMqttURL;
 	int m_nQos;
-	char m_delimeter;
 	string m_strNodeConfPath;
 	string m_strGroupId;
-	string m_strEdgeNodeID;
-	bool m_devMode;
+	string m_strNodeName;
 	bool m_bIsScadaTLS;
 
 	void setScadaRTUIds();
-	string getMACAddress(const string& a_strInterfaceName);
+
+	/**
+	 * Return topic in sparkplug format to send as device data
+	 * to SCADA
+	 * @return data topic in string
+	 */
+	std::string getSparkPlugTopic(const std::string &a_sTopic)
+	{
+		std::string sTopic{SPARKPLUG_TOPIC + m_strGroupId + "/" + a_sTopic + "/" + m_strNodeName};
+		return sTopic;
+	}
 
 public:
 	~CCommon();
@@ -118,39 +126,13 @@ public:
 	}
 
 	/**
-	 * Check if application set for dev mode or not
-	 * @param None
-	 * @return true if set to devMode
-	 * 			false if not set to devMode
-	 */
-	bool isDevMode() const
-	{
-		return m_devMode;
-	}
-
-	/**
-	 * Set dev mode
-	 * @param devMode :[in] value to set for dev_mode
-	 * @return None
-	 */
-	void setDevMode(bool devMode)
-	{
-		m_devMode = devMode;
-	}
-
-	/**
 	 * Return topic in sparkplug format to set in will message
 	 * in mqtt subscriber
 	 * @return death topic in string
 	 */
 	std::string getDeathTopic()
 	{
-		std::string topic(SPARKPLUG_TOPIC);
-		topic.append(m_strGroupId + "/");
-		topic.append(NDEATH);
-		topic.append("/" + getEdgeNodeID());
-
-		return topic;
+		return getSparkPlugTopic(NDEATH);
 	}
 
 	/**
@@ -160,12 +142,7 @@ public:
 	 */
 	std::string getNBirthTopic()
 	{
-		std::string topic(SPARKPLUG_TOPIC);
-		topic.append(m_strGroupId + "/");
-		topic.append(NBIRTH);
-		topic.append("/" + getEdgeNodeID());
-
-		return topic;
+		return getSparkPlugTopic(NBIRTH);
 	}
 
 	/**
@@ -175,12 +152,7 @@ public:
 	 */
 	std::string getDBirthTopic()
 	{
-		std::string topic(SPARKPLUG_TOPIC);
-		topic.append(m_strGroupId + "/");
-		topic.append(DBIRTH);
-		topic.append("/" + getEdgeNodeID());
-
-		return topic;
+		return getSparkPlugTopic(DBIRTH);
 	}
 
 	/**
@@ -190,12 +162,7 @@ public:
 	 */
 	std::string getDDataTopic()
 	{
-		std::string topic(SPARKPLUG_TOPIC);
-		topic.append(m_strGroupId + "/");
-		topic.append(DDATA);
-		topic.append("/" + getEdgeNodeID());
-
-		return topic;
+		return getSparkPlugTopic(DDATA);
 	}
 
 	/**
@@ -205,26 +172,34 @@ public:
 	 */
 	std::string getDDeathTopic()
 	{
-		std::string topic(SPARKPLUG_TOPIC);
-		topic.append(m_strGroupId + "/");
-		topic.append(DDEATH);
-		topic.append("/" + getEdgeNodeID());
+		return getSparkPlugTopic(DDEATH);
+	}
 
-		return topic;
+	/**
+	 * Get group name of scada-rtu
+	 * @return group name of scada-rtu in string
+	 */
+	std::string getGroupName()
+	{
+		return m_strGroupId;
 	}
 
 	/**
 	 * Get edge node id of scada-rtu
 	 * @return edge node id of scada-rtu in string
 	 */
-	std::string getEdgeNodeID()
+	std::string getNodeName()
 	{
-		return m_strEdgeNodeID;
+		return m_strNodeName;
 	}
 
+	/**
+	 * Returns sparkplug version to be sent in message
+	 * @return version string
+	 */
 	const std::string getVersion()
 	{
-		return std::string(MQTT_EXPORT_VERSION);
+		return std::string(SCADA_SPARKPLUG_VERSION);
 	}
 
 	/**

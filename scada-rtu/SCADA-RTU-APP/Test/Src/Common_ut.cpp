@@ -20,12 +20,11 @@ void Common_ut::TearDown()
 	// TearDown code
 }
 
-#if 0 //In progr5ess
-TEST_F(Common_ut, readCommonEnvVariables_DevModeIsTRUE)
-{
-	CCommon::getInstance().readCommonEnvVariables();
 
-	EXPECT_EQ(true, CCommon::getInstance().isDevMode());
+TEST_F(Common_ut, getTopicParts_Test01)
+{
+	std::vector<std::string> TopicParts;
+	CCommon::getInstance().getTopicParts("PartA_UT/PartB_UT/PartC_UT", TopicParts, "/");
 }
-#endif
+
 

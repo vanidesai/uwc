@@ -13,7 +13,7 @@
 
 #include <semaphore.h>
 #include "mqtt/async_client.h"
-#include "MQTTCallback.hpp"
+#include "MQTTPubSubClient.hpp"
 #include "Logger.hpp"
 #include "QueueMgr.hpp"
 #include "SparkPlugDevMgr.hpp"
@@ -25,14 +25,8 @@ enum eIntMQTTConStatus
 	enCON_NONE, enCON_UP, enCON_DOWN
 };
 
-class CIntMqttHandler
+class CIntMqttHandler : public CMQTTBaseHandler
 {
-	CMQTTPubSubClient m_MQTTClient;
-	//mqtt::async_client m_subscriber;
-	//mqtt::connect_options m_connOpts;
-	//mqtt::token_ptr m_conntok;
-	int m_QOS;
-
 	int m_appSeqNo;
 
 	sem_t m_semConnSuccess;
@@ -42,34 +36,22 @@ class CIntMqttHandler
 	std::atomic<eIntMQTTConStatus> m_enLastConStatus;
 	std::atomic<bool> m_bIsInTimeoutState;
 
-	//CSubscriberCallback m_mqttSubscriberCB;
-	//CMQTTActionListener m_listener;
-
-	//friend class CSubscriberCallback;
-	//friend class CMQTTActionListener;
-
 	CIntMqttHandler(const std::string &strPlBusUrl, int iQOS);
 
 	// delete copy and move constructors and assign operators
 	CIntMqttHandler(const CIntMqttHandler&) = delete;	 			// Copy construct
 	CIntMqttHandler& operator=(const CIntMqttHandler&) = delete;	// Copy assign
 
-	bool subscribeToTopics();
-	string getDatatypeInString(uint32_t a_uiDatatype);
-
 	int getAppSeqNo();
 
 	void subscribeTopics();
-	static void connected(const std::string &a_sCause);
-	static void disconnected(const std::string &a_sCause);
-	static void msgRcvd(mqtt::const_message_ptr a_pMsg);
+	void connected(const std::string &a_sCause) override;
+	void disconnected(const std::string &a_sCause) override;
+	void msgRcvd(mqtt::const_message_ptr a_pMsg) override;
 	bool init();
 
 	void handleConnMonitoringThread();
 	void handleConnSuccessThread();
-
-	void signalIntMQTTConnLostThread();
-	void signalIntMQTTConnDoneThread();
 
 	void setLastConStatus(eIntMQTTConStatus a_ConsStatus)
 	{
@@ -94,18 +76,11 @@ class CIntMqttHandler
 public:
 	~CIntMqttHandler();
 	static CIntMqttHandler& instance(); //function to get single instance of this class
-	bool isConnected();
-	bool pushMsgInQ(mqtt::const_message_ptr msg);
 	bool prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
 	bool prepareCMDMsg(std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev,
 						metricMap_t& a_mapChangedMetrics);
 	bool prepareWriteMsg(std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev,
 							metricMap_t& a_mapChangedMetrics);
-	void connect();
-	void disconnect();
- 	void cleanup();
-
-	bool publishIntMqttMsg(const std::string &a_sMsg, const std::string &a_sTopic);
- };
+};
 
 #endif

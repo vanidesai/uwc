@@ -22,21 +22,11 @@
  */
 CCommon::CCommon() :
 	m_strExtMqttURL{""}, m_nQos{1}, m_strNodeConfPath{""},
-	m_strGroupId{""}, m_strEdgeNodeID{""}, m_devMode{false}, m_bIsScadaTLS{true}
+	m_strGroupId{""}, m_strNodeName{""}, m_bIsScadaTLS{true}
 {
 	setScadaRTUIds();
-
+	
 	EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
-	string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
-	transform(strDevMode.begin(), strDevMode.end(), strDevMode.begin(), ::toupper);
-	if(strDevMode == "TRUE")
-	{
-		setDevMode(true);
-	}
-	else
-	{
-		setDevMode(false);
-	}
 }
 
 /**
@@ -137,7 +127,11 @@ bool CCommon::loadYMLConfig()
 	return bRet;
 }
 
-
+/**
+ * load global config file and set groupId and NodeName
+ * @param None
+ * @return None
+ */
 void CCommon::setScadaRTUIds()
 {
 	// load global configuration for container real-time setting
@@ -159,53 +153,15 @@ void CCommon::setScadaRTUIds()
 		std::cout << "Group id for scada-rtu is not set, exiting application" << std::endl;
 		return;
 	}
-
-	const stEdgeNodeId& stEdgeNodeId = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getObjEdgeNodeId();
-	if(stEdgeNodeId.m_stNodeName.empty())
+	
+	m_strNodeName = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getNodeName();
+	if(m_strNodeName.empty())
 	{
-		std::cout << "Edge node id name is not set for scada-rtu, exiting application" << std::endl;
+		std::cout << "Node name for scada-rtu is not set, exiting application" << std::endl;
 		return;
 	}
-
-	m_strEdgeNodeID.assign(stEdgeNodeId.m_stNodeName);
-
-	if(stEdgeNodeId.m_stGenUniquename == true)
-	{
-		//generate name with MAC address
-		m_strEdgeNodeID.append("-");
-
-		string strInterfaceName = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getInterfaceName();
-		if(strInterfaceName.empty())
-		{
-			std::cout << "Edge node id name is not set for scada-rtu, exiting application" << std::endl;
-			return;
-		}
-
-		m_strEdgeNodeID.append(getMACAddress(strInterfaceName));
-	}
 }
 
-/**
- * Get MAC address of machine
- * @param : [in] Interface name of which to find MAC address
- * @return MAC address in string format
- */
-string CCommon::getMACAddress(const string& a_strInterfaceName)
-{
-	ifstream iface("/sys/class/net/" + a_strInterfaceName + "/address");
-
-	string strMAC((istreambuf_iterator<char>(iface)), istreambuf_iterator<char>());
-
-	if (strMAC.length() > 0)
-	{
-		string hex = regex_replace(strMAC, std::regex("\n"), "");
-		return hex;
-	}
-	else
-	{
-		return "00";
-	}
-}
 /**
  * Destructor
  */

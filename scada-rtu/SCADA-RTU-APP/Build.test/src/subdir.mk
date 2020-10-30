@@ -12,7 +12,6 @@
 CPP_SRCS += \
 ../src/Common.cpp \
 ../src/InternalMQTTSubscriber.cpp \
-../src/MQTTCallback.cpp \
 ../src/Main.cpp \
 ../src/Metric.cpp \
 ../src/QueueMgr.cpp \
@@ -23,7 +22,6 @@ CPP_SRCS += \
 OBJS += \
 ./src/Common.o \
 ./src/InternalMQTTSubscriber.o \
-./src/MQTTCallback.o \
 ./src/Main.o \
 ./src/Metric.o \
 ./src/QueueMgr.o \
@@ -34,7 +32,6 @@ OBJS += \
 CPP_DEPS += \
 ./src/Common.d \
 ./src/InternalMQTTSubscriber.d \
-./src/MQTTCallback.d \
 ./src/Main.d \
 ./src/Metric.d \
 ./src/QueueMgr.d \

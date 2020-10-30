@@ -35,10 +35,9 @@ std::atomic<bool> g_shouldStop(false);
  */
 void processExternalMqttMsgs(CQueueHandler& a_qMgr)
 {
-	mqtt::const_message_ptr recvdMsg;
-
 	while (false == g_shouldStop.load())
 	{
+		CMessageObject recvdMsg{};
 		if(true == a_qMgr.isMsgArrived(recvdMsg))
 		{
 			std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -67,16 +66,15 @@ void processInternalMqttMsgs(CQueueHandler& a_qMgr)
 
 	try
 	{
-		mqtt::const_message_ptr recvdMsg;
-
 		while (false == g_shouldStop.load())
 		{
+			CMessageObject recvdMsg{};
 			if(true == a_qMgr.isMsgArrived(recvdMsg))
 			{
 				std::vector<stRefForSparkPlugAction> stRefActionVec;
 				CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
-						recvdMsg->get_topic(),
-						recvdMsg->get_payload(),
+						recvdMsg.getTopic(),
+						recvdMsg.getStrMsg(),
 						stRefActionVec);
 
 				//prepare a sparkplug message only if there are values in map

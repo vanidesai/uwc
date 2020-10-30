@@ -14,7 +14,7 @@
 #include <mqtt/async_client.h>
 #include <vector>
 #include <semaphore.h>
-#include "MQTTCallback.hpp"
+#include "MQTTPubSubClient.hpp"
 #include "Common.hpp"
 #include "Logger.hpp"
 #include "NetworkInfo.hpp"
@@ -34,15 +34,9 @@ extern "C"
 using namespace std;
 using namespace network_info;
 
-// Declarations used for MQTT
-#define SUBSCRIBERID								"SCADA_SUBSCRIBER"
-
-class CSCADAHandler
+class CSCADAHandler : public CMQTTBaseHandler
 {
 	uint64_t m_uiBDSeq = 0; 
-	int m_QOS;
-
-	CMQTTPubSubClient m_MQTTClient;
 
 	sem_t m_semSCADAConnSuccess;
 	sem_t m_semIntMQTTConnLost;
@@ -55,14 +49,12 @@ class CSCADAHandler
 	// delete copy and move constructors and assign operators
 	CSCADAHandler(const CSCADAHandler&) = delete;	 			// Copy construct
 	CSCADAHandler& operator=(const CSCADAHandler&) = delete;	// Copy assign
-	//bool connectSubscriber();
 
 	bool getInitStatus() {return m_bIsInitDone.load();}
 	void setInitStatus(bool a_bStatus) {return m_bIsInitDone.store(a_bStatus);}
 
 	bool init();
 	void prepareNodeDeathMsg(bool a_bPublishMsg);
-	void startSCADAConnectionSuccessProcess();
 	void handleSCADAConnectionSuccessThread();
 	void handleIntMQTTConnLostThread();
 	void publish_node_birth();
@@ -71,27 +63,21 @@ class CSCADAHandler
 	bool publishMsgDDEATH(const stRefForSparkPlugAction& a_stRefAction);
 	bool publishMsgDDEATH(const std::string &a_sDevName);
 	bool publishMsgDDATA(const stRefForSparkPlugAction& a_stRefAction);
-	//bool initDataPoints();
-	void populateDataPoints();
 
 	void subscribeTopics();
-	static void connected(const std::string &a_sCause);
-	static void disconnected(const std::string &a_sCause);
-	static void msgRcvd(mqtt::const_message_ptr a_pMsg);
-	void vendor_app_birth_request();
+	void connected(const std::string &a_sCause) override;
+	void disconnected(const std::string &a_sCause) override;
+	void msgRcvd(mqtt::const_message_ptr a_pMsg) override;
 
 	bool publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payload, string a_topic);
 
 public:
 	~CSCADAHandler();
 	static CSCADAHandler& instance();
-	void disconnect();
-	void connect();
-	void cleanup();
 
 	bool pushMsgInQ(mqtt::const_message_ptr msg);
 	bool prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
-	bool processDCMDMsg(mqtt::const_message_ptr a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
+	bool processDCMDMsg(CMessageObject a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
 
 	void signalIntMQTTConnLostThread();
 };
