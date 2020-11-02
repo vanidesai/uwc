@@ -221,13 +221,14 @@ bool CControlLoopMapper::insertControlLoopData(const std::string &a_sPolledTopic
 			m_oControlLoopMap.emplace(sPollKey, oTemp);
 			itr = m_oControlLoopMap.find(sPollKey);
 		}
-		++m_uiCtrlLoopCnt;
-		CControlLoopOp oLoop{m_uiCtrlLoopCnt, sPollKey, a_sWriteTopic, sDevName, sWellHeadName, sPointName, a_uiDelayMs, a_sVal};
-		// Check if this write point is already present 
-		//itr->second.emplace(sPollKey, a_sWriteTopic, a_uiDelayMs, a_sVal);
-		itr->second.push_back(oLoop);
-		m_vsPollTopics.push_back(sPollKey);
-		m_vsWrRspTopics.push_back(a_sWriteTopic + "/writeResponse");
+		if (m_oControlLoopMap.end() != itr)
+		{
+			++m_uiCtrlLoopCnt;
+			CControlLoopOp oLoop{m_uiCtrlLoopCnt, sPollKey, a_sWriteTopic, sDevName, sWellHeadName, sPointName, a_uiDelayMs, a_sVal};
+			itr->second.push_back(oLoop);
+			m_vsPollTopics.push_back(sPollKey);
+			m_vsWrRspTopics.push_back(a_sWriteTopic + "/writeResponse");
+		}
 	}
 	catch(exception &e)
 	{
@@ -301,7 +302,7 @@ bool CControlLoopMapper::destroySubCtx()
 	try
 	{
 		std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
-		for(auto sTopic : vFullTopics)
+		for(auto& sTopic : vFullTopics)
 		{
 			zmq_handler::stZmqContext& ctx = zmq_handler::getCTX(sTopic);
 			zmq_handler::stZmqSubContext& subContext = zmq_handler::getSubCTX(sTopic);

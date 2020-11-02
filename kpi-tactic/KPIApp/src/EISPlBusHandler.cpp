@@ -238,7 +238,7 @@ bool publishEISMsg(std::string eisMsg, zmq_handler::stZmqContext &context,
 		return false;
 	}
 	// Creating message to be published
-	msg_envelope_t *msg;
+	msg_envelope_t *msg = NULL;
 	cJSON *root = NULL;
 
 	try

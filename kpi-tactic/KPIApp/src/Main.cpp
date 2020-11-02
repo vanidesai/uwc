@@ -18,6 +18,10 @@
 #include "cjson/cJSON.h"
 #include <mutex>
 #include "QueueMgr.hpp"
+#ifdef UNIT_TEST
+#include <gtest/gtest.h>
+#endif
+
 
 /// flag to stop all running threads
 std::atomic<bool> g_stopThread(false);
@@ -160,6 +164,11 @@ int main(int argc, char* argv[])
 		setEnvData();
 
 		std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
+#ifdef UNIT_TEST
+		//::testing::GTEST_FLAG(filter) ="*CConfigManager_ut*";
+		::testing::InitGoogleTest(&argc, argv);
+		return RUN_ALL_TESTS();
+#endif
 
 		if(false == CKPIAppConfig::getInstance().parseYMLFile(EnvironmentInfo::getInstance().getDataFromEnvMap("KPIAPPConfigFile")))
 		{
