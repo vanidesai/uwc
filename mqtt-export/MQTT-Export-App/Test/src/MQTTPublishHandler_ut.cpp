@@ -10,15 +10,6 @@
 
 #include "../include/MQTTPublishHandler_ut.hpp"
 
-#include <gtest/internal/gtest-internal.h>
-#include <cstdlib>
-#include <iostream>
-#include <string>
-
-using namespace std;
-
-extern void postMsgsToEIS();
-
 void MQTTPublishHandler_ut::SetUp() {
 	// Setup code
 }
@@ -27,126 +18,22 @@ void MQTTPublishHandler_ut::TearDown() {
 	// TearDown code
 }
 
-
-#ifdef QUEUE_FAILED_PUBLISH_MESSAGES
-TEST_F(MQTTPublishHandler_ut, pushMsgInQ)
+TEST_F(MQTTPublishHandler_ut, createNPubMsg_EmptyTopic)
 {
-
-	CMQTTHandler::instance().postPendingMsgs();
-}
-#endif
-
-#if 0 //SPRINT13CHANGES
-TEST_F(MQTTPublishHandler_ut, publish_NotConnected)
-{
-	string PubTpoic = "PubTopics";
-
-
-	struct timespec tsMsgRcvd;
-	timespec_get(&tsMsgRcvd, TIME_UTC);
-	string Message = "Message_ut";
-
-	mqtt::const_message_ptr msg;
-
-
-	CMQTTPublishHandler CMQTTPublishHandler_obj("PubID", "CliId", 0);
-
-	bool retVal = CMQTTPublishHandler_obj.publish(
-			Message,
-			PubTpoic,
-			tsMsgRcvd);
-
-	EXPECT_EQ(false, retVal);
-}
-#endif
-
-
-#if 0 //SPRINT13CHANGES
-TEST_F(MQTTPublishHandler_ut, publish_MsgEmpty)
-{
-	string PubTpoic = "";
-
-
-	struct timespec tsMsgRcvd;
-	timespec_get(&tsMsgRcvd, TIME_UTC);
-	string Message = "";
-
-	mqtt::const_message_ptr msg;
-
-
-	CMQTTPublishHandler CMQTTPublishHandler_obj("PubID", "CliId", 0);
-
-
-	bool retVal = CMQTTPublishHandler_obj.publish(
-			Message,
-			PubTpoic,
-			tsMsgRcvd);
-
-	EXPECT_EQ(false, retVal);
-}
-#endif
-
-#if 0 //SPRINT13CHANGES
-TEST_F(MQTTPublishHandler_ut, publish_Called_moreThan1)
-{
-	string PubTpoic = "";
-
-
-	struct timespec tsMsgRcvd;
-	timespec_get(&tsMsgRcvd, TIME_UTC);
-	string Message = "";
-
-	mqtt::const_message_ptr msg;
-
-
-	CMQTTPublishHandler CMQTTPublishHandler_obj("PubID", "CliId", 0);
-
-
-	bool retVal = CMQTTPublishHandler_obj.publish(
-			Message,
-			PubTpoic,
-			tsMsgRcvd);
-
-	retVal = CMQTTPublishHandler_obj.publish(
-				Message,
-				PubTpoic,
-				tsMsgRcvd);
-
-	EXPECT_EQ(false, retVal);
-}
-#endif
-
-#if 0 //SPRINT13CHANGES
-TEST_F(MQTTPublishHandler_ut, publish_TopicEmp)
-{
-	string PubTpoic = "";
-
-
-	struct timespec tsMsgRcvd;
-	timespec_get(&tsMsgRcvd, TIME_UTC);
-	string Message = "Message_ut";
-
-	mqtt::const_message_ptr msg;
-
-
-	CMQTTPublishHandler CMQTTPublishHandler_obj("PubID", "CliId", 0);
-
-
-	bool retVal = CMQTTPublishHandler_obj.publish(
-			Message,
-			PubTpoic,
-			tsMsgRcvd);
-
-	EXPECT_EQ(false, retVal);
-}
-#endif
-
-// How to confirm??
-// Working on it..
-TEST_F(MQTTPublishHandler_ut, cleanup_1_Success)
-{
-	CMQTTPublishHandler CMQTTPublishHandler_obj("PubID", "CliId", 0);
-
-	CMQTTPublishHandler_obj.cleanup();
+	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", EmptyTopic, 1);
+	EXPECT_EQ( false, mqttPublisher_ut.createNPubMsg(ValidMsg, EmptyTopic) );
 }
 
+TEST_F(MQTTPublishHandler_ut, createNPubMsg_EmptyMsg)
+{
+	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", EmptyTopic, 1);
+	EXPECT_EQ( false, mqttPublisher_ut.createNPubMsg(EmptyMsg, ValidTopic) );
+
+}
+
+TEST_F(MQTTPublishHandler_ut, createNPubMsg_ValidTopic_ValidMsg)
+{
+	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", ValidTopic, 1);
+	EXPECT_EQ( true, mqttPublisher_ut.createNPubMsg(ValidMsg, ValidTopic) );
+
+}

@@ -28,10 +28,11 @@
 
 #include "Common.hpp"
 #include "MQTTSubscribeHandler.hpp"
-#include "../include/MQTTPublishHandler.hpp"
+#include "MQTTPublishHandler.hpp"
 #include "ConfigManager.hpp"
 #include "Logger.hpp"
 #include "ZmqHandler.hpp"
+#include "EnvironmentVarHandler.hpp"
 
 #include "QueueMgr.hpp"
 
@@ -43,7 +44,8 @@ extern void signalHandler(int signal);
 extern bool addSrTopic(string &json, string& topic);
 extern void postMsgsToEIS(QMgr::CQueueMgr& qMgr);
 extern bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher);
-extern bool processMsgToSendOnEIS(mqtt::const_message_ptr &recvdMsg, bool &isRead, bool &isRealtime);
+extern void processMsgToSendOnEIS(CMessageObject &recvdMsg, const std::string a_sEisTopic);
+extern void getOperation(string topic, globalConfig::COperation& operation);
 
 extern vector<std::thread> g_vThreads;
 

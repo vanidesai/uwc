@@ -18,6 +18,7 @@ void QueueMgr_ut::TearDown() {
 	// TearDown code
 }
 
+#if 0 //In progress
 TEST_F(QueueMgr_ut, getSubMsgFromQ_write)
 {
 	mqtt::const_message_ptr msg = mqtt::make_message(
@@ -74,3 +75,4 @@ TEST_F(QueueMgr_ut, isMsgArrived_NoSubMsgInQueue)
 	EXPECT_EQ(false, RetVal);
 
 }
+#endif

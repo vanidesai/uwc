@@ -25,131 +25,39 @@ void Common_ut::TearDown()
 	// TearDown code
 }
 
-#if 0 //readEnvVariable is shifted to common library
-TEST_F(Common_ut, readEnvVariable_ReadSuccess)
-{
-
-	std::string envVar = "";
-	bool bRetVal = CCommon::getInstance().readEnvVariable("ReadRequest", envVar);
-
-	EXPECT_EQ("MQTT_Export_RdReq", envVar);
-
-}
-
-TEST_F(Common_ut, readEnvVariable_NULLArg)
-{
-	bool bRetVal = true;
-
-	std::string envVar = "";
-	bRetVal = CCommon::getInstance().readEnvVariable(NULL, envVar);
-
-	EXPECT_EQ(false, bRetVal);
-
-}
-
-TEST_F(Common_ut, readEnvVariable_ReadUnSuccess)
-{
-
-	bool bRetVal = true;
-
-	std::string envVar = "";
-	bRetVal = CCommon::getInstance().readEnvVariable("NotDefined", envVar);
-
-	EXPECT_EQ(false, bRetVal);
-
-}
-
-TEST_F(Common_ut, readCommonEnvVariables_ReadSuccess)
-{
-	//Setting environment variable for testing purpose
-	setenv("ReadRequest", "ReadRequest_UT", 0);
-	setenv("WriteRequest", "WriteRequest_UT", 0);
-	setenv("APP_VERSION", "APP_VERSION", 0);
-
-	bool bRetVal = CCommon::getInstance().readCommonEnvVariables();
-
-	EXPECT_EQ(true, bRetVal);
-
-	// Un-set environment variable which was set for testing
-	unsetenv("ReadRequest");
-	unsetenv("WriteRequest");
-	unsetenv("APP_VERSION");
-}
-
-// env variables are not set
-TEST_F(Common_ut, readCommonEnvVariables_Invalid)
-{
-
-	bool bRetVal = CCommon::getInstance().readCommonEnvVariables();
-
-	EXPECT_EQ(false, bRetVal);
-
-}
-
-// DevMode = FALSE
-TEST_F(Common_ut, readCommonEnvVariables_DevModeFalse)
-{
-	//Setting environment variable for testing purpose
-	setenv("ReadRequest", "ReadRequest_UT", 0);
-	setenv("WriteRequest", "WriteRequest_UT", 0);
-	setenv("APP_VERSION", "APP_VERSION", 0);
-	setenv("DEV_MODE", "false", 1);
-
-	bool bRetVal = CCommon::getInstance().readCommonEnvVariables();
-
-	EXPECT_EQ(true, bRetVal);
-
-	// Un-set environment variable which was set for testing
-	unsetenv("ReadRequest");
-	unsetenv("WriteRequest");
-	unsetenv("APP_VERSION");
-	setenv("DEV_MODE", "true", 1);
-}
-
-// DevMode = other than true and false
-TEST_F(Common_ut, readCommonEnvVariables_DevModeOther)
-{
-	setenv("ReadRequest", "ReadRequest_UT", 0);
-	setenv("WriteRequest", "WriteRequest_UT", 0);
-	setenv("APP_VERSION", "APP_VERSION", 0);
-	setenv("DEV_MODE", "other", 1);
-
-	bool bRetVal = CCommon::getInstance().readCommonEnvVariables();
-
-	EXPECT_EQ(true, bRetVal);
-
-	unsetenv("ReadRequest");
-	unsetenv("WriteRequest");
-	unsetenv("APP_VERSION");
-	setenv("DEV_MODE", "true", 1);
-}
-
-TEST_F(Common_ut, setStrReadRequest_SetstrCorrect)
-{
-
-	CCommon::getInstance().setStrReadRequest("SetStrForUT");
-
-	string str_temp = CCommon::getInstance().getStrReadRequest();
-
-	EXPECT_EQ("SetStrForUT", str_temp);
-
-}
-#endif
 
 TEST_F(Common_ut, addTimestampsToMsg_InvMsg)
 {
 
-	std::string strTsReceivedFromMQTT;
+	std::string TimeStamp;
 	std::string message_Inv = "InvMsg";
-	std::string tsMsgRcvdFromMQTT = "RecMsg";
+	std::string Key = "RecMsg";
 	bool RetVal = true;
 
 
-	CCommon::getInstance().getCurrentTimestampsInString(strTsReceivedFromMQTT);
+	CCommon::getInstance().getCurrentTimestampsInString(TimeStamp);
 
 
-	RetVal = CCommon::getInstance().addTimestampsToMsg(message_Inv, tsMsgRcvdFromMQTT, strTsReceivedFromMQTT);
+	RetVal = CCommon::getInstance().addTimestampsToMsg(message_Inv, Key, TimeStamp);
 
 	EXPECT_EQ(false, RetVal);
+
+}
+
+TEST_F(Common_ut, addTimestampsToMsg_KeyAddedSuccessfully)
+{
+
+	std::string TimeStamp;
+	std::string message = "{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}";
+	std::string Key = "timestamp_NotPresent";
+	bool RetVal = false;
+
+
+	CCommon::getInstance().getCurrentTimestampsInString(TimeStamp);
+
+
+	RetVal = CCommon::getInstance().addTimestampsToMsg(message, Key, TimeStamp);
+
+	EXPECT_EQ(true, RetVal);
 
 }
