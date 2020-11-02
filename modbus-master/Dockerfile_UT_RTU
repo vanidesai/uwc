@@ -48,6 +48,9 @@ COPY --from=uwc_test_common /usr/yaml/lib* /Modbus-App/lib/
 COPY --from=uwc_test_common /uwc_util/Release/libuwc-util.so /Modbus-App/lib/
 COPY --from=uwc_test_common /uwc_util/include/* /Modbus-App/include/
 COPY --from=uwc_test_common /uwc_util/include/utils/* /Modbus-App/include/utils/
+COPY --from=uwc_test_common /usr/paho-cpp/lib/lib* /Modbus-App/lib/
+COPY --from=uwc_test_common /usr/lib/libpaho* /Modbus-App/lib/
+COPY --from=uwc_test_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 
 RUN cp /Modbus-App/lib/* /usr/local/lib/
 RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Build.test/src/subdir.mk 
