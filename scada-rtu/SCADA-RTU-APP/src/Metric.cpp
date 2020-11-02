@@ -8,6 +8,7 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 #include <string.h>
+#include <limits>
 #include "Metric.hpp"
 
 /**
@@ -289,7 +290,7 @@ bool CValObj::setValObj(std::string a_sDatatype, cJSON *a_cjValue)
 			{
 				m_uiDataType = METRIC_DATA_TYPE_UINT64;
 				//m_objVal = (uint64_t)cJSON_GetNumberValue(a_cjValue);
-				m_objVal = (uint64_t) a_cjValue->valueint;
+				m_objVal = (uint64_t) a_cjValue->valuedouble;
 			}
 			else if (("int8" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
@@ -315,9 +316,14 @@ bool CValObj::setValObj(std::string a_sDatatype, cJSON *a_cjValue)
 			else if (("int64" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
+				int64_t i64 = static_cast<std::int64_t>(a_cjValue->valuedouble);
+				// Handle corner scenario of max value
+				if((i64 < 0) && (a_cjValue->valuedouble > 0.0))
+				{
+					i64 = std::numeric_limits<int64_t>::max();
+				}
 				m_uiDataType = METRIC_DATA_TYPE_INT64;
-				//m_objVal = (int64_t)cJSON_GetNumberValue(a_cjValue);
-				m_objVal = (int64_t) a_cjValue->valueint;
+				m_objVal = i64;
 			}
 			else if (("float" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
