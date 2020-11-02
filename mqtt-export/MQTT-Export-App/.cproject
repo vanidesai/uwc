@@ -101,9 +101,13 @@
                                     									
                                     <listOptionValue builtIn="false" value="cjson"/>
                                     									
+                                    <listOptionValue builtIn="false" value="log4cpp"/>
+                                    									
                                     <listOptionValue builtIn="false" value="paho-mqttpp3"/>
                                     									
-                                    <listOptionValue builtIn="false" value="paho-mqtt3a"/>
+                                    <listOptionValue builtIn="false" value="uwc-util"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3as"/>
                                     									
                                     <listOptionValue builtIn="false" value="pthread"/>
                                     									
@@ -333,7 +337,7 @@
                             							
                             <tool id="cdt.managedbuild.tool.gnu.archiver.base.911220377" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
                             							
-                            <tool command="g++ -lrt -std=c++11 -fpermissive" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.207867145" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
+                            <tool command="g++ -lrt -std=c++1z -fpermissive" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.207867145" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
                                 								
                                 <option id="gnu.cpp.compiler.exe.debug.option.optimization.level.311953510" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
                                 								
@@ -407,17 +411,25 @@
                                     									
                                     <listOptionValue builtIn="false" value="cjson"/>
                                     									
-                                    <listOptionValue builtIn="false" value="gtest"/>
+                                    <listOptionValue builtIn="false" value="yaml-cpp"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3a"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3c"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3as"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3cs"/>
                                     									
                                     <listOptionValue builtIn="false" value="log4cpp"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="gtest"/>
                                     									
                                     <listOptionValue builtIn="false" value="gtest_main"/>
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqttpp3"/>
                                     									
                                     <listOptionValue builtIn="false" value="uwc-util"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="paho-mqtt3a"/>
                                     									
                                     <listOptionValue builtIn="false" value="pthread"/>
                                     									

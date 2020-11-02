@@ -10,5 +10,5 @@
 
 USER_OBJS :=
 
-LIBS := -lcjson -lgtest -llog4cpp -lgtest_main -lpaho-mqttpp3 -luwc-util -lpthread -lpaho-mqtt3c -leisconfigmgr -leismsgenv -leisutils -leismsgbus -lpaho-mqtt3as -lssl -lcrypto
+LIBS := -lcjson -lyaml-cpp -lpaho-mqtt3a -lpaho-mqtt3c -lpaho-mqtt3as -lpaho-mqtt3cs -llog4cpp -lgtest -lgtest_main -lpaho-mqttpp3 -luwc-util -lpthread -lpaho-mqtt3c -leisconfigmgr -leismsgenv -leisutils -leismsgbus
 

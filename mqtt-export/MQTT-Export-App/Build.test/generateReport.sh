@@ -14,4 +14,4 @@ env
 ./MQTT_Export_test > /reports/mqtt-export/mqtt-export_test_status.log 2>&1
 
 # Run GCovr command
-gcovr  --html -e "../Test" -e "../include/log4cpp" --exclude-throw-branches -o /reports/mqtt-export/MQTT-Export_Report.html -r .. .
+gcovr --html -f "../src/Common.cpp" -f "../src/Main.cpp" -f "../src/MQTTPublishHandler.cpp" -f "../src/MQTTSubscribeHandler.cpp" -f "../src/QueueMgr.cpp" -f "../include/Common.hpp" -f "../include/MQTTPublishHandler.hpp" -f "../include/MQTTSubscribeHandler.hpp" -f "../include/QueueMgr.hpp" --exclude-throw-branches -o /reports/mqtt-export/MQTT-Export_Report.html -r .. .
