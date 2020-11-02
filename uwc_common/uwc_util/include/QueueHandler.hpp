@@ -47,6 +47,13 @@
 		: m_mqttMsg{a_obj.m_mqttMsg}, m_stTs{a_obj.m_stTs}
 		{}
 
+		CMessageObject& operator=(const CMessageObject &a_obj)
+	    { 
+	    	m_mqttMsg = a_obj.m_mqttMsg;
+	    	m_stTs = a_obj.m_stTs;
+	        return *this; 
+	    }
+
 		std::string getTopic() {return m_mqttMsg->get_topic();}
 		std::string getStrMsg() {return m_mqttMsg->get_payload();}
 		mqtt::const_message_ptr& getMqttMsg() {return m_mqttMsg;}

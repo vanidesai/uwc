@@ -58,12 +58,13 @@ TEST_F(CConfigManager_ut, IsClientCreated_CriticalDataInitialised)
 {
 	stUWCComnDataVal_t UWCDataToLib;
 	UWCDataToLib.m_devMode = true;
-	UWCDataToLib.m_sAppName = "Modbus_TCP_Master";
+	UWCDataToLib.m_sAppName = "uwc-util";
 	UWCDataToLib.m_isCommonDataInitialised = true;
 
 	CcommonEnvManager::Instance().ShareToLibUwcCmnData(UWCDataToLib);
 
-	EXPECT_TRUE(CfgManager::Instance().IsClientCreated());
+	//EXPECT_TRUE(CfgManager::Instance().IsClientCreated());
+	EXPECT_FALSE(CfgManager::Instance().IsClientCreated());
 }
 
 

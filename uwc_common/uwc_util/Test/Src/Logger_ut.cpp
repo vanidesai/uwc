@@ -28,6 +28,18 @@ void Logger_ut::TearDown()
 
  *********/
 
+TEST_F(Logger_ut, initLogger)
+{
+	CLogger::getInstance().initLogger("Config/log4cpp.properties");
+
+	/// to handle else block of Logger
+	CLogger::getInstance().initLogger("Config/log4cpp_1.properties");
+
+	/// to handle scenario where logger is already created
+	CLogger::getInstance().initLogger("Config/log4cpp.properties");
+
+	CLogger::getInstance().initLogger(CLogger::getInstance());
+}
 
 TEST_F(Logger_ut, logINFO)
 {

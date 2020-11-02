@@ -14,6 +14,7 @@ CPP_SRCS += \
 ../Src/ConfigManager.cpp \
 ../Src/EnvironmentVarHandler.cpp \
 ../Src/Logger.cpp \
+../Src/MQTTPubSubClient.cpp \
 ../Src/NetworkInfo.cpp \
 ../Src/QueueHandler.cpp \
 ../Src/ZmqHandler.cpp 
@@ -23,6 +24,7 @@ OBJS += \
 ./Src/ConfigManager.o \
 ./Src/EnvironmentVarHandler.o \
 ./Src/Logger.o \
+./Src/MQTTPubSubClient.o \
 ./Src/NetworkInfo.o \
 ./Src/QueueHandler.o \
 ./Src/ZmqHandler.o 
@@ -32,6 +34,7 @@ CPP_DEPS += \
 ./Src/ConfigManager.d \
 ./Src/EnvironmentVarHandler.d \
 ./Src/Logger.d \
+./Src/MQTTPubSubClient.d \
 ./Src/NetworkInfo.d \
 ./Src/QueueHandler.d \
 ./Src/ZmqHandler.d 
@@ -41,7 +44,7 @@ CPP_DEPS += \
 Src/%.o: ../Src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -std=c++1z -DUNIT_TEST -I/usr/local/include -I../$(PROJECT_DIR)/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++1z -DUNIT_TEST -I/usr/local/include -I../$(PROJECT_DIR)/../bin/yaml-cpp/include -I/usr/local/include/include -I../$(PROJECT_DIR)/include -I../$(PROJECT_DIR)/Test/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

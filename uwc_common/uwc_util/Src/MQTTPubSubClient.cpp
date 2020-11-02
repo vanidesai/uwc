@@ -78,7 +78,7 @@ CMQTTPubSubClient::CMQTTPubSubClient(const std::string &a_sBrokerURL, std::strin
 		//connect options for sync publisher/client
 		m_ConOptions.set_keep_alive_interval(60);
 		m_ConOptions.set_clean_session(true);
-		//m_ConOptions.set_automatic_reconnect(1, 10);
+		m_ConOptions.set_automatic_reconnect(1, 10);
 		//m_ConOptions.set_will_message(a_willMsg);
 
 		// set the certificates if dev mode is false
@@ -149,24 +149,6 @@ bool CMQTTPubSubClient::disconnect()
 }
 
 /**
- * This function tries to establish a connection when it is lost with MQTT broker
- * @return none
- */
-void CMQTTPubSubClient::reconnect() 
-{
-	try 
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-		m_Client.connect(m_ConOptions, nullptr, *this);
-	}
-	catch (const mqtt::exception& exc) 
-	{
-		DO_LOG_ERROR(exc.what())
-		std::cerr << "Error: " << exc.what() << std::endl;
-	}
-}
-
-/**
  * This function subscribes to a topic on MQTT broker
  * @param a_sTopic :[in] topic to be published
  * @return none
@@ -222,7 +204,6 @@ void CMQTTPubSubClient::on_failure(const mqtt::token& tok)
 			{
 				m_fcbDisconnected("CONNECT_FAILED");
 			}
-			reconnect();
 		}
 	}
 	catch (const std::exception &e)
@@ -241,7 +222,7 @@ void CMQTTPubSubClient::on_success(const mqtt::token& tok)
 {
 	try
 	{
-		if(mqtt::token::Type::CONNECT == tok.get_type())
+		/*if(mqtt::token::Type::CONNECT == tok.get_type())
 		{
 			DO_LOG_INFO("Connection attempt successful: " + m_sClientID);
 			if(m_bNotifyConnection)
@@ -256,7 +237,7 @@ void CMQTTPubSubClient::on_success(const mqtt::token& tok)
 			{
 				m_fcbDisconnected("DISCONNECTED");
 			}
-		}
+		}*/
 	}
 	catch (const std::exception &e)
 	{
@@ -273,12 +254,12 @@ void CMQTTPubSubClient::connected(const std::string& a_sCause)
 {
 	try
 	{
-		std::cout << "CMQTTPubSubClient::connected " << m_sClientID << std::endl;
+		std::cout << m_sClientID << ": CMQTTPubSubClient::connected " << a_sCause << std::endl;
 		DO_LOG_INFO(m_sClientID + " Connected: " + a_sCause);
-		/*if(m_bNotifyConnection)
+		if(m_bNotifyConnection)
 		{
-			m_fcbConnected(cause);
-		}*/
+			m_fcbConnected(a_sCause);
+		}
 	}
 	catch (const std::exception &e)
 	{

@@ -277,6 +277,16 @@
                                     									
                                     <listOptionValue builtIn="false" value="log4cpp"/>
                                     									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3a"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3c"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3as"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqtt3cs"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="paho-mqttpp3"/>
+                                    									
                                     <listOptionValue builtIn="false" value="eisconfigmgr"/>
                                     									
                                     <listOptionValue builtIn="false" value="eismsgenv"/>

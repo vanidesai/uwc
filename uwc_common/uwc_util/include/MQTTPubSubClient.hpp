@@ -48,7 +48,6 @@ class CMQTTPubSubClient : public virtual mqtt::callback,
 	mqtt::async_client::message_handler m_fcbMsgRcvd;
 
 	std::vector<std::string> m_sTopicList;
-	std::mutex m_mutexClientLock;
 
 	// This deomonstrates manually reconnecting to the broker by calling
 	// connect() again. This is a possibility for an application that keeps
@@ -94,11 +93,9 @@ public:
 
 	bool connect();
 	bool disconnect();
-	void reconnect();
 
 	bool isConnected()
 	{
-		std::lock_guard<std::mutex> lck(m_mutexClientLock);
 		return m_Client.is_connected();
 	}
 
