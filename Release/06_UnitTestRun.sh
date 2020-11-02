@@ -250,6 +250,7 @@ createTestDir()
 	mkdir -p unit_test_reports/modbus-rtu-master
 	mkdir -p unit_test_reports/mqtt-export
 	mkdir -p unit_test_reports/scada-rtu
+        mkdir -p unit_test_reports/kpi-tactic
 	chown -R $SUDO_USER:$SUDO_USER unit_test_reports
 	cd "${eis_working_dir}"
 }
@@ -260,6 +261,7 @@ function cleanup()
 	rm -rf temp1
 	chown -R $SUDO_USER:$SUDO_USER ${eis_working_dir}/unit_test_reports
 	docker rm -f ia_etcd mqtt_test_container > /dev/null 2>&1
+	docker rm -f ia_etcd kpi-tactic-test > /dev/null 2>&1
 }
 
 eisProvision()
@@ -285,6 +287,7 @@ function runETCDContainer()
 	docker ps -q --filter "name=ia_etcd" | grep -q . && docker stop ia_etcd && docker rm -f ia_etcd
 	docker ps -q --filter "name=ia_etcd_provision" | grep -q . && docker stop ia_etcd_provision && docker rm -f ia_etcd_provision
 	docker ps -q --filter "name=mqtt_test_container" | grep -q . && docker stop mqtt_test_container && docker rm -f mqtt_test_container
+	docker ps -q --filter "name=kpi-tactic-test" | grep -q . && docker stop kpi-tactic-test && docker rm -f kpi-tactic-test
 	eisProvision
 }
 
