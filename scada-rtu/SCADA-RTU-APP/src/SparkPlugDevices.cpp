@@ -238,6 +238,17 @@ bool CSparkPlugDev::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 			{
 				uint64_t current_time = itr.second.getTimestamp();
 
+				// org_eclipse_tahu_protobuf_Payload_Metric : Fields
+				// char *name: NULL, 
+				// bool has_alias: false, uint64_t alias: 0
+				// bool has_timestamp: true, uint64_t timestamp: current_time
+				// bool has_datatype: true, uint32_t datatype: itr.second.getValue().getDataType()
+				// bool has_is_historical: false, bool is_historical: 0
+				// bool has_is_transient: false, bool is_transient: 0
+				// bool has_is_null: true, bool is_null: false
+				// bool has_metadata: false, org_eclipse_tahu_protobuf_Payload_MetaData metadata: default
+				// bool has_properties: false, org_eclipse_tahu_protobuf_Payload_PropertySet properties: default
+				// pb_size_t which_value: 0, value: {0}
 				org_eclipse_tahu_protobuf_Payload_Metric metric = {NULL, false, 0, true, current_time , true,
 						itr.second.getValue().getDataType(), false, 0, false, 0, false, true, false,
 						org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
@@ -264,6 +275,17 @@ bool CSparkPlugDev::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 			auto &oWellSiteDev = orUniqueDev.get().getWellSiteDev();
 			uint64_t current_time = get_current_timestamp();
 
+			// org_eclipse_tahu_protobuf_Payload_Metric : Fields
+			// char *name: NULL, 
+			// bool has_alias: false, uint64_t alias: 0
+			// bool has_timestamp: true, uint64_t timestamp: current_time
+			// bool has_datatype: true, uint32_t datatype: METRIC_DATA_TYPE_UINT16
+			// bool has_is_historical: false, bool is_historical: 0
+			// bool has_is_transient: false, bool is_transient: 0
+			// bool has_is_null: true, bool is_null: false
+			// bool has_metadata: false, org_eclipse_tahu_protobuf_Payload_MetaData metadata: default
+			// bool has_properties: false, org_eclipse_tahu_protobuf_Payload_PropertySet properties: default
+			// pb_size_t which_value: 0, value: {0}
 			org_eclipse_tahu_protobuf_Payload_Metric metric = {NULL, false, 0, true, current_time , true,
 				METRIC_DATA_TYPE_UINT16, false, 0, false, 0, false, true, false,
 				org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
