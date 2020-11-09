@@ -94,6 +94,7 @@ services:
       MY_APP_ID: 1
       CUTOFF_INTERVAL_PERCENTAGE: 90
       CertType: "zmq"
+      BUILD_NUMBER: ${BUILD_NUMBER}
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export,KPIAPP"
       NETWORK_TYPE: TCP
@@ -171,6 +172,7 @@ services:
       SERIAL_PORT_RETRY_INTERVAL: 1
       MY_APP_ID: 2
       CertType: "zmq"
+      BUILD_NUMBER: ${BUILD_NUMBER}
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "MQTT_Export,KPIAPP"
       NETWORK_TYPE: RTU
@@ -243,6 +245,7 @@ services:
       AppName: "MQTT"
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
+      BUILD_NUMBER: ${BUILD_NUMBER}
     user: ${EIS_UID}
     # userns_mode: host
     secrets:
@@ -293,6 +296,7 @@ services:
       ZMQ_RECV_HWM: "1000" 
       MQTT_URL_FOR_EXPORT: "ssl://mqtt_container:11883"
       CertType: "zmq"
+      BUILD_NUMBER: ${BUILD_NUMBER}
       PROFILING_MODE: ${PROFILING_MODE}
       Clients: "TCP,RTU"
       SubTopics: "TCP/TCP_PolledData,TCP/TCP_RdResp,TCP/TCP_WrResp,RTU/RTU_PolledData,RTU/RTU_RdResp,RTU/RTU_WrResp,TCP/TCP_PolledData_RT,TCP/TCP_RdResp_RT,TCP/TCP_WrResp_RT,RTU/RTU_PolledData_RT,RTU/RTU_RdResp_RT,RTU/RTU_WrResp_RT"
@@ -380,6 +384,7 @@ services:
       NETWORK_TYPE: "ALL"
       TOPIC_SEPARATOR: '-'
       CertType: "zmq"
+      BUILD_NUMBER: ${BUILD_NUMBER}
       PROFILING_MODE: ${PROFILING_MODE}
     logging:
         driver: "json-file"
@@ -441,6 +446,7 @@ services:
       KPIAPPConfigFile: "ControlLoopConfig.yml"
       Clients: "TCP,RTU"
       CertType: "zmq"
+      BUILD_NUMBER: ${BUILD_NUMBER}
       PROFILING_MODE: ${PROFILING_MODE}
       SubTopics: "TCP/TCP_PolledData,TCP/TCP_WrResp,RTU/RTU_PolledData,RTU/RTU_WrResp,TCP/TCP_PolledData_RT,TCP/TCP_WrResp_RT,RTU/RTU_PolledData_RT,RTU/RTU_WrResp_RT"
       PubTopics: "KPIAPP_WrReq,KPIAPP_WrReq_RT"

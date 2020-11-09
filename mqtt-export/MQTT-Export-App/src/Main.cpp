@@ -26,7 +26,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.6.0"
+#define APP_VERSION "0.0.6.1"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -
@@ -290,42 +290,30 @@ bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 		root = NULL;
 
 		//add time stamp before publishing msg on EIS
-		std::string strTsReceived;
-		CCommon::getInstance().getCurrentTimestampsInString(strTsReceived);
+		//std::string strTsReceived;
+		//CCommon::getInstance().getCurrentTimestampsInString(strTsReceived);
 
 		addField("tsMsgRcvdFromMQTT", (std::to_string(CCommon::getInstance().get_micros(a_oRcvdMsg.getTimestamp()))).c_str());
-		addField("tsMsgPublishOnEIS", strTsReceived);
+		//addField("tsMsgPublishOnEIS", strTsReceived);
 		addField("sourcetopic", a_oRcvdMsg.getTopic());
 
-		// Publish a message
-		//get EIS msg bus context
-		zmq_handler::stZmqContext& context = zmq_handler::getCTX(a_sEisTopic);
-
-		//will give topic context
-		zmq_handler::stZmqPubContext& pubContext = zmq_handler::getPubCTX(a_sEisTopic);
-		if(context.m_pContext != NULL && pubContext.m_pContext != NULL)
+		
+		std::string strTsReceived{""};
+		bool bRet = true;
+		if(true == zmq_handler::publishJson(strTsReceived, msg, a_sEisTopic, "tsMsgPublishOnEIS"))
 		{
-			msgbus_publisher_publish(context.m_pContext,
-				(publisher_ctx_t*) pubContext.m_pContext, msg);
+			bRet = true;
+		}
+		else
+		{
+			DO_LOG_ERROR("Failed to publish write msg on EIS: " + eisMsg);
+			bRet = false;
 		}
 
-		#if 0
-		msg_envelope_serialized_part_t* parts = NULL;
-		int num_parts = msgbus_msg_envelope_serialize(msg, &parts);
-		if(num_parts > 0)
-		{
-			if(NULL != parts[0].bytes)
-			{
-				std::string s(parts[0].bytes);
-				DO_LOG_DEBUG("zmq msg to string: " + s);
-			}
-			msgbus_msg_envelope_serialize_destroy(parts, num_parts);
-		}
-		#endif
 		msgbus_msg_envelope_destroy(msg);
 		msg = NULL;
 
-		return true;
+		return bRet;
 	}
 	catch(std::string& strException)
 	{
