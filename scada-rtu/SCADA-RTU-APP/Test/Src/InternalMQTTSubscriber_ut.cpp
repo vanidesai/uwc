@@ -25,19 +25,9 @@ void InternalMQTTSubscriber_ut::TearDown()
 	// TearDown code
 }
 
-#if 0
-//Nothing to check in this function , this function is here for code coverage point of view..
-TEST_F(InternalMQTTSubscriber_ut, pushMsgInQ_Success)
-{
-	mqtt::const_message_ptr msg;
-
-	CIntMqttHandler::instance().cleanup();
-	EXPECT_EQ( true, CIntMqttHandler::instance().pushMsgInQ(msg) );
-}
-
-TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_test)
+TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_EmptyVector)
 {
 	bool result = CIntMqttHandler::instance().prepareCJSONMsg(stRefActionVec);
 	EXPECT_EQ(true, result);
 }
-#endif
+

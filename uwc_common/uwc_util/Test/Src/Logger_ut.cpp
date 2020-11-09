@@ -22,12 +22,7 @@ void Logger_ut::TearDown()
 	// TearDown code
 }
 
-/*********In Logger functions there is nothing to check through the unit test cases
- therefore functions are just only called in the unit test cases for the seck of coverage of uncovered
- functions from Logger.cpp file.
-
- *********/
-
+/**Test for initLogger()**/
 TEST_F(Logger_ut, initLogger)
 {
 	CLogger::getInstance().initLogger("Config/log4cpp.properties");
@@ -37,31 +32,33 @@ TEST_F(Logger_ut, initLogger)
 
 	/// to handle scenario where logger is already created
 	CLogger::getInstance().initLogger("Config/log4cpp.properties");
-
-	CLogger::getInstance().initLogger(CLogger::getInstance());
 }
 
+/**Test for LogInfo()**/
 TEST_F(Logger_ut, logINFO)
 {
 	CLogger::getInstance().LogInfo(Infomsg);
 }
 
-
+/**Test for LogDebug()**/
 TEST_F(Logger_ut, logDEBUG)
 {
 	CLogger::getInstance().LogDebug(Debugmsg);
 }
 
+/**Test for LogWarn()**/
 TEST_F(Logger_ut, logWARN)
 {
 	CLogger::getInstance().LogWarn(Warnmsg);
 }
 
+/**Test for LogFatal()**/
 TEST_F(Logger_ut, logFATAL)
 {
 	CLogger::getInstance().LogFatal(Fatalmsg);
 }
 
+/**Test for LogError()**/
 TEST_F(Logger_ut, logERROR)
 {
 	CLogger::getInstance().LogError(Errormsg);

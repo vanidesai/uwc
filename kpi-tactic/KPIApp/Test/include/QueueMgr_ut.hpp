@@ -24,10 +24,10 @@ protected:
 	virtual void TearDown();
 public:
 	bool check = true;
-	string subTopic = "TCP/TCP_WrResp";
-	string Topic;
-	string Msg;
-	string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+	std::string subTopic = "TCP/TCP_WrResp";
+	std::string Topic;
+	std::string Msg;
+	std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
 
 	uint32_t uiId;
 	std::string sId;

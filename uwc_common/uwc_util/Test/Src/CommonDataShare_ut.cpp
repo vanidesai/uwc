@@ -21,7 +21,7 @@ void CommonDataShare_ut::TearDown()
 	// TearDown code
 }
 
-
+/**Test for ShareToLibUwcCmnData()**/
 TEST_F(CommonDataShare_ut, ShareToLibUwcCmnData)
 {
 	stCommonDataVal.m_sAppName = "uwc-util";
@@ -30,6 +30,7 @@ TEST_F(CommonDataShare_ut, ShareToLibUwcCmnData)
 	CcommonEnvManager::Instance().ShareToLibUwcCmnData(stCommonDataVal);
 }
 
+/**Test for getAppName()**/
 TEST_F(CommonDataShare_ut, getAppName)
 {
 	std::string strAppNameToVerify="uwc-util";
@@ -38,6 +39,7 @@ TEST_F(CommonDataShare_ut, getAppName)
 	EXPECT_EQ(strAppName, strAppNameToVerify);
 }
 
+/**Test for getDevMode()**/
 TEST_F(CommonDataShare_ut, getDevMode)
 {
 	bool bDevMode;
@@ -45,6 +47,7 @@ TEST_F(CommonDataShare_ut, getDevMode)
 	EXPECT_EQ(bDevMode, stCommonDataVal.m_devMode);
 }
 
+/**Test for getTopicList()**/
 TEST_F(CommonDataShare_ut, splitStringTopicList)
 {
 	std::string strTemp = "uwc-util,uwc-util-nw";
@@ -54,6 +57,7 @@ TEST_F(CommonDataShare_ut, splitStringTopicList)
 	vtTopicList = CcommonEnvManager::Instance().getTopicList();
 }
 
+/**Test for getTimeParams()**/
 TEST_F(CommonDataShare_ut, getTimeParam)
 {
 	std::string strTimeStamp = "";

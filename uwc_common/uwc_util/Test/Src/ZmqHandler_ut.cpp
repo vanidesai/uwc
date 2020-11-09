@@ -50,13 +50,12 @@ TEST_F(ZmqHandler_ut, prepare_test_other1)
 
 }
 
-
+/**Test for getCTX()**/
 TEST_F(ZmqHandler_ut, getCTX2)
 {
 	try
 	{
 
-		//zmq_handler::stZmqContext &busCTX = zmqhandler.getCTX("PL0_flowmeter1");
 		zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("Modbus-TCP-Master_ReadRequest");
 		EXPECT_EQ(NULL, busCTX.m_pContext);
 
@@ -70,11 +69,11 @@ TEST_F(ZmqHandler_ut, getCTX2)
 	}
 }
 
+/**Test for getCTX()**/
 TEST_F(ZmqHandler_ut, getCTX3)
 {
 	try
 	{
-		//zmq_handler::stZmqContext &busCTX = zmqhandler.getCTX("PL1_flowmeter2");
 		zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("Modbus-TCP-Master_PolledData");
 		EXPECT_NE((void*)NULL, busCTX.m_pContext);
 
@@ -88,11 +87,11 @@ TEST_F(ZmqHandler_ut, getCTX3)
 	}
 }
 
+/**Test for getCTX()**/
 TEST_F(ZmqHandler_ut, getCTX4)
 {
 	try
 	{
-		//zmq_handler::stZmqContext &busCTX = zmqhandler.getCTX("PL1_flowmeter2_write");
 		zmq_handler::stZmqContext &busCTX = zmq_handler::getCTX("MQTT-Export/Modbus-TCP-Master_WriteRequest");
 		EXPECT_NE((void*)NULL, busCTX.m_pContext);
 
@@ -112,8 +111,7 @@ TEST_F(ZmqHandler_ut, getCTX4)
 //this test checks for correct context for correct sub topic accordingly
 //and throws exceptions accordingly
 
-
-
+/**Test for getSubCTX()**/
 TEST_F(ZmqHandler_ut, getSubCtx)
 {
 
@@ -123,7 +121,6 @@ TEST_F(ZmqHandler_ut, getSubCtx)
 		zmq_handler::prepareCommonContext("fgdgrpub");
 
 		busSubCTX = zmq_handler::getSubCTX("Modbus-TCP-Master_ReadRequest");
-		//EXPECT_EQ(1,1);
 		EXPECT_NE((void*)NULL, busSubCTX.sub_ctx);
 
 	}
@@ -137,7 +134,7 @@ TEST_F(ZmqHandler_ut, getSubCtx)
 
 
 /******************************************getPubCTX()***********************************/
-
+/**Test for getPubCTX()**/
 TEST_F(ZmqHandler_ut, getPubCtx)
 {
 	zmq_handler::stZmqPubContext objTempPubCtx;
@@ -153,13 +150,6 @@ TEST_F(ZmqHandler_ut, getPubCtx)
 	}
 	catch(std::exception &e)
 	{
-
-		//busPubCTX = zmqhandler.getPubCTX("PL0_flowmeter1");
-		/*stZmqPubContext objTempPubCtx;
-		zmqhandler.insertPubCTX(topic, objTempPubCtx);
-		zmq_handler::stZmqPubContext pubCtx = zmqhandler.getPubCTX(topic);
-		busPubCTX = zmqhandler.getPubCTX("Modbus-TCP-Master_ReadRequest");
-		 */
 		EXPECT_EQ("map::at", (string)e.what());
 
 	}
@@ -170,12 +160,11 @@ TEST_F(ZmqHandler_ut, getPubCtx)
 /***********************************insertPubCTX()***********************************/
 
 
-
+/**Test for getPubCTX()**/
 TEST_F(ZmqHandler_ut, insertpub)
 {
 	try
 	{
-	//	bool bRes = zmq_handler::zmqHandler(msgbusMgr, CallerObj, CallerConfigobj, msgbusEnvelope).prepareCommonContext("sub");
 		zmq_handler::insertPubCTX("Modbus-TCP-Master_PolledData", objPubContext);
 		busPubCTX = zmq_handler::getPubCTX("Modbus-TCP-Master_PolledData");
 
@@ -183,9 +172,6 @@ TEST_F(ZmqHandler_ut, insertpub)
 	catch(std::exception &e)
 	{
 		std::cout<<e.what()<<endl;
-		//	zmqhandler.insertPubCTX("PL1_flowmeter2", objPubContext);
-		//zmqhandler.insertPubCTX("Modbus-TCP-Master_PolledData", objPubContext);
-		//busPubCTX = zmqhandler.getPubCTX("Modbus-TCP-Master_PolledData");
 		EXPECT_EQ("map::at", (string)e.what());
 
 
@@ -198,12 +184,11 @@ TEST_F(ZmqHandler_ut, insertpub)
 /*******************************removeCTX()***********************************************/
 
 /*This test is to check the behaviour of the removeCTX() function************/
-
+/**Test for removeCTX()**/
 TEST_F(ZmqHandler_ut, removeCTX)
 {
 	try
 	{
-		// zmqhandler.removeCTX("PL0_flowmeter1");
 		zmq_handler::removeCTX("MQTT-Export/Modbus-TCP-Master_WriteRequest");
 
 	}
@@ -216,12 +201,11 @@ TEST_F(ZmqHandler_ut, removeCTX)
 }
 
 /*******************************removeSubCTX()***********************************/
-
+/**Test for removeSubCTX()**/
 TEST_F(ZmqHandler_ut, removeSubCTX)
 {
 	try
 	{
-		//zmqhandler.removeSubCTX("PL0_flowmeter1_write");
 		zmq_handler::removeSubCTX("Modbus-TCP-Master_ReadRequest");
 
 	}
@@ -233,12 +217,11 @@ TEST_F(ZmqHandler_ut, removeSubCTX)
 }
 
 /****************************removePubCTX()************************************/
-
+/**Test for removePubCTX()**/
 TEST_F(ZmqHandler_ut, removePubCTX)
 {
 	try
 	{
-		//zmqhandler.removePubCTX("PL0_flowmeter1_write");
 		zmq_handler::removePubCTX("Modbus-TCP-Master_PolledData");
 		EXPECT_EQ(1,1);
 	}
@@ -249,18 +232,21 @@ TEST_F(ZmqHandler_ut, removePubCTX)
 	}
 }
 
+/**Test for isNumber()**/
 TEST_F(ZmqHandler_ut, isNumber_number)
 {
 	bool result = network_info::isNumber("123");
 	EXPECT_EQ(1, result);
 }
 
+/**Test for isNumber()**/
 TEST_F(ZmqHandler_ut, isNumber_notNumber)
 {
 	bool result = network_info::isNumber("Test");
 	EXPECT_EQ(0, result);
 }
 
+/**Test for prepareContext()**/
 TEST_F(ZmqHandler_ut, prepareContext_NULLArg_msgbus_ctx)
 {
 	config_t config;
@@ -273,6 +259,7 @@ TEST_F(ZmqHandler_ut, prepareContext_NULLArg_msgbus_ctx)
 	EXPECT_EQ(false, Res);
 }
 
+/**Test for prepareContext()**/
 TEST_F(ZmqHandler_ut, prepareContext_TopicEmpty)
 {
 	void* msgbus_ctx;
@@ -295,6 +282,7 @@ TEST_F(ZmqHandler_ut, prepareContext_TopicEmpty)
 	EXPECT_EQ(false, Res);
 }
 
+/**Test for prepareContext()**/
 TEST_F(ZmqHandler_ut, prepareContext_NULLArg_config)
 {
 	void* msgbus_ctx;
@@ -317,6 +305,7 @@ TEST_F(ZmqHandler_ut, prepareContext_NULLArg_config)
 	EXPECT_EQ(false, Res);
 }
 
+/**Test for prepareContext()**/
 TEST_F(ZmqHandler_ut, prepareContext_SubFails)
 {
 	void* msgbus_ctx;
@@ -336,32 +325,6 @@ TEST_F(ZmqHandler_ut, prepareContext_SubFails)
 											"TestStr",
 											config);
 
-	//EXPECT_EQ(false, Res);
 	EXPECT_TRUE(Res);
 }
-
-#if 0 //In progress
-TEST_F(ZmqHandler_ut, prepareContext_PubFails)
-{
-	void* msgbus_ctx;
-	string topicType = "pub";
-
-	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
-
-	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
-								CfgManager::Instance().getConfigClient(),
-								ppcTopics , 1, topicType.c_str());
-
-
-	msgbus_ctx = msgbus_initialize(config);
-
-	bool Res = zmq_handler::prepareContext(true,
-											msgbus_ctx,
-											"TestStr",
-											config);
-
-	//EXPECT_EQ(false, Res);
-	EXPECT_TRUE(Res);
-}
-#endif
 

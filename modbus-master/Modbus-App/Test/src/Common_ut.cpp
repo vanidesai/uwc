@@ -8,26 +8,40 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-
-#ifndef TEST_INCLUDE_COMMON_UT_HPP_
-#define TEST_INCLUDE_COMMON_UT_HPP_
+#include "../include/Common_ut.hpp"
 
 
-#include "gtest/gtest.h"
-#include "Common.hpp"
-#include "QueueHandler.hpp"
+void Common_ut::SetUp()
+{
+	// Setup code
+}
 
+void Common_ut::TearDown()
+{
+	// TearDown code
+}
 
-class Common_ut : public ::testing::Test{
-protected:
-	virtual void SetUp();
-	virtual void TearDown();
-public:
-	CMessageObject recvdMsg{};
-	std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+TEST_F(Common_ut, swapConversion_EmptyVector)
+{
+	try
+	{
+		std::string TestStr = common_Handler::swapConversion(EmptyVec, false, false);
+	}
+	catch(std::exception& e)
+	{
+		EXPECT_STRNE("", e.what());
+	}
+}
 
-};
+TEST_F(Common_ut, swapConversion_BytSwpAndWordSwapIsFalse)
+{
 
+	Vec.push_back(10);
+	Vec.push_back(11);
+	Vec.push_back(12);
 
+	std::string TestStr = common_Handler::swapConversion(Vec, false, false);
 
-#endif /* TEST_INCLUDE_COMMON_UT_HPP_ */
+	EXPECT_STREQ("0x0B0A0C", TestStr.c_str());
+}
+

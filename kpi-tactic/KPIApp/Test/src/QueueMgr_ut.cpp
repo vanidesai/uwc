@@ -21,7 +21,7 @@ void QueueMgr_ut::TearDown()
 	// TearDown code
 }
 
-#if 0
+#if 1
 TEST_F(QueueMgr_ut, initPlatformBusHandler_MqttMode)
 {
 	PlBusMgr::initPlatformBusHandler(true);
@@ -40,12 +40,12 @@ TEST_F(QueueMgr_ut, )
 	QMgr::WriteRespMsgQ();
 	EXPECT_EQ(true, check);
 }
-/*
+
 TEST_F(QueueMgr_ut, platfomBusHandler_false)
 {
 	PlBusMgr::initPlatformBusHandler(false);
 	EXPECT_EQ(true, check);
-}*/
+}
 
 TEST_F(QueueMgr_ut, platfomBusHandler_true)
 {
@@ -67,15 +67,15 @@ TEST_F(QueueMgr_ut, WriteRqOnMqtt_false)
 	bool Result = publishWriteReqOnMQTT(Topic, Msg);
 	EXPECT_EQ(false, Result);
 }
-/*
+
 TEST_F(QueueMgr_ut, PublishWriteRq)
 {
 	//CControlLoopOp a_rCtrlLoop;
 	CMessageObject a_oPollMsg;
-	string WrSeq = "1234";
+	std::string WrSeq = "1234";
 	bool Result = PlBusMgr::publishWriteReq(CControlLoopOp_obj, WrSeq, a_oPollMsg);
 	EXPECT_EQ(false, Result);
-}*/
+}
 
 TEST_F(QueueMgr_ut, StopListeners)
 {

@@ -60,7 +60,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvServiceReq)
 				isWrite);
 		EXPECT_EQ(APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 	}
-	catch( exception &e)
+	catch( std::exception &e)
 	{
 		EXPECT_EQ("", e.what());
 	}
@@ -96,7 +96,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
 		EXPECT_EQ(APP_ERROR_UNKNOWN_SERVICE_REQUEST, eFunRetType);
 	}
 
-	catch( exception &e)
+	catch(std::exception &e)
 	{
 		EXPECT_EQ("", e.what());
 
@@ -172,8 +172,6 @@ TEST_F(ModbusOnDemandHandler_ut, createWriteListner_test)
 	}
 	catch(std::exception &e)
 	{
-
-		cout<<e.what()<<endl;
 		EXPECT_EQ("basic_string::_M_construct null not valid", (string)e.what());
 	}
 }
@@ -206,7 +204,7 @@ TEST_F(ModbusOnDemandHandler_ut, subscribeDeviceListener_CallbaclNULL)
 	catch(std::exception &e)
 	{
 
-		std::cout<<e.what()<<endl;
+		std::cout<<e.what()<<std::endl;
 		EXPECT_EQ("",(string)e.what());
 	}
 
@@ -487,13 +485,13 @@ TEST_F(ModbusOnDemandHandler_ut, thread_init_DValve_pub)
 		stZmqContext& objTempCtx  = zmq_handler::getCTX(topic);;
 		stZmqPubContext objTempPubCtx;
 		zmq_handler::insertCTX(topic, objTempCtx);
-		cout << "**************************************************** Publishing for topic :: " << topic << endl;
+		std::cout << "**************************************************** Publishing for topic :: " << topic <<std::endl;
 		zmq_handler::stZmqContext MsgbusCtx = zmq_handler::getCTX(topic);
-		cout << "**************************************************** Publishing for topic :: " << topic << endl;
+		std::cout << "**************************************************** Publishing for topic :: " << topic <<std::endl;
 		zmq_handler::insertPubCTX(topic, objTempPubCtx);
 		zmq_handler::stZmqPubContext pubCtx = zmq_handler::getPubCTX(topic);
 
-		cout << "**************************************************** Publishing for topic :: " << topic << endl;
+		std::cout << "**************************************************** Publishing for topic :: " << topic <<std::endl;
 
 		std::string sUsec{""};
 		zmq_handler::publishJson(sUsec, g_msg, topic, "usec");
@@ -666,7 +664,7 @@ TEST_F(ModbusOnDemandHandler_ut, getMsgElement_NULL)
 
 TEST_F(ModbusOnDemandHandler_ut, processMsg_MsgEnvNULL)
 {
-	string topic = "";
+	std::string topic = "";
 	bool RetVal = onDemandHandler::Instance().processMsg(NULL,
 			topic,
 			false,

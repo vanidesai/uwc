@@ -20,7 +20,7 @@
 #include "yaml-cpp/eventhandler.h"
 #include "yaml-cpp/yaml.h"
 #include "ConfigManager.hpp"
-#include "utils/YamlUtil.hpp"
+#include "YamlUtil.hpp"
 
 #include <sys/msg.h>
 #include <fstream>

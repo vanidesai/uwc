@@ -24,9 +24,9 @@ protected:
 	virtual void TearDown();
 public:
 	CMessageObject recvdMsg{};
-	string topic = ",KPIAPP_WrReq";
-	string Topic;
-	string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+	std::string topic = ",KPIAPP_WrReq";
+	std::string Topic;
+	std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
 	mqtt::const_message_ptr a_pMsg;
 };
 

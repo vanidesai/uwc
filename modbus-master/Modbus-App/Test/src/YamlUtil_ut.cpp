@@ -39,7 +39,7 @@ TEST_F(YamlUtil_ut, ConvertIPStringToCharArray_ValidString)
 			EXPECT_EQ(ExpectedArr[i], Arr[i]);
 		}
 	}
-	catch( exception &e)
+	catch(std::exception &e)
 	{
 		Test_Str = e.what();
 		EXPECT_EQ("", Test_Str);

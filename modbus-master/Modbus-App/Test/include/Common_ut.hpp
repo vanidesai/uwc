@@ -8,26 +8,24 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-#ifndef TEST_INCLUDE_YAMLUTIL_UT_HPP_
-#define TEST_INCLUDE_YAMLUTIL_UT_HPP_
+#ifndef TEST_INCLUDE_COMMON_UT_HPP_
+#define TEST_INCLUDE_COMMON_UT_HPP_
 
-/* Include files */
-#include "YamlUtil.hpp"
-#include<iostream>
 #include "gtest/gtest.h"
+#include "Common.hpp"
 
-class YamlUtil_ut : public::testing::Test
+
+class Common_ut : public ::testing::Test
 {
 protected:
 	virtual void SetUp();
 	virtual void TearDown();
 
 public:
-	uint8_t	Arr[3];
-	uint8_t	ExpectedArr[3] = {129, 130, 200};
-	string	Test_Str = "129.130.200";
+	std::vector<uint8_t> EmptyVec;
+	std::vector<uint8_t> Vec;
 
 };
 
 
-#endif /* TEST_INCLUDE_YAMLUTIL_UT_HPP_ */
+#endif /* TEST_INCLUDE_COMMON_UT_HPP_ */

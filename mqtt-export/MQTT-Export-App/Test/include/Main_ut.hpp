@@ -41,15 +41,15 @@ std::string parse_msg(const char *json);
 extern bool initEISContext();
 extern void postMsgstoMQTT();
 extern void signalHandler(int signal);
-extern bool addSrTopic(string &json, string& topic);
+extern bool addSrTopic(std::string &json, std::string& topic);
 extern void postMsgsToEIS(QMgr::CQueueMgr& qMgr);
 extern bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher);
 extern void processMsgToSendOnEIS(CMessageObject &recvdMsg, const std::string a_sEisTopic);
-extern void getOperation(string topic, globalConfig::COperation& operation);
+extern void getOperation(std::string topic, globalConfig::COperation& operation);
 
-extern vector<std::thread> g_vThreads;
+extern std::vector<std::thread> g_vThreads;;
 
-extern void Temp_Function(string& topic);
+extern void Temp_Function(std::string& topic);
 
 
 /*extern void listenOnEIS(string topic, stZmqContext context,
@@ -63,7 +63,7 @@ extern void set_thread_priority_for_eis(bool& isRealtime, bool& isRead);
 extern std::atomic<bool> g_shouldStop;
 
 
-vector<std::thread> g_vThreads_UT;
+std::vector<std::thread> g_vThreads_UT;
 
 
 class Main_ut : public ::testing::Test{
@@ -78,7 +78,7 @@ public:
 						"/home/user/SVN/Intel_UWC/trunk/Technical/Sourcecode/mqtt-export/MQTT-Export-App/Test/src/JsonConfig.json"
 						};
 
-	string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+	std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
 
 
 };

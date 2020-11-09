@@ -31,7 +31,7 @@ TEST_F(Metric_ut, assignToSparkPlug_METRIC_DATA_TYPE_BOOLEAN)
 	}
 	catch (std::exception &e)
 	{
-		cout<<endl<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"<<e.what()<<endl;
+		std::cout<<std::endl<<">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"<<e.what()<<std::endl;
 	}
 }
 

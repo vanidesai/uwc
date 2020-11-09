@@ -21,7 +21,7 @@ protected:
 	virtual void TearDown();
 public:
 	CEISPlBusHandler CEISPlBusHandler_obj;
-	string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+	std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
 
 };
 

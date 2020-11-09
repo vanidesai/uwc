@@ -541,7 +541,7 @@ TEST_F(Main_ut, processExternalMqttMsgs_venderapp)
 	uint8_t *binary_buffer = (uint8_t *)malloc(buffer_length * sizeof(uint8_t));
 	size_t message_length = encode_payload(binary_buffer, buffer_length, &ddata_payload);
 
-	mqtt::const_message_ptr msg = mqtt::make_message("spBv1.0/Sparkplug B Devices/DCMD/C Edge Node 1/A-abc",
+	mqtt::const_message_ptr msg = mqtt::make_message("spBv1.0/Sparkplug B Devices/DCMD/C Edge Node 1/A-B",
 			(char*)binary_buffer,
 			0,
 			false);

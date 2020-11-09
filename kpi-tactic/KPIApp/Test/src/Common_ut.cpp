@@ -99,7 +99,7 @@ TEST_F(Common_ut, createWriteReq_EmptyFiels_false)
     EXPECT_EQ(0, RetVal);
 }
 
-/*Need to check
+
 TEST_F(Common_ut, AnalysisMsg)
 {
 	struct stPollWrData a_stPollWrData;
@@ -115,7 +115,33 @@ TEST_F(Common_ut, AnalysisMsg_Empty)
 	RetVal = commonUtilKPI::createAnalysisMsg(a_stPollWrData, a_msgWrResp);
 	EXPECT_EQ("", RetVal);
 }
-*/
+
+TEST_F(Common_ut, AnalysisMsg_withMsg)
+{
+	std::map<std::string, std::vector<CControlLoopOp>> m_oControlLoopMap;
+	//struct stPollWrData a_stPollWrData;
+	//CMessageObject a_msgWrResp;
+	struct stPollWrData oTempData{};
+	std::string a_sAppSeq = "1234";
+	CPollNWriteReqMapper::getInstace().getForProcessing(a_sAppSeq, oTempData);
+	std::string sDummyErrorRep;
+	std::string m_sWritePointFullPath = "";
+	std::string Error = "WrRespNotRcvd";
+	std::string AppSeq {""};
+	sDummyErrorRep = "{" + sDummyErrorRep + "}";
+	CMessageObject oDummyMsg{"errorDummyTopic", sDummyErrorRep};
+	commonUtilKPI::addFieldToMsg(sDummyErrorRep, "app_seq", AppSeq, false);
+	commonUtilKPI::addFieldToMsg(sDummyErrorRep, "data_topic", m_sWritePointFullPath + "/writeResponse", false);
+	commonUtilKPI::addFieldToMsg(sDummyErrorRep, "error_code", Error + "/writeResponse", true);
+	std::string RetVal;
+	/*string a_sPolledTopic = "TCP_PolledData_RT";
+	std::string sPollKey{a_sPolledTopic + "/update"};
+	std::vector<CControlLoopOp> oTemp;
+	m_oControlLoopMap.emplace(sPollKey, oTemp);*/
+
+	RetVal = commonUtilKPI::createAnalysisMsg(oTempData, oDummyMsg);
+	EXPECT_EQ("", RetVal);
+}
 
 
 

@@ -55,7 +55,7 @@ TEST_F(PeriodicRead_ut, handleResponse_NULLArguments) {
 
 		EXPECT_EQ("", test_str);
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		test_str = e.what();
 		EXPECT_EQ("", test_str);
@@ -293,7 +293,7 @@ TEST_F(PeriodicRead_ut, isInitialized_RetTrue) {
 		Temp_Bool = CPeriodicReponseProcessor::Instance().isInitialized();
 		EXPECT_EQ(true, Temp_Bool);
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		test_str = e.what();
 		EXPECT_EQ("", test_str);
@@ -323,7 +323,7 @@ TEST_F(PeriodicRead_ut, initRespHandlerThreads_CalledNTime) {
 
 		//EXPECT_EQ("", test_str);
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		test_str = e.what();
 		EXPECT_EQ("", test_str);
@@ -377,7 +377,7 @@ TEST_F(PeriodicRead_ut, readPeriodicCallBack_NULLArg1)
 
 #endif
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		EXPECT_EQ("", e.what());
 	}
@@ -447,7 +447,7 @@ TEST_F(PeriodicRead_ut, isTxIDPresent_return)
 		EXPECT_EQ(1, 1); //Programme doesnt hang
 
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		EXPECT_EQ("", e.what()); //Test fails.s
 	}
@@ -480,7 +480,7 @@ TEST_F(PeriodicRead_ut, removeTxIDReqData_return) {
 		EXPECT_EQ(1, 1); //Programme doesnt hang
 
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		EXPECT_EQ("", e.what()); //Test fails.s
 	}
@@ -500,7 +500,7 @@ TEST_F(PeriodicRead_ut, initTimerFunction_return) {
 		EXPECT_EQ(1,1);
 
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		EXPECT_EQ("", e.what()); //Test fails.s
 	}

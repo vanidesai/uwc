@@ -22,13 +22,7 @@ void EnvironmentHandler_ut::TearDown()
 	// TearDown code
 }
 
-/*********In Logger functions there is nothing to check through the unit test cases
- therefore functions are just only called in the unit test cases for the seck of coverage of uncovered
- functions from Logger.cpp file.
-
- *********/
-
-
+/**Test for readCommonEnvVariables()**/
 TEST_F(EnvironmentHandler_ut, readCommonVar)
 {
 	bool bRetVal = EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
@@ -43,6 +37,7 @@ TEST_F(EnvironmentHandler_ut, readCommonVar)
 	EXPECT_FALSE(bRetVal);
 }
 
+/**Test for addDataToEnvMap()**/
 TEST_F(EnvironmentHandler_ut, addDataToMap)
 {
 	std::string strKey = "TEST";
@@ -51,6 +46,7 @@ TEST_F(EnvironmentHandler_ut, addDataToMap)
 	EXPECT_TRUE(bRetVal);
 }
 
+/**Test for getDataFromEnvMap()**/
 TEST_F(EnvironmentHandler_ut, getDataFromMap)
 {
 	std::string strKey = "TEST";

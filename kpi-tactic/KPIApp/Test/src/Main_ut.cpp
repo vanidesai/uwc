@@ -13,7 +13,7 @@
 
 extern void postMsgsToWriteOnMQTT(CQueueHandler& qMgr);
 extern void analyzeControlLoopData(CQueueHandler& qMgr);
-extern vector<std::thread> g_vThreads;
+extern std::vector<std::thread> g_vThreads;
 extern std::atomic<bool> g_stopThread;
 
 void Main_ut::SetUp()
@@ -54,14 +54,9 @@ void CallHelper_sTopThreadTrue_analyzeControlLoopData( mqtt::const_message_ptr& 
 
 TEST_F(Main_ut, PostMsgsToWriteOnMQTT_ControlLoopPollPoint_False)
 {
-	//	std::string Topic = "Topic_UT";
-	//	std:string Message = "Death/A";
 
 	CQueueHandler CQueueHandler_obj;
 	mqtt::const_message_ptr msg = mqtt::make_message("Death/A", "Msg_UT", 0, false);
-	//	CQueueHandler_obj.pushMsg(msg);
-
-	//	CMessageObject MsgObj( Topic, Message);
 
 	std::thread TestTarget( TargetCaller_postMsgsToWriteOnMQTT, std::ref(CQueueHandler_obj) );
 	std::thread TestHelperStpThreadTrue( CallHelper_sTopThreadTrue, std::ref(msg), std::ref(CQueueHandler_obj) );
@@ -72,13 +67,10 @@ TEST_F(Main_ut, PostMsgsToWriteOnMQTT_ControlLoopPollPoint_False)
 	g_stopThread = false;
 }
 
-
-
 TEST_F(Main_ut, analyzeControlLoopData_Test01)
 {
 	CQueueHandler CQueueHandler_obj;
 	mqtt::const_message_ptr msg = mqtt::make_message("Death/A", "Msg_UT", 0, false);
-
 
 	std::thread TestTarget_analyzeControlLoopData( TargetCaller_analyzeControlLoopData, std::ref(CQueueHandler_obj) );
 	std::thread CallHelper_sTopThreadTrue_analyzeControlLoopData( CallHelper_sTopThreadTrue, std::ref(msg), std::ref(CQueueHandler_obj) );

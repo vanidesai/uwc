@@ -174,7 +174,7 @@ TEST_F(ModbusStackInterface_ut, OnDemandRead_RT)
 	}
 	catch(std::exception &e)
 	{
-		EXPECT_EQ(" ", (string)e.what());
+		EXPECT_EQ(" ", (std::string)e.what());
 	}
 }
 
@@ -189,7 +189,7 @@ TEST_F(ModbusStackInterface_ut, OnDemandRead_RT_NULL)
 	}
 	catch(std::exception &e)
 	{
-		EXPECT_EQ(" ",(string)e.what());
+		EXPECT_EQ(" ",(std::string)e.what());
 	}
 }
 
@@ -202,7 +202,7 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite)
 	}
 	catch(std::exception &e)
 	{
-		EXPECT_EQ(" ", (string)e.what());
+		EXPECT_EQ(" ", (std::string)e.what());
 	}
 }
 
@@ -216,7 +216,7 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite_NULL)
 	}
 	catch(std::exception &e)
 	{
-		EXPECT_EQ(" ", (string)e.what());
+		EXPECT_EQ(" ", (std::string)e.what());
 	}
 }
 
@@ -229,7 +229,7 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT)
 	}
 	catch(std::exception &e)
 	{
-		EXPECT_EQ(" ", (string)e.what());
+		EXPECT_EQ(" ", (std::string)e.what());
 	}
 }
 
@@ -242,7 +242,7 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT_NULL)
 	}
 	catch(std::exception &e)
 	{
-		EXPECT_EQ(" ", (string)e.what());
+		EXPECT_EQ(" ", (std::string)e.what());
 	}
 }
 

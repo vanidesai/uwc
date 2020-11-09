@@ -26,7 +26,7 @@ void CConfigManager_ut::TearDown()
 }
 
 
-/**********CConfigManager_ut::getInstance() should return Instance of class type CfgManager *******/
+/**CConfigManager_ut::getInstance() should return Instance of class type CfgManager **/
 TEST_F(CConfigManager_ut, getInstance)
 {
 	stUWCComnDataVal_t UWCDataToLib;
@@ -40,20 +40,7 @@ TEST_F(CConfigManager_ut, getInstance)
 	EXPECT_EQ(typeid(CfgManager), typeid(CfgManager::Instance()));
 }
 
-#if 0 //Instance for correct data has already been created
-TEST_F(CConfigManager_ut , IsClientCreated_CriticalDataNotInitialised)
-{
-
-	stUWCComnDataVal_t UWCDataToLib;
-
-	ImportFromApp::Instance().ShareToLibUwcCmnData(UWCDataToLib);
-
-	bool bRet = CfgManager::Instance().IsClientCreated();
-
-	EXPECT_EQ(false, bRet);
-}
-#endif
-
+/**Tests for CfgManager::Instance() client creation **/
 TEST_F(CConfigManager_ut, IsClientCreated_CriticalDataInitialised)
 {
 	stUWCComnDataVal_t UWCDataToLib;
@@ -63,12 +50,11 @@ TEST_F(CConfigManager_ut, IsClientCreated_CriticalDataInitialised)
 
 	CcommonEnvManager::Instance().ShareToLibUwcCmnData(UWCDataToLib);
 
-	//EXPECT_TRUE(CfgManager::Instance().IsClientCreated());
 	EXPECT_FALSE(CfgManager::Instance().IsClientCreated());
 }
 
 
-//Nothing to check in this function , this function is here for code coverage point of view..
+/**Test for globalConfig::display_sched_attr()**/
 TEST_F(CConfigManager_ut, display_sched_attr_test)
 {
 	struct sched_param param;
@@ -76,7 +62,7 @@ TEST_F(CConfigManager_ut, display_sched_attr_test)
 }
 
 
-
+/**Test for globalConfig::display_thread_sched_attr()**/
 TEST_F(CConfigManager_ut, display_thread_sched_attr_test)
 {
 	char msg;
@@ -85,6 +71,7 @@ TEST_F(CConfigManager_ut, display_thread_sched_attr_test)
 	// Please check log for test result
 }
 
+/**Test for globalConfig::set_thread_sched_param()**/
 TEST_F(CConfigManager_ut, set_thread_param_true)
 {
 	globalConfig::COperation a_OpsInfo;
@@ -93,6 +80,7 @@ TEST_F(CConfigManager_ut, set_thread_param_true)
 	globalConfig::set_thread_sched_param(a_OpsInfo, 1, a_eSched, a_bIsOperation);
 }
 
+/**Test for globalConfig::set_thread_sched_param()**/
 TEST_F(CConfigManager_ut, set_thread_param_false)
 {
 	globalConfig::COperation a_OpsInfo;
@@ -101,12 +89,14 @@ TEST_F(CConfigManager_ut, set_thread_param_false)
 	globalConfig::set_thread_sched_param(a_OpsInfo, 1, a_eSched, a_bIsOperation);
 }
 
+/**Test for globalConfig::setDefaultConfig()**/
 TEST_F(CConfigManager_ut, setDefaultconfig_polling)
 {
 	globalConfig::eOperationType a_eOpType = globalConfig::eOperationType::UNKNOWN_OPERATION;
 	globalConfig::setDefaultConfig(a_eOpType);
 }
 
+/**Test for globalConfig::loadGlobalConfigurations()**/
 TEST_F(CConfigManager_ut, loadGlobalConfigurations_GlobalKeyPressent)
 {
 

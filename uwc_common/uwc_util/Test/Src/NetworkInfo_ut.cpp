@@ -37,36 +37,6 @@ TEST_F(NetworkInfo_ut, addDataPoint_AlreadyPresent)
 	EXPECT_EQ(-1, Int_Res);
 }
 
-#if 0 //In progress
-// addDevice: Network type doesnt match
-TEST_F(NetworkInfo_ut, addDevice_NwMisMatch)
-{
-	YAML::Node a_oData = CommonUtils::loadYamlFile("Device_group1.yml");
-
-	//Setting network type as TCP
-	//network_info::buildNetworkInfo("TCP", "Devices_group_list.yml", false);
-
-	for (auto test : a_oData)
-	{
-		if(test.second.IsSequence() && test.first.as<std::string>() == "devicelist")
-		{
-			const YAML::Node& list = test.second;
-			for (auto nodes : list)
-			{
-				network_info::CWellSiteDevInfo::build(nodes, CWellSiteDevInfo_obj, false);
-
-				Int_Res = CWellSiteInfo_obj.addDevice(CWellSiteDevInfo_obj);
-
-				if( network_info::eNetworkType::eTCP != CWellSiteDevInfo_obj.getAddressInfo().m_NwType )
-				{
-					EXPECT_EQ(-2, Int_Res);
-				}
-			}
-		}
-	}
-}
-#endif
-
 // addDevice: Device not added previously
 TEST_F(NetworkInfo_ut, addDevice_NotPresent)
 {
@@ -175,18 +145,17 @@ TEST_F(NetworkInfo_ut, CWellSiteDevInfo_build_NoIPaDDress)
 		}
 	}
 }
-/*
+
 // buildNetworkInfo: TCP Network
 TEST_F(NetworkInfo_ut, buildNetworkInfo_TCP_Success)
 {
-//	CCommon::getInstance().setSiteListFileName("Devices_group_list.yml");
-	network_info::buildNetworkInfo("TCP", "Devices_group_list.yml", false);
+	network_info::buildNetworkInfo("TCP", "Devices_group_list.yml", "TestApp");
 }
 
 // buildNetworkInfo: called twice; Should return without doing anything
 TEST_F(NetworkInfo_ut, buildNetworkInfo_RTU)
 {
 
-	network_info::buildNetworkInfo("RTU", "Devices_group_list.yml", false);
+	network_info::buildNetworkInfo("RTU", "Devices_group_list.yml", "TestApp");
 }
-*/
+

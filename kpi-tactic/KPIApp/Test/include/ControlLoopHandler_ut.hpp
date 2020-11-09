@@ -14,6 +14,9 @@
 #include "ControlLoopHandler.hpp"
 #include "gtest/gtest.h"
 #include "KPIAppConfigMgr.hpp"
+#include "CommonDataShare.hpp"
+#include "ConfigManager.hpp"
+#include "ZmqHandler.hpp"
 
 class ControlLoopHandler_ut : public ::testing::Test{
 protected:
@@ -38,8 +41,11 @@ public:
 									sWritePointName,
 									uiDelayMs,
 									sVal};
-		//string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
+		std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
 		CMessageObject recvdMsg;
+		std::map<std::string, std::vector<CControlLoopOp>> m_oControlLoopMap;
+
+
 };
 
 

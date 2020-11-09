@@ -24,18 +24,18 @@ void SCADAHandler_ut::TearDown()
 
 void TargetFunctionCaller( std::vector<stRefForSparkPlugAction> stRefActionVec, bool& bRes )
 {
-	cout<<"<<<<<<<<<<<<<<<<<<Target calling start"<<endl;
+	std::cout<<"<<<<<<<<<<<<<<<<<<Target calling start"<<std::endl;
 	//CIntMqttHandler::instance().disconnect();
 	bRes = CSCADAHandler::instance().prepareSparkPlugMsg(stRefActionVec);
-	cout<<"<<<<<<<<<<<<<<<<<<Target called"<<endl;
+	std::cout<<"<<<<<<<<<<<<<<<<<<Target called"<<std::endl;
 }
 
 void PostSem_semIntMQTTConnLost()
 {
 	std::this_thread::sleep_for(std::chrono::seconds(1));
-	cout<<"<<<<<<<<<<<<<<<<<<Before Semaphore"<<endl;
+	std::cout<<"<<<<<<<<<<<<<<<<<<Before Semaphore"<<std::endl;
 	CSCADAHandler::instance().signalIntMQTTConnLostThread();
-	cout<<"<<<<<<<<<<<<<<<<<<After Semaphore"<<endl;
+	std::cout<<"<<<<<<<<<<<<<<<<<<After Semaphore"<<std::endl;
 }
 
 /***************************************************************/
