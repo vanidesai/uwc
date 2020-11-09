@@ -54,8 +54,22 @@
 	        return *this; 
 	    }
 
-		std::string getTopic() {return m_mqttMsg->get_topic();}
-		std::string getStrMsg() {return m_mqttMsg->get_payload();}
+		std::string getTopic() 
+		{
+			if (NULL == m_mqttMsg)
+			{
+				return "";
+			}
+			return m_mqttMsg->get_topic();
+		}
+		std::string getStrMsg() 
+		{
+			if (NULL == m_mqttMsg)
+			{
+				return "";
+			}
+			return m_mqttMsg->get_payload();
+		}
 		mqtt::const_message_ptr& getMqttMsg() {return m_mqttMsg;}
 		struct timespec getTimestamp() {return m_stTs;}
 	};
