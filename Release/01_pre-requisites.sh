@@ -609,6 +609,7 @@ proxy_settings()
 #------------------------------------------------------------------------------
 docker_install()
 {
+	echo "${INFO}Installing docker...${NC}"
     # Update the apt package index:
     apt-get -y update
 
@@ -658,6 +659,7 @@ docker_install()
                     "${GREEN}Installed Docker CE successfully.${NC}"
     groupadd docker
     usermod -aG docker ${SUDO_USER}
+	echo "${GREEN}docker installation is done...${NC}"
     return 0
 }
 
@@ -724,6 +726,7 @@ testvercomp () {
 #------------------------------------------------------------------
 docker_compose_install()
 {
+	echo "${INFO}Installing docker-compose...${NC}"
     rm -rf $(which docker-compose)
     pip uninstall -y docker-compose
     # Downloading docker-compose using curl utility.
@@ -744,17 +747,24 @@ docker_compose_verify_installation()
 {
     echo "Verifying if docker_compose already exists."
     requiredver="1.24.0"
-    cur_v=$(echo $(docker-compose --version) | cut -d"n" -f 2 | cut -d"," -f 1) 
-    testvercomp $cur_v $requiredver "="
-    ret=$?
-    if [ "$ret" -eq 0 ]; then
-        echo "${GREEN}docker-compose is already installed, ${cur_v}${NC}"
-    else
-        echo "${INFO}docker-compose is either not installed or old one${NC}"
-        echo "Required = "${requiredver}, "Present version = " ${cur_v}
-        echo "${INFO}docker-compose needs to be Installed.${NC} "
+    cur_v=$(echo $(docker-compose --version) | cut -d"n" -f 2 | cut -d"," -f 1)
+	if [ -z $cur_v ];then
+		echo "${INFO}docker-compose is not installed on machine${NC}"
+		echo "${INFO}docker-compose needs to be Installed.${NC} "
         docker_compose_install
-    fi
+	else
+		testvercomp $cur_v $requiredver "="
+		ret=$?
+		if [ "$ret" -eq 0 ]; then
+			echo "${GREEN}docker-compose is already installed, ${cur_v}${NC}"
+		else
+			echo "${INFO}docker-compose is either not installed or old one${NC}"
+			echo "Required = "${requiredver}, "Present version = " ${cur_v}
+			echo "${INFO}docker-compose needs to be Installed.${NC}"
+			docker_compose_install
+		fi
+	fi
+	echo "${GREEN}docker-compose installation is done...${NC}"
     return 0
 }
 
@@ -774,18 +784,24 @@ docker_verification_installation()
 {
     echo "Verifying if docker already exists."
     requiredver="19.03.0"
-    cur_v=$(echo $(docker --version) | cut -d"n" -f 2 | cut -d"," -f 1) 
-    testvercomp $cur_v $requiredver ">"
-    ret=$?
-    if [ "$ret" -eq 0 ]; then
-        echo "${GREEN}docker is already installed, ${cur_v}${NC}"
-    else
-        echo "${INFO}docker version is either not installed or old one${NC}"
-        echo "Required = "${requiredver}, "Present version = " ${cur_v}
-        echo "${INFO}docker needs to be Installed.${NC} "
-        uninstallDocker
-        docker_install
-    fi
+    cur_v=$(echo $(docker --version) | cut -d"n" -f 2 | cut -d"," -f 1)
+	if [ -z $cur_v ];then
+		echo "${INFO}docker is not installed on machine${NC}"
+		echo "${INFO}docker needs to be Installed.${NC} "
+		docker_install
+	else
+		testvercomp $cur_v $requiredver ">"
+		ret=$?
+		if [ "$ret" -eq 0 ]; then
+			echo "${GREEN}docker is already installed, ${cur_v}${NC}"
+		else
+			echo "${INFO}docker version is either not installed or old one${NC}"
+			echo "Required = "${requiredver}, "Present version = " ${cur_v}
+			echo "${INFO}docker needs to be Installed.${NC} "
+			uninstallDocker
+			docker_install
+		fi
+	fi
 	validateUserInput "$@"
     return 0
 }

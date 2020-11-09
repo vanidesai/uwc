@@ -220,7 +220,7 @@ configureExternalCerts()
 		rm -rf ${Current_Dir}/tmp_certs
 		return 0
 	else
-		echo "${GREEN}No need to configure certificates for scada-rtu contyainer${NC}"
+		echo "${GREEN}No need to configure certificates for scada-rtu container${NC}"
 		echo "${INFO}******************* Script END *****************************${NC}"
     	fi
 	

@@ -10,6 +10,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../Test/src/Common_ut.cpp \
 ../Test/src/Main_ut.cpp \
 ../Test/src/ModbusOnDemandHandler_ut.cpp \
 ../Test/src/ModbusStackInterface_ut.cpp \
@@ -18,6 +19,7 @@ CPP_SRCS += \
 ../Test/src/YamlUtil_ut.cpp 
 
 OBJS += \
+./Test/src/Common_ut.o \
 ./Test/src/Main_ut.o \
 ./Test/src/ModbusOnDemandHandler_ut.o \
 ./Test/src/ModbusStackInterface_ut.o \
@@ -26,6 +28,7 @@ OBJS += \
 ./Test/src/YamlUtil_ut.o 
 
 CPP_DEPS += \
+./Test/src/Common_ut.d \
 ./Test/src/Main_ut.d \
 ./Test/src/ModbusOnDemandHandler_ut.d \
 ./Test/src/ModbusStackInterface_ut.d \
