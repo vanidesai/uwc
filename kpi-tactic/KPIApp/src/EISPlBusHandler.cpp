@@ -225,18 +225,12 @@ void CEISPlBusHandler::listenOnEIS(string sTopic, zmq_handler::stZmqContext cont
 
 /**
  * publish message to EIS
- * @param eisMsg :[in] message to publish on EIS
- * @param context :[in] msg bus context
- * @param pubContext :[in] pub context
+ * @param a_sEisMsg :[in] message to publish on EIS
+ * @param a_sEisTopic :[in] eis topic
  * @return true/false based on success/failure
  */
-bool publishEISMsg(std::string eisMsg, zmq_handler::stZmqContext &context,
-		zmq_handler::stZmqPubContext &pubContext)
+bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic)
 {
-	if(context.m_pContext == NULL || pubContext.m_pContext == NULL)
-	{
-		return false;
-	}
 	// Creating message to be published
 	msg_envelope_t *msg = NULL;
 	cJSON *root = NULL;
@@ -249,7 +243,7 @@ bool publishEISMsg(std::string eisMsg, zmq_handler::stZmqContext &context,
 			return false;
 		}
 		//parse from root element
-		root = cJSON_Parse(eisMsg.c_str());
+		root = cJSON_Parse(a_sEisMsg.c_str());
 		if (NULL == root)
 		{
 			if(msg != NULL)
@@ -285,22 +279,23 @@ bool publishEISMsg(std::string eisMsg, zmq_handler::stZmqContext &context,
 		}
 
 		//add time stamp before publishing msg on EIS
-		std::string strTsReceived;
-		commonUtilKPI::getCurrentTimestampsInString(strTsReceived);
-
-		msg_envelope_elem_body_t* msgPublishOnEIS = msgbus_msg_envelope_new_string(strTsReceived.c_str());
-		if(msgPublishOnEIS != NULL)
+		std::string strTsReceived{""};
+		bool bRet = true;
+		if(true == zmq_handler::publishJson(strTsReceived, msg, a_sEisTopic, "tsMsgPublishOnEIS"))
 		{
-			msgbus_msg_envelope_put(msg, "tsMsgPublishOnEIS", msgPublishOnEIS);
+			bRet = true;
+		}
+		else
+		{
+			DO_LOG_ERROR("Failed to publish write msg on EIS: " + a_sEisMsg);
+			bRet = false;
 		}
 
-		msgbus_publisher_publish(context.m_pContext,
-				(publisher_ctx_t*) pubContext.m_pContext, msg);
 		if(msg != NULL)
 			msgbus_msg_envelope_destroy(msg);
 		msg = NULL;
 
-		return true;
+		return bRet;
 	}
 	catch(string& strException)
 	{
@@ -340,11 +335,8 @@ bool CEISPlBusHandler::publishWriteMsg(const std::string &a_sMsg)
 		else
 		{
 			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest"));
-		}
-		zmq_handler::stZmqContext& context = zmq_handler::getCTX(eisTopic);
-		zmq_handler::stZmqPubContext& pubContext = zmq_handler::getPubCTX(eisTopic);
-		
-		return publishEISMsg(a_sMsg, context, pubContext);
+		}		
+		return publishEISMsg(a_sMsg, eisTopic);
 	}
 	catch (exception &ex)
 	{
