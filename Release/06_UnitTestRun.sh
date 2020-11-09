@@ -71,7 +71,7 @@ verifyDirectory()
 	rm -rf temp1 && mkdir temp1
         tar -xzvf UWC.tar.gz -C temp1 > /dev/null 2>&1
         cd temp1
-	cp docker-compose_unit_test.yml ../docker_setup/
+	cp docker-compose_unit_test.yml ../docker_setup/docker-compose.yml
 	rm -rf temp1/
         echo "${GREEN}Done ${NC}"
     fi
@@ -201,7 +201,7 @@ docker_compose_verify()
 generateUnitTestReport()
 {
     cd "${eis_working_dir}"
-    docker-compose -f docker-compose_unit_test.yml up --build -d
+    docker-compose up --build -d
     if [ "$?" -eq "0" ];then
 	echo "*****************************************************************"
         echo "${GREEN}Successfully deployed unit test containers.${NC}"
@@ -216,7 +216,7 @@ generateUnitTestReport()
 stopContainers()
 {
     cd "${eis_working_dir}"
-    docker-compose -f docker-compose_unit_test.yml down
+    docker-compose down
     if [ "$?" -eq "0" ];then
 	echo "*****************************************************************"
         echo "${GREEN}Containers are stopped..${NC}"
@@ -272,8 +272,9 @@ eisProvision()
         echo "${RED}ERROR: ${eis_working_dir}/provision/ is not present.${NC}"
         exit 1 # terminate and indicate error
     fi
-
-    ./provision_eis.sh ../docker-compose.yml
+    cd $cd $Current_Dir
+    #./provision_eis.sh ../docker-compose.yml
+    ./02_provisionEIS.sh
     check_for_errors "$?" "Provisioning is failed. Please check logs" \
                     "${GREEN}Provisioning is done successfully.${NC}"
     cd -
@@ -291,6 +292,10 @@ function runETCDContainer()
 	eisProvision
 }
 
+ModifyScadaConfig()
+{
+	sed -i 's/isTLS: no/isTLS: yes/g' /opt/intel/eis/uwc_data/scada-rtu/scada_config.yml
+}
 
 verifyDirectory
 checkrootUser
@@ -299,9 +304,10 @@ docker_verify
 docker_compose_verify
 createTestDir
 setDevMode "false"
+ModifyScadaConfig
 runETCDContainer
 generateUnitTestReport
-setDevMode "false"
+#setDevMode "false"
 
 echo "Generating code coverage report..."
 echo "It may take few minutes ..."
