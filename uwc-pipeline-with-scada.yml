@@ -1,0 +1,6 @@
+AppName:
+- TCP
+- RTU
+- MQTT
+- MQTT_Export
+- SCADA-RTU
