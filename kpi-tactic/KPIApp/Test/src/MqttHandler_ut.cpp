@@ -21,6 +21,12 @@ void MqttHandler_ut::TearDown()
 	// TearDown code
 }
 
+/**
+ * Test case to check if instance() function return Reference of this instance of this class
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 #if 1
 TEST_F(MqttHandler_ut, instance_test)
 {
@@ -28,14 +34,6 @@ TEST_F(MqttHandler_ut, instance_test)
 	CMqttHandler::instance();
 	EXPECT_EQ(true, object);
 }
-/*
-TEST_F(MqttHandler_ut, diconnect_test)
-{
-	CMqttHandler::instance().connect();
-	CMqttHandler::instance().disconnect();
-	EXPECT_EQ(true, true);
-}
-*/
 
 TEST_F(MqttHandler_ut, isConnected_false)
 {
@@ -43,33 +41,24 @@ TEST_F(MqttHandler_ut, isConnected_false)
 	EXPECT_EQ(false, RetVal);
 }
 
-/*Private functions
-
-TEST_F(MqttHandler_ut, pushMsg_true)
-{
-	mqtt::const_message_ptr msg = mqtt::make_message("Death/A", "Msg_UT", 0, false);
-	bool RetVal = CMqttHandler::instance().pushMsgInQ(msg);
-	EXPECT_EQ(true, RetVal);
-}
-
-
-TEST_F(MqttHandler_ut, pushMsg)
-{
-	mqtt::const_message_ptr msg = mqtt::make_message("", "", 0, true);
-	bool RetVal = CMqttHandler::instance().pushMsgInQ(msg);
-	EXPECT_EQ(true, RetVal);
-}
-*/
-
-
-
+/**
+ * Test case to check if publishMsg() function publishes the msg successfully when topic is given and returns true on success
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(MqttHandler_ut, publishMsg_true)
 {
 	bool RetVal = CMqttHandler::instance().publishMsg(strMsg, topic);
 	EXPECT_EQ(true, RetVal);
 }
 
-
+/**
+ * Test case to check if publishMsg() function do not publishes the msg successfully when topic is not given and returns false
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(MqttHandler_ut, publishMsg_false)
 {
 	bool RetVal = CMqttHandler::instance().publishMsg(strMsg, Topic);

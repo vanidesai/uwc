@@ -18,6 +18,8 @@
 #include "ConfigManager.hpp"
 #include "ZmqHandler.hpp"
 
+extern std::atomic<bool> g_stopThread;
+
 class ControlLoopHandler_ut : public ::testing::Test{
 protected:
 	virtual void SetUp();

@@ -21,8 +21,12 @@ void KPIAppConfigMgr_ut::TearDown()
 	// TearDown code
 }
 
-
-
+/**
+ * Test case to check if parseYMLFile() function Parses configuration YML file for KPI App successfully and returns true on success
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(KPIAppConfigMgr_ut, ParsingYMl_true)
 {
 
@@ -30,6 +34,12 @@ TEST_F(KPIAppConfigMgr_ut, ParsingYMl_true)
 	EXPECT_EQ(1, RetVal);
 }
 
+/**
+ * Test case to check if parseYMLFile() function Parses configuration YML file for KPI App successfully and returns true on success
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(KPIAppConfigMgr_ut, ParsingYMl)
 {
 
@@ -37,7 +47,12 @@ TEST_F(KPIAppConfigMgr_ut, ParsingYMl)
 	EXPECT_EQ(1, RetVal);
 }
 
-
+/**
+ * Test case to check if parseYMLFile() function do not Parses wrong YML file for KPI App successfully and returns false
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(KPIAppConfigMgr_ut, ParsingYMl_false)
 {
 	std::string file = "coverage_command.txt";

@@ -19,19 +19,25 @@ void ControlLoopHandler_ut::TearDown()
 {
 	// TearDown code
 }
-/*
-TEST_F(ControlLoopHandler_ut, Thread)
-{
-	bool RetVal = CControlLoopOp_obj.startThread();
-}
-*/
 
+/**
+ * Test case to check if DummyAnalysisMsg() function posts a dummy analysis message in case of error successfully
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ControlLoopHandler_ut, DummyAnalysisMsg)
 {
 	std::string AppSeq = "1234";
 	CControlLoopOp_obj.postDummyAnalysisMsg("AppSeq", "WrReqInitFailed");
 }
 
+/**
+ * Test case to check if triggerControlLoops() function fails to receive  a polling message and returns false on failure
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ControlLoopHandler_ut, triggerLoops_false)
 {
 	std::string Point = "3454";
@@ -40,29 +46,74 @@ TEST_F(ControlLoopHandler_ut, triggerLoops_false)
 	EXPECT_EQ(false, RetVal);
 }
 
-TEST_F(ControlLoopHandler_ut, ConfigLoops_true)
+/**
+ * Test case to check if configControlLoopOps() function doesn't start control loop threads when control loop map is empty, and return true
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(ControlLoopHandler_ut, ConfigLoops_EmptyContrlLoopMap)
 {
-	/*std::string strPolledTopic{""};
-		std::string sPollKey{strPolledTopic + "/update"};
-		std::vector<CControlLoopOp> oTemp;
-		m_oControlLoopMap.emplace(sPollKey, oTemp);*/
-	//bool RetVal = CKPIAppConfig::getInstance().getControlLoopMapper().configControlLoopOps(false);
-	bool RetVal = CKPIAppConfig::getInstance().getControlLoopMapper().configControlLoopOps(CKPIAppConfig::getInstance().isRTModeForWriteOp());
-	EXPECT_EQ(true, RetVal);
+
+    EXPECT_EQ( true, CKPIAppConfig::getInstance().getControlLoopMapper().configControlLoopOps(true) );
 }
 
+/**
+ * Test case to check if configControlLoopOps() function Starts control loop threads successfully when control loop map is not empty
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(ControlLoopHandler_ut, ConfigLoops_nonEmptyContrlLoopMap)
+{
+    bool RetVal = CKPIAppConfig::getInstance().parseYMLFile("ControlLoopConfig.yml");
+
+    if( true == RetVal)
+    {
+        EXPECT_EQ( true, CKPIAppConfig::getInstance().getControlLoopMapper().configControlLoopOps(true) );
+
+        g_stopThread.store(true);
+        CKPIAppConfig::getInstance().getControlLoopMapper().stopControlLoopOps();
+        g_stopThread.store(false);
+    }
+    else
+    {
+        std::cout << std::endl << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>UT Error: " << std::endl;
+        std::cout << std::endl << "     ControlLoopHandler_ut.ConfigLoops_nonEmptyContrlLoopMap can't be tested, Control loop map is empty" << std::endl;
+        EXPECT_EQ(true, RetVal);
+    }
+}
+
+/**
+ * Test case to check if stopControlLoopOps() function Stops control loop threads successfully and returns true on success
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ControlLoopHandler_ut, stopLoops)
 {
 	bool RetVal = CKPIAppConfig::getInstance().getControlLoopMapper().stopControlLoopOps();
 	EXPECT_EQ(1, RetVal);
 }
 
+/**
+ * Test case to check if stopThread() function Stops control loop threads successfully and returns true on success
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ControlLoopHandler_ut, StopThread)
 {
 	bool RetVal = CControlLoopOp_obj.stopThread();
 	EXPECT_EQ(true, RetVal);
 }
 
+/**
+ * Test case to check if isControlLoopPollPoint() function Checks whether given polling topic is a part of one of the control loops and returns false on failure
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ControlLoopHandler_ut, ControlLoopPolledPoint_false)
 {
 	std::string PollTopic = "KPIAPP_WrReq,KPIAPP_WrReq_RT";
@@ -70,7 +121,12 @@ TEST_F(ControlLoopHandler_ut, ControlLoopPolledPoint_false)
 	EXPECT_EQ(0, RetVal);
 }
 
-
+/**
+ * Test case to check if isControlLoopPollPoint() function Checks whether given polling topic is a part of one of the control loops and returns false on failure
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ControlLoopHandler_ut, ControlLoopWtRspPoint_false)
 {
 	std::string WrRspTopic = " respTCP_WrResp";
@@ -78,18 +134,26 @@ TEST_F(ControlLoopHandler_ut, ControlLoopWtRspPoint_false)
 	EXPECT_EQ(0, RetVal);
 }
 
-
+/**
+ * Test case to check if publishWriteReq() function Checks whether given polling topic is a part of one of the control loops and returns false on failure
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ControlLoopHandler_ut, PublishWtRq_false)
 {
 	bool RetVal = CKPIAppConfig::getInstance().getControlLoopMapper().publishWriteReq(CControlLoopOp_obj, strMsg, recvdMsg);
 	EXPECT_EQ(0, RetVal);
 }
 
-
-
+/**
+ * Test case to check if destroySubCtx() function Destroys the sub contexts returns false on failure
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ControlLoopHandler_ut, destroyCtx)
 {
-
 	std::string topicType = "sub";
 	zmq_handler::stZmqSubContext objTempSubCtx;
 	void* msgbus_ctx;

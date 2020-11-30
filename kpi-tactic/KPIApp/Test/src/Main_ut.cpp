@@ -27,12 +27,15 @@ void Main_ut::TearDown()
 }
 
 /**********************Helper Functions**************************/
+/**
+ * Helper function to set global variable g_stopThread as true
+ * @param :[in] None
+ * @param :[out] g_shouldStop
+ * @return None
+ */
 void CallHelper_sTopThreadTrue( mqtt::const_message_ptr& msg, CQueueHandler& CQueueHandler_obj )
 {
 	CQueueHandler_obj.pushMsg(msg);
-
-	//	std::this_thread::sleep_for(std::chrono::seconds(1));
-
 	g_stopThread = true;
 }
 
@@ -50,8 +53,13 @@ void CallHelper_sTopThreadTrue_analyzeControlLoopData( mqtt::const_message_ptr& 
 {
 	CQueueHandler_obj.pushMsg(msg);
 }
-/*****************************************************************/
 
+/**
+ * Test case to check if postMsgsToWriteOnMQTT() Thread function reads requests from queue filled up by MQTT and send data to EIS
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, PostMsgsToWriteOnMQTT_ControlLoopPollPoint_False)
 {
 
@@ -67,6 +75,12 @@ TEST_F(Main_ut, PostMsgsToWriteOnMQTT_ControlLoopPollPoint_False)
 	g_stopThread = false;
 }
 
+/**
+ * Test case to check if analyzeControlLoopData() Thread function reads requests from queue filled up by MQTT and send data to EIS
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, analyzeControlLoopData_Test01)
 {
 	CQueueHandler CQueueHandler_obj;

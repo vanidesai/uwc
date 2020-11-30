@@ -21,53 +21,85 @@ void QueueMgr_ut::TearDown()
 	// TearDown code
 }
 
-#if 1
+/**
+ * Test case to check behaviour of initPlatformBusHandler() function in mqttMode is true
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(QueueMgr_ut, initPlatformBusHandler_MqttMode)
 {
 	PlBusMgr::initPlatformBusHandler(true);
 //	PlBusMgr::stopListeners();
 }
-#endif
 
+
+/**
+ * Test case to check if PollMsgQ() function return reference of on-demand read operation instance
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(QueueMgr_ut, PollMsg)
 {
 	QMgr::PollMsgQ();
 	EXPECT_EQ(true, check);
 }
 
+/**
+ * Test case to check if WriteRespMsgQ() function return reference of on-demand write operation instance
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(QueueMgr_ut, )
 {
 	QMgr::WriteRespMsgQ();
 	EXPECT_EQ(true, check);
 }
 
-TEST_F(QueueMgr_ut, platfomBusHandler_false)
-{
-	PlBusMgr::initPlatformBusHandler(false);
-	EXPECT_EQ(true, check);
-}
-
+/**
+ * Test case to check behaviour of initPlatformBusHandler() function in mqttMode is true
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(QueueMgr_ut, platfomBusHandler_true)
 {
 	PlBusMgr::initPlatformBusHandler(true);
 	EXPECT_EQ(false, false);
 }
 
+/**
+ * Test case to check if publishWriteReqOnMQTT()function Forms and publishes write request on MQTT and returns true on success
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(QueueMgr_ut, WriteRqOnMqtt_true)
 {
 	bool Result = publishWriteReqOnMQTT(subTopic, strMsg);
-	/*cout<<"########################################"<<endl;
-	cout<<Result<<endl;
-	cout<<"########################################"<<endl;*/
 	EXPECT_EQ(true, Result);
 }
 
+/**
+ * Test case to check if publishWriteReqOnMQTT()function fails to Form and publishe write request on MQTT when topic is not provides and returns false
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(QueueMgr_ut, WriteRqOnMqtt_false)
 {
 	bool Result = publishWriteReqOnMQTT(Topic, Msg);
 	EXPECT_EQ(false, Result);
 }
 
+/**
+ * Test case to check if publishWriteReq()function fails to Form and publishe write request on MQTT and returns false
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(QueueMgr_ut, PublishWriteRq)
 {
 	//CControlLoopOp a_rCtrlLoop;
@@ -77,6 +109,12 @@ TEST_F(QueueMgr_ut, PublishWriteRq)
 	EXPECT_EQ(false, Result);
 }
 
+/**
+ * Test case to check if stopListeners()function Stops listener threads successfully
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(QueueMgr_ut, StopListeners)
 {
 	PlBusMgr::stopListeners();

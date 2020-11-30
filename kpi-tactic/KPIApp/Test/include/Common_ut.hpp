@@ -26,6 +26,12 @@ public:
 	CMessageObject recvdMsg{};
 	std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
 
+	std::string RetVal = "";
+
+	struct stPollWrData a_stPollWrData;
+	std::string Topic_UT = "TopicA";
+	std::string msg = "{\"Payload\" :  \"Testpayload\"}";
+
 };
 
 
