@@ -13,22 +13,19 @@ CPP_SRCS += \
 ../Test/src/Common_ut.cpp \
 ../Test/src/MQTTPublishHandler_ut.cpp \
 ../Test/src/MQTTSubscribeHandler_ut.cpp \
-../Test/src/Main_ut.cpp \
-../Test/src/QueueMgr_ut.cpp 
+../Test/src/Main_ut.cpp 
 
 OBJS += \
 ./Test/src/Common_ut.o \
 ./Test/src/MQTTPublishHandler_ut.o \
 ./Test/src/MQTTSubscribeHandler_ut.o \
-./Test/src/Main_ut.o \
-./Test/src/QueueMgr_ut.o 
+./Test/src/Main_ut.o 
 
 CPP_DEPS += \
 ./Test/src/Common_ut.d \
 ./Test/src/MQTTPublishHandler_ut.d \
 ./Test/src/MQTTSubscribeHandler_ut.d \
-./Test/src/Main_ut.d \
-./Test/src/QueueMgr_ut.d 
+./Test/src/Main_ut.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

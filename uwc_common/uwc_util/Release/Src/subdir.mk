@@ -17,7 +17,8 @@ CPP_SRCS += \
 ../Src/MQTTPubSubClient.cpp \
 ../Src/NetworkInfo.cpp \
 ../Src/QueueHandler.cpp \
-../Src/ZmqHandler.cpp  
+../Src/YamlUtil.cpp \
+../Src/ZmqHandler.cpp 
 
 OBJS += \
 ./Src/CommonDataShare.o \
@@ -27,6 +28,7 @@ OBJS += \
 ./Src/MQTTPubSubClient.o \
 ./Src/NetworkInfo.o \
 ./Src/QueueHandler.o \
+./Src/YamlUtil.o \
 ./Src/ZmqHandler.o 
 
 CPP_DEPS += \
@@ -37,6 +39,7 @@ CPP_DEPS += \
 ./Src/MQTTPubSubClient.d \
 ./Src/NetworkInfo.d \
 ./Src/QueueHandler.d \
+./Src/YamlUtil.d \
 ./Src/ZmqHandler.d 
 
 

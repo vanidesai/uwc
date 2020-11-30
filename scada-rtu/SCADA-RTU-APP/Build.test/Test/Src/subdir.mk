@@ -14,8 +14,6 @@ CPP_SRCS += \
 ../Test/Src/InternalMQTTSubscriber_ut.cpp \
 ../Test/Src/Main_ut.cpp \
 ../Test/Src/Metric_ut.cpp \
-../Test/Src/MqttHandler_ut.cpp \
-../Test/Src/Publisher_ut.cpp \
 ../Test/Src/SCADAHandler_ut.cpp \
 ../Test/Src/SparkPlugDevices_ut.cpp \
 ../Test/Src/SparklugDevMgr_ut.cpp 
@@ -25,8 +23,6 @@ OBJS += \
 ./Test/Src/InternalMQTTSubscriber_ut.o \
 ./Test/Src/Main_ut.o \
 ./Test/Src/Metric_ut.o \
-./Test/Src/MqttHandler_ut.o \
-./Test/Src/Publisher_ut.o \
 ./Test/Src/SCADAHandler_ut.o \
 ./Test/Src/SparkPlugDevices_ut.o \
 ./Test/Src/SparklugDevMgr_ut.o 
@@ -36,8 +32,6 @@ CPP_DEPS += \
 ./Test/Src/InternalMQTTSubscriber_ut.d \
 ./Test/Src/Main_ut.d \
 ./Test/Src/Metric_ut.d \
-./Test/Src/MqttHandler_ut.d \
-./Test/Src/Publisher_ut.d \
 ./Test/Src/SCADAHandler_ut.d \
 ./Test/Src/SparkPlugDevices_ut.d \
 ./Test/Src/SparklugDevMgr_ut.d 
@@ -47,7 +41,7 @@ CPP_DEPS += \
 Test/Src/%.o: ../Test/Src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -std=c++1z -DSCADA_RTU -DUNIT_TEST -I../$(PROJECT_DIR)/include -I../$(PROJECT_DIR)/include/yaml-cpp -I../$(PROJECT_DIR)/include/utils -I../$(PROJECT_DIR)/include/tahu -I/usr/local/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++1z -DSCADA_RTU -DUNIT_TEST -I../$(PROJECT_DIR)/include -I../$(PROJECT_DIR)/include/yaml-cpp -I../$(PROJECT_DIR)/include/tahu -I/usr/local/include -O0 -g3 -ftest-coverage -fprofile-arcs -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
