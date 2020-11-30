@@ -21,9 +21,12 @@ void Main_ut::TearDown()
 }
 
 /****************************************************************/
-/* Test helper function:
- * Sets global variable g_shouldStop to true after 1 sec,
- * So that function timerThread doesnt run infinitely.
+
+/**
+ * Helper function to set global variable g_shouldStop as true after 2 sec
+ * @param :[in] None
+ * @param :[out] g_shouldStop
+ * @return None
  */
 static void Set_g_shouldStop()
 {
@@ -31,6 +34,13 @@ static void Set_g_shouldStop()
 	g_shouldStop = true;
 }
 
+/**
+ * Helper function to wait for 1 sec and then push message in the queue
+ * @param :[in] Object to CQueueHandler class
+ * @param :[in] message
+ * @param :[out] None
+ * @return None
+ */
 void Call_PushMsg(CQueueHandler& Qu, mqtt::const_message_ptr& msg)
 {
 	std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -39,6 +49,12 @@ void Call_PushMsg(CQueueHandler& Qu, mqtt::const_message_ptr& msg)
 }
 /****************************************************************/
 
+/**
+ * Test case to test processInternalMQTTMsg() with 2 topic parts and valid death topic
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DeathMsg)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -56,6 +72,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DeathMsg)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with 2 topic parts but invalid
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DeathMsgInvalid)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -68,6 +90,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DeathMsgInvalid)
 	EXPECT_EQ(false, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with 3 topic parts and valid birth topic
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -80,6 +108,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with 3 topic parts and valid data topic
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_Uint8)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -94,6 +128,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_Uint8)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with birth message of repeated data type
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg_repeated_sameDataType)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -106,6 +146,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg_repeated_sameDataType)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with birth message of different data types
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg_repeated_DifferentDataType)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -118,6 +164,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg_repeated_DifferentDataType)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with birth message of different values
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg_repeated_DifferentValue)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -130,6 +182,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_BirthMsg_repeated_DifferentValue)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type boolean
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_Bool)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -144,6 +202,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_Bool)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type uint16
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_uint16)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -158,6 +222,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_uint16)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type uint32
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_uint32)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -172,6 +242,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_uint32)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type uint64
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_uint64)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -186,6 +262,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_uint64)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type int8
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int8)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -200,6 +282,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int8)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type int16
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int16)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -214,6 +302,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int16)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type int32
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int32)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -228,6 +322,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int32)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type int364
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int64)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -242,6 +342,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_int64)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type float
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_float)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -256,6 +362,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_float)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type double
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_double)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -270,6 +382,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_double)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and data type string
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_string)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -284,6 +402,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_string)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and invalid value
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_InvVal)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -298,6 +422,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_DataMsg_InvVal)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with data message, and invalid value
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_BirthDataMsgInvalid)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -310,24 +440,30 @@ TEST_F(Main_ut, processInternalMQTTMsg_BirthDataMsgInvalid)
 	EXPECT_EQ(false, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_MessageData)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
-
-	/*Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
-			"RealDev/A/B/D/Update",
-			"{\"metric\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
-			stRefActionVec);*/
 
 	Bool_Res = CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
 				"RealDev/A/B/D/Update",
 				"{\"metric\": \"UtData01\", \"status\": \"bad\", \"value\": \"0x00\", \"usec\": \"1571887474111145\", \"lastGoodUsec\": \"val1\", \"error_code\": \"2002\"}",
 				stRefActionVec);
 
-	//Does nothing
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic and "metric" missing from payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_01)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -337,11 +473,16 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_01)
 			"{\"NoMetric\": \"UtData02\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
 			stRefActionVec);
 
-	//Does nothing
 	EXPECT_EQ(true, Bool_Res);
 }
 
-TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_02)
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic with invalid device name
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(Main_ut, processInternalMQTTMsg_MessageData_InvalideDevName)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
 
@@ -350,10 +491,15 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_02)
 			"{\"metric\": [{\"name\":\"UtData01\"}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
 			stRefActionVec);
 
-	//Does nothing
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic and "timestamp" missing from payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_03)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -367,7 +513,13 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_03)
 	EXPECT_EQ(true, Bool_Res);
 }
 
-TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_04)
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic with invalid real device
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(Main_ut, processInternalMQTTMsg_MessageData_InvalidRealDev)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
 
@@ -380,6 +532,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_04)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic and "value" missing from payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_05)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -393,6 +551,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageData_DataMissingInPayload_05)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic and array payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayload)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -406,7 +570,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayload)
 	EXPECT_EQ(true, Bool_Res);
 }
 
-
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic and "name" missing from payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayPayloadNameMissing)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -447,6 +616,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayTimestampMissing)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic and "dataType" missing from payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayDataTypeMissing)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -460,6 +635,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayDataTypeMissing)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic and invalid "dataType" in payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayDataTypeValInv)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -473,6 +654,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayDataTypeValInv)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with "update" topic and "value" missing from payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayValueMissing)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -486,6 +673,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_MessageDataArrayValueMissing)
 	EXPECT_EQ(true, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMQTTMsg() with invalid topic
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMQTTMsg_InvalidTopic)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -499,6 +692,12 @@ TEST_F(Main_ut, processInternalMQTTMsg_InvalidTopic)
 	EXPECT_EQ(false, Bool_Res);
 }
 
+/**
+ * Test case to test processInternalMqttMsgs() with a death message
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMqttMsgs_DeathMsg)
 {
 	mqtt::const_message_ptr msg = mqtt::make_message("Death/A", "Msg_UT", 0, false);
@@ -515,6 +714,12 @@ TEST_F(Main_ut, processInternalMqttMsgs_DeathMsg)
 	Qu.cleanup();
 }
 
+/**
+ * Test case to test processInternalMqttMsgs() with a birth message
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processInternalMqttMsgs_BirthMsg)
 {
 	mqtt::const_message_ptr msg = mqtt::make_message("Birth/A", "Msg_UT", 0, false);
@@ -531,7 +736,13 @@ TEST_F(Main_ut, processInternalMqttMsgs_BirthMsg)
 	Qu.cleanup();
 }
 
-TEST_F(Main_ut, processExternalMqttMsgs_venderapp)
+/**
+ * Test case to test processExternalMqttMsgs() with a spark plug message
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(Main_ut, processExternalMqttMsgs_SparkPlugMessage)
 {
 
 	org_eclipse_tahu_protobuf_Payload ddata_payload;

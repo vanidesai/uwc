@@ -16,11 +16,10 @@
 #include <mutex>
 #include <string>
 
-using namespace std;
-
 class EnvironmentInfo
 {
-	unordered_map<string, string> m_umapEnv;
+	/// map with key as Environment Var Name and value as its value
+	std::unordered_map<std::string, std::string> m_umapEnv;
 
 	/// Default Constructor
 	EnvironmentInfo(){}
@@ -35,13 +34,13 @@ public:
 	~EnvironmentInfo(){}
 
 	/// Function to read common environment variables
-	bool readCommonEnvVariables(std::vector<string>);
+	bool readCommonEnvVariables(std::vector<std::string>);
 
 	/// Function to add environment variable data to Map
-	bool addDataToEnvMap(string, string);
+	bool addDataToEnvMap(std::string, std::string);
 
 	/// Function to get environment variable data from Map based on key
-	string getDataFromEnvMap(string);
+	std::string getDataFromEnvMap(std::string);
 
 	/** Returns instance of EnvironmentInfo class
 	 *

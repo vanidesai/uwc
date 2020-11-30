@@ -50,7 +50,7 @@ CMqttHandler::CMqttHandler(const std::string &strPlBusUrl, int iQOS):
 CMqttHandler& CMqttHandler::instance()
 {
 	static bool bIsFirst = true;
-	static string strPlBusUrl = EnvironmentInfo::getInstance().getDataFromEnvMap("MQTT_URL");
+	static std::string strPlBusUrl = EnvironmentInfo::getInstance().getDataFromEnvMap("MQTT_URL");
 	static int nQos = 1;
 
 	if(bIsFirst)
@@ -60,11 +60,10 @@ CMqttHandler& CMqttHandler::instance()
 			DO_LOG_ERROR("MQTT_URL Environment variable is not set");
 			std::cout << __func__ << ":" << __LINE__ << " Error : MQTT_URL Environment variable is not set" <<  std::endl;
 			throw std::runtime_error("Missing required config..");
-			//throw ("Missing required config..");
 		}
 	}
 
-	DO_LOG_DEBUG("Internal MQTT subscriber is connecting with QOS : " + to_string(nQos));
+	DO_LOG_DEBUG("Internal MQTT subscriber is connecting with QOS : " + std::to_string(nQos));
 	static CMqttHandler handler(strPlBusUrl.c_str(), nQos);
 
 	if(bIsFirst)
@@ -98,7 +97,7 @@ void CMqttHandler::subscribeTopics()
 		
 		DO_LOG_DEBUG("Subscribed topics with internal broker");
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -115,7 +114,7 @@ void CMqttHandler::connected(const std::string &a_sCause)
 	{
 		sem_post(&m_semConnSuccess);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -132,7 +131,7 @@ void CMqttHandler::msgRcvd(mqtt::const_message_ptr a_pMsg)
 	{
 		pushMsgInQ(a_pMsg);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -195,7 +194,7 @@ void CMqttHandler::handleConnSuccessThread()
 			} while(0);
 
 		}
-		catch (exception &e)
+		catch (std::exception &e)
 		{
 			DO_LOG_ERROR("failed to initiate request :: " + std::string(e.what()));
 		}

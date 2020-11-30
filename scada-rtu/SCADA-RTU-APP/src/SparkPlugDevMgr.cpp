@@ -84,7 +84,7 @@ bool CSparkPlugDevManager::processExternalMQTTMsg(std::string a_sTopic,
 
 		bool bIsFound = false;
 		auto itr = [&] () mutable -> devSparkplugMap_t::iterator
-		{
+				{
 			bIsFound = false;
 			std::lock_guard<std::mutex> lck(m_mutexDevList);
 			auto i = m_mapSparkPlugDev.find(strDevName);
@@ -93,34 +93,32 @@ bool CSparkPlugDevManager::processExternalMQTTMsg(std::string a_sTopic,
 				bIsFound = true;
 			}
 			return i;
-		}();
+				}();
 
-		if(false == bIsFound)
-		{
-			DO_LOG_ERROR("Device is not present in list : " + strDevName);
-			return false;
-		}
-		
-		for (pb_size_t i = 0; i < a_payload.metrics_count; i++)
-		{
-			CMetric oMetric;
-			if (false == processDCMDMetric(oMetric, a_payload.metrics[i]))
-			{
-				DO_LOG_DEBUG("Could not process metric");
-				return false;
-			}
-			else
-			{
-				std::map<std::string, CMetric> dcmdMetricMap = {{oMetric.getName(), oMetric}};
+				if(false == bIsFound)
+				{
+					DO_LOG_ERROR("Device is not present in list : " + strDevName);
+					return false;
+				}
 
-				oMetricMap.insert(dcmdMetricMap.begin(), dcmdMetricMap.end());
-			}
-		}
+				for (pb_size_t i = 0; i < a_payload.metrics_count; i++)
+				{
+					CMetric oMetric;
+					if (false == processDCMDMetric(itr->second, oMetric, a_payload.metrics[i]))
+					{
+						DO_LOG_DEBUG("Could not process metric");
+						return false;
+					}
+					else
+					{
+						oMetricMap.emplace(oMetric.getName(), oMetric);
+					}
+				}
 
-		auto &mapSparkPlugDev = itr->second;
-		stRefForSparkPlugAction stCMDAction
-		{ std::ref(mapSparkPlugDev), enMSG_DCMD_WRITE, oMetricMap };
-		a_stRefActionVec.push_back(stCMDAction);
+				auto &mapSparkPlugDev = itr->second;
+				stRefForSparkPlugAction stCMDAction
+				{ std::ref(mapSparkPlugDev), enMSG_DCMD_WRITE, oMetricMap };
+				a_stRefActionVec.push_back(stCMDAction);
 	}
 	catch (std::exception &e)
 	{
@@ -151,24 +149,6 @@ bool CSparkPlugDevManager::processInternalMQTTMsg(std::string a_sTopic,
 			getTopicParts(a_sTopic, vsTopicParts, "/");
 			switch (vsTopicParts.size())
 			{
-			/*case 1:
-			// Added for testing
-			{
-				std::string sSubTopic{ vsTopicParts[0] };
-				std::transform(sSubTopic.begin(), sSubTopic.end(),
-						sSubTopic.begin(), ::tolower);
-
-				if (0 == sSubTopic.compare("stopscada"))
-				{
-					CSCADAHandler::instance().disconnect();					
-				}
-				else if (0 == sSubTopic.compare("connectscada"))
-				{
-					CSCADAHandler::instance().connect();					
-				}
-				bRet = false;
-			}
-			break;*/
 			// DEATH message
 			// DEATH/{NAON_UWCP_ID}
 			case 2:
@@ -186,15 +166,15 @@ bool CSparkPlugDevManager::processInternalMQTTMsg(std::string a_sTopic,
 				{
 					DO_LOG_ERROR(
 							"Ignoring the message. Incorrect topic: "
-									+ a_sTopic);
+							+ a_sTopic);
 					bRet = false;
 				}
 			}
-				break;
+			break;
 
-				// BIRTH and DATA message:
-				// BIRTH/{NAON_UWCP_ID}/{WellheadID}
-				// DATA/{NAON_UWCP_ID}/{WellheadID}
+			// BIRTH and DATA message:
+			// BIRTH/{NAON_UWCP_ID}/{WellheadID}
+			// DATA/{NAON_UWCP_ID}/{WellheadID}
 			case 3:
 			{
 				std::string sSubTopic
@@ -216,33 +196,31 @@ bool CSparkPlugDevManager::processInternalMQTTMsg(std::string a_sTopic,
 				{
 					DO_LOG_ERROR(
 							"Ignoring the message. Incorrect topic: "
-									+ a_sTopic);
+							+ a_sTopic);
 					bRet = false;
 				}
 			}
-				break;
+			break;
 
-				// update message:
-				// /device/wellhead/point/update
-				// /device/wellhead/point/readResponse
-				// /device/wellhead/point/writeResponse
+			// update message:
+			// /device/wellhead/point/update
 			case 5:
-				{
-					std::string sSubTopic{ vsTopicParts[4] };
-					std::transform(sSubTopic.begin(), sSubTopic.end(), sSubTopic.begin(), ::tolower);
+			{
+				std::string sSubTopic{ vsTopicParts[4] };
+				std::transform(sSubTopic.begin(), sSubTopic.end(), sSubTopic.begin(), ::tolower);
 
-					if (0 == sSubTopic.compare("update"))
-					{
-						processUpdateMsg(vsTopicParts[1], vsTopicParts[2], a_sPayLoad,
-								a_stRefActionVec);
-					}
+				if (0 == sSubTopic.compare("update"))
+				{
+					processUpdateMsg(vsTopicParts[1], vsTopicParts[2], a_sPayLoad,
+							a_stRefActionVec);
 				}
-				break;
+			}
+			break;
 
 			default:
 				DO_LOG_ERROR(
 						"Ignoring the message. Incorrect topic: " + a_sTopic)
-				;
+						;
 				bRet = false;
 				break;
 			}
@@ -322,7 +300,7 @@ bool CSparkPlugDevManager::processMetric(CMetric &a_oMetric, cJSON *a_cjArrayEle
 			//map data-type with Sparkplug data-type
 			if (false == a_oMetric.setValObj(sDataType, cjValue))
 			{
-				DO_LOG_ERROR("Cannot parse value.");
+				DO_LOG_ERROR(std::string("Cannot parse value. Ignored the metric: ") + strName);
 				return false;
 			}
 		}
@@ -343,10 +321,27 @@ bool CSparkPlugDevManager::processMetric(CMetric &a_oMetric, cJSON *a_cjArrayEle
  * @param a_cjValue :[in] metric value
  * @return true/false based on success/failure
  */
-bool CSparkPlugDevManager::processDCMDMetric(CMetric &a_oMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric)
+bool CSparkPlugDevManager::processDCMDMetric(CSparkPlugDev& a_SPDev, CMetric &a_oMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric)
 {
 	try
 	{
+		//to check if given metric is a part of the device
+		std::string strs = a_sparkplugMetric.name;
+		bool metricFlag = a_SPDev.checkMetric(strs);
+
+		if(!metricFlag)
+		{
+			return false;
+		}
+
+		//std::cout<<"###--- "<<a_sparkplugMetric.value.string_value;
+		std::string str(a_sparkplugMetric.value.string_value);
+
+
+		if (str.empty())
+		{
+			return false;
+		}
 		if(a_sparkplugMetric.name == NULL)
 		{
 			return false;
@@ -364,10 +359,10 @@ bool CSparkPlugDevManager::processDCMDMetric(CMetric &a_oMetric, org_eclipse_tah
 		}
 	}
 	catch (std::exception &e)
-		{
-			DO_LOG_ERROR(std::string("Error:") + e.what());
-			return false;
-		}
+	{
+		DO_LOG_ERROR(std::string("Error:") + e.what());
+		return false;
+	}
 	return true;
 }
 
@@ -386,7 +381,7 @@ CSparkPlugDevManager& CSparkPlugDevManager::getInstance()
  * @param a_sPayLoad :[iin] payload containing metrics
  * @return map containing metric and corresponding values
  */
-metricMap_t CSparkPlugDevManager::parseVendorAppBirthMessage(std::string a_sPayLoad)
+metricMap_t CSparkPlugDevManager::parseVendorAppBirthDataMessage(std::string a_sPayLoad)
 {
 	metricMap_t oMetricMap;
 	do
@@ -407,7 +402,7 @@ metricMap_t CSparkPlugDevManager::parseVendorAppBirthMessage(std::string a_sPayL
 			{
 				DO_LOG_ERROR(
 						"No \"metrics\" key found in input message: "
-								+ a_sPayLoad);
+						+ a_sPayLoad);
 				break;
 			}
 			int iTotalMetrics = cJSON_GetArraySize(cjMetrics);
@@ -419,7 +414,7 @@ metricMap_t CSparkPlugDevManager::parseVendorAppBirthMessage(std::string a_sPayL
 					CMetric oMetric;
 					if (false == processMetric(oMetric, cjArrayElemMetric))
 					{
-						DO_LOG_ERROR("Cannot parse payload");
+						DO_LOG_ERROR("Cannot parse metric. Ignored.");
 					}
 					else
 					{
@@ -506,7 +501,7 @@ void CSparkPlugDevManager::processDeathMsg(std::string a_sAppName,
 			{
 				DO_LOG_ERROR(
 						a_sAppName
-								+ ": Vendor app not found to process DEATH message. Ignoring.");
+						+ ": Vendor app not found to process DEATH message. Ignoring.");
 				break;
 			}
 
@@ -529,8 +524,6 @@ void CSparkPlugDevManager::processDeathMsg(std::string a_sAppName,
 			DO_LOG_ERROR(std::string("Error:") + e.what());
 		}
 	} while (0);
-
-	//return mapChangedMetricsFromBirth;
 }
 
 /**
@@ -550,7 +543,7 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 	// Case 3: Only values of few metrics are changed. There are no other changes => This results in a DDATA message
 	// Case 4: There are no changes. 
 	// Case 5: Last published status was DDEATH. Then a next message should be DBIRTH
-	
+
 	metricMap_t mapChangedMetricsFromBirth;
 	do
 	{
@@ -572,13 +565,13 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 			DO_LOG_INFO("Device name is: " + sDevName);
 
 			// Parse message
-			metricMap_t mapMetricsInMsg = parseVendorAppBirthMessage(a_sPayLoad);
+			metricMap_t mapMetricsInMsg = parseVendorAppBirthDataMessage(a_sPayLoad);
 
 			// Find the device in list
 			bool bIsNew = false;
 
 			auto& oDev = [&] () mutable -> CSparkPlugDev&
-			{
+					{
 				std::lock_guard<std::mutex> lck(m_mutexDevList);
 				auto itr = m_mapSparkPlugDev.find(sDevName);
 				if (m_mapSparkPlugDev.end() == itr)
@@ -594,61 +587,59 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 				}
 
 				return itr->second;
-			}();
-			bool bIsOnlyValChange = false;
-			mapChangedMetricsFromBirth = oDev.processNewBirthData(
-					mapMetricsInMsg, bIsOnlyValChange);
+					}();
+					bool bIsOnlyValChange = false;
+					mapChangedMetricsFromBirth = oDev.processNewBirthData(
+							mapMetricsInMsg, bIsOnlyValChange);
 
-			// Check if last published status was DDEATH
-			if(oDev.getLastPublishedDevStatus() == enDEVSTATUS_DOWN)
-			{
-				// If last status was DDEATH, then a DBIRTH should be published
-				stRefForSparkPlugAction stDummyAction
-				{ std::ref(oDev), enMSG_BIRTH, mapChangedMetricsFromBirth };
-				a_stRefActionVec.push_back(stDummyAction);
-				oDev.setKnownDevStatus(enDEVSTATUS_UP);
-
-				break;
-			}
-			// Check if any changes have occurred
-			else if (0 != mapChangedMetricsFromBirth.size())
-			{
-				// Check if it is BIRTH message 
-				if (false == bIsOnlyValChange)
-				{
-					// Check if Device is new or not
-					if (false == bIsNew)
+					// Check if last published status was DDEATH
+					if(oDev.getLastPublishedDevStatus() == enDEVSTATUS_DOWN)
 					{
-						// Not a new device. First send a DDEATH message
-						// Changes have occurred. 1st publish a DDEATH message.
-						metricMap_t mapChangedMetrics;
+						// If last status was DDEATH, then a DBIRTH should be published
 						stRefForSparkPlugAction stDummyAction
-						{ std::ref(oDev), enMSG_DEATH, mapChangedMetrics };
+						{ std::ref(oDev), enMSG_BIRTH, mapChangedMetricsFromBirth };
 						a_stRefActionVec.push_back(stDummyAction);
-					}
+						oDev.setKnownDevStatus(enDEVSTATUS_UP);
 
-					// Action for DBIRTH message
-					stRefForSparkPlugAction stDummyAction
-					{ std::ref(oDev), enMSG_BIRTH, mapChangedMetricsFromBirth };
-					a_stRefActionVec.push_back(stDummyAction);
-					oDev.setKnownDevStatus(enDEVSTATUS_UP);
-				}
-				else
-				{
-					// Action for DDATA message
-					stRefForSparkPlugAction stDummyAction
-					{ std::ref(oDev), enMSG_DATA, mapChangedMetricsFromBirth };
-					a_stRefActionVec.push_back(stDummyAction);
-					oDev.setKnownDevStatus(enDEVSTATUS_UP);
-				}
-			}
+						break;
+					}
+					// Check if any changes have occurred
+					else if (0 != mapChangedMetricsFromBirth.size())
+					{
+						// Check if it is BIRTH message
+						if (false == bIsOnlyValChange)
+						{
+							// Check if Device is new or not
+							if (false == bIsNew)
+							{
+								// Not a new device. First send a DDEATH message
+								// Changes have occurred. 1st publish a DDEATH message.
+								metricMap_t mapChangedMetrics;
+								stRefForSparkPlugAction stDummyAction
+								{ std::ref(oDev), enMSG_DEATH, mapChangedMetrics };
+								a_stRefActionVec.push_back(stDummyAction);
+							}
+
+							// Action for DBIRTH message
+							stRefForSparkPlugAction stDummyAction
+							{ std::ref(oDev), enMSG_BIRTH, mapChangedMetricsFromBirth };
+							a_stRefActionVec.push_back(stDummyAction);
+							oDev.setKnownDevStatus(enDEVSTATUS_UP);
+						}
+						else
+						{
+							// Action for DDATA message
+							stRefForSparkPlugAction stDummyAction
+							{ std::ref(oDev), enMSG_DATA, mapChangedMetricsFromBirth };
+							a_stRefActionVec.push_back(stDummyAction);
+							oDev.setKnownDevStatus(enDEVSTATUS_UP);
+						}
+					}
 		} catch (const std::exception &e)
 		{
 			DO_LOG_ERROR(std::string("Error:") + e.what());
 		}
 	} while (0);
-
-	//return mapChangedMetricsFromBirth;
 }
 
 /**
@@ -687,7 +678,7 @@ void CSparkPlugDevManager::processUpdateMsg(std::string a_sDeviceName,
 			// Find the device in list
 			bool bIsFound = false;			
 			auto itr = [&] () mutable -> devSparkplugMap_t::iterator
-			{
+					{
 				bIsFound = false;
 				std::lock_guard<std::mutex> lck(m_mutexDevList);
 				auto i = m_mapSparkPlugDev.find(sDevName);
@@ -696,24 +687,24 @@ void CSparkPlugDevManager::processUpdateMsg(std::string a_sDeviceName,
 					bIsFound = true;
 				}
 				return i;
-			}();
+					}();
 
-			if (false == bIsFound)
-			{
-				DO_LOG_ERROR("Invalid real device. Ignoring.");
-				break;
-			}
+					if (false == bIsFound)
+					{
+						DO_LOG_ERROR("Invalid real device. Ignoring.");
+						break;
+					}
 
-			auto &oDev = itr->second;
+					auto &oDev = itr->second;
 
-			// Parse message and get metric info
-			bool bRet = oDev.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec);
+					// Parse message and get metric info
+					bool bRet = oDev.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec);
 
-			if(false == bRet)
-			{
-				DO_LOG_ERROR("Message processing failed. Ignored message: " + a_sPayLoad);
-				break;
-			}
+					if(false == bRet)
+					{
+						DO_LOG_ERROR("Message processing failed. Ignored message: " + a_sPayLoad);
+						break;
+					}
 		}
 		catch (const std::exception &e)
 		{
@@ -754,7 +745,7 @@ void CSparkPlugDevManager::processDataMsg(std::string a_sAppName,
 			// Find the device in list
 			bool bIsFound = false;
 			auto itr = [&] () mutable -> devSparkplugMap_t::iterator
-			{
+					{
 				bIsFound = false;
 				std::lock_guard<std::mutex> lck(m_mutexDevList);
 				auto i = m_mapSparkPlugDev.find(sDevName);
@@ -763,52 +754,50 @@ void CSparkPlugDevManager::processDataMsg(std::string a_sAppName,
 					bIsFound = true;
 				}
 				return i;
-			}();
-			if (false == bIsFound)
-			{
-				DO_LOG_ERROR(
-						sDevName
+					}();
+					if (false == bIsFound)
+					{
+						DO_LOG_ERROR(
+								sDevName
 								+ ": Not found in dev-ist. Ignoring DATA message: "
 								+ a_sPayLoad);
-			}
-			else
-			{
-				// Parse message
-				metricMap_t mapMetricsInMsg = parseVendorAppBirthMessage(
-						a_sPayLoad);
-
-				if (mapMetricsInMsg.size() > 0)
-				{
-					auto &oDev = itr->second;
-					mapChangedMetricsFromData = oDev.processNewData(
-							mapMetricsInMsg);
-
-					// Check if last published status was DDEATH
-					if(oDev.getLastPublishedDevStatus() == enDEVSTATUS_DOWN)
-					{
-						// If last status was DDEATH, then a DBIRTH should be published
-						stRefForSparkPlugAction stDummyAction
-						{ std::ref(oDev), enMSG_BIRTH, mapChangedMetricsFromData };
-						a_stRefActionVec.push_back(stDummyAction);
-						oDev.setKnownDevStatus(enDEVSTATUS_UP);
 					}
-					else if (0 != mapChangedMetricsFromData.size())
+					else
 					{
-						// Action for DDATA message
-						stRefForSparkPlugAction stDummyAction
-						{ std::ref(oDev), enMSG_DATA, mapChangedMetricsFromData };
-						a_stRefActionVec.push_back(stDummyAction);
-						oDev.setKnownDevStatus(enDEVSTATUS_UP);
-					}					
-				}
-			}
+						// Parse message
+						metricMap_t mapMetricsInMsg = parseVendorAppBirthDataMessage(
+								a_sPayLoad);
+
+						if (mapMetricsInMsg.size() > 0)
+						{
+							auto &oDev = itr->second;
+							mapChangedMetricsFromData = oDev.processNewData(
+									mapMetricsInMsg);
+
+							// Check if last published status was DDEATH
+							if(oDev.getLastPublishedDevStatus() == enDEVSTATUS_DOWN)
+							{
+								// If last status was DDEATH, then a DBIRTH should be published
+								stRefForSparkPlugAction stDummyAction
+								{ std::ref(oDev), enMSG_BIRTH, mapChangedMetricsFromData };
+								a_stRefActionVec.push_back(stDummyAction);
+								oDev.setKnownDevStatus(enDEVSTATUS_UP);
+							}
+							else if (0 != mapChangedMetricsFromData.size())
+							{
+								// Action for DDATA message
+								stRefForSparkPlugAction stDummyAction
+								{ std::ref(oDev), enMSG_DATA, mapChangedMetricsFromData };
+								a_stRefActionVec.push_back(stDummyAction);
+								oDev.setKnownDevStatus(enDEVSTATUS_UP);
+							}
+						}
+					}
 		} catch (const std::exception &e)
 		{
 			DO_LOG_ERROR(std::string("Error:") + e.what());
 		}
 	} while (0);
-
-	//return mapChangedMetricsFromData;
 }
 
 /**
@@ -852,7 +841,7 @@ bool CSparkPlugDevManager::addRealDevices()
 			for (auto &rUniqueDev : mapUniqueDevice)
 			{
 				std::string sUniqueDev{rUniqueDev.second.getWellSiteDev().getID() + SUBDEV_SEPARATOR_CHAR + 
-						rUniqueDev.second.getWellSite().getID()};
+					rUniqueDev.second.getWellSite().getID()};
 
 				auto itr = m_mapSparkPlugDev.find(sUniqueDev);
 				// Create a new device, if not present
@@ -873,10 +862,7 @@ bool CSparkPlugDevManager::addRealDevices()
 				else
 				{
 					DO_LOG_ERROR(sUniqueDev + ": Repeat device found. Ignoring recent instance.");
-					//return false;
 				}
-				
-				//return true;
 			}
 		} 
 		catch (const std::exception &e)
@@ -906,7 +892,7 @@ bool CSparkPlugDevManager::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payloa
 			return itr->second.prepareDBirthMessage(a_rTahuPayload, a_bIsNBIRTHProcess);
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		return false;
@@ -929,7 +915,7 @@ std::vector<std::string> CSparkPlugDevManager::getDeviceList()
 			sDevNameVector.push_back(itr.first);
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 	}
@@ -954,7 +940,7 @@ bool CSparkPlugDevManager::setMsgPublishedStatus(eDevStatus a_enStatus, std::str
 			itr->second.setPublishedStatus(a_enStatus);
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		return false;

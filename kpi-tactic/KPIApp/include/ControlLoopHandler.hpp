@@ -54,8 +54,6 @@ public:
 		m_uiDelayMs = a_obj.m_uiDelayMs;
 		m_sVal = a_obj.m_sVal;
 
-		//m_q.clear();
-
 		return *this;
 	}
 

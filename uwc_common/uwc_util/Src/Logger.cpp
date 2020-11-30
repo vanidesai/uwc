@@ -11,7 +11,7 @@
 #include "Logger.hpp"
 
 /**
- * Constructor Initializes logger reading properties from .properties file
+ * Constructor Initializes common variables
  * @param None
  * @return None
  */
@@ -22,7 +22,18 @@ CLogger::CLogger()
 }
 
 /**
- * Configures logger properties
+ * Function for singleton instance.
+ * @param None
+ * @return singleton instance of logger
+ */
+CLogger& CLogger::getInstance() 
+{
+	static CLogger _self;
+	return _self;
+}
+
+/**
+ * Configures logger properties from log4cpp.properties file
  * @param a_pcLogPropsFilePath :[in] path of logger properties file
  * @return status: true - Success, false - error 
  */
@@ -42,9 +53,10 @@ bool CLogger::configLogger(const char* a_pcLogPropsFilePath)
 
 			logger = &root;
 			m_bIsExternal = false;
+			DO_LOG_INFO("Log level is set to ..." + log4cpp::Priority::getPriorityName(root.getPriority()));
 			return true;
 		}
-		catch(exception& ex)
+		catch(std::exception& ex)
 		{
 			std::cout << "Exception in logger creation: " << ex.what() << "\nLogging functionality will not work.\n";
 		}
@@ -60,20 +72,7 @@ bool CLogger::configLogger(const char* a_pcLogPropsFilePath)
  * Destructor remove all the appenders and shut down logger
  */
 CLogger::~CLogger()
-{
-	if(NULL != logger)
-	{
-		if(false == m_bIsExternal)
-		{
-			//logger->removeAllAppenders();
-			//logger->shutdownForced();
-		}
-		else
-		{
-			// No Action. This is external logger.
-		}
-	}
-}
+{}
 
 /**
  * Write statement with info level

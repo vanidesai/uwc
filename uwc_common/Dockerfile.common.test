@@ -32,8 +32,8 @@ FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
 
 COPY --from=openssl-build /usr/ssl /usr/
-RUN git clone --branch v1.3.5 https://github.com/eclipse/paho.mqtt.c.git \
-    &&	cd paho.mqtt.c \
+RUN git clone --branch develop https://github.com/eclipse/paho.mqtt.c.git \
+    &&	cd paho.mqtt.c && git reset --hard ecbdce240558bc185944f54c5ef7c3cca9efb8fb \
     &&	mkdir build && cd build \
     &&	cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_STATIC:BOOL=OFF \
         -DPAHO_BUILD_SAMPLES:BOOL=OFF -DPAHO_BUILD_SHARED:BOOL=ON \

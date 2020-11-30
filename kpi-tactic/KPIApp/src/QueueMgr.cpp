@@ -45,9 +45,10 @@ CQueueHandler& QMgr::WriteRespMsgQ()
 }
 
 /**
- * Get reference of write response message
+ * Based on whether MQTT mode or ZMQ mode, function prepares MQTT for publishing & subscribing,
+ * or prepares contexts and create threads respectively
  * @param None
- * @return reference of on-demand read operation instance
+ * @return
  */
 void PlBusMgr::initPlatformBusHandler(bool a_bIsMQTTMode)
 {
@@ -95,7 +96,7 @@ bool publishWriteReqOnMQTT(const std::string &a_sPubTopic, const std::string &a_
 }
 
 /**
- * Forms and publishes write request on MQTT
+ * Forms and publishes write request
  * @param a_rCtrlLoop	[in]: Control loop for which write needs to be published
  * @param a_sWrSeq		[in]: Sequence number to be used in write request
  * @param a_oPollMsg	[in]: Poll message for which write is being sent

@@ -12,6 +12,13 @@
 #include "CommonDataShare.hpp"
 #include "LibErrCodeManager.hpp"
 
+#define THREAD_PRIORITY_5 5
+#define THREAD_PRIORITY_10 10
+#define THREAD_PRIORITY_15 15
+#define THREAD_PRIORITY_50 50
+#define THREAD_PRIORITY_55 55
+#define THREAD_PRIORITY_60 60
+
 #ifndef SCADA_RTU
 /** Constructor
  */
@@ -36,8 +43,8 @@ CfgManager:: CfgManager()
 	else
 	{
 		/// create client with certificates
-		string sCert = "/run/secrets/etcd_" + CcommonEnvManager::Instance().getAppName() + "_cert";
-		string sKey = "/run/secrets/etcd_" + CcommonEnvManager::Instance().getAppName() + "_key";
+		std::string sCert = "/run/secrets/etcd_" + CcommonEnvManager::Instance().getAppName() + "_cert";
+		std::string sKey = "/run/secrets/etcd_" + CcommonEnvManager::Instance().getAppName() + "_key";
 		config_mgr_client = config_mgr_new((char *)"etcd", (char *)sCert.c_str(),
 				(char *)sKey.c_str(),
 				(char *)"/run/secrets/ca_etcd");
@@ -112,7 +119,7 @@ globalConfig::COperationInfo::COperationInfo()
  */
 void globalConfig::display_sched_attr(int policy, struct sched_param& param)
 {
-	string sPolicy = "";
+	std::string sPolicy = "";
 	if(policy == SCHED_FIFO)
 	{
 		sPolicy = "FIFO";
@@ -130,7 +137,7 @@ void globalConfig::display_sched_attr(int policy, struct sched_param& param)
 		sPolicy = "UNKNOWN";
 	}
 	DO_LOG_INFO("policy = " + sPolicy +
-			" priority = "+ to_string(param.sched_priority));
+			" priority = "+ std::to_string(param.sched_priority));
 }
 
 /**
@@ -148,7 +155,7 @@ void globalConfig::display_thread_sched_attr(const std::string a_sMsg)
 	{
 		handle_error_en(s, "pthread_getschedparam");
 	}
-	DO_LOG_INFO("Thread number :: " + to_string(count++) +" Thread Name :: " + a_sMsg);
+	DO_LOG_INFO("Thread number :: " + std::to_string(count++) +" Thread Name :: " + a_sMsg);
 
 	display_sched_attr(policy, param);
 }
@@ -159,12 +166,12 @@ void globalConfig::display_thread_sched_attr(const std::string a_sMsg)
 globalConfig::CPriorityMgr::CPriorityMgr()
 {
 	//initialize all the default parameters
-	m_opPriorityThreadInfo.insert(std::make_pair(6, std::make_pair(60, RR)));
-	m_opPriorityThreadInfo.insert(std::make_pair(5, std::make_pair(55, RR)));
-	m_opPriorityThreadInfo.insert(std::make_pair(4, std::make_pair(50, RR)));
-	m_opPriorityThreadInfo.insert(std::make_pair(3, std::make_pair(15, RR)));
-	m_opPriorityThreadInfo.insert(std::make_pair(2, std::make_pair(10, RR)));
-	m_opPriorityThreadInfo.insert(std::make_pair(1, std::make_pair(5, RR)));
+	m_opPriorityThreadInfo.insert(std::make_pair(6, std::make_pair(THREAD_PRIORITY_60, RR)));
+	m_opPriorityThreadInfo.insert(std::make_pair(5, std::make_pair(THREAD_PRIORITY_55, RR)));
+	m_opPriorityThreadInfo.insert(std::make_pair(4, std::make_pair(THREAD_PRIORITY_50, RR)));
+	m_opPriorityThreadInfo.insert(std::make_pair(3, std::make_pair(THREAD_PRIORITY_15, RR)));
+	m_opPriorityThreadInfo.insert(std::make_pair(2, std::make_pair(THREAD_PRIORITY_10, RR)));
+	m_opPriorityThreadInfo.insert(std::make_pair(1, std::make_pair(THREAD_PRIORITY_5, RR)));
 }
 
 /** Function to set thread parameters
@@ -289,12 +296,12 @@ int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 			break;
 			case DT_MAP:
 			{
-				a_BaseNode[a_sKey].as<std::map<string,string>>();
+				a_BaseNode[a_sKey].as<std::map<std::string,std::string>>();
 			}
 			break;
 			default:
 			{
-				DO_LOG_ERROR("Invalid data type::" + to_string(a_eDataType));
+				DO_LOG_ERROR("Invalid data type::" + std::to_string(a_eDataType));
 				iRet = -3;
 			}
 			break;
@@ -321,16 +328,16 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		const bool a_isRT)
 {
 
-	string ops = "";
+	std::string ops = "";
 	if(!a_isRT)
 	{
-		cout << "non-realtime parameters: " << endl;
+		std::cout << "non-realtime parameters: " << std::endl;
 		DO_LOG_INFO("non-realtime parameters: ");
 		ops = "non-realtime";
 	}
 	else
 	{
-		cout << "realtime parameters: " << endl;
+		std::cout << "realtime parameters: " << std::endl;
 		DO_LOG_INFO("realtime parameters: ");
 		ops = "realtime";
 	}
@@ -398,13 +405,13 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		}
 	}
 
-	cout << "	operation priority :: " <<a_refOpration.getOperationPriority()<< endl;
-	cout << "	retries :: " <<a_refOpration.getRetries()<< endl;
-	cout << "	qos :: " <<a_refOpration.getQos()<< endl;
+	std::cout << "	operation priority :: " <<a_refOpration.getOperationPriority()<< std::endl;
+	std::cout << "	retries :: " <<a_refOpration.getRetries()<< std::endl;
+	std::cout << "	qos :: " <<a_refOpration.getQos()<< std::endl;
 
-	DO_LOG_INFO("operation priority :: " + to_string(a_refOpration.getOperationPriority()));
-	DO_LOG_INFO("retries :: " + to_string(a_refOpration.getRetries()));
-	DO_LOG_INFO("qos :: " + to_string(a_refOpration.getQos()));
+	DO_LOG_INFO("operation priority :: " + std::to_string(a_refOpration.getOperationPriority()));
+	DO_LOG_INFO("retries :: " + std::to_string(a_refOpration.getRetries()));
+	DO_LOG_INFO("qos :: " + std::to_string(a_refOpration.getQos()));
 
 }
 
@@ -429,8 +436,8 @@ void globalConfig::COperationInfo::buildOperationInfo(const YAML::Node& a_baseNo
 	{
 		a_refOpInfo.m_defaultIsRT = a_baseNode["default_realtime"].as<bool>();
 	}
-	cout << " default RT :: " << a_refOpInfo.m_defaultIsRT << endl;
-	DO_LOG_INFO(" default RT :: " + to_string(a_refOpInfo.m_defaultIsRT));
+	std::cout << " default RT :: " << a_refOpInfo.m_defaultIsRT << std::endl;
+	DO_LOG_INFO(" default RT :: " + std::to_string(a_refOpInfo.m_defaultIsRT));
 
 	COperation Obj;
 	/// realtime
@@ -456,7 +463,7 @@ void globalConfig::CSparkplugData::buildSparkPlugInfo(const YAML::Node& a_baseNo
 	}
 	else
 	{
-		a_refOpration.m_sGroupId = a_baseNode["group_id"].as<string>();
+		a_refOpration.m_sGroupId = a_baseNode["group_id"].as<std::string>();
 	}
 
 	if (validateParam(a_baseNode, "edge_node_id", DT_STRING) != 0)
@@ -465,14 +472,14 @@ void globalConfig::CSparkplugData::buildSparkPlugInfo(const YAML::Node& a_baseNo
 	}
 	else
 	{
-		a_refOpration.m_stNodeName = a_baseNode["edge_node_id"].as<string>();
+		a_refOpration.m_stNodeName = a_baseNode["edge_node_id"].as<std::string>();
 	}
 
-	cout << "	group_id : " << a_refOpration.getGroupId() << endl;
+	std::cout << "	group_id : " << a_refOpration.getGroupId() << std::endl;
 	DO_LOG_INFO("	group_id : " + a_refOpration.getGroupId());
-	cout << "	edge_node_id : " << endl;
+	std::cout << "	edge_node_id : " << std::endl;
 	DO_LOG_INFO("	edge_node_id : ");
-	cout << "		nodeName : " << a_refOpration.m_stNodeName << endl;
+	std::cout << "		nodeName : " << a_refOpration.m_stNodeName << std::endl;
 	DO_LOG_INFO("		nodeName : " + a_refOpration.m_stNodeName);
 
 }
@@ -513,12 +520,12 @@ bool globalConfig::loadGlobalConfigurations()
 					{
 						node = key["Polling"];
 
-						cout << "********************************************************************";
+						std::cout << "********************************************************************";
 						DO_LOG_INFO("\nFollowing Global configurations is available inside container");
-						cout << "\nFollowing Global configurations is available inside container \n";
-						cout << "********************************************************************\n";
+						std::cout << "\nFollowing Global configurations is available inside container \n";
+						std::cout << "********************************************************************\n";
 						DO_LOG_INFO("For Polling >>>");
-						cout << "For Polling >>>\n";
+						std::cout << "For Polling >>>\n";
 						COperationInfo::buildOperationInfo(node,
 								globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig(),
 								POLLING);
@@ -528,7 +535,7 @@ bool globalConfig::loadGlobalConfigurations()
 					else if (key["on-demand-read"])
 					{
 						node = key["on-demand-read"];
-						cout << "For On-demand read >>>\n";
+						std::cout << "For On-demand read >>>\n";
 						DO_LOG_INFO("For On-demand read >>>");
 						COperationInfo::buildOperationInfo(node,
 								globalConfig::CGlobalConfig::getInstance().getOpOnDemandReadConfig(),
@@ -539,7 +546,7 @@ bool globalConfig::loadGlobalConfigurations()
 					else if (key["on-demand-write"])
 					{
 						node = key["on-demand-write"];
-						cout << "For On-demand write >>>\n";
+						std::cout << "For On-demand write >>>\n";
 						DO_LOG_INFO("For On-demand write >>>");
 						COperationInfo::buildOperationInfo(node,
 								globalConfig::CGlobalConfig::getInstance().getOpOnDemandWriteConfig(),
@@ -550,7 +557,7 @@ bool globalConfig::loadGlobalConfigurations()
 					else if (key["SparkPlug_Operation"])
 					{
 						node = key["SparkPlug_Operation"];
-						cout << "For SparkPlug_Operation: >>>\n";
+						std::cout << "For SparkPlug_Operation: >>>\n";
 						DO_LOG_INFO("For SparkPlug_Operation: >>>");
 						CSparkplugData::buildSparkPlugInfo(node,
 								globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo());
@@ -563,7 +570,7 @@ bool globalConfig::loadGlobalConfigurations()
 	}
 	catch (YAML::Exception& e)
 	{
-		cout << "Error while loading global configurations :: " << e.what()<< "\n";
+		std::cout << "Error while loading global configurations :: " << e.what()<< "\n";
 		DO_LOG_ERROR("Error while loading global configurations::" + std::string(e.what()));
 		bRetVal = false;
 	}
@@ -579,7 +586,7 @@ bool globalConfig::loadGlobalConfigurations()
 	{
 		DO_LOG_ERROR("Polling key is missing");
 		DO_LOG_INFO("Setting default config for Polling >>>");
-		cout << "Setting default config for Polling >>>\n";
+		std::cout << "Setting default config for Polling >>>\n";
 		bRetVal = false;
 		setDefaultConfig(POLLING);
 	}
@@ -587,7 +594,7 @@ bool globalConfig::loadGlobalConfigurations()
 	{
 		DO_LOG_ERROR("on-demand-read key is missing");
 		DO_LOG_INFO("Setting default config for On-Demand-Read >>>");
-		cout << "Setting default config for On-Demand-Read >>>\n";
+		std::cout << "Setting default config for On-Demand-Read >>>\n";
 		bRetVal = false;
 		setDefaultConfig(ON_DEMAND_READ);
 	}
@@ -595,7 +602,7 @@ bool globalConfig::loadGlobalConfigurations()
 	{
 		DO_LOG_ERROR("on-demand-write key is missing");
 		DO_LOG_INFO("Setting default config for On-Demand-Write >>>");
-		cout << "Setting default config for On-Demand-Write >>>\n";
+		std::cout << "Setting default config for On-Demand-Write >>>\n";
 		bRetVal = false;
 		setDefaultConfig(ON_DEMAND_WRITE);
 	}
@@ -604,7 +611,7 @@ bool globalConfig::loadGlobalConfigurations()
 	{
 		DO_LOG_ERROR("SparkPlug_Operation key is missing");
 		DO_LOG_INFO("Setting default config for SparkPlug_Operation >>>");
-		cout << "Setting default config for SparkPlug_Operation >>>\n";
+		std::cout << "Setting default config for SparkPlug_Operation >>>\n";
 		bRetVal = false;
 		setDefaultConfig(SPARKPLUG_OPS);
 	}

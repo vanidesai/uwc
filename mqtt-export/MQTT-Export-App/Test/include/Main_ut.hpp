@@ -51,13 +51,6 @@ extern std::vector<std::thread> g_vThreads;;
 
 extern void Temp_Function(std::string& topic);
 
-
-/*extern void listenOnEIS(string topic, stZmqContext context,
-		stZmqSubContext subContext);
-
-extern bool publishEISMsg(string eisMsg, stZmqContext &context,
-		stZmqPubContext &pubContext);*/
-
 extern void set_thread_priority_for_eis(bool& isRealtime, bool& isRead);
 
 extern std::atomic<bool> g_shouldStop;
@@ -73,12 +66,6 @@ protected:
 	virtual void TearDown();
 
 public:
-	char* msg[2] = 	{
-						"Message1",
-						"/home/user/SVN/Intel_UWC/trunk/Technical/Sourcecode/mqtt-export/MQTT-Export-App/Test/src/JsonConfig.json"
-						};
-
-	std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
 
 
 };

@@ -31,7 +31,7 @@ public:
 	uint16_t u16TransacID = 0;
 	uint16_t u16Port = 0;
 
-	MbusAPI_t MbusAPI_obj = {0, NULL, 0, 0, 0, 0, 0, NULL};
+	MbusAPI_t MbusAPI_obj = {0, 0, 0, 0, 0, 0, 0, 0};
 	MbusAPI_t *pstMbusApiPram = &MbusAPI_obj;
 	MbusAPI_t stMbusApiPram = {};
 

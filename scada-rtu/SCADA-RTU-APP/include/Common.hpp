@@ -19,7 +19,6 @@
 #include "ConfigManager.hpp"
 #include "EnvironmentVarHandler.hpp"
 
-using namespace std;
 using namespace globalConfig;
 
 #define SCADA_CONFIG_FILE_PATH "/opt/intel/eis/uwc_data/scada-rtu/scada_config.yml"
@@ -28,17 +27,17 @@ using namespace globalConfig;
 class CCommon
 {
 private:
-	std::vector<string> m_vecEnv{"AppName", "INTERNAL_MQTT_URL", "DEV_MODE", "NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME", "MY_APP_ID"};
+	std::vector<std::string> m_vecEnv{"AppName", "INTERNAL_MQTT_URL", "DEV_MODE", "NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME"};
 	// Private constructor so that no objects can be created.
 	CCommon();
 	CCommon(const CCommon & obj) = delete;
 	CCommon& operator=(CCommon const&) = delete;
 
-	string m_strExtMqttURL;
+	std::string m_strExtMqttURL;
 	int m_nQos;
-	string m_strNodeConfPath;
-	string m_strGroupId;
-	string m_strNodeName;
+	std::string m_strNodeConfPath;
+	std::string m_strGroupId;
+	std::string m_strNodeName;
 	bool m_bIsScadaTLS;
 
 	void setScadaRTUIds();
@@ -223,7 +222,7 @@ public:
 		m_bIsScadaTLS = a_bIsTLS;
 	}
 
-	bool getTopicParts(std::string a_sTopic, std::vector<std::string> &a_vsTopicParts, const string& a_delimeter);
+	bool getTopicParts(std::string a_sTopic, std::vector<std::string> &a_vsTopicParts, const std::string& a_delimeter);
 
 };
 #endif

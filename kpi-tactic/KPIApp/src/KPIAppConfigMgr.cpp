@@ -8,7 +8,7 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 #include "KPIAppConfigMgr.hpp"
-#include "utils/YamlUtil.hpp"
+#include "YamlUtil.hpp"
 #include "ConfigManager.hpp"
 
 

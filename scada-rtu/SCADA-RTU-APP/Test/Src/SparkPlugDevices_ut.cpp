@@ -20,6 +20,12 @@ void SparkPlugDevices_ut::TearDown()
 	// TearDown code
 }
 
+/**
+ * Test case to check processRealDeviceUpdateMsg() when a field is missing from payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_FieldMissingInPayload)
 {
 	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
@@ -30,6 +36,12 @@ TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_FieldMissingInPayload)
 
 }
 
+/**
+ * Test case to check processRealDeviceUpdateMsg() when value is invalid in payload
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_WrongPayloadVal)
 {
 	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
@@ -40,6 +52,12 @@ TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_WrongPayloadVal)
 
 }
 
+/**
+ * Test case to check processRealDeviceUpdateMsg() when metric map is empty
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_MetricMapEmpty)
 {
 	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
@@ -50,6 +68,12 @@ TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_MetricMapEmpty)
 
 }
 
+/**
+ * Test case to check processRealDeviceUpdateMsg() when device map is empty
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_DeviceMapEmpty)
 {
 	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
@@ -60,6 +84,12 @@ TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_DeviceMapEmpty)
 
 }
 
+/**
+ * Test case to check processRealDeviceUpdateMsg() when metric list is empty
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(SparkPlugDevices_ut, processNewData_EmptyMetricList)
 {
 	metricMap_t a_MetricList;

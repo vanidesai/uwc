@@ -26,7 +26,7 @@
 /// flag to stop all running threads
 std::atomic<bool> g_stopThread(false);
 
-vector<std::thread> g_vThreads;
+std::vector<std::thread> g_vThreads;
 
 /**
  * Thread function to read requests from queue filled up by MQTT and send data to EIS
@@ -60,7 +60,7 @@ void postMsgsToWriteOnMQTT(CQueueHandler& qMgr)
 }
 
 /**
- * Thread function to read requests from queue filled up by MQTT and send data to EIS
+ * Function to analyze the data of control loop
  * @param qMgr 	:[in] pointer to respective queue manager
  * @return None
  */
@@ -73,8 +73,6 @@ void analyzeControlLoopData(CQueueHandler& qMgr)
 			CMessageObject recvdMsg;
 			if(true == qMgr.isMsgArrived(recvdMsg))
 			{
-				//string strMsg = recvdMsg.getStrMsg();
-
 				if(false == CKPIAppConfig::getInstance().getControlLoopMapper().isControlLoopWrRspPoint(recvdMsg.getTopic()))
 				{
 					DO_LOG_DEBUG(recvdMsg.getTopic() + ": Not a part of control loop. Ignored");
@@ -103,7 +101,7 @@ void analyzeControlLoopData(CQueueHandler& qMgr)
 	}
 	catch (const std::exception &e)
 	{
-		cout << "Exception occured while publishing data: "<<e.what() << endl;
+		std::cout << "Exception occured while publishing data: "<<e.what() << std::endl;
 	}
 
 }
@@ -118,7 +116,7 @@ void analyzeControlLoopData(CQueueHandler& qMgr)
  *
  * @return
  */
-void initializeCommonData(string strDevMode, string strAppName)
+void initializeCommonData(std::string strDevMode, std::string strAppName)
 {
 	stUWCComnDataVal_t stUwcData;
 	stUwcData.m_devMode = false;
@@ -140,10 +138,19 @@ void initializeCommonData(string strDevMode, string strAppName)
 void setEnvData()
 {
 	std::vector<std::string> vecEnv{"AppName", "MQTT_URL", "DEV_MODE", "WriteRequest_RT", "WriteRequest", "KPIAPPConfigFile"};
-	EnvironmentInfo::getInstance().readCommonEnvVariables(vecEnv);
+
+	if(false == EnvironmentInfo::getInstance().readCommonEnvVariables(vecEnv))
+	{
+		DO_LOG_ERROR("Error while reading the common environment variables");
+		exit(1);
+	}
+
 	std::string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
 	std::string strAppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
-
+	if(strAppName.empty())
+		{
+			exit(1);
+		}
 	initializeCommonData(strDevMode, strAppName);
 }
 
@@ -165,7 +172,6 @@ int main(int argc, char* argv[])
 
 		std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
 #ifdef UNIT_TEST
-		//::testing::GTEST_FLAG(filter) ="*CConfigManager_ut*";
 		::testing::InitGoogleTest(&argc, argv);
 		return RUN_ALL_TESTS();
 #endif
@@ -189,7 +195,7 @@ int main(int argc, char* argv[])
 		if(0 != uiTime)
 		{
 			std::cout << "Starting the Timer for : " << uiTime << " minutes.\n";
-			this_thread::sleep_for(std::chrono::minutes(uiTime));
+			std::this_thread::sleep_for(std::chrono::minutes(uiTime));
 			g_stopThread.store(true);
 
 			if(!CKPIAppConfig::getInstance().isMQTTModeOn())
@@ -200,7 +206,7 @@ int main(int argc, char* argv[])
 			QMgr::PollMsgQ().breakWaitOnQ();
 			QMgr::WriteRespMsgQ().breakWaitOnQ();
 			// give 1 second time for all threads to be signalled
-			this_thread::sleep_for(std::chrono::seconds(2));
+			std::this_thread::sleep_for(std::chrono::seconds(2));
 		}
 		else
 		{
@@ -218,9 +224,9 @@ int main(int argc, char* argv[])
 	}
 	catch (const std::exception &e)
 	{
-		std::cout << "Exception in main:: fatal::Error in getting arguments: "<<e.what()<< endl;
+		std::cout << "Exception in main:: fatal::Error in getting arguments: "<<e.what()<< std::endl;
 		DO_LOG_FATAL("fatal::Error in getting arguments: " +
-					(string)e.what());
+					(std::string)e.what());
 
 		return EXIT_FAILURE;
 	}

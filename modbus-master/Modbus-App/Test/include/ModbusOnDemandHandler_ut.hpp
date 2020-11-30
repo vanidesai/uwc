@@ -31,9 +31,6 @@
 #include <semaphore.h>
 #include "ModbusOnDemandHandler.hpp"
 
-extern string onDemandHandler::getMsgElement(msg_envelope_t *a_Msg,
-		string a_sKey);
-
 class ModbusOnDemandHandler_ut : public ::testing::Test {
 protected:
 	virtual void SetUp();
@@ -41,12 +38,6 @@ protected:
 
 public:
 	const string topic = "Modbus-TCP/PL0_flowmeter1_write,MQTT-EXPORT/PL0_flowmeter2_write";
-	//const string topic = "Modbus-TCP-Master_ReadRequest";
-
-	//string msg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
-
-	//	string msg =
-	//			"{ 	\"value\": \"0xFF00\", 	\"command\": \"AValve\", 	\"app_seq\": \"1234\", \"wellhead\": \"PL0\",  \"version\": \"0.0.0.1\", \"sourcetopic\":\"Response\", \"timestamp\": \"2020-02-12 06:14:15\", \"usec\": \"1581488055204186\" }";
 
 	string msg =
 			"{ 	\"value\": \"0xFF00\", 	\"command\": \"Flow\", 	\"app_seq\": \"1234\", \"tsMsgPublishOnEIS\":\"2020-03-31 12:34:56\", \"tsMsgRcvdFromMQTT\":\"2020-03-13 12:34:56\",  \"wellhead\": \"PL0\",  \"version\": \"0.0.0.1\", \"sourcetopic\":\"/flowmeter/PL0/Flow/read\", \"timestamp\": \"2020-02-12 06:14:15\", \"usec\": \"1581488055204186\" }";
@@ -68,14 +59,9 @@ public:
 
 	string strCommand, strValue, strWellhead, strVersion, strSourceTopic;
 	eMbusAppErrorCode eFunRetType2;
-	//sem_t semaphoreWriteReq;
 
 	stOnDemandRequest reqData;
 	cJSON *root = NULL;
-
-	/*MsgbusManager msgbusMgr;
-	EnvConf_Caller CallerObj;*/
-
 
 };
 

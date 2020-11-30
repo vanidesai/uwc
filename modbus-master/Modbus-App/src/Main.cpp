@@ -37,18 +37,18 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.6.1"
+#define APP_VERSION "0.0.6.2"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads
 extern std::atomic<bool> g_stopThread;
 
 std::vector<string> m_vecEnv{"DEVICES_GROUP_LIST_FILE_NAME",
-							"DEV_MODE",
-							"NETWORK_TYPE",
-							"AppName",
-							"MY_APP_ID"
-							};
+	"DEV_MODE",
+	"NETWORK_TYPE",
+	"AppName",
+	"MY_APP_ID"
+};
 
 /**
  * Populate polling data
@@ -103,20 +103,20 @@ void populatePollingRefData()
 			CTimeMapper::instance().insert(a.getDataPoint().getPollingConfig().m_uiPollFreq, objRefPolling);
 
 			DO_LOG_INFO("Polling is set for " +
-						a.getDataPoint().getID() +
-						", FunctionCode " +
-						to_string((unsigned)uiFuncCode) +
-						", frequency " +
-						to_string(a.getDataPoint().getPollingConfig().m_uiPollFreq) +
-						", RT " +
-						to_string(a.getDataPoint().getPollingConfig().m_bIsRealTime));
+					a.getDataPoint().getID() +
+					", FunctionCode " +
+					std::to_string((unsigned)uiFuncCode) +
+					", frequency " +
+					std::to_string(a.getDataPoint().getPollingConfig().m_uiPollFreq) +
+					", RT " +
+					std::to_string(a.getDataPoint().getPollingConfig().m_bIsRealTime));
 		}
 		catch(std::exception &e)
 		{
 			DO_LOG_FATAL("Exception " +
-						(string)e.what() +
-						"in processing " +
-						a.getDataPoint().getID());
+					(string)e.what() +
+					"in processing " +
+					a.getDataPoint().getID());
 		}
 	}
 
@@ -124,7 +124,7 @@ void populatePollingRefData()
 }
 
 /**
- * checks whether to stop thread execution
+ * Stops main thread execution
  * @return 	true : on success,
  * 			false : on error
  */
@@ -134,7 +134,6 @@ bool exitMainThread(){return g_stopThread;};
  *
  * DESCRIPTION
  * This function is used to check keys from given JSON
- *
  * @param root [in] argument count
  * @param a_sKeyName [in] key from JSON
  *
@@ -153,7 +152,7 @@ bool isElementExistInJson(cJSON *root, std::string a_sKeyName)
 }
 
 /**
- * Populate device contexts
+ * Function to read the device contexts
  */
 void setDevContexts()
 {
@@ -186,7 +185,7 @@ void setDevContexts()
 				if(STACK_NO_ERROR != retValue)
 				{
 					std::cout << dev.getID() << ": Unable to create context. Error: " << retValue << std::endl;
-					DO_LOG_ERROR(dev.getID() + ": Unable to create context. Error: " + to_string(retValue));
+					DO_LOG_ERROR(dev.getID() + ": Unable to create context. Error: " + std::to_string(retValue));
 				}
 				else
 				{
@@ -208,12 +207,12 @@ void setDevContexts()
 							sParity == "O" || sParity == "o"))
 					{
 						DO_LOG_ERROR("Set Parity is wrong for RTU. Set correct parity N/E/O");
-						std::cout << "Set Parity \"" << sParity << "\" is wrong for RTU. Set correct parity N/E/O" << endl;
+						std::cout << "Set Parity \"" << sParity << "\" is wrong for RTU. Set correct parity N/E/O" << std::endl;
 					}
 					else
 					{
 						parity = (sParity == "N" || sParity == "n") ? eNone : (sParity == "O" || sParity == "o") ? eOdd : eEven;
-						
+
 						stCtxInfo objCtxInfo{0};
 						objCtxInfo.m_eParity = parity;
 						objCtxInfo.m_lInterframeDelay = dev.getRTUNwInfo().getInterframeDelay();
@@ -226,7 +225,7 @@ void setDevContexts()
 						if(STACK_NO_ERROR != retValue)
 						{
 							std::cout << "RTU: Unable to create context. Error: " << retValue << std::endl;
-							DO_LOG_ERROR("RTU: Unable to create context. Error: " + to_string(retValue));
+							DO_LOG_ERROR("RTU: Unable to create context. Error: " + std::to_string(retValue));
 						}
 						else
 						{
@@ -274,12 +273,15 @@ void initializeCommonData(string strDevMode, string strAppName)
 
 /**
  * Function to read all common environment variables
- *
  * @return
  */
 void readEnvData()
 {
-	EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
+	if(false == EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv))
+	{
+		DO_LOG_ERROR("Error while reading the common environment variables");
+		exit(1);
+	}
 	string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
 
 	string strAppName = EnvironmentInfo::getInstance().getDataFromEnvMap("AppName");
@@ -310,19 +312,19 @@ int main(int argc, char* argv[])
 		DO_LOG_DEBUG("Starting Modbus_App ...");
 
 		DO_LOG_INFO("Modbus container app version is set to :: " + std::string(APP_VERSION));
-		cout <<"\nModbus container app version is :: " + std::string(APP_VERSION) << "\n"<<endl;
+		std::cout <<"\nModbus container app version is :: " + std::string(APP_VERSION) << "\n"<<std::endl;
 
 		// load global configuration for container real-time setting
 		bool bRetVal = globalConfig::loadGlobalConfigurations();
 		if(!bRetVal)
 		{
 			DO_LOG_INFO("Global configuration is set with some default parameters");
-			cout << "\nGlobal configuration is set with some default parameters\n\n";
+			std::cout << "\nGlobal configuration is set with some default parameters\n\n";
 		}
 		else
 		{
 			DO_LOG_INFO("Global configuration is set successfully");
-			cout << "\nGlobal configuration for container real-time is set successfully\n\n";
+			std::cout << "\nGlobal configuration for container real-time is set successfully\n\n";
 		}
 
 		readEnvData();
@@ -331,7 +333,7 @@ int main(int argc, char* argv[])
 		if(!CommonUtils::readEnvVariable("CUTOFF_INTERVAL_PERCENTAGE", cutOff))
 		{
 			DO_LOG_INFO("CUTOFF_INTERVAL_PERCENTAGE env variables are not set.");
-			cout << "CUTOFF_INTERVAL_PERCENTAGE env variables are not set."<<endl;
+			std::cout << "CUTOFF_INTERVAL_PERCENTAGE env variables are not set."<<std::endl;
 			std::cout << "setting it to default i.e. 90 \n";
 			DO_LOG_INFO("setting it to default i.e. 90");
 			PublishJsonHandler::instance().setCutoffIntervalPercentage(90);
@@ -384,21 +386,18 @@ int main(int argc, char* argv[])
 		}
 
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-		/// store the yaml files in data structures
-		//network_info::buildNetworkInfo(true);
-
-		// Setting RTU mode
+		// Setting TCP mode
 		if(!EnvironmentInfo::getInstance().getDataFromEnvMap("DEVICES_GROUP_LIST_FILE_NAME").empty())
 		{
 			network_info::buildNetworkInfo(EnvironmentInfo::getInstance().getDataFromEnvMap("NETWORK_TYPE"),
 					EnvironmentInfo::getInstance().getDataFromEnvMap("DEVICES_GROUP_LIST_FILE_NAME"),
 					EnvironmentInfo::getInstance().getDataFromEnvMap("MY_APP_ID"));
 			DO_LOG_INFO("Modbus container application is set to TCP mode");
-			cout << "Modbus container application is set to TCP mode.." << endl;
+			std::cout << "Modbus container application is set to TCP mode.." << std::endl;
 		}
 		else
 		{
-			cout << "Devices group list is not present\n";
+			std::cout << "Devices group list is not present\n";
 			DO_LOG_INFO("Devices group list is not present");
 		}
 
@@ -412,11 +411,11 @@ int main(int argc, char* argv[])
 					EnvironmentInfo::getInstance().getDataFromEnvMap("MY_APP_ID"));
 
 			DO_LOG_INFO("Modbus container application is set to RTU mode");
-			cout << "Modbus container application is set to RTU mode.." << endl;
+			std::cout << "Modbus container application is set to RTU mode.." << std::endl;
 		}
 		else
 		{
-			cout << "Devices group list is not present\n";
+			std::cout << "Devices group list is not present\n";
 			DO_LOG_INFO("Devices group list is not present");
 		}
 
@@ -459,7 +458,7 @@ int main(int argc, char* argv[])
 		if(0 != u8ReturnType)
 		{
 			DO_LOG_ERROR("Exiting. Failed to initialize modbus stack:" +
-						to_string(u8ReturnType));
+					std::to_string(u8ReturnType));
 
 			std::cout << "Error: Exiting. Failed to initialize modbus stack:" << (unsigned)u8ReturnType << std::endl;
 			exit(1);
@@ -498,7 +497,6 @@ int main(int argc, char* argv[])
 
 
 #ifdef UNIT_TEST
-		//::testing::GTEST_FLAG(filter) ="*CConfigManager_ut*";
 		::testing::InitGoogleTest(&argc, argv);
 		return RUN_ALL_TESTS();
 #endif
@@ -519,17 +517,17 @@ int main(int argc, char* argv[])
 		DO_LOG_INFO("Condition variable is set for application exit.");
 
 		DO_LOG_INFO("Exiting the application gracefully.");
-		cout << "************************************************************************************************" <<endl;
-		cout << "********************** Exiting modbus container ***********" <<endl;
-		cout << "************************************************************************************************" <<endl;
+		std::cout << "************************************************************************************************" <<std::endl;
+		std::cout << "********************** Exiting modbus container ***********" <<std::endl;
+		std::cout << "************************************************************************************************" <<std::endl;
 
 		return EXIT_SUCCESS;
 	}
 	catch (const std::exception &e)
 	{
-		std::cout << "Exception in main::"<<"fatal::Error in getting arguments: "<<e.what()<< endl;
+		std::cout << "Exception in main::"<<"fatal::Error in getting arguments: "<<e.what()<< std::endl;
 		DO_LOG_FATAL("fatal::Error in getting arguments: " +
-					(string)e.what());
+				(string)e.what());
 
 		return EXIT_FAILURE;
 	}

@@ -15,5 +15,3 @@ env
 
 # Run GCovr command
 gcovr --html -e "../Test" -e "../include/log4cpp" -e ../../bin --exclude-throw-branches -o /reports/modbus-tcp-master/ModbusTCP_report.html -r .. .
-
-gcovr --xml -e "../Test" -e "../include/log4cpp" -e ../../bin --exclude-throw-branches -o /reports/modbus-tcp-master/ModbusTCP_report.xml -r .. .

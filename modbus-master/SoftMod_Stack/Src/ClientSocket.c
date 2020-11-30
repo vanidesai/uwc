@@ -39,8 +39,8 @@
 
 /*CRC calculation is for Modbus RTU stack */
 #ifndef MODBUS_STACK_TCPIP_ENABLED
-/* Table of CRC values for high-order byte */
-static const uint8_t table_crc_hi[] = {
+// high-order byte CRC values table
+static const uint8_t crc_high_order_table[] = {
 		0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0,
 		0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41,
 		0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0,
@@ -69,8 +69,8 @@ static const uint8_t table_crc_hi[] = {
 		0x80, 0x41, 0x00, 0xC1, 0x81, 0x40
 };
 
-/* Table of CRC values for low-order byte */
-static const uint8_t table_crc_lo[] = {
+// low-order byte CRC values table
+static const uint8_t crc_lower_order_table[] = {
 		0x00, 0xC0, 0xC1, 0x01, 0xC3, 0x03, 0x02, 0xC2, 0xC6, 0x06,
 		0x07, 0xC7, 0x05, 0xC5, 0xC4, 0x04, 0xCC, 0x0C, 0x0D, 0xCD,
 		0x0F, 0xCF, 0xCE, 0x0E, 0x0A, 0xCA, 0xCB, 0x0B, 0xC9, 0x09,
@@ -101,15 +101,16 @@ static const uint8_t table_crc_lo[] = {
 
 static uint16_t crc16(uint8_t *buffer, uint16_t buffer_length)
 {
-	uint8_t crc_hi = 0xFF; /* high CRC byte initialized */
-	uint8_t crc_lo = 0xFF; /* low CRC byte initialized */
-	unsigned int i; /* will index into CRC lookup */
+	uint8_t crc_hi = 0xFF; // MSB
+	uint8_t crc_lo = 0xFF; // LSB
+	unsigned int i; // Index to find out CRC from table 
 
-	/* pass through message buffer */
+	// Iterate buffer 
 	while (buffer_length--) {
-		i = crc_hi ^ *buffer++; /* calculate the CRC  */
-		crc_hi = crc_lo ^ table_crc_hi[i];
-		crc_lo = table_crc_lo[i];
+		// get the CRC
+		i = crc_hi ^ *buffer++; 
+		crc_hi = crc_lo ^ crc_high_order_table[i];
+		crc_lo = crc_lower_order_table[i];
 	}
 
 	return (crc_hi << 8 | crc_lo);
@@ -1083,34 +1084,31 @@ MODBUS_STACK_EXPORT int initSerialPort(stRTUConnectionData_t* pstRTUConnectionDa
 	struct termios tios;
 	speed_t speed;
 	int flags;
-	/* The O_NOCTTY flag tells UNIX that this program doesn't want
-       to be the "controlling terminal" for that port. If you
-       don't specify this then any input (such as keyboard abort
-       signals and so forth) will affect your process
+	
+	/** 
+		O_NOCTTY - This flag tells UNIX that this program doesn't want
+       to be the "controlling terminal" for that port. if this flag is not set then any input (such as keyboard abort
+       signals and so forth) will affect the process
+	   
+	   NDELAY - Timeouts are ignored in canonical input mode or when the
+       NDELAY option is set on the file via open or fcntl
 
-       Timeouts are ignored in canonical input mode or when the
-       NDELAY option is set on the file via open or fcntl */
+    */
 
 	memset(&tios, 0, sizeof(struct termios));
 	flags = O_RDWR | O_NOCTTY | O_NDELAY | O_EXCL;
-	//flags = O_RDWR | O_NOCTTY | O_NDELAY | O_SYNC;
 
 	pstRTUConnectionData->m_fd = open((const char*)portName, flags);
 
 	if (pstRTUConnectionData->m_fd == -1) {
-		//printf("ERROR Can't open the device %s (%s)\n",
-		//	portName, strerror(errno));
 		return -1;
 	}
 
-	/* Save */
-	// tcgetattr(fd, &old_tios);
+	
+	// set the attributes
 	tcgetattr(pstRTUConnectionData->m_fd, &tios);
 
-
-	/* C_ISPEED     Input baud (new interface)
-       C_OSPEED     Output baud (new interface)
-	 */
+	// set the interframe delay as per baudrate
 	switch (baudrate) {
 	case 110:
 		speed = B110;
@@ -1239,7 +1237,7 @@ MODBUS_STACK_EXPORT int initSerialPort(stRTUConnectionData_t* pstRTUConnectionDa
 				baudrate, portName);
 	}
 
-	/* Set the baud rate */
+	// Set the baud rate
 	if ((cfsetispeed(&tios, speed) < 0) ||
 			(cfsetospeed(&tios, speed) < 0)) {
 		close(pstRTUConnectionData->m_fd);
@@ -1247,179 +1245,106 @@ MODBUS_STACK_EXPORT int initSerialPort(stRTUConnectionData_t* pstRTUConnectionDa
 		return -1;
 	}
 
-	/* C_CFLAG      Control options
-       CLOCAL       Local line - do not change "owner" of port
-       CREAD        Enable receiver
-	 */
+	/** 	C_CFLAG      Control options for RTU communication
+       CLOCAL       Local line
+       CREAD        Enable read receiver
+	   CSIZE        Bit mask for data bits . (used for hardware flow control). 
+	*/
 	tios.c_cflag |= (CREAD | CLOCAL);
-	/* CSIZE, HUPCL, CRTSCTS (hardware flow control) */
-
-	/* Set data bits (5, 6, 7, 8 bits)
-       CSIZE        Bit mask for data bits
-	 */
 	tios.c_cflag &= ~CSIZE;
 	tios.c_cflag |= CS8;
 
 
-	/* PARENB       Enable parity bit
+	/** PARENB       Flag used to enable parity bit
+      PARODD       Flag to use ODD parity */
 
-      PARODD       Use odd parity instead of even */
+	// execute this if parity is None
+	if (parity == eNone) 
+	{
+		
+		// Disabled both the parities . (i.e. even and odd)
+		tios.c_cflag &= ~(PARENB | PARODD); 
 
-	if (parity == eNone) {
+		// When parity is none, add a stop bit at the place of parity to make 11 characters i.e. two stop bits
+		tios.c_cflag |= CSTOPB; 
 
-		/* None */
-
-		//< tios.c_cflag &=~ PARENB;
-
-		tios.c_cflag &= ~(PARENB | PARODD); //< Disabled both even and odd parity
-
-		tios.c_cflag |= CSTOPB; //< When parity is none, add a stop bit at the place of parity to make 11 characters i.e. two stop bits
-
-	} else if (parity == eEven) {
-
-		/* Even */
-
+	}
+	
+	// execute this if parity is EVEN
+	else if (parity == eEven) 
+	{
 		tios.c_cflag |= PARENB;
 
 		tios.c_cflag &= ~PARODD;
 
 		tios.c_cflag &= ~CSTOPB;
 
-	} else {
-
-		/* Odd */
+	}
+	// execute this if parity is ODD	
+	else 
+	{
 
 		tios.c_cflag |= PARENB;
-
 		tios.c_cflag |= PARODD;
-
 		tios.c_cflag &= ~CSTOPB;
-
 	}
 
-	//Setting Hardware Flow
-	//tios.c_cflag &= ~CRTSCTS;
-
-
-	/* Read the man page of termios if you need more information. */
-
-	/* This field isn't used on POSIX systems
-       tios.c_line = 0;
-	 */
-
-	/* C_LFLAG      Line options
-
-       ISIG Enable SIGINTR, SIGSUSP, SIGDSUSP, and SIGQUIT signals
-       ICANON       Enable canonical input (else raw)
-       XCASE        Map uppercase \lowercase (obsolete)
-       ECHO Enable echoing of input characters
-       ECHOE        Echo erase character as BS-SP-BS
-       ECHOK        Echo NL after kill character
-       ECHONL       Echo NL
-       NOFLSH       Disable flushing of input buffers after
-       interrupt or quit characters
-       IEXTEN       Enable extended functions
-       ECHOCTL      Echo control characters as ^char and delete as ~?
-       ECHOPRT      Echo erased character as character erased
-       ECHOKE       BS-SP-BS entire line on line kill
-       FLUSHO       Output being flushed
-       PENDIN       Retype pending input at next read or input char
-       TOSTOP       Send SIGTTOU for background output
-
-       Canonical input is line-oriented. Input characters are put
-       into a buffer which can be edited interactively by the user
-       until a CR (carriage return) or LF (line feed) character is
-       received.
-
-       Raw input is unprocessed. Input characters are passed
-       through exactly as they are received, when they are
-       received. Generally you'll deselect the ICANON, ECHO,
-       ECHOE, and ISIG options when using raw input
-	 */
-
-	/* Raw input */
+	// raw input 
 	tios.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
-	/* C_IFLAG      Input options
+	/** C_IFLAG      Available input options
 
-       Constant     Description
-       INPCK        Enable parity check
-       IGNPAR       Ignore parity errors
-       PARMRK       Mark parity errors
-       ISTRIP       Strip parity bits
-       IXON Enable software flow control (outgoing)
-       IXOFF        Enable software flow control (incoming)
-       IXANY        Allow any character to start flow again
-       IGNBRK       Ignore break condition
-       BRKINT       Send a SIGINT when a break condition is detected
-       INLCR        Map NL to CR
-       IGNCR        Ignore CR
-       ICRNL        Map CR to NL
-       IUCLC        Map uppercase to lowercase
+       Constant/FLAG     Description/Use case
+       INPCK        Enable parity check in communication
+       IGNPAR       Ignore parity errors if any
+       PARMRK       Mark parity errors if any
+       ISTRIP       Strip parity bits from parity mechanism
+       IXON 		enable software flow control (outgoing)
+       IXOFF        enable software flow control (incoming)
+       IXANY        Allow any character to start flow again in RTU
+       IGNBRK       Ignore break condition if occurred
+       BRKINT       Send a SIGINT when a break condition is detected in communication
+       INLCR        map NL to CR
+       IGNCR        ignore CR if required
+       ICRNL        map CR into NL
+       IUCLC        map the uppercase to lowercase
        IMAXBEL      Echo BEL on input line too long
 	 */
-	if (parity == eNone) {
-		/* None */
+	 
+	// set the bits as per priority
+	if (parity == eNone) 
+	{
 		tios.c_iflag &= ~INPCK;
-	} else {
+	} 
+	else 
+	{
 		tios.c_iflag |= INPCK;
 	}
 
 	tios.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
 
-	/* Software flow control is disabled */
+	// disabled the software flow control
 	tios.c_iflag &= ~(IXON | IXOFF | IXANY);
 
-	/* C_OFLAG      Output options
-       OPOST        Postprocess output (not set = raw output)
-       ONLCR        Map NL to CR-NL
-
-       ONCLR ant others needs OPOST to be enabled
+	/** C_OFLAG      required Output options
+       OPOST        postprocess output (if not set = raw output)
+       ONLCR        map NL to CR-NL
+       ONCLR ant others needs if OPOST to be enabled
 	 */
 
-	/* Raw ouput */
 	tios.c_oflag &=~ OPOST;
 
-	/* C_CC         Control characters
-       VMIN         Minimum number of characters to read
-       VTIME        Time to wait for data (tenths of seconds)
-
-       UNIX serial interface drivers provide the ability to
-       specify character and packet timeouts. Two elements of the
-       c_cc array are used for timeouts: VMIN and VTIME. Timeouts
-       are ignored in canonical input mode or when the NDELAY
-       option is set on the file via open or fcntl.
-
-       VMIN specifies the minimum number of characters to read. If
-       it is set to 0, then the VTIME value specifies the time to
-       wait for every character read. Note that this does not mean
-       that a read call for N bytes will wait for N characters to
-       come in. Rather, the timeout will apply to the first
-       character and the read call will return the number of
-       characters immediately available (up to the number you
-       request).
-
-       If VMIN is non-zero, VTIME specifies the time to wait for
-       the first character read. If a character is read within the
-       time given, any read will block (wait) until all VMIN
-       characters are read. That is, once the first character is
-       read, the serial interface driver expects to receive an
-       entire packet of characters (VMIN bytes total). If no
-       character is read within the time allowed, then the call to
-       read returns 0. This method allows you to tell the serial
-       driver you need exactly N bytes and any read call will
-       return 0 or N bytes. However, the timeout only applies to
-       the first character read, so if for some reason the driver
-       misses one character inside the N byte packet then the read
-       call could block forever waiting for additional input
-       characters.
+	/** C_CC         Control characters for data control 
+       VMIN         VMIN specifies the minimum number of characters to read
+       VTIME        Time to wait for data (in tenths of seconds)
 
        VTIME specifies the amount of time to wait for incoming
-       characters in tenths of seconds. If VTIME is set to 0 (the
-       default), reads will block (wait) indefinitely unless the
+       characters in tenths of seconds. If VTIME is set to zero (0) (the
+       default) then reads will block (wait) indefinitely unless the
        NDELAY option is set on the port with open or fcntl.
 	 */
-	/* Unused because we use open with the NDELAY option */
+	 
+	// will be ignored because we use open with the NDELAY option
 	tios.c_cc[VMIN] = 0;
 	tios.c_cc[VTIME] = 0;
 

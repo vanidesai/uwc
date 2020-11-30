@@ -25,7 +25,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.6.1"
+#define APP_VERSION "0.0.6.2"
 
 /**
  * Process a message to be sent on internal MQTT broker
@@ -116,7 +116,7 @@ bool initDataPoints()
 		// Create SparkPlug devices corresponding to Modbus devices
 		CSparkPlugDevManager::getInstance().addRealDevices();
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 	{
 		
 		std::cout << __func__ << ":" << __LINE__ << " ------------- Starting SCADA RTU Container -------------" << std::endl;
-		std::cout << "SCADA RTU container app version is set to :: "+  std::string(APP_VERSION) << endl;
+		std::cout << "SCADA RTU container app version is set to :: "+  std::string(APP_VERSION) << std::endl;
 
 		CLogger::initLogger(std::getenv("Log4cppPropsFile"));
 
@@ -144,8 +144,7 @@ int main(int argc, char *argv[])
 		if(!CCommon::getInstance().loadYMLConfig())
 		{
 			DO_LOG_ERROR("Please set the required config in scada_config.yml file and restart the container");
-			cout << "Please set the required config in scada_config.yml file and restart the container" << endl;
-			//return -1;
+			std::cout << "Please set the required config in scada_config.yml file and restart the container" << std::endl;
 		}
 
 		//initialize CCommon class to get common variables
@@ -163,7 +162,7 @@ int main(int argc, char *argv[])
 		{
 			while(true)
 			{
-				std::cout << "Waiting to set EXTERNAL_MQTT_URL/ INTERNAL_MQTT_URL variable in scada_config.yml file..." << endl;
+				std::cout << "Waiting to set EXTERNAL_MQTT_URL/ INTERNAL_MQTT_URL variable in scada_config.yml file..." << std::endl;
 				std::this_thread::sleep_for(std::chrono::seconds(300));
 			};
 		}

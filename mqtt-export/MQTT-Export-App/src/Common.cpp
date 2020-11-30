@@ -22,7 +22,11 @@
  */
 CCommon::CCommon()
 {
-	EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
+	if(false == EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv))
+	{
+		DO_LOG_ERROR("Error while reading the common environment variables");
+		exit(1);
+	}
 	std::string strDevMode = EnvironmentInfo::getInstance().getDataFromEnvMap("DEV_MODE");
 	transform(strDevMode.begin(), strDevMode.end(), strDevMode.begin(), ::toupper);
 
@@ -80,7 +84,7 @@ void CCommon::getCurrentTimestampsInString(std::string &strCurTime)
 		timespec_get(&tsMsgReceived, TIME_UTC);
 		strCurTime = std::to_string(get_micros(tsMsgReceived));
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		DO_LOG_FATAL("Cannot get current time in string :: " +
 				std::string(e.what()));
@@ -134,7 +138,7 @@ bool CCommon::addTimestampsToMsg(std::string &a_sMsg, std::string tsKey, std::st
 		return true;
 
 	}
-	catch (exception &ex)
+	catch (std::exception &ex)
 	{
 		DO_LOG_DEBUG("Failed to add timestamp in payload for MQTT" + std::string(ex.what()));
 

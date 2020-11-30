@@ -10,53 +10,28 @@
 
 #include "QueueMgr.hpp"
 
-#include "Common.hpp"
-#include "Logger.hpp"
-
 using namespace QMgr;
 
-//initialize queue manager instances
-CQueueHandler ng_qDatapoints; //this queue holds all internal MQTT messages, this is majorly used for data-points
-CQueueHandler ng_qScadaSub; //this queue holds CMD messages coming from SCADA system
-CQueueHandler ng_qScadaPub; //this queue holds messages to be published on SCADA master
-CQueueHandler ng_qMEPub;	//this queue holds messages to be published on MQTT-Export
-
 /**
- * Get reference of
+ * Get reference of a queue for storing messages from internal mqtt
  * @param None
- * @return
+ * @return reference of CQueueHandler
  */
 CQueueHandler& QMgr::getDatapointsQ()
 {
+	// This queue holds all internal MQTT messages
+	static CQueueHandler ng_qDatapoints;
 	return ng_qDatapoints;
 }
 
 /**
- * Get reference of on-demand real-time write operation instance
+ * Get reference of a queue for storing messages from external mqtt
  * @param None
- * @return reference of on-demand real-time write operation instance
+ * @return reference of CQueueHandler
  */
 CQueueHandler& QMgr::getScadaSubQ()
 {
+	// This queue holds CMD messages coming from SCADA system
+	static CQueueHandler ng_qScadaSub;
 	return ng_qScadaSub;
-}
-
-/**
- * Get reference of on-demand real-time write operation instance
- * @param None
- * @return reference of on-demand real-time write operation instance
- */
-CQueueHandler& QMgr::getScadaPubQ()
-{
-	return ng_qScadaPub;
-}
-
-/**
- * Get reference of on-demand real-time write operation instance
- * @param None
- * @return reference of on-demand real-time write operation instance
- */
-CQueueHandler& QMgr::getPubMqttExportQ()
-{
-	return ng_qMEPub;
 }

@@ -330,7 +330,7 @@ addUWCContainersInEIS()
     rm -rf UWC/ && mkdir UWC
     tar -xzvf UWC.tar.gz -C UWC > /dev/null 2>&1
     cd UWC
-    cp -r modbus-master/ MQTT/ scada-rtu/ uwc_common/ mqtt-export/ kpi-tactic/ ../
+    cp -r modbus-master/ license.txt MQTT/ scada-rtu/ uwc_common/ mqtt-export/ kpi-tactic/ ../
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp -r Others/Config/UWC/Device_Config/* /opt/intel/eis/uwc_data
     cp Others/Config/UWC/Global_Config.yml /opt/intel/eis/uwc_data/common_config/Global_Config.yml

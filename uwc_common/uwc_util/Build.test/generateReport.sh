@@ -11,7 +11,7 @@
 
 export LD_LIBRARY_PATH="/uwc_util/lib:/usr/local/lib"
 env
-./uwc-util > /reports/uwc-util/UWCUTIL_status.log 2>&1
+./uwc-common > /reports/uwc-util/UWCUTIL_status.log 2>&1
 
 # Run GCovr command
 gcovr --html -e "../Test/" -e "../include/log4cpp/Appender.hh" -exclude-throw-branches -o /reports/uwc-util/UWCUTIL_Report.html -r .. .

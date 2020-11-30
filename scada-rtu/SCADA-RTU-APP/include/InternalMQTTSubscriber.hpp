@@ -18,8 +18,6 @@
 #include "QueueMgr.hpp"
 #include "SparkPlugDevMgr.hpp"
 
-using namespace std;
-
 enum eIntMQTTConStatus
 {
 	enCON_NONE, enCON_UP, enCON_DOWN

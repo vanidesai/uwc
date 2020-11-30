@@ -1,23 +1,16 @@
 /************************************************************************************
-* The source code contained or described herein and all documents related to
-* the source code ("Material") are owned by Intel Corporation. Title to the
-* Material remains with Intel Corporation.
-*
-* No license under any patent, copyright, trade secret or other intellectual
-* property right is granted to or conferred upon you by disclosure or delivery of
-* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
-************************************************************************************/
+ * The source code contained or described herein and all documents related to
+ * the source code ("Material") are owned by Intel Corporation. Title to the
+ * Material remains with Intel Corporation.
+ *
+ * No license under any patent, copyright, trade secret or other intellectual
+ * property right is granted to or conferred upon you by disclosure or delivery of
+ * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+ ************************************************************************************/
 
 #include "../include/ModbusStackInterface_ut.hpp"
 #include "Common.hpp"
 
-//#define MOCKING
-
-//using ::testing::Return;
-
-
-
-//void ModbusMaster_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams);
 void ModbusStackInterface_ut::SetUp()
 {
 	// Setup code
@@ -28,14 +21,15 @@ void ModbusStackInterface_ut::TearDown()
 	// TearDown code
 }
 
-
-
-
+/**
+ * Test case to check the behaviour of OnDemandRead_AppCallback()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, AppCallback01)
 {
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-	//setenv("WRITE_RESPONSE_TOPIC", , 1);
-	//const char* pcWriteRespTopic = std::getenv("WRITE_RESPONSE_TOPIC");
 
 	try
 	{
@@ -71,11 +65,7 @@ TEST_F(ModbusStackInterface_ut, AppCallback01)
 		stMbusAppCallbackParams.m_u8UnitID = 0;
 		stMbusAppCallbackParams.u16Port = 0;
 
-		//common_Handler::insertOnDemandReqData(u16TxID, reqData);
 		common_Handler::insertReqData(u16TxID, stMbusApiPram);
-
-		//zmq_handler::prepareCommonContext("pub");
-		//zmq_handler::getOnDemandReqData(0, onDemandReqData);
 
 		OnDemandRead_AppCallback(pstMbusAppCallbackParams, uTxID);
 
@@ -94,10 +84,10 @@ try
 	msg_envelope_t *msg = NULL;
 	stOnDemandRequest reqData;
 	uint16_t uTxID = 20;
+	uint16_t u16TxID = 52;
 	stOnDemandRequest onDemandReqData;
 
-	zmq_handler::insertOnDemandReqData(0, reqData);
-	zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
+	common_Handler::insertReqData(u16TxID, stMbusApiPram);
 	OnDemandRead_AppCallback(pstMbusAppCallbackParams, uTxID);
 
 }
@@ -106,20 +96,21 @@ catch(std::exception &e)
 	EXPECT_EQ(" ", e.what());
 }
 }
-
 #endif
 
 
 
 
 /************************************MOdbusMAster_AppCallback()*******************************/
-#if 1
-// This test is commented because ModbusMaster_AppCallback() function is not available in the source code
+/**
+ * Test case to check the behaviour of OnDemandRead_AppCallback()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, AppCallback_null_ip)
 {
 #ifdef MODBUS_STACK_TCPIP_ENABLED
-	//setenv("WRITE_RESPONSE_TOPIC", , 1);
-	//const char* pcWriteRespTopic = std::getenv("WRITE_RESPONSE_TOPIC");
 
 	try
 	{
@@ -146,11 +137,7 @@ try
 	stOnDemandRequest onDemandReqData;
 	uint16_t uTxID = 20;
 
-	zmq_handler::insertOnDemandReqData(0, reqData);
-
-	//zmq_handler::getOnDemandReqData(u16TransacID, onDemandReqData);
 	OnDemandRead_AppCallback(MbusAppCallbackParams, uTxID);
-
 
 }
 catch(std::exception &e)
@@ -158,12 +145,15 @@ catch(std::exception &e)
 	EXPECT_EQ(" ", e.what());
 }
 }
-
-#endif
 #endif
 
 
-
+/**
+ * Test case to check the behaviour of OnDemandReadRT_AppCallback()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, OnDemandRead_RT)
 {
 	uint16_t uTxID = 20;
@@ -179,7 +169,12 @@ TEST_F(ModbusStackInterface_ut, OnDemandRead_RT)
 }
 
 
-
+/**
+ * Test case to check the behaviour of OnDemandReadRT_AppCallback()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, OnDemandRead_RT_NULL)
 {
 	uint16_t uTxID = 20;
@@ -193,6 +188,12 @@ TEST_F(ModbusStackInterface_ut, OnDemandRead_RT_NULL)
 	}
 }
 
+/**
+ * Test case to check the behaviour of OnDemandWrite_AppCallback()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, OnDemandWrite)
 {
 	uint16_t uTxID = 20;
@@ -206,7 +207,12 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite)
 	}
 }
 
-
+/**
+ * Test case to check the behaviour of OnDemandWrite_AppCallback()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, OnDemandWrite_NULL)
 {
 	uint16_t uTxID = 20;
@@ -220,6 +226,12 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite_NULL)
 	}
 }
 
+/**
+ * Test case to check the behaviour of OnDemandWriteRT_AppCallback()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT)
 {
 	uint16_t uTxID = 20;
@@ -233,6 +245,12 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT)
 	}
 }
 
+/**
+ * Test case to check the behaviour of OnDemandWriteRT_AppCallback()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT_NULL)
 {
 	uint16_t uTxID = 20;
@@ -246,7 +264,12 @@ TEST_F(ModbusStackInterface_ut, OnDemandWrite_RT_NULL)
 	}
 }
 
-
+/**
+ * Test case to check the behaviour of Modbus_Stack_API_Call()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_Readcoil)
 {
 
@@ -257,6 +280,12 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_Readcoil)
 	EXPECT_EQ(11, retval);
 }
 
+/**
+ * Test case to check the behaviour of Modbus_Stack_API_Call()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadInStatus)
 {
 
@@ -267,7 +296,12 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadInStatus)
 	EXPECT_EQ(11, retval);
 }
 
-
+/**
+ * Test case to check the behaviour of Modbus_Stack_API_Call()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadHoldReg)
 {
 
@@ -278,7 +312,12 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadHoldReg)
 	EXPECT_EQ(11, retval);
 }
 
-
+/**
+ * Test case to check the behaviour of Modbus_Stack_API_Call()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadInReg)
 {
 
@@ -289,7 +328,12 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_ReadInReg)
 	EXPECT_EQ(11, retval);
 }
 
-
+/**
+ * Test case to check the behaviour of Modbus_Stack_API_Call()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteSingleCoils)
 {
 
@@ -301,7 +345,12 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteSingleCoils)
 	EXPECT_EQ(11, retval);
 }
 
-
+/**
+ * Test case to check the behaviour of Modbus_Stack_API_Call()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteSingleReg)
 {
 
@@ -312,7 +361,12 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteSingleReg)
 	EXPECT_EQ(11, retval);
 }
 
-
+/**
+ * Test case to check the behaviour of Modbus_Stack_API_Call()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteMulCoils)
 {
 
@@ -323,7 +377,12 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteMulCoils)
 	EXPECT_EQ(11, retval);
 }
 
-
+/**
+ * Test case to check the behaviour of Modbus_Stack_API_Call()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteMulReg)
 {
 
@@ -333,22 +392,3 @@ TEST_F(ModbusStackInterface_ut, Modbus_Stack_API_Call_WriteMulReg)
 
 	EXPECT_EQ(11, retval);
 }
-
-
-/*
-This test case is commented because the MbusApp_Process_Requeset() function is no more longer
-availabe.. it is commented in the source code also......check this test once  again
-
-TEST_F(ModbusStackInterface_ut, Process_Req)
-{
-	modbusInterface modbusInterface_obj;
-	try{
-		result = modbusInterface_obj.MbusApp_Process_Request(pstMbusReqGen);
-	}
-	catch(std::exception &e)
-	{
-		EXPECT_EQ("", (string)e.what());
-
-	}
-}
-*/

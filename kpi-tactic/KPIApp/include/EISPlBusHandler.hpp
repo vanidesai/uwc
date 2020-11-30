@@ -21,7 +21,7 @@ class CEISPlBusHandler
 {
     std::vector<std::thread> m_vThreads;
 
-    void listenOnEIS(string topic, zmq_handler::stZmqContext context, 
+    void listenOnEIS(std::string topic, zmq_handler::stZmqContext context,
 			zmq_handler::stZmqSubContext subContext, bool a_bIsPolling);
     
     bool processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,

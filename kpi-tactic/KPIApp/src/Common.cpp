@@ -34,7 +34,7 @@ void commonUtilKPI::getCurrentTimestampsInString(std::string &strCurTime)
 		timespec_get(&tsMsgReceived, TIME_UTC);
 		strCurTime = std::to_string(commonUtilKPI::get_micros(tsMsgReceived));
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		DO_LOG_ERROR("Cannot get current time in string :: " + std::string(e.what()));
 	}
@@ -124,38 +124,6 @@ void commonUtilKPI::addFieldToMsg(std::string& a_sMsg, const std::string& a_sKey
 };
 
 /**
- * Function to get usec and timestamp to fill in write request
- *
- * @param a_sTimeStamp	[out] timestamp value
- * @param a_sUsec		[in]  usec value
- * @return none
- */
-/*void commonUtilKPI::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
-{
-	a_sTimeStamp.clear();
-	a_sUsec.clear();
-
-	const auto p1 = std::chrono::system_clock::now();
-
-	std::time_t rawtime = std::chrono::system_clock::to_time_t(p1);
-	std::tm* timeinfo = std::gmtime(&rawtime);
-	if(NULL == timeinfo)
-	{
-		return;
-	}
-	char buffer [80];
-
-	std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
-	a_sTimeStamp.insert(0, buffer);
-
-	{
-		std::stringstream ss;
-		ss << std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count();
-		a_sUsec.insert(0, ss.str());
-	}
-}*/
-
-/**
  * Function to create a write message to be sent as a part of control loop
  *
  * @param a_sMsg	[out] The write message created by this function
@@ -182,7 +150,6 @@ bool commonUtilKPI::createWriteRequest(std::string& a_sMsg, const std::string& a
 			return false;
 		}
 
-		//std::string sSrcTopic("/" + a_sDev + "/" + a_sWell + "/" + a_sPoint + "/write");
 		addFieldToMsg(a_sMsg, "app_seq", 		a_sKey,		false);
 		addFieldToMsg(a_sMsg, "wellhead", 		a_sWell, 	false);
 		addFieldToMsg(a_sMsg, "command", 		a_sPoint, 	false);
@@ -259,7 +226,6 @@ std::string commonUtilKPI::createAnalysisMsg(struct stPollWrData &a_stPollWrData
 		answer(sMsg, pRootPollMsg,	"data_topic",	"pollTopic", 	false);
 		answer(sMsg, pRootPollMsg,	"realtime",		"pollRT", 	false);
 		answer(sMsg, pRootPollMsg, 	"status", 		"pollStatus", 	false);
-		//answer(sMsg, pRootPollMsg, 	"retryCount",	"pollRetry", 	false);
 		answer(sMsg, pRootPollMsg, 	"value", 		"pollValue", 	false);
 		answer(sMsg, pRootPollMsg, 	"error_code",	"pollError", 	false);
 		answer(sMsg, pRootPollMsg, 	"tsPollingTime", 		"tsPollingTime", 		false);
@@ -289,7 +255,6 @@ std::string commonUtilKPI::createAnalysisMsg(struct stPollWrData &a_stPollWrData
 		answer(sMsg, pRootWrRspMsg,	"data_topic",			"wrRspTopic", 		false);
 		answer(sMsg, pRootWrRspMsg,	"realtime",				"wrOpRT", 		false);
 		answer(sMsg, pRootWrRspMsg, "status", 				"wrRspStatus", 		false);
-		//answer(sMsg, pRootWrRspMsg, "retryCount",			"wrRspRetry", 		false);
 		answer(sMsg, pRootWrRspMsg, "error_code",			"wrRspError", 		false);
 		answer(sMsg, pRootWrRspMsg, "tsMsgRcvdFromMQTT", 	"wrReqRcvdInExport",	false);
 		answer(sMsg, pRootWrRspMsg, "tsMsgPublishOnEIS", 	"wrReqPublishOnEIS",	false);
@@ -313,6 +278,5 @@ std::string commonUtilKPI::createAnalysisMsg(struct stPollWrData &a_stPollWrData
 		DO_LOG_ERROR(e.what());
 	}
 
-	//sMsg = "{" + sMsg + "}";
 	return sMsg;
 }

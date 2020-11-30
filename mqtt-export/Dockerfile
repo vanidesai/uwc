@@ -16,9 +16,6 @@ LABEL description="MQTT Export Application"
 FROM ia_common:$EIS_VERSION as mqtt-export
 WORKDIR /
 
-# Create utils directory inside include
-RUN mkdir -p /MQTT-Export-App/include/utils
-
 # copy required dependencies
 COPY MQTT-Export-App /MQTT-Export-App/. 
 COPY --from=uwc_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
@@ -31,9 +28,8 @@ COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_common /usr/include/MQTT* /MQTT-Export-App/include/
 COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so /MQTT-Export-App/lib/
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /MQTT-Export-App/lib/
 COPY --from=uwc_common /uwc_util/include/* /MQTT-Export-App/include/
-COPY --from=uwc_common /uwc_util/include/utils/* /MQTT-Export-App/include/utils/
 
 # build sources
 RUN cd /MQTT-Export-App/Release \
@@ -63,7 +59,7 @@ COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=mqtt-export /MQTT-Export-App/Config/log4cpp.properties /opt/intel/config
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so ${APP_WORK_DIR}
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so ${APP_WORK_DIR}
 
 # set permissions to working dir for eisuser
 RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \

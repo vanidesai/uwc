@@ -62,7 +62,7 @@ std::function<bool(std::string, std::string)> regExFun = [](std::string a_sTopic
  */
 bool zmq_handler::prepareContext(bool a_bIsPub,
 		void* msgbus_ctx,
-		string a_sTopic,
+		std::string a_sTopic,
 		config_t *config)
 {
 	bool bRetVal = false;
@@ -89,7 +89,7 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 	{
 		/// cleanup
 		DO_LOG_ERROR("Failed to create publisher or subscriber for topic "+a_sTopic + " with error code:: "+std::to_string(retVal));
-		cout << "ERROR:: Failed to create publisher or subscriber for topic : "<< a_sTopic<< " with error code:: "<< std::to_string(retVal)<<endl;
+		std::cout << "ERROR:: Failed to create publisher or subscriber for topic : "<< a_sTopic<< " with error code:: "<< std::to_string(retVal)<<std::endl;
 		goto err;
 	}
 	else
@@ -109,7 +109,6 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 		{
 			stZmqSubContext objTempSubCtx;
 			objTempSubCtx.sub_ctx= sub_ctx;
-			//PublishJsonHandler::instance().insertSubTopicInList(a_sTopic);
 			zmq_handler::insertSubCTX(a_sTopic, objTempSubCtx);
 		}
 	}
@@ -157,7 +156,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 	bool retValue = false;
 	size_t topic_count = 0;
 	char **head = NULL;
-	string topic = "";
+	std::string topic = "";
 
 	if(!(topicType == "pub" || topicType == "sub"))
 	{
@@ -205,7 +204,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 					}
 					if(topicType == "pub")
 					{
-						std::cout << "Topic for ZMQ Publish is :: "<< topic <<  endl;
+						std::cout << "Topic for ZMQ Publish is :: "<< topic << std::endl;
 						prepareContext(true, msgbus_ctx, topic, config);
 					}
 					else
@@ -215,13 +214,13 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 						{
 							std::string subTopic(topic.substr(pos + 1));
 							std::cout << __func__ << " Context created and stored for config for topic :: " << subTopic << std::endl;
-							std::cout << "Topic for ZMQ subscribe is :: "<< subTopic <<  endl;
+							std::cout << "Topic for ZMQ subscribe is :: "<< subTopic << std::endl;
 
 							prepareContext(false, msgbus_ctx, subTopic, config);
 						}
 					}
 				}
-				catch(exception &e)
+				catch(std::exception &e)
 				{
 					DO_LOG_FATAL("Exception occurred for topic :" + topic + " with exception code:: " + e.what());
 					std::cout << __func__ << ":" << __LINE__ << "Exception occurred for topic :" + topic +
@@ -252,14 +251,14 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 		else
 		{
 			DO_LOG_ERROR("topic list is empty");
-			cout << "topic list is empty" << endl;
+			std::cout << "topic list is empty" << std::endl;
 			return false;
 		}
 	}
 	else
 	{
 		DO_LOG_ERROR("Context creation failed !! config manager client is empty!! ");
-		std::cout << "Context creation failed !! config manager client is empty!! " <<endl;
+		std::cout << "Context creation failed !! config manager client is empty!! " <<std::endl;
 	}
 	DO_LOG_DEBUG("End: ");
 
@@ -384,7 +383,7 @@ bool zmq_handler::insertPubCTX(std::string a_sTopic, stZmqPubContext ctxRef)
 		/// insert the data
 		g_mapPubContextMap.insert(std::pair <std::string, stZmqPubContext> (a_sTopic, ctxRef));
 	}
-	catch (exception &e)
+	catch (std::exception &e)
 	{
 		DO_LOG_FATAL(e.what());
 		bRet = false;
@@ -444,7 +443,6 @@ bool zmq_handler::publishJson(std::string &a_sUsec, msg_envelope_t* msg, const s
 			msg_envelope_elem_body_t* ptUsec = msgbus_msg_envelope_new_string(a_sUsec.c_str());
 			if(NULL != ptUsec)
 			{
-				//msgbus_msg_envelope_put(msg, "usec", ptUsec);
 				msgbus_msg_envelope_put(msg, a_sPubTimeField.c_str(), ptUsec);
 			}
 		}

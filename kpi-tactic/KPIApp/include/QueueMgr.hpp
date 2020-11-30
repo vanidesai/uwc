@@ -14,7 +14,6 @@
 #include "QueueHandler.hpp"
 #include "ControlLoopHandler.hpp"
 
-using namespace std;
 /**
  * namespace for Queue manager
  */

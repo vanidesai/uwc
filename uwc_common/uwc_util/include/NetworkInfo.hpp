@@ -15,8 +15,7 @@
 #include <vector>
 #include <atomic>
 #include <functional>
-
-#include "utils/YamlUtil.hpp"
+#include "YamlUtil.hpp"
 
 #define SEPARATOR_CHAR "/"
 #define PERIODIC_GENERIC_TOPIC "update"
@@ -248,7 +247,6 @@ namespace network_info
 		const CWellSiteDevInfo& getWellSiteDev() const {return m_rWellSiteDev;}
 		const CDataPoint& getDataPoint() const {return m_rPoint;}
 
-		//unsigned int getMyRollID() {return m_uiMyRollID;}
 		unsigned int getMyRollID() const {return m_uiMyRollID;}
 
 		bool isIsAwaitResp() const;

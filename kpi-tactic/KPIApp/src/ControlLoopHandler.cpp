@@ -38,7 +38,7 @@ void CControlLoopOp::postDummyAnalysisMsg(const std::string &a_sAppSeq, const st
 		CMessageObject oDummyMsg{"errorDummyTopic", sDummyErrorRep};
 		commonUtilKPI::logAnalysisMsg(oTempData, oDummyMsg);
 	}
-	catch (exception &ex)
+	catch (std::exception &ex)
 	{
 		DO_LOG_ERROR((std::string)ex.what());
 	}
@@ -79,7 +79,7 @@ void CControlLoopOp::threadPollMonitoring()
 				}
 				sWrSeqVal.append("-" + EnvironmentInfo::getInstance().getDataFromEnvMap("AppName")+ "-" + m_sId);
 				// Sleep for configured delay
-				this_thread::sleep_for(std::chrono::milliseconds(m_uiDelayMs));
+				std::this_thread::sleep_for(std::chrono::milliseconds(m_uiDelayMs));
 
 				CKPIAppConfig::getInstance().getControlLoopMapper().publishWriteReq(*this, sWrSeqVal, recvdMsg);
 				sLastWrSeqVal.assign(sWrSeqVal);
@@ -118,7 +118,7 @@ bool CControlLoopOp::stopThread()
 			m_thread.join();
 		}
 	}
-	catch (exception &ex)
+	catch (std::exception &ex)
 	{
 		DO_LOG_ERROR((std::string)ex.what());
 	}
@@ -181,7 +181,7 @@ bool CControlLoopMapper::verifyPointFullPath(const std::string &a_sFullPath, std
 }
 
 /**
- * Adds a control loop daat entry into map being maintained
+ * Adds a control loop data entry into map being maintained
  * @param a_sPolledTopic	:[in] Topic to be monitored for polling
  * @param a_sWriteTopic		:[in] Topic to be used for sending write request
  * @param a_uiDelayMs		:[in] Delay to be used before sending a write request
@@ -230,7 +230,7 @@ bool CControlLoopMapper::insertControlLoopData(const std::string &a_sPolledTopic
 			m_vsWrRspTopics.push_back(a_sWriteTopic + "/writeResponse");
 		}
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		DO_LOG_ERROR(e.what());
 		return false;
@@ -255,7 +255,7 @@ bool CControlLoopMapper::triggerControlLoops(std::string& a_sPolledPoint, CMessa
 			itr.getQueue().pushMsg(a_oMsg);
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 		return false;
@@ -391,8 +391,7 @@ bool CControlLoopMapper::isControlLoopWrRspPoint(const std::string &a_sWrRspTopi
 }
 
 /**
- * Checks whether given write response topic (e.g. "/iou/PL0/AVal/writeResponse")
- * is a part of one of the control loops
+ *Publishes write request
  * @param a_rCtrlLoop	[in]: Control loop for which write needs to be published
  * @param a_sWrSeq		[in]: Sequence number to be used in write request
  * @param a_oPollMsg	[in]: Poll message for which write is being sent

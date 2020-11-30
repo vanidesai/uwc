@@ -8,11 +8,9 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
-#include "utils/YamlUtil.hpp"
+#include "YamlUtil.hpp"
 #include<iostream>
 #include "Logger.hpp"
-
-using namespace std;
 
 namespace CommonUtils {
 
@@ -26,7 +24,7 @@ YAML::Node loadYamlFile(const std::string& filename)
 	std::string sBasePath{BASE_PATH_YAML_FILE};
 	string sfileToRead = sBasePath + filename;
 
-	cout << "YAML file to be read is :: " + sfileToRead << endl;
+	std::cout << "YAML file to be read is :: " + sfileToRead << std::endl;
 	DO_LOG_DEBUG("YAML file to be read is :: " + sfileToRead);
 
 	YAML::Node baseNode = YAML::LoadFile(sfileToRead);
@@ -52,14 +50,14 @@ bool convertYamlToList(YAML::Node &node, std::vector<std::string>& a_slist)
 			{
 				const YAML::Node& list =  it.second;
 
-				cout << "Number of sites in yaml file are ::" << list.size() << std::endl;
+				std::cout << "Number of sites in yaml file are ::" << list.size() << std::endl;
 				DO_LOG_INFO("Number of sites in yaml file are ::" + list.size());
 
 				for (auto element : list)
 				{
 					YAML::Node temp = element;
 					DO_LOG_INFO("Wellsite is :: " + temp.as<std::string>());
-					cout << "Wellsite is ::" << temp.as<std::string>() <<endl;
+					std::cout << "Wellsite is ::" << temp.as<std::string>() <<std::endl;
 					a_slist.push_back(temp.as<std::string>());
 				}
 				bRetVal = true;
@@ -89,11 +87,11 @@ void ConvertIPStringToCharArray(string strIPaddr, unsigned char *ptrIpAddr)
 
 	while((pos = strIPaddr.find(delimiter))!= std::string::npos)
 	{
-		ptrIpAddr[i8Index] = (uint8_t)stoi(strIPaddr.substr(0,pos).c_str());
+		ptrIpAddr[i8Index] = (uint8_t)std::stoi(strIPaddr.substr(0,pos).c_str());
 		strIPaddr.erase(0,pos+delimiter.length());
 		++i8Index;
 	}
-	ptrIpAddr[i8Index] = (uint8_t)stoi(strIPaddr.substr(0,pos).c_str());
+	ptrIpAddr[i8Index] = (uint8_t)std::stoi(strIPaddr.substr(0,pos).c_str());
 }
 
 bool readEnvVariable(const char *pEnvVarName, string &storeVal)
@@ -110,12 +108,12 @@ bool readEnvVariable(const char *pEnvVarName, string &storeVal)
 		std::string tmp (cEvar);
 		storeVal = tmp;
 		DO_LOG_INFO(std::string(pEnvVarName) + " environment variable is set to ::" + storeVal);
-		std::cout << std::string(pEnvVarName) + " environment variable is set to ::" + storeVal << endl;
+		std::cout << std::string(pEnvVarName) + " environment variable is set to ::" + storeVal << std::endl;
 	}
 	else
 	{
 		DO_LOG_ERROR(std::string(pEnvVarName) + " environment variable is not found");
-		cout << std::string(pEnvVarName) + " environment variable is not found" <<endl;
+		std::cout << std::string(pEnvVarName) + " environment variable is not found" <<std::endl;
 	}
 	return bRetVal;
 }

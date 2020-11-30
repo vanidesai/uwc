@@ -297,6 +297,16 @@ ModifyScadaConfig()
 	sed -i 's/isTLS: no/isTLS: yes/g' /opt/intel/eis/uwc_data/scada-rtu/scada_config.yml
 }
 
+PreRequisitesInstallation()
+{
+	#Setting as non Tls mode, 
+	#External broker address same as internal broker address
+	#broker port as internal broker port
+	#deployment mode as IPC_PROD
+	sudo ./01_pre-requisites.sh --isTLS=no  --brokerAddr="mqtt_test_container" --brokerPort="11883" --qos=1 --deployMode=IPC_PROD
+}
+
+PreRequisitesInstallation
 verifyDirectory
 checkrootUser
 checkInternetConnection

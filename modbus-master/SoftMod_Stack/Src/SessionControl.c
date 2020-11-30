@@ -86,15 +86,21 @@ long getAvailableReqNode()
 		// fail to lock mutex
 		return -1;
 	}
+	static long lastIndex = -1;
 	long index = -1;
 	for (long iLoop = 0; iLoop < MAX_REQUESTS; iLoop++)
 	{
+		++lastIndex;
+		if(MAX_REQUESTS == lastIndex)
+		{
+			lastIndex = 0;
+		}
 		eTransactionState expected = IdleState;
-		stMbusPacketVariables_t* ptr = &g_objReqManager.m_objReqArray[iLoop];
+		stMbusPacketVariables_t* ptr = &g_objReqManager.m_objReqArray[lastIndex];
 		if(true ==
 			atomic_compare_exchange_strong(&ptr->m_state, &expected, RESERVED))
 		{
-			index = iLoop;
+			index = lastIndex;
 			break;
 		}
 	}

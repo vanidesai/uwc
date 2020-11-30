@@ -13,8 +13,6 @@
 #include "yaml-cpp/yaml.h"  // IWYU pragma: keep
 #include "NetworkInfo.hpp"
 
-using namespace std;
-
 #define BASE_PATH_YAML_FILE "/opt/intel/eis/uwc_data/"
 
 namespace CommonUtils {
@@ -41,7 +39,7 @@ bool convertYamlToList(YAML::Node& node, std::vector<std::string>& vlist);
  * @ptrIpAddr : char array to store actual key
  * @return: Nothing
  */
-void ConvertIPStringToCharArray(string srcString, unsigned char *ptrIpAddr);
+void ConvertIPStringToCharArray(std::string srcString, unsigned char *ptrIpAddr);
 
 /** This function is used to read environment variable
  *
@@ -49,7 +47,7 @@ void ConvertIPStringToCharArray(string srcString, unsigned char *ptrIpAddr);
  * @storeVal : variable to store env variable value
  * @return: true/false based on success or error
  */
-bool readEnvVariable(const char *pEnvVarName, string &storeVal);
+bool readEnvVariable(const char *pEnvVarName, std::string &storeVal);
 
 /** This function is used to read common environment variables
  *

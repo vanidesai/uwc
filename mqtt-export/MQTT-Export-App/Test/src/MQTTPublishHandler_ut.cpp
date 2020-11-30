@@ -18,19 +18,36 @@ void MQTTPublishHandler_ut::TearDown() {
 	// TearDown code
 }
 
+/**
+ * Test case to check the behaviour of createNPubMsg() when topic is empty
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(MQTTPublishHandler_ut, createNPubMsg_EmptyTopic)
 {
 	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", EmptyTopic, 1);
 	EXPECT_EQ( false, mqttPublisher_ut.createNPubMsg(ValidMsg, EmptyTopic) );
 }
 
+/**
+ * Test case to check the behaviour of createNPubMsg() when message is empty
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(MQTTPublishHandler_ut, createNPubMsg_EmptyMsg)
 {
 	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", EmptyTopic, 1);
 	EXPECT_EQ( false, mqttPublisher_ut.createNPubMsg(EmptyMsg, ValidTopic) );
-
 }
 
+/**
+ * Test case to check the behaviour of createNPubMsg() when topic and message both are valid
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(MQTTPublishHandler_ut, createNPubMsg_ValidTopic_ValidMsg)
 {
 	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", ValidTopic, 1);

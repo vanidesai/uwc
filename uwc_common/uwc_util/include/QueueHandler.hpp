@@ -18,6 +18,9 @@
 #include <queue>
 #include <string>
 
+	/**
+	 * Message Object class which handles mqtt message, time & topic related operations
+	 */
 	class CMessageObject
 	{
 		mqtt::const_message_ptr m_mqttMsg;

@@ -31,7 +31,6 @@ extern "C"
 }
 //
 
-using namespace std;
 using namespace network_info;
 
 class CSCADAHandler : public CMQTTBaseHandler
@@ -40,6 +39,7 @@ class CSCADAHandler : public CMQTTBaseHandler
 
 	sem_t m_semSCADAConnSuccess;
 	sem_t m_semIntMQTTConnLost;
+	sem_t m_semIntMQTTConnEstablished;
 
 	std::atomic<bool> m_bIsInitDone = false;
 
@@ -57,8 +57,9 @@ class CSCADAHandler : public CMQTTBaseHandler
 	void prepareNodeDeathMsg(bool a_bPublishMsg);
 	void handleSCADAConnectionSuccessThread();
 	void handleIntMQTTConnLostThread();
+	void handleIntMQTTConnEstablishThread();
 	void publish_node_birth();
-	void publishAllDevBirths();
+	void publishAllDevBirths(bool a_bIsNBIRTHProcess);
 	void publish_device_birth(string a_deviceName, bool a_bIsNBIRTHProcess);
 	bool publishMsgDDEATH(const stRefForSparkPlugAction& a_stRefAction);
 	bool publishMsgDDEATH(const std::string &a_sDevName);
@@ -80,6 +81,7 @@ public:
 	bool processDCMDMsg(CMessageObject a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
 
 	void signalIntMQTTConnLostThread();
+	void signalIntMQTTConnEstablishThread();
 };
 
 #endif

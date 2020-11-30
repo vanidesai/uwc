@@ -19,14 +19,12 @@
 #include "ZmqHandler.hpp"
 #include "PeriodicReadFeature.hpp"
 #include "PeriodicRead.hpp"
-//#include "MsgbusManager.hpp"
-//#include "ModBus_EnvConfig_Caller.hpp"
-//#include "config_Caller.hpp"
 #include "NetworkInfo.hpp"
 #include "Common.hpp"
 #include "API.h"
 #include "gtest/gtest.h"
 
+extern bool isElementExistInJson(cJSON *root, std::string a_sKeyName);
 
 
 

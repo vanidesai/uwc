@@ -16,7 +16,7 @@
  * @param vecEnvironment :[in] vector containing all environment variables
  * @return : true for success, false otherwise
  */
-bool EnvironmentInfo::readCommonEnvVariables(std::vector<string> vecEnvironment)
+bool EnvironmentInfo::readCommonEnvVariables(std::vector<std::string> vecEnvironment)
 {
 	if(vecEnvironment.empty())
 	{
@@ -32,7 +32,7 @@ bool EnvironmentInfo::readCommonEnvVariables(std::vector<string> vecEnvironment)
 		if (NULL != cEvar)
 		{
 			bRetVal = true;
-			string strTempVal = std::string(cEvar);
+			std::string strTempVal = std::string(cEvar);
 			addDataToEnvMap(ele, strTempVal);
 			DO_LOG_DEBUG(std::string(ele) + " environment variable is set to ::" + std::string(cEvar));
 		}
@@ -54,14 +54,14 @@ bool EnvironmentInfo::readCommonEnvVariables(std::vector<string> vecEnvironment)
  * @param strVal :[in] value containing the value for each key
  * @return : true for success, false otherwise
  */
-bool EnvironmentInfo::addDataToEnvMap(string strKey, string strVal)
+bool EnvironmentInfo::addDataToEnvMap(std::string strKey, std::string strVal)
 {
 	bool bRet = true;
 	try
 	{
 		m_umapEnv.insert({strKey, strVal});
 	}
-	catch (exception &e)
+	catch (std::exception &e)
 	{
 		DO_LOG_FATAL(e.what());
 		bRet = false;
@@ -75,14 +75,14 @@ bool EnvironmentInfo::addDataToEnvMap(string strKey, string strVal)
  * @param strKey :[in] key string used to get data from map
  * @return : string containing value of given key
  */
-string EnvironmentInfo::getDataFromEnvMap(string strKey)
+std::string EnvironmentInfo::getDataFromEnvMap(std::string strKey)
 {
-	string strVal = "";
+	std::string strVal = "";
 	try
 	{
 		strVal = m_umapEnv.at(strKey);
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		DO_LOG_FATAL(LOGDETAILS(e.what()));
 	}

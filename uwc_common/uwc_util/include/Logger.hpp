@@ -17,8 +17,6 @@
 #include <string>
 #include <iostream>
 
-using namespace std;
-
 #define LOGDETAILS(msg) "[ " + std::string(__FILE__) + " " + __func__ + " " + std::to_string(__LINE__) + "] " + std::string(msg)
 
 #define DO_LOG_INFO(msg) { \
@@ -95,26 +93,7 @@ public:
 		return true;
 	}
 
-	/**
-	 * Static function to configures logger using another logger
-	 * @param a_rLogger :[in] reference logger for initiation
-	 * @return status: true - Success, false - error 
-	 */
-	static bool initLogger(CLogger& a_rLogger) {
-		CLogger& oLogger = getInstance();
-		if(NULL != oLogger.logger)
-		{
-			std::cout << "Logger is already configured. Reconfiguration is not allowed.\n";
-			return false;
-		}	
-		oLogger.logger = a_rLogger.logger;
-		oLogger.m_bIsExternal = true;
-		return true;
-	}
-	static CLogger& getInstance() {
-		static CLogger _self;
-		return _self;
-	}
+	static CLogger& getInstance();
 
 	void LogInfo(std::string msg);
 	void LogDebug(std::string msg);

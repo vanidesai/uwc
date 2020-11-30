@@ -64,7 +64,7 @@ TEST_F(ZmqHandler_ut, getCTX2)
 	catch(std::exception &e)
 	{
 
-		std::cout<<e.what()<<endl;
+		std::cout<<e.what()<<std::endl;
 		EXPECT_EQ("map::at", (string)e.what());
 	}
 }
@@ -81,8 +81,8 @@ TEST_F(ZmqHandler_ut, getCTX3)
 	catch(std::exception &e)
 	{
 
-		std::cout<<e.what()<<endl;
-		EXPECT_EQ("map::at", (string)e.what());
+		std::cout<<e.what()<<std::endl;
+		EXPECT_EQ("map::at", (std::string)e.what());
 
 	}
 }
@@ -99,8 +99,8 @@ TEST_F(ZmqHandler_ut, getCTX4)
 	catch(std::exception &e)
 	{
 
-		std::cout<<e.what()<<endl;
-		EXPECT_EQ("map::at", (string)e.what());
+		std::cout<<e.what()<<std::endl;
+		EXPECT_EQ("map::at", (std::string)e.what());
 
 	}
 }
@@ -126,8 +126,8 @@ TEST_F(ZmqHandler_ut, getSubCtx)
 	}
 	catch(std::exception &e)
 	{
-		cout<<e.what()<<endl;
-		EXPECT_EQ("map::at", (string)e.what());
+		std::cout<<e.what()<<std::endl;
+		EXPECT_EQ("map::at", (std::string)e.what());
 	}
 
 }
@@ -150,7 +150,7 @@ TEST_F(ZmqHandler_ut, getPubCtx)
 	}
 	catch(std::exception &e)
 	{
-		EXPECT_EQ("map::at", (string)e.what());
+		EXPECT_EQ("map::at", (std::string)e.what());
 
 	}
 
@@ -171,8 +171,8 @@ TEST_F(ZmqHandler_ut, insertpub)
 	}
 	catch(std::exception &e)
 	{
-		std::cout<<e.what()<<endl;
-		EXPECT_EQ("map::at", (string)e.what());
+		std::cout<<e.what()<<std::endl;
+		EXPECT_EQ("map::at", (std::string)e.what());
 
 
 	}
@@ -195,8 +195,8 @@ TEST_F(ZmqHandler_ut, removeCTX)
 	catch(std::exception &e)
 	{
 
-		cout<<e.what()<<endl;
-		EXPECT_EQ("map::at", (string)e.what());
+		std::cout<<e.what()<<std::endl;
+		EXPECT_EQ("map::at", (std::string)e.what());
 	}
 }
 
@@ -211,8 +211,8 @@ TEST_F(ZmqHandler_ut, removeSubCTX)
 	}
 	catch(std::exception &e)
 	{
-		cout<<e.what();
-		EXPECT_EQ("map::at", (string)e.what());
+		std::cout<<e.what();
+		EXPECT_EQ("map::at", (std::string)e.what());
 	}
 }
 

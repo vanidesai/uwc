@@ -79,7 +79,6 @@ CMQTTPubSubClient::CMQTTPubSubClient(const std::string &a_sBrokerURL, std::strin
 		m_ConOptions.set_keep_alive_interval(60);
 		m_ConOptions.set_clean_session(true);
 		m_ConOptions.set_automatic_reconnect(1, 10);
-		//m_ConOptions.set_will_message(a_willMsg);
 
 		// set the certificates if dev mode is false
 		if(true == a_bIsTLS)
@@ -220,29 +219,6 @@ void CMQTTPubSubClient::on_failure(const mqtt::token& tok)
  */
 void CMQTTPubSubClient::on_success(const mqtt::token& tok)
 {
-	try
-	{
-		/*if(mqtt::token::Type::CONNECT == tok.get_type())
-		{
-			DO_LOG_INFO("Connection attempt successful: " + m_sClientID);
-			if(m_bNotifyConnection)
-			{
-				m_fcbConnected("CONNECTED");
-			}
-		}
-		if(mqtt::token::Type::DISCONNECT == tok.get_type())
-		{
-			DO_LOG_INFO("Disconnect attempt successful");
-			if(m_bNotifyDisConnection)
-			{
-				m_fcbDisconnected("DISCONNECTED");
-			}
-		}*/
-	}
-	catch (const std::exception &e)
-	{
-		DO_LOG_ERROR(e.what());
-	}
 }
 
 /**
@@ -397,7 +373,7 @@ void CMQTTBaseHandler::disconnect()
 			m_MQTTClient.disconnect();
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -415,7 +391,7 @@ void CMQTTBaseHandler::connect()
 		DO_LOG_INFO("Connecting to Internal MQTT ... ");
 		m_MQTTClient.connect();
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}

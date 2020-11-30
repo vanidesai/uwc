@@ -28,8 +28,6 @@ extern "C"
 #include "cjson/cJSON.h"
 }
 
-using namespace std;
-
 class CSparkPlugDevManager
 {
 	devSparkplugMap_t m_mapSparkPlugDev;
@@ -42,9 +40,9 @@ class CSparkPlugDevManager
 	}
 	;
 
-	metricMap_t parseVendorAppBirthMessage(std::string a_sPayLoad);
+	metricMap_t parseVendorAppBirthDataMessage(std::string a_sPayLoad);
 	bool processMetric(CMetric &a_oMetric, cJSON *a_cjArrayElemMetric);
-	bool processDCMDMetric(CMetric &a_oMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric);
+	bool processDCMDMetric(CSparkPlugDev& a_SPDev, CMetric &a_oMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric);
 
 	uint64_t parseVendorAppDeathMessage(std::string& a_sPayLoad);
 

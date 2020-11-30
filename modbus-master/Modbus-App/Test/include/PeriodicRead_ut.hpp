@@ -20,6 +20,7 @@
 #include "PeriodicReadFeature.hpp"
 #include "Common.hpp"
 
+extern std::atomic<bool> g_stopTimer;
 
 class PeriodicRead_ut : public::testing::Test
 {

@@ -185,7 +185,6 @@ public:
 	unsigned short getTxId()
 	{
 		return ++m_u16TxId;
-		//return m_u16TxId.load();
 	}
 
 	uint32_t getCutoffIntervalPercentage() const {

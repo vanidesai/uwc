@@ -77,7 +77,7 @@ bool CEISPlBusHandler::initEISContext()
 			retVal = false;
 		}
 	}
-	catch (exception &ex)
+	catch (std::exception &ex)
 	{
 		DO_LOG_ERROR((std::string)ex.what());
 	}
@@ -127,7 +127,7 @@ bool CEISPlBusHandler::processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
 		{
 			if(NULL != parts[0].bytes)
 			{
-				string sMsgBody(parts[0].bytes);
+				std::string sMsgBody(parts[0].bytes);
 				CMessageObject oMsg{sRcvdTopic, sMsgBody};
 				a_rQ.pushMsg(oMsg);
 				bRetVal = true;
@@ -144,7 +144,7 @@ bool CEISPlBusHandler::processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
 			parts = NULL;
 		}
 	}
-	catch (exception &ex)
+	catch (std::exception &ex)
 	{
 		DO_LOG_ERROR((std::string)ex.what());
 	}
@@ -160,12 +160,12 @@ bool CEISPlBusHandler::processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
  * @param a_bIsPolling :[in] operation type this thread needs to perform
  * @return None
  */
-void CEISPlBusHandler::listenOnEIS(string sTopic, zmq_handler::stZmqContext context, 
+void CEISPlBusHandler::listenOnEIS(std::string sTopic, zmq_handler::stZmqContext context,
 			zmq_handler::stZmqSubContext subContext, bool a_bIsPolling)
 {
 	if(context.m_pContext == NULL || subContext.sub_ctx == NULL)
 	{
-		std::cout << "Context is null. Cannot start listening on EIS for topic : " << sTopic << endl;
+		std::cout << "Context is null. Cannot start listening on EIS for topic : " << sTopic << std::endl;
 		DO_LOG_ERROR("Context is null. Cannot start listening on EIS for topic : " + sTopic);
 		return;
 	}
@@ -214,7 +214,7 @@ void CEISPlBusHandler::listenOnEIS(string sTopic, zmq_handler::stZmqContext cont
 				msg = NULL;
 			}
 		}
-		catch (exception &ex)
+		catch (std::exception &ex)
 		{
 			DO_LOG_ERROR((std::string)ex.what() + " for topic : " + sTopic);
 		}
@@ -267,7 +267,7 @@ bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic)
 			}
 			else
 			{
-				throw string("Invalid JSON");
+				throw std::string("Invalid JSON");
 			}
 			device = device->next;
 		}
@@ -297,11 +297,11 @@ bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic)
 
 		return bRet;
 	}
-	catch(string& strException)
+	catch(std::string& strException)
 	{
 		DO_LOG_ERROR("publishEISMsg error1::" + strException);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR("publishEISMsg error2::" + std::string(ex.what()));
 	}
@@ -319,7 +319,7 @@ bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic)
 }
 
 /**
- * publish message to EIS
+ * publish message to EIS based on whether write Request is RT or Non-RT
  * @param a_sMsg :[in] message to publish on EIS
  * @return true/false based on success/failure
  */
@@ -338,7 +338,7 @@ bool CEISPlBusHandler::publishWriteMsg(const std::string &a_sMsg)
 		}		
 		return publishEISMsg(a_sMsg, eisTopic);
 	}
-	catch (exception &ex)
+	catch (std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}

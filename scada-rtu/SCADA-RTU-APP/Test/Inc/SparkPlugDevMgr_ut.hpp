@@ -35,7 +35,7 @@ public:
 								org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
 						0,
 						{ 0 } };
-	//CSparkPlugDevManager CSparkPlugDevManager_obj;
+	std::vector<std::string> RetVec;
 	org_eclipse_tahu_protobuf_Payload dbirth_payload;
 
 };

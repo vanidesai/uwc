@@ -8,14 +8,13 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#ifndef INCLUDE_CMQTTHANDLER_UT_HPP_
-#define INCLUDE_CMQTTHANDLER_UT_HPP_
+#ifndef TEST_INCLUDE_MQTTSUBSCRIBEHANDLER_UT_HPP_
+#define TEST_INCLUDE_MQTTSUBSCRIBEHANDLER_UT_HPP_
 
 #include <gtest/gtest.h>
+#include "MQTTSubscribeHandler.hpp"
 
-#include "MQTTSubscribeHandler.hpp";
-
-class MQTTSubscribeHandler_ut  : public ::testing::Test{
+class MQTTSubscribeHandler_ut : public ::testing::Test {
 
 protected:
 	virtual void SetUp();
@@ -24,4 +23,7 @@ protected:
 public:
 };
 
-#endif /* INCLUDE_CMQTTHANDLER_UT_HPP_ */
+
+
+
+#endif /* TEST_INCLUDE_MQTTSUBSCRIBEHANDLER_UT_HPP_ */

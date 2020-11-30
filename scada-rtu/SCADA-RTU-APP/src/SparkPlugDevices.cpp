@@ -332,7 +332,7 @@ bool CSparkPlugDev::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 			add_metric_to_payload(&a_rTahuPayload, &metric);
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		return false;
@@ -708,24 +708,24 @@ bool CSparkPlugDev::processRealDeviceUpdateMsg(const std::string a_sPayLoad, std
  * @param a_appSeqNo :[in] app seq number to be used
  * @return true/false based on success/failure
  */
-bool CSparkPlugDev::getWriteMsg(string& a_sTopic, cJSON *a_root, pair<const string,CMetric>& a_metric, const int& a_appSeqNo)
+bool CSparkPlugDev::getWriteMsg(std::string& a_sTopic, cJSON *a_root, std::pair<const std::string,CMetric>& a_metric, const int& a_appSeqNo)
 {
 	try
 	{
-		string pubTopic = "";
-		string pubMsg = "";
+		std::string pubTopic = "";
+		std::string pubMsg = "";
 
 		vector<string> vParsedTopic = { };
 		CCommon::getInstance().getTopicParts(getSparkPlugName(), vParsedTopic, "-");
 
 		if(vParsedTopic.size() != 2)
 		{
-			cout << "Invalid device name to prepare WOD request" << endl;
+			DO_LOG_ERROR("Invalid device name to prepare WOD request");
 			return false;
 		}
 		if(vParsedTopic[0].empty() || vParsedTopic[1].empty())
 		{
-			cout << "Invalid device name or site name to prepare WOD request" << endl;
+			DO_LOG_ERROR("Invalid device name or site name to prepare WOD request");
 			return false;
 		}
 		string strDevice = vParsedTopic[0];
@@ -735,9 +735,6 @@ bool CSparkPlugDev::getWriteMsg(string& a_sTopic, cJSON *a_root, pair<const stri
 
 		a_sTopic = "/" + strDevice + "/" + strSite + "/" + strMetricName + "/write";
 
-		//there should be only one metric in this map for real device
-		//since mqtt-export can support only one metric at a time
-		//for(auto& itrMetric : a_metrics)
 		{
 			string a_strDataPoint = a_metric.second.getName().c_str();
 
@@ -773,7 +770,7 @@ bool CSparkPlugDev::getWriteMsg(string& a_sTopic, cJSON *a_root, pair<const stri
 			cJSON_AddItemToObject(a_root, "app_seq", cJSON_CreateString(sAppSeq.c_str()));
 		}
 	}
-	catch(exception& ex)
+	catch(std::exception& ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		return false;
@@ -799,12 +796,12 @@ bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMap_t& m_metrics, cJSON *m
 
 		if(vParsedTopic.size() != 2)
 		{
-			cout << "Invalid device name to prepare WOD request" << endl;
+			DO_LOG_ERROR("Invalid device name to prepare CMD request");
 			return false;
 		}
 		if(vParsedTopic[0].empty() || vParsedTopic[1].empty())
 		{
-			cout << "Invalid device name or site name to prepare WOD request" << endl;
+			DO_LOG_ERROR("Invalid device name or site name to prepare CMD request");
 			return false;
 		}
 
@@ -838,7 +835,7 @@ bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMap_t& m_metrics, cJSON *m
 		}//metric ends
 		bRet = true;
 	}
-	catch(exception& ex)
+	catch(std::exception& ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		bRet = false;

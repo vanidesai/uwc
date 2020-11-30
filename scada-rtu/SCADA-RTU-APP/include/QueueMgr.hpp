@@ -20,7 +20,6 @@
 #include <string>
 #include "QueueHandler.hpp"
 
-using namespace std;
 /**
  * namespace for Queue manager
  */
@@ -40,7 +39,7 @@ struct stMqttMsg
 	 * @param a_sTopic :[in] data point name to set
 	 * @return none
 	 */
-	void setDataPointName(string a_sDataPoint)
+	void setDataPointName(std::string a_sDataPoint)
 	{
 		m_strDataPoint = a_sDataPoint;
 	}
@@ -50,7 +49,7 @@ struct stMqttMsg
 	 * @param none
 	 * @return data point name
 	 */
-	string setDataPointName()
+	std::string setDataPointName()
 	{
 		return m_strDataPoint;
 	}
@@ -60,7 +59,7 @@ struct stMqttMsg
 	 * @param a_sMqttTopic :[in] mqtt topic name on which mqtt has received message
 	 * @return none
 	 */
-	void setMqttTopic(string a_sMqttTopic)
+	void setMqttTopic(std::string a_sMqttTopic)
 	{
 		m_mqttTopic = a_sMqttTopic;
 	}
@@ -70,7 +69,7 @@ struct stMqttMsg
 	 * @param none
 	 * @return mqtt topic name on which mqtt has received message
 	 */
-	string getMqttTopic()
+	std::string getMqttTopic()
 	{
 		return m_mqttTopic;
 	}
@@ -101,9 +100,9 @@ struct stMqttMsg
 	 * @param value :[in] value of param in payload
 	 * return none
 	 */
-	void insertParam(string key, string value)
+	void insertParam(std::string key, std::string value)
 	{
-		m_datapoint_key_val.insert(pair<string, string> (key, value));
+		m_datapoint_key_val.insert(std::pair<std::string, std::string> (key, value));
 	}
 
 	/**
@@ -111,7 +110,7 @@ struct stMqttMsg
 	 * @param a_index :[in] key-value pair at index from the map
 	 * @return pair of key and value
 	 */
-	std::pair<string, string> getParam(int a_index)
+	std::pair<std::string, std::string> getParam(int a_index)
 				{
 		int i = 0;
 		if( m_datapoint_key_val.size() > (size_t)a_index)
@@ -124,7 +123,7 @@ struct stMqttMsg
 				}
 			}
 		}
-		return make_pair("", "");
+		return std::make_pair("", "");
 				}
 
 	/**
@@ -141,7 +140,5 @@ struct stMqttMsg
 //functions to get on-demand operation instances
 CQueueHandler& getDatapointsQ();
 CQueueHandler& getScadaSubQ();
-CQueueHandler& getScadaPubQ();
-CQueueHandler& getPubMqttExportQ();
 }
 #endif

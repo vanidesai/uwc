@@ -19,7 +19,6 @@
 void CQueueHandler::cleanup()
 {
 	sem_destroy(&m_semaphore);
-	DO_LOG_DEBUG("Destroyed CMQTTHandler instance");
 }
 
 /**
@@ -88,7 +87,7 @@ bool CQueueHandler::pushMsg(CMessageObject msg)
 
 		sem_post(&m_semaphore);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 		return false;
@@ -107,7 +106,7 @@ bool CQueueHandler::breakWaitOnQ()
 	{
 		sem_post(&m_semaphore);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 		return false;
@@ -164,7 +163,7 @@ bool CQueueHandler::isMsgArrived(CMessageObject& msg)
 			}
 		}
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		DO_LOG_ERROR(e.what());
 		return false;

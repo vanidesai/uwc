@@ -267,50 +267,67 @@ bool CValObj::setValObj(std::string a_sDatatype, cJSON *a_cjValue)
 			else if (("uint8" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
+				// Check if negative value is received for unsigned datatype
+				if(a_cjValue->valuedouble < 0.0)
+				{
+					DO_LOG_ERROR("Negative value is received for an unsigned datatype. Ignored.");
+					return false;
+				}
 				m_uiDataType = METRIC_DATA_TYPE_UINT8;
-				//m_objVal = (uint8_t)cJSON_GetNumberValue(a_cjValue);
 				m_objVal = (uint8_t) a_cjValue->valueint;
 			}
 			else if (("uint16" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
+				// Check if negative value is received for unsigned datatype
+				if(a_cjValue->valuedouble < 0.0)
+				{
+					DO_LOG_ERROR("Negative value is received for an unsigned datatype. Ignored.");
+					return false;
+				}
 				m_uiDataType = METRIC_DATA_TYPE_UINT16;
-				//m_objVal = (uint16_t)cJSON_GetNumberValue(a_cjValue);
-				m_objVal = (uint16_t) a_cjValue->valueint;
+				m_objVal = (uint16_t) a_cjValue->valuedouble;
 			}
 			else if (("uint32" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
+				// Check if negative value is received for unsigned datatype
+				if(a_cjValue->valuedouble < 0.0)
+				{
+					DO_LOG_ERROR("Negative value is received for an unsigned datatype. Ignored.");
+					return false;
+				}
 				m_uiDataType = METRIC_DATA_TYPE_UINT32;
-				//m_objVal = (uint32_t)cJSON_GetNumberValue(a_cjValue);
 				m_objVal = (uint32_t) a_cjValue->valuedouble;
 			}
 			else if (("uint64" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
+				// Check if negative value is received for unsigned datatype
+				if(a_cjValue->valuedouble < 0.0)
+				{
+					DO_LOG_ERROR("Negative value is received for an unsigned datatype. Ignored.");
+					return false;
+				}
 				m_uiDataType = METRIC_DATA_TYPE_UINT64;
-				//m_objVal = (uint64_t)cJSON_GetNumberValue(a_cjValue);
 				m_objVal = (uint64_t) a_cjValue->valuedouble;
 			}
 			else if (("int8" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
 				m_uiDataType = METRIC_DATA_TYPE_INT8;
-				//m_objVal = (int8_t)cJSON_GetNumberValue(a_cjValue);
 				m_objVal = (int8_t) a_cjValue->valueint;
 			}
 			else if (("int16" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
 				m_uiDataType = METRIC_DATA_TYPE_INT16;
-				//m_objVal = (int16_t)cJSON_GetNumberValue(a_cjValue);
 				m_objVal = (int16_t) a_cjValue->valueint;
 			}
 			else if (("int32" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
 				m_uiDataType = METRIC_DATA_TYPE_INT32;
-				//m_objVal = (int32_t)cJSON_GetNumberValue(a_cjValue);
 				m_objVal = (int32_t) a_cjValue->valueint;
 			}
 			else if (("int64" == a_sDatatype)
@@ -329,14 +346,12 @@ bool CValObj::setValObj(std::string a_sDatatype, cJSON *a_cjValue)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
 				m_uiDataType = METRIC_DATA_TYPE_FLOAT;
-				//m_objVal = (float)cJSON_GetNumberValue(a_cjValue);
 				m_objVal = (float) a_cjValue->valuedouble;
 			}
 			else if (("double" == a_sDatatype)
 					&& (1 == cJSON_IsNumber(a_cjValue)))
 			{
 				m_uiDataType = METRIC_DATA_TYPE_DOUBLE;
-				//m_objVal = (double)cJSON_GetNumberValue(a_cjValue);
 				m_objVal = (double) a_cjValue->valuedouble;
 			}
 			else if (("string" == a_sDatatype)
@@ -411,7 +426,6 @@ bool CValObj::setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_metric)
 			break;
 		case METRIC_DATA_TYPE_INT64:
 			m_objVal = (int64_t)a_metric.value.long_value;
-			//m_objVal = a_metric.value.long_value;
 			break;
 
 		case METRIC_DATA_TYPE_FLOAT:
@@ -463,7 +477,7 @@ bool CMetric::addMetricNameValue(org_eclipse_tahu_protobuf_Payload_Metric& a_rMe
 			m_objVal.assignToSparkPlug(a_rMetric);
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		if(a_rMetric.name != NULL)
@@ -540,7 +554,7 @@ bool CMetric::addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMet
 			}
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		return false;

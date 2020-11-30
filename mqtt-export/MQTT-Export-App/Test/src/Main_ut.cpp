@@ -28,6 +28,12 @@ sem_t g_semaphoreRespProcess_ut;
 /********************************************************/
 /*	Helper Functions	*/
 
+/**
+ * Helper function to set g_shouldStop as true and call postMsgstoMQTT()
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 void TargetCaller_postMsgstoMQTT()
 {
 	g_shouldStop = true;
@@ -39,83 +45,12 @@ void TargetCaller_postMsgstoMQTT()
 	}
 }
 
-/********************************************************/
-
-#if 0 // In progress
-TEST_F(Main_ut, getOperation_IsWrite)
-{
-	string topic = "write_toipic";
-
-	getOperation(topic, globalConfig::COperation& operation)
-
-}
-
-TEST_F(Main_ut, getOperation_IsNotRead)
-{
-	string topic = "read_toipic";
-	bool isWrite = true;
-
-	if( true == CMQTTHandler::instance().getOperation(topic, isWrite) )
-	{
-		EXPECT_EQ(false, isWrite);
-	}
-
-}
-
-
-TEST_F(Main_ut, getOperation_InvalidTopic)
-{
-	string topic = "Other_toipic";
-	bool isWrite = true;
-	bool RetVal = true;
-
-	RetVal = CMQTTHandler::instance().getOperation(topic, isWrite);
-
-	EXPECT_EQ(false, RetVal);
-
-}
-
-
-TEST_F(Main_ut, addSrTopic_InvalidTopic)
-{
-
-	string Inval_Topic = "";
-	string Inval_JsonText = "";
-
-	bool bRes = addSrTopic(Inval_JsonText, Inval_Topic);
-
-	EXPECT_EQ(false, bRes);
-}
-
-TEST_F(Main_ut, addSrTopic_ValidTopic)
-{
-	mqtt::const_message_ptr recvdMsg;
-	int msgRequestType = 1;
-	bool RetVal = false;
-
-	mqtt::const_message_ptr msg = mqtt::make_message(
-			"{\"topic\": \"MQTT_Export_ReadRequest\"}",
-			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}");
-
-	QMgr::CQueueMgr CQueueMgr_obj(1, 1);
-
-	if (true == CQueueMgr_obj.getSubMsgFromQ(msg))
-	{
-		string rcvdTopic = recvdMsg->get_topic();
-		string strMsg = recvdMsg->get_payload();
-		RetVal = addSrTopic(strMsg, rcvdTopic);
-
-		EXPECT_EQ(true, RetVal);
-	}
-	else
-	{
-		cout<<endl<<"######################ERROR##############################"<<endl;
-		cout<<"Failed to getSubMsgFromQ. "<<endl<<"Exiting this test case";
-		cout<<endl<<"#########################################################"<<endl;
-	}
-}
-#endif
-
+/**
+ * Test case to check if processMsgToSendOnEIS()function Process message received from MQTT and send it on EIS for valid topic
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processMsgToSendOnEIS_ValidTopic)
 {
 	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
@@ -126,78 +61,28 @@ TEST_F(Main_ut, processMsgToSendOnEIS_ValidTopic)
 	std::string Topic = "MQTT_Export_ReadRequest";
 	processMsgToSendOnEIS(Temp, Topic);
 
-	/* Check logs to confirm the result */
 }
 
-
-#if 0
-TEST_F(Main_ut, processMsgToSendOnEIS_MsgEmpty)
-{
-	bool isRealtime = false;
-	bool isRead = false;
-	bool RetVal;
-	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
-			"",
-			"");
-
-	RetVal = processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
-
-	EXPECT_EQ(false, RetVal);
-}
-
-TEST_F(Main_ut, processMsgToSendOnEIS_RTWriteReq)
-{
-	bool isRealtime = true;
-	bool isRead = false;
-	bool RetVal;
-	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
-			"{\"topic\": \"MQTT_Export_ReadRequest\"}",
-			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}");;
-
-	processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
-
-	//EXPECT_EQ(true, RetVal);
-}
-
-TEST_F(Main_ut, processMsgToSendOnEIS_RTReadReq)
-{
-	bool isRealtime = true;
-	bool isRead = true;
-	bool RetVal;
-	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
-			"{\"topic\": \"MQTT_Export_ReadRequest\"}",
-			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}");;
-
-	processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
-
-	//	EXPECT_EQ(true, RetVal);
-}
-
-TEST_F(Main_ut, processMsgToSendOnEIS_NonRTReadReq)
-{
-	bool isRealtime = false;
-	bool isRead = true;
-	bool RetVal;
-	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
-			"{\"topic\": \"MQTT_Export_ReadRequest\"}",
-			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"0\"}");;
-
-	RetVal = processMsgToSendOnEIS(recvdMsg, isRead, isRealtime);
-
-	EXPECT_EQ(false, RetVal);
-}
-#endif
-
+/**
+ * Test case to check if processMsg()function do not Process message received from EIS and send for publishing on MQTT for Null msg and returns false
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processMsg_NULLMsg)
 {
 	string topic = "MQTT_Export_RdReq";
 	CMQTTPublishHandler mqttPublisher(EnvironmentInfo::getInstance().getDataFromEnvMap("MQTT_URL_FOR_EXPORT").c_str(), topic.c_str(), 0);
-
 	bool RetVal = processMsg(NULL, mqttPublisher);
-
 	EXPECT_EQ(false, RetVal);
 }
 
+/**
+ * Test case to check if processMsg()function do not Process message received from EIS and send for publishing on MQTT if topic is present in zmq and returns false
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, processMsg_TopicNotPresentInZMQmsg)
 {
 	msg_envelope_t *msg = NULL;
@@ -214,117 +99,15 @@ TEST_F(Main_ut, processMsg_TopicNotPresentInZMQmsg)
 	string topic = "MQTT_Export_RdReq";
 	CMQTTPublishHandler mqttPublisher(EnvironmentInfo::getInstance().getDataFromEnvMap("MQTT_URL_FOR_EXPORT").c_str(), topic.c_str(), 0);
 
+	bool realTime = true;
+	bool IsRead = true;
+	set_thread_priority_for_eis(realTime, IsRead);
+
 
 	bool RetVal = processMsg(msg, mqttPublisher);
 
 	EXPECT_EQ(false, RetVal);
 }
-
-#if 0 // in progress
-TEST_F(Main_ut, publishEISMsg_Suc)
-{
-	zmq_handler::stZmqContext context;
-	stZmqPubContext pubContext;
-	string topicType;
-
-	string Topic_pub = "MQTT_Export_WrReq";
-	string Topic_sub = "TestTopic_sub";
-
-	bool RetVal = false;
-
-
-	/*****************publishEISMsg***************************/
-	if( true == CEISMsgbusHandler::Instance().getCTX(Topic_pub, context) )
-	{
-		if( true == CEISMsgbusHandler::Instance().getPubCTX(Topic_pub, pubContext) )
-		{
-			//Test target
-			RetVal = publishEISMsg(strMsg, context, pubContext);
-		}
-		else
-		{
-			cout<<endl<<"#############################################"<<endl;
-			cout<<"Error in getPubCTX() of pubContext; Skipped test Main_ut.publishEISMsg_Suc";
-			cout<<endl<<"#############################################"<<endl;
-		}
-	}
-	else
-	{
-		cout<<endl<<"#############################################"<<endl;
-		cout<<"Error in getCTX() of context; Skipped test Main_ut.publishEISMsg_Suc";
-		cout<<endl<<"#############################################"<<endl;
-	}
-
-	EXPECT_EQ(true, RetVal);
-}
-
-TEST_F(Main_ut, publishEISMsg_InvEISMsg)
-{
-	stZmqContext context;
-	stZmqPubContext pubContext;
-	string topicType;
-	string EisMsg_UT = "InvalMsg";
-
-	string Topic_pub = "MQTT_Export_WrReq";
-	string Topic_sub = "TestTopic_sub";
-
-	bool RetVal = true;
-
-
-	/*****************publishEISMsg***************************/
-	if( true == CEISMsgbusHandler::Instance().getCTX(Topic_pub, context) )
-	{
-		if( true == CEISMsgbusHandler::Instance().getPubCTX(Topic_pub, pubContext) )
-		{
-			//Test target
-			RetVal = publishEISMsg(EisMsg_UT, context, pubContext);
-		}
-		else
-		{
-			cout<<endl<<"#############################################"<<endl;
-			cout<<"Error in getPubCTX() of pubContext; Skipped test Main_ut.publishEISMsg_Suc";
-			cout<<endl<<"#############################################"<<endl;
-		}
-	}
-	else
-	{
-		cout<<endl<<"#############################################"<<endl;
-		cout<<"Error in getCTX() of context; Skipped test Main_ut.publishEISMsg_Suc";
-		cout<<endl<<"#############################################"<<endl;
-	}
-
-	EXPECT_EQ(false, RetVal);
-}
-
-TEST_F(Main_ut, publishEISMsg_NULLArg)
-{
-	stZmqContext context;
-	stZmqPubContext pubContext;
-	bool RetVal = true;
-
-	context.m_pContext = NULL;
-	pubContext.m_pContext = NULL;
-	RetVal = publishEISMsg(strMsg, context, pubContext);
-
-	EXPECT_EQ(false, RetVal);
-
-
-}
-
-/*************Wrapper Function for publishEISMsg()*******************/
-bool ut_g_threadFlag = false;
-
-void publishEISMsg_TestWrapper(stZmqContext msgbus_ctx, stZmqPubContext pub_ctx)
-{
-	string EISMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
-
-	while(false == ut_g_threadFlag){
-		publishEISMsg(EISMsg, msgbus_ctx, pub_ctx);
-		cout<<endl<<"[UT Debug]>>>>>>>>>>>>>>>>>>>>>> Publishing message to EIS.."<<endl;
-	}
-}
-/********************************************************************/
-#endif
 
 TEST_F(Main_ut, postMsgstoMQTT)
 {
@@ -333,78 +116,102 @@ TEST_F(Main_ut, postMsgstoMQTT)
 	Thread_TargetCaller_postMsgstoMQTT.join();
 }
 
-
+/**
+ * Test case to check if set_thread_priority_for_eis()function Set thread priority for threads that send messages from MQTT-Export to EIS for realTime = true and IsRead = true
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, set_thread_priority_for_eis_RTRead)
 {
-	bool	realTime = true;
-	bool	IsRead = true;
-
+	bool realTime = true;
+	bool IsRead = true;
 	set_thread_priority_for_eis(realTime, IsRead);
-
 }
 
+/**
+ * Test case to check if set_thread_priority_for_eis()function Set thread priority for threads that send messages from MQTT-Export to EIS for realTime = true and IsRead = false
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, set_thread_priority_for_eis_RTWrite)
 {
-	bool	realTime = true;
-	bool	IsRead = false;
-
+	bool realTime = true;
+	bool IsRead = false;
 	set_thread_priority_for_eis(realTime, IsRead);
 
 }
 
+/**
+ * Test case to check if set_thread_priority_for_eis()function Set thread priority for threads that send messages from MQTT-Export to EIS for realTime = false and IsRead = true
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, set_thread_priority_for_eis_NonRTRead)
 {
-	bool	realTime = false;
-	bool	IsRead = true;
-
+	bool realTime = false;
+	bool IsRead = true;
 	set_thread_priority_for_eis(realTime, IsRead);
 
 }
 
+/**
+ * Test case to check if set_thread_priority_for_eis()function Set thread priority for threads that send messages from MQTT-Export to EIS for realTime = false and IsRead = false
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, set_thread_priority_for_eis_NonRTWrite)
 {
-	bool	realTime = false;
-	bool	IsRead = false;
+	bool realTime = false;
+	bool IsRead = false;
 
 	set_thread_priority_for_eis(realTime, IsRead);
 
 }
 
-// Check that code doesnt hang
+/**
+ * Test case to check code doesnt hang in getRTRead() function
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, postMsgsToEIS_RTRead)
 {
 	postMsgsToEIS(QMgr::getRTRead());
 }
 
-// Check that code doesnt hang
+/**
+ * Test case to check code doesnt hang in getRTWrite() function
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, postMsgsToEIS_RTWrite)
 {
 	postMsgsToEIS(QMgr::getRTWrite());
 }
 
+/**
+ * Test case to check if getRead()function return reference of on-demand read operation instance successfully
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, postMsgsToEIS_Read)
 {
 	postMsgsToEIS(QMgr::getRead());
 }
 
+/**
+ * Test case to check if getWrite()function return reference of on-demand write operation instance successfully
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Main_ut, postMsgsToEIS_Write)
 {
 	postMsgsToEIS(QMgr::getWrite());
 }
-
-#if 0 //In progress
-// CEISMsgbusHandler::Instance().cleanup();
-TEST_F(Main_ut, cleanup_Success)
-{
-	string topic = "MQTT_Export_WrReq";
-	stZmqContext msgbus_ctx;
-
-	if( true == CEISMsgbusHandler::Instance().getCTX(topic, msgbus_ctx) )
-	{
-		CEISMsgbusHandler::Instance().cleanup();
-		bool RetVal = CEISMsgbusHandler::Instance().getCTX(topic, msgbus_ctx);
-
-		EXPECT_EQ(false, RetVal);
-	}
-}
-#endif

@@ -31,8 +31,6 @@ extern "C"
 #include "cjson/cJSON.h"
 }
 
-using namespace std;
-
 class CSparkPlugDev;
 class CVendorApp;
 
@@ -126,6 +124,21 @@ public:
 		return m_sSparkPlugName;
 	}
 	;
+
+	bool checkMetric(std::string& strs)
+	{
+		bool flag = false;
+		for(auto ele : m_mapMetrics)
+		{
+			if(strs == ele.second.getName())
+			{
+				flag = true;
+				break;
+			}
+		}
+		return flag;
+	}
+
 	void setSparkPlugName(std::string a_sVal)
 	{
 		m_sSparkPlugName = a_sVal;
@@ -173,8 +186,8 @@ public:
 		}*/
 	}
 
-	bool getWriteMsg(string& a_sTopic, cJSON *a_root, pair<const string,CMetric>& a_metric, const int& a_appSeqNo);
-	bool getCMDMsg(string& a_sTopic, metricMap_t& m_metrics, cJSON *metricArray);
+	bool getWriteMsg(std::string& a_sTopic, cJSON *a_root, std::pair<const std::string,CMetric>& a_metric, const int& a_appSeqNo);
+	bool getCMDMsg(std::string& a_sTopic, metricMap_t& m_metrics, cJSON *metricArray);
 };
 
 class CVendorApp

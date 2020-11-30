@@ -116,7 +116,7 @@ void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPa
 }
 
 /**
- * Function to call modbus stack APIs depending updon function code
+ * Function to call modbus stack APIs depending upon function code
  * @param u8FunCode 		[in] function code of request
  * @param pstMbusApiPram 	[in] Input request packet
  * @param vpCallBackFun		[in] callback function pointer

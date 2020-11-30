@@ -15,29 +15,34 @@
 The directory comprises of following:
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/modbus-master">modbus-master</a> :
   This directory contains the modbus TCP1 and RTU1 containers sources and docker file for building the container
+  For detail, please refer to `README-modbus-master.md` file of modbus-master folder
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/mqtt-export">mqtt-export</a> :
   This directory contains the mqtt-export container sources and docker file for building the container 
+  For detail, please refer to `README-mqtt-export.md` file of mqtt-export folder
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/MQTT">MQTT</a> :
   This directory contains the mqtt container sources and docker file for building the container.  
+  For detail, please refer to `README-MQTT.md` file of MQTT folder
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/scada-rtu">scada-rtu</a> :
   This directory contains the scada-rtu sources and docker file for building the container.
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/ControlLoop">ControlLoop</a> :
-  This directory contains the ControlLoop test app sources and docker file for building the container.
+  For detail, please refer to `README_SCADA_RTU.md` file of scada-rtu folder
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Others">Others</a> :
   This directory contains configurations for ETCD required during provisioning
 * <a href="https://github.impcloud.net/uwc/UWC-Core/blob/master/docker-compose.yml">docker-compose.yml</a> :
   This file will deploy the modbus container with EIS in IPC with DEV mode
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_DEV.yml">docker-compose_IPC_DEV.yml</a> :
   This file is used to deploy UWC containers in IPC with DEV mode
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_TCP_DEV.yml">docker-compose_TCP_DEV.yml</a> :
-  This file is used to deploy UWC containers in TCP with DEV mode
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_TCP_PROD.yml">docker-compose_TCP_PROD.yml</a> :
-  This file is used to deploy UWC containers in TCP with PROD mode.
+ * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_DEV_scada_TLS.yml">docker-compose_IPC_DEV_scada_TLS.yml</a> :
+  This file is used to deploy UWC containers in IPC with DEV mode , and with scada in TLS mode
+  * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_DEV_without_scada.yml">docker-compose_IPC_DEV_without_scada.yml</a> :
+  This file is used to deploy UWC containers in IPC with DEV mode , and without scada
+   * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_PROD_nonTLSScada.yml">docker-compose_IPC_PROD_nonTLSScada.yml</a> :
+  This file is used to deploy UWC containers in IPC with PROD mode , and with scada in TLS mode
+   * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_with_kpi.yml">docker-compose_with_kpi.yml</a> :
+  This file is used to deploy UWC containers with kpi
+    * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_without_scada.yml">docker-compose_without_scada.yml</a> :
+  This file is used to deploy UWC containers without scada
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_unit_test.yml">docker-compose_unit_test.yml</a> :
   This file is used to run unit test cases
-  
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_ControlLoopApp.yml">docker-compose_ControlLoopApp.yml</a> :
-  This file is used to deploy control loop test app
   
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Release">Release</a> :
   This directory contains UWC bundle for deployement

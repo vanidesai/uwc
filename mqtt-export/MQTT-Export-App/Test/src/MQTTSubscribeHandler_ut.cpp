@@ -7,41 +7,100 @@
  * property right is granted to or conferred upon you by disclosure or delivery of
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
-
 #include "../include/MQTTSubscribeHandler_ut.hpp"
 
-#include <gtest/internal/gtest-internal.h>
-#include <cstdlib>
-#include <iostream>
-#include <string>
 
-using namespace std;
-
-extern void postMsgsToEIS();
-
-void MQTTSubscribeHandler_ut::SetUp() {
+void MQTTSubscribeHandler_ut::SetUp()
+{
 	// Setup code
 }
 
-void MQTTSubscribeHandler_ut::TearDown() {
+void MQTTSubscribeHandler_ut::TearDown()
+{
 	// TearDown code
 }
 
-TEST_F(MQTTSubscribeHandler_ut, instance_ValMqtURL)
+/**
+ * Test case to check the behaviour of recvdMsg() when topic ends with "/read"
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(MQTTSubscribeHandler_ut, recvdMsg_readTopic)
 {
-	try
-	{
-		CMQTTHandler::instance();
-		EXPECT_EQ(true, true);
-	}catch(exception &ex) {
-		EXPECT_EQ(true, false);
-	}
+
+	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
+				"MQTT_Export_ReadRequest/read",
+				"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}");
+
+	CMQTTHandler::instance().msgRcvd(recvdMsg);
+
 }
 
-// How to confirm??
-// Working on it..
-TEST_F(MQTTSubscribeHandler_ut, cleanup_Success)
+/**
+ * Test case to check the behaviour of recvdMsg() when topic ends with "/write"
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(MQTTSubscribeHandler_ut, recvdMsg_writeTopic)
 {
-	CMQTTHandler::instance().cleanup();
+
+	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
+				"MQTT_Export_WrReq/write",
+				"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}");
+
+	CMQTTHandler::instance().msgRcvd(recvdMsg);
+
+}
+
+/**
+ * Test case to check the behaviour of recvdMsg() when topic does not match any pattern (/read or /write)
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(MQTTSubscribeHandler_ut, recvdMsg_InvalTopic)
+{
+
+	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
+				"MQTT_Export_WrReq/something_else",
+				"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}");
+
+	CMQTTHandler::instance().msgRcvd(recvdMsg);
+
+}
+
+/**
+ * Test case to check the behaviour of recvdMsg() when payload is Non RT and write topic
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(MQTTSubscribeHandler_ut, recvdMsg_NonRTPayLoad_write)
+{
+
+	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
+					"MQTT_Export_WrReq/write",
+					"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"0\"}");
+
+	CMQTTHandler::instance().msgRcvd(recvdMsg);
+
+}
+
+/**
+ * Test case to check the behaviour of recvdMsg() when payload is Non RT and read topic
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(MQTTSubscribeHandler_ut, recvdMsg_NonRTPayLoad_read)
+{
+
+	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
+					"MQTT_Export_ReadRequest/read",
+					"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"0\"}");
+
+	CMQTTHandler::instance().msgRcvd(recvdMsg);
 
 }

@@ -74,6 +74,17 @@ bool CSCADAHandler::init()
 	std::thread{ std::bind(&CSCADAHandler::handleIntMQTTConnLostThread,
 			std::ref(*this)) }.detach();
 
+	// publish dbirth for few devices
+	retVal = sem_init(&m_semIntMQTTConnEstablished, 0, 0 /* Initial value of zero*/);
+	if (retVal == -1)
+	{
+		std::cout << "*******Could not create unnamed semaphore for Internal MQTT connection established\n";
+		return false;
+	}
+	std::thread{ std::bind(&CSCADAHandler::handleIntMQTTConnLostThread,
+		std::ref(*this)) }.detach();
+
+
 	return true;
 }
 
@@ -107,13 +118,13 @@ void CSCADAHandler::handleSCADAConnectionSuccessThread()
 				publish_node_birth();
 
 				// Publish the DBIRTH for all devices
-				publishAllDevBirths();
+				publishAllDevBirths(true);
 
 				setInitStatus(true);
 			} while(0);
 
 		}
-		catch (exception &e)
+		catch (std::exception &e)
 		{
 			DO_LOG_ERROR("failed to send birth messages :: " + std::string(e.what()));
 		}
@@ -167,7 +178,43 @@ void CSCADAHandler::handleIntMQTTConnLostThread()
 				}
 			} while(0);
 		}
-		catch (exception &e)
+		catch (std::exception &e)
+		{
+			DO_LOG_ERROR("ERROR :: " + std::string(e.what()));
+		}
+	}
+}
+
+/**
+ * Thread function to handle internal MQTT connection establish scenario.
+ * It listens on a semaphore to know the connection status.
+ * @return none
+ */
+void CSCADAHandler::handleIntMQTTConnEstablishThread()
+{
+	while(false == g_shouldStop.load())
+	{
+		try
+		{
+			do
+			{
+				if((sem_wait(&m_semIntMQTTConnEstablished)) == -1 && errno == EINTR)
+				{
+					// Continue if interrupted by handler
+					continue;
+				}
+				if(true == g_shouldStop.load())
+				{
+					break;
+				}
+				DO_LOG_ERROR("INFO: Internal MQTT connection established. DBIRTH to be sent");
+
+				// Publish the DBIRTH for all devices
+				publishAllDevBirths(false);
+
+			} while(0);
+		}
+		catch (std::exception &e)
 		{
 			DO_LOG_ERROR("ERROR :: " + std::string(e.what()));
 		}
@@ -176,12 +223,22 @@ void CSCADAHandler::handleIntMQTTConnLostThread()
 
 /**
  *
- * Signals that initernal MQTT connection is lost
+ * Signals that internal MQTT connection is lost
  * @return none
  */
 void CSCADAHandler::signalIntMQTTConnLostThread()
 {
 	sem_post(&m_semIntMQTTConnLost);
+}
+
+/**
+ *
+ * Signals that internal MQTT connection is established
+ * @return none
+ */
+void CSCADAHandler::signalIntMQTTConnEstablishThread()
+{
+	sem_post(&m_semIntMQTTConnEstablished);
 }
 
 /**
@@ -235,7 +292,7 @@ bool CSCADAHandler::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_pay
 		}
 		return true;
 	}
-	catch(exception& ex)
+	catch(std::exception& ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		return false;
@@ -291,7 +348,7 @@ void CSCADAHandler::prepareNodeDeathMsg(bool a_bPublishMsg)
 		}
 		free_payload(&ndeath_payload);
 	}
-	catch(exception& ex)
+	catch(std::exception& ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -302,7 +359,7 @@ void CSCADAHandler::prepareNodeDeathMsg(bool a_bPublishMsg)
  * @param a_deviceName : [in] device for which to publish birth message
  * @return none
  */
-void CSCADAHandler::publishAllDevBirths()
+void CSCADAHandler::publishAllDevBirths(bool a_bIsNBIRTHProcess)
 {
 	try
 	{
@@ -310,10 +367,10 @@ void CSCADAHandler::publishAllDevBirths()
 		for(auto &itrDevice : vDevList)
 		{
 			DO_LOG_DEBUG("Device : " + itrDevice);
-			publish_device_birth(itrDevice, true);
+			publish_device_birth(itrDevice, a_bIsNBIRTHProcess);
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -341,7 +398,7 @@ void CSCADAHandler::publish_device_birth(string a_deviceName, bool a_bIsNBIRTHPr
 			CSparkPlugDevManager::getInstance().setMsgPublishedStatus(enDEVSTATUS_UP, a_deviceName);
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -369,7 +426,7 @@ CSCADAHandler& CSCADAHandler::instance()
 			throw std::runtime_error("Missing required config..");
 		}
 	}
-	DO_LOG_DEBUG("External MQTT subscriber is connecting with QOS : " + to_string(nQos));
+	DO_LOG_DEBUG("External MQTT subscriber is connecting with QOS : " + std::to_string(nQos));
 	static CSCADAHandler handler(CCommon::getInstance().getExtMqttURL(), nQos);
 
 	if(bIsFirst)
@@ -388,6 +445,7 @@ CSCADAHandler::~CSCADAHandler()
 {
 	sem_destroy(&m_semSCADAConnSuccess);
 	sem_destroy(&m_semIntMQTTConnLost);
+	sem_destroy(&m_semIntMQTTConnEstablished);
 }
 
 /**
@@ -420,12 +478,12 @@ void CSCADAHandler::publish_node_birth()
 		add_simple_metric(&nbirth_payload, "bdSeq", false, 0, METRIC_DATA_TYPE_UINT64, false, false,
 				&m_uiBDSeq, sizeof(m_uiBDSeq));
 
-		std::cout << "Publishing nbirth message ..." << endl;
+		std::cout << "Publishing nbirth message ..." << std::endl;
 			publishSparkplugMsg(nbirth_payload, CCommon::getInstance().getNBirthTopic());
 
 		nbirth_payload.uuid = NULL;
 	}
-	catch(exception& ex)
+	catch(std::exception& ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -445,7 +503,7 @@ void CSCADAHandler::subscribeTopics()
 
 		DO_LOG_DEBUG("Subscribed with topics from SCADA master");
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -464,7 +522,7 @@ void CSCADAHandler::connected(const std::string &a_sCause)
 		// Publish the NBIRTH and DBIRTH Sparkplug messages
 		sem_post(&m_semSCADAConnSuccess);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -484,7 +542,7 @@ void CSCADAHandler::disconnected(const std::string &a_sCause)
 		setInitStatus(false);
 		prepareNodeDeathMsg(false);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -503,7 +561,7 @@ void CSCADAHandler::msgRcvd(mqtt::const_message_ptr a_pMsg)
 
 		DO_LOG_DEBUG("Pushed MQTT message in queue");
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -564,7 +622,7 @@ bool CSCADAHandler::publishMsgDDATA(const stRefForSparkPlugAction& a_stRefAction
 		publishSparkplugMsg(sparkplug_payload, strMsgTopic);
 		a_stRefAction.m_refSparkPlugDev.get().setPublishedStatus(enDEVSTATUS_UP);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 		return false;
@@ -608,7 +666,7 @@ bool CSCADAHandler::publishMsgDDEATH(const stRefForSparkPlugAction& a_stRefActio
 		publishSparkplugMsg(sparkplug_payload, strMsgTopic);
 		a_stRefAction.m_refSparkPlugDev.get().setPublishedStatus(enDEVSTATUS_DOWN);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 		return false;
@@ -653,7 +711,7 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 			}
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 		return false;
@@ -687,7 +745,7 @@ bool CSCADAHandler::publishMsgDDEATH(const std::string &a_sDevName)
 		//publish sparkplug message
 		publishSparkplugMsg(sparkplug_payload, strMsgTopic);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 		return false;
@@ -722,7 +780,7 @@ bool CSCADAHandler::processDCMDMsg(CMessageObject a_msg, std::vector<stRefForSpa
 
 		bRet = true;
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		bRet = false;

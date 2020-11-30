@@ -14,7 +14,6 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include Src/utils/subdir.mk
 -include Src/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -45,19 +44,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: libuwc-util.so
+all: libuwc-common.so
 
 # Tool invocations
-libuwc-util.so: $(OBJS) $(USER_OBJS)
+libuwc-common.so: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L../$(PROJECT_DIR)/lib -L../$(PROJECT_DIR)/../bin/yaml-cpp/lib -shared -o "libuwc-util.so" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L../$(PROJECT_DIR)/lib -L../$(PROJECT_DIR)/../bin/yaml-cpp/lib -shared -o "libuwc-common.so" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(LIBRARIES)$(CC_DEPS)$(C++_DEPS)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) libuwc-util.so
+	-$(RM) $(LIBRARIES)$(CC_DEPS)$(C++_DEPS)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) libuwc-common.so
 	-@echo ' '
 
 .PHONY: all clean dependents

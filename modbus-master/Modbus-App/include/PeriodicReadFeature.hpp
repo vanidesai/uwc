@@ -91,7 +91,6 @@ struct StPollingTracker
 	std::reference_wrapper<CTimeRecord> m_objTimeRecord;
 	bool m_bIsPolling;
 
-	//StPollingTracker() {;};
 	StPollingTracker(uint32_t a_uiPollInterval, std::reference_wrapper<CTimeRecord> a_objTimeRecord, bool a_bIsPolling)
 		: m_uiPollInterval{a_uiPollInterval}, m_objTimeRecord{a_objTimeRecord}, m_bIsPolling{a_bIsPolling}
 	{
@@ -325,7 +324,7 @@ namespace PeriodicTimer
 	 */
 	void timerThread(uint32_t interval);
 
-}  // namespace LinuxTimer
+}  // namespace PeriodicTimer
 
 
 #endif /* INCLUDE_INC_PERIODICREADFEATURE_HPP_ */

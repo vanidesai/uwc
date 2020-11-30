@@ -69,7 +69,7 @@ CIntMqttHandler& CIntMqttHandler::instance()
 		}
 	}
 
-	DO_LOG_DEBUG("Internal MQTT subscriber is connecting with QOS : " + to_string(nQos));
+	DO_LOG_DEBUG("Internal MQTT subscriber is connecting with QOS : " + std::to_string(nQos));
 	static CIntMqttHandler handler(strPlBusUrl.c_str(), nQos);
 
 	if(bIsFirst)
@@ -94,12 +94,10 @@ void CIntMqttHandler::subscribeTopics()
 		m_MQTTClient.subscribe("DATA/#");
 		m_MQTTClient.subscribe("DEATH/#");
 		m_MQTTClient.subscribe("/+/+/+/update");
-		//m_MQTTClient.subscribe("ConnectSCADA");
-		//m_MQTTClient.subscribe("StopSCADA");
 
 		DO_LOG_DEBUG("Subscribed topics with internal broker");
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -117,7 +115,7 @@ void CIntMqttHandler::connected(const std::string &a_sCause)
 		sem_post(&m_semConnSuccess);
 		setLastConStatus(enCON_UP);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -143,7 +141,7 @@ void CIntMqttHandler::disconnected(const std::string &a_sCause)
 		}
 		setLastConStatus(enCON_DOWN);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -164,7 +162,7 @@ void CIntMqttHandler::msgRcvd(mqtt::const_message_ptr a_pMsg)
 
 		DO_LOG_DEBUG("Pushed MQTT message in queue");
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -236,7 +234,6 @@ void CIntMqttHandler::handleConnMonitoringThread()
 				// Connection is lost
 				// Now check for 1 min to see if connection is established
 				struct timespec ts;
-				//int rc = clock_gettime(CLOCK_MONOTONIC, &ts);
 				int rc = clock_gettime(CLOCK_REALTIME, &ts);
 				if(0 != rc)
 				{
@@ -277,7 +274,7 @@ void CIntMqttHandler::handleConnMonitoringThread()
 				}
 			} while(0);
 		}
-		catch (exception &e)
+		catch (std::exception &e)
 		{
 			DO_LOG_ERROR("failed to initiate request :: " + std::string(e.what()));
 		}
@@ -320,18 +317,22 @@ void CIntMqttHandler::handleConnSuccessThread()
 						sem_post(&m_semConnSuccessToTimeOut);
 					}
 
+					//Send dbirth
+					CSCADAHandler::instance().signalIntMQTTConnEstablishThread();
+
 					// Subscription is done. Publish START_BIRTH_PROCESS if not done yet
 					static bool m_bIsFirstConnectDone = true;
 					if(true == m_bIsFirstConnectDone)
 					{
 						publishMsg("", "START_BIRTH_PROCESS");
+						DO_LOG_INFO("START_BIRTH_PROCESS message is published");
 						m_bIsFirstConnectDone = false;
 					}
 				}
 			} while(0);
 
 		}
-		catch (exception &e)
+		catch (std::exception &e)
 		{
 			DO_LOG_ERROR("failed to initiate request :: " + std::string(e.what()));
 		}
@@ -357,7 +358,7 @@ int CIntMqttHandler::getAppSeqNo()
 	m_appSeqNo++;
 	if(m_appSeqNo > 65535)
 	{
-		m_appSeqNo = 0;//todo - should we reset this to 0 after reconnection ?
+		m_appSeqNo = 0;
 	}
 
 	return m_appSeqNo;
@@ -417,7 +418,7 @@ bool CIntMqttHandler::prepareWriteMsg(std::reference_wrapper<CSparkPlugDev>& a_r
 			root = NULL;
 		}
 	}
-	catch (exception &ex)
+	catch (std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		if (root != NULL)
@@ -491,7 +492,7 @@ bool CIntMqttHandler::prepareCMDMsg(std::reference_wrapper<CSparkPlugDev>& a_ref
 			root = NULL;
 		}
 	}
-	catch (exception &ex)
+	catch (std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		if (root != NULL)
@@ -551,7 +552,7 @@ bool CIntMqttHandler::prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_st
 			}
 		}//action structure ends
 	}
-	catch (exception &ex)
+	catch (std::exception &ex)
 	{
 		DO_LOG_FATAL(ex.what());
 		return false;

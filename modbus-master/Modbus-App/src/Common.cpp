@@ -22,37 +22,6 @@ namespace
 
 std::mutex __appReqJsonLock;
 
-
-/**
- * Get time parameters
- * @param a_sTimeStamp	:[in] reference to store time stamp
- * @param a_sUsec		:[in] reference to store time in usec
- */
-/*void common_Handler::getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec)
-{
-	a_sTimeStamp.clear();
-	a_sUsec.clear();
-
-	const auto p1 = std::chrono::system_clock::now();
-
-	std::time_t rawtime = std::chrono::system_clock::to_time_t(p1);
-	std::tm* timeinfo = std::gmtime(&rawtime);
-	if(NULL == timeinfo)
-	{
-		return;
-	}
-	char buffer [80];
-
-	std::strftime(buffer,80,"%Y-%m-%d %H:%M:%S",timeinfo);
-	a_sTimeStamp.insert(0, buffer);
-
-	{
-		std::stringstream ss;
-		ss << std::chrono::duration_cast<std::chrono::microseconds>(p1.time_since_epoch()).count();
-		a_sUsec.insert(0, ss.str());
-	}
-}*/
-
 /**
  * Swap conversion
  * @param vt			:[in] vector
@@ -159,7 +128,7 @@ bool common_Handler::getReqData(unsigned short seqno, MbusAPI_t& reqData)
 		/// return the context
 		reqData = g_mapRequest.at(seqno);
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		DO_LOG_FATAL(LOGDETAILS(e.what()));
 		bRet = false;
@@ -178,7 +147,6 @@ bool common_Handler::getReqData(unsigned short seqno, MbusAPI_t& reqData)
  */
 bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t& reqData)
 {
-	//DO_LOG_DEBUG("Start: ");
 	bool bRet = true;
 	try
 	{
@@ -187,12 +155,11 @@ bool common_Handler::insertReqData(unsigned short seqno, MbusAPI_t& reqData)
 		/// insert the data
 		g_mapRequest.insert(std::pair <unsigned short, MbusAPI_t> (seqno, reqData));
 	}
-	catch (exception &e)
+	catch (std::exception &e)
 	{
 		DO_LOG_FATAL(e.what());
 		bRet = false;
 	}
-	//DO_LOG_DEBUG("End: ");
 
 	return bRet;
 }
@@ -215,7 +182,7 @@ bool common_Handler::updateReqData(unsigned short seqno, MbusAPI_t& reqData)
 		/// insert the data
 		g_mapRequest[seqno] = reqData;
 	}
-	catch (exception &e)
+	catch (std::exception &e)
 	{
 		DO_LOG_FATAL(e.what());
 		bRet = false;
@@ -231,10 +198,8 @@ bool common_Handler::updateReqData(unsigned short seqno, MbusAPI_t& reqData)
  */
 void common_Handler::removeReqData(unsigned short seqno)
 {
-	//DO_LOG_DEBUG("Start: " + std::to_string(seqno));
 	std::unique_lock<std::mutex> lck(__appReqJsonLock);
 	g_mapRequest.erase(seqno);
-	//DO_LOG_DEBUG("End: ");
 }
 
 /**

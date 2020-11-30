@@ -25,6 +25,12 @@ void InternalMQTTSubscriber_ut::TearDown()
 	// TearDown code
 }
 
+/**
+ * Test case to check if prepareCJSONMsg() behaves as expected
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_EmptyVector)
 {
 	bool result = CIntMqttHandler::instance().prepareCJSONMsg(stRefActionVec);

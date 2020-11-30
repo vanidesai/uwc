@@ -1,12 +1,12 @@
 /************************************************************************************
-* The source code contained or described herein and all documents related to
-* the source code ("Material") are owned by Intel Corporation. Title to the
-* Material remains with Intel Corporation.
-*
-* No license under any patent, copyright, trade secret or other intellectual
-* property right is granted to or conferred upon you by disclosure or delivery of
-* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
-************************************************************************************/
+ * The source code contained or described herein and all documents related to
+ * the source code ("Material") are owned by Intel Corporation. Title to the
+ * Material remains with Intel Corporation.
+ *
+ * No license under any patent, copyright, trade secret or other intellectual
+ * property right is granted to or conferred upon you by disclosure or delivery of
+ * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+ ************************************************************************************/
 
 #include "Common.hpp"
 #include <iterator>
@@ -21,12 +21,16 @@
  * 			In case of error or exception, application exits
  */
 CCommon::CCommon() :
-	m_strExtMqttURL{""}, m_nQos{1}, m_strNodeConfPath{""},
-	m_strGroupId{""}, m_strNodeName{""}, m_bIsScadaTLS{true}
+m_strExtMqttURL{""}, m_nQos{1}, m_strNodeConfPath{""},
+m_strGroupId{""}, m_strNodeName{""}, m_bIsScadaTLS{true}
 {
 	setScadaRTUIds();
-	
-	EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv);
+
+	if(false == EnvironmentInfo::getInstance().readCommonEnvVariables(m_vecEnv))
+	{
+		DO_LOG_ERROR("Error while reading the common environment variables");
+		exit(1);
+	}
 }
 
 /**
@@ -46,7 +50,7 @@ bool CCommon::loadYMLConfig()
 	catch(YAML::Exception &e)
 	{
 		DO_LOG_ERROR("scada_config.yml file not found :: " + std::string(e.what()));
-		cout << "ERROR: scada_config.yml file not found :: " + std::string(e.what()) << endl;
+		std::cout << "ERROR: scada_config.yml file not found :: " + std::string(e.what()) << std::endl;
 		return false;
 	}
 
@@ -61,19 +65,19 @@ bool CCommon::loadYMLConfig()
 			{
 				sTemp = "ssl://";
 				setScadaTLS(true);
-				cout << "Set the scada external broker to TLS" << endl;
+				std::cout << "Set the scada external broker to TLS" << std::endl;
 			}
 			else
 			{
 				sTemp = "tcp://";
 				setScadaTLS(false);
-				cout << "Set the scada external broker to non-TLS" << endl;
+				std::cout << "Set the scada external broker to non-TLS" << std::endl;
 			}
 		}
 		else
 		{
 			DO_LOG_ERROR("isTLS key is not present or type is invalid");
-			cout << "isTLS key is not present or type is invalid" << endl;
+			std::cout << "isTLS key is not present or type is invalid" << std::endl;
 			bRet = false;
 			break;
 		}
@@ -81,12 +85,12 @@ bool CCommon::loadYMLConfig()
 		if((config["mqttServerAddrSCADA"])
 				&& 0 == globalConfig::validateParam(config, "mqttServerAddrSCADA", globalConfig::eDataType::DT_STRING))
 		{
-			sTemp += config["mqttServerAddrSCADA"].as<string>();
+			sTemp += config["mqttServerAddrSCADA"].as<std::string>();
 		}
 		else
 		{
 			DO_LOG_ERROR("mqttServerAddrSCADA key is not present or type is invalid");
-			cout << "mqttServerAddrSCADA key is not present or type is invalid" << endl;
+			std::cout << "mqttServerAddrSCADA key is not present or type is invalid" << std::endl;
 			bRet = false;
 			break;
 		}
@@ -94,16 +98,16 @@ bool CCommon::loadYMLConfig()
 		if((config["mqttServerPortSCADA"])
 				&& 0 == globalConfig::validateParam(config, "mqttServerPortSCADA", globalConfig::eDataType::DT_STRING))
 		{
-			sTemp += (":" + config["mqttServerPortSCADA"].as<string>());
+			sTemp += (":" + config["mqttServerPortSCADA"].as<std::string>());
 			setExtMqttURL(sTemp);
 			DO_LOG_INFO("EXTERNAL_MQTT_URL is set to :: " + getExtMqttURL())
-			cout << "EXTERNAL_MQTT_URL is set to :: " + getExtMqttURL() << endl;
+			std::cout << "EXTERNAL_MQTT_URL is set to :: " + getExtMqttURL() << std::endl;
 			bRet = true;
 		}
 		else
 		{
 			DO_LOG_ERROR("mqttServerPortSCADA key is not present or type is invalid");
-			cout << "mqttServerPortSCADA key is not present or type is invalid" << endl;
+			std::cout << "mqttServerPortSCADA key is not present or type is invalid" << std::endl;
 			bRet = false;
 			break;
 		}
@@ -114,14 +118,14 @@ bool CCommon::loadYMLConfig()
 	{
 		int nQos = config["qos"].as<std::int32_t>();
 		setMQTTQos(nQos);
-		DO_LOG_INFO("QOS is set to :: " + to_string(getMQTTQos()));
-		cout << "QOS is set to :: " + to_string(getMQTTQos()) << endl;
+		DO_LOG_INFO("QOS is set to :: " + std::to_string(getMQTTQos()));
+		std::cout << "QOS is set to :: " + std::to_string(getMQTTQos()) << std::endl;
 	}
 	else
 	{
 		setMQTTQos(1);	// default QOS value is 1
-		DO_LOG_ERROR("QOS key is not present, set to default value " + to_string(getMQTTQos()));
-		cout << "QOS key is not present, set to default value :: " << to_string(getMQTTQos()) << endl;
+		DO_LOG_ERROR("QOS key is not present, set to default value " + std::to_string(getMQTTQos()));
+		std::cout << "QOS key is not present, set to default value :: " << std::to_string(getMQTTQos()) << std::endl;
 	}
 
 	return bRet;
@@ -139,12 +143,12 @@ void CCommon::setScadaRTUIds()
 	if(!bRetVal)
 	{
 		DO_LOG_INFO("Global configuration is set with some default parameters");
-		cout << "\nGlobal configuration is set with some default parameters\n\n";
+		std::cout << "\nGlobal configuration is set with some default parameters\n\n";
 	}
 	else
 	{
 		DO_LOG_INFO("Global configuration is set successfully");
-		cout << "\nGlobal configuration for container real-time is set successfully\n\n";
+		std::cout << "\nGlobal configuration for container real-time is set successfully\n\n";
 	}
 
 	m_strGroupId = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getGroupId();
@@ -153,7 +157,7 @@ void CCommon::setScadaRTUIds()
 		std::cout << "Group id for scada-rtu is not set, exiting application" << std::endl;
 		return;
 	}
-	
+
 	m_strNodeName = globalConfig::CGlobalConfig::getInstance().getSparkPlugInfo().getNodeName();
 	if(m_strNodeName.empty())
 	{
@@ -177,7 +181,7 @@ CCommon::~CCommon()
  * @return true/false based on true/false
  */
 bool CCommon::getTopicParts(std::string a_sTopic,
-		std::vector<std::string> &a_vsTopicParts, const string& a_delimeter)
+		std::vector<std::string> &a_vsTopicParts, const std::string& a_delimeter)
 {
 	try
 	{

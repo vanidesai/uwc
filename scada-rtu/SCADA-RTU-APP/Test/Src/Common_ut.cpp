@@ -20,11 +20,18 @@ void Common_ut::TearDown()
 	// TearDown code
 }
 
-
+/**
+ * Test case to check if getTopicParts() splits the topic successfully
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(Common_ut, getTopicParts_Test01)
 {
 	std::vector<std::string> TopicParts;
 	CCommon::getInstance().getTopicParts("PartA_UT/PartB_UT/PartC_UT", TopicParts, "/");
+
+	EXPECT_EQ("PartC_UT",TopicParts[2]);
 }
 
 

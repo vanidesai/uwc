@@ -38,8 +38,6 @@ extern "C"
 	#include <tahu.h>
 }
 
-using namespace std;
-
 #define SAMEVALUE_OR_DTATYPE  (0)
 #define DATATYPE_DIFFERENT (1)
 #define VALUES_DIFFERENT   (2)

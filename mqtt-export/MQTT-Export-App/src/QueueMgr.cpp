@@ -8,7 +8,6 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-//#include <vector>
 #include "cjson/cJSON.h"
 #include "Common.hpp"
 #include "QueueMgr.hpp"
@@ -17,10 +16,6 @@
 using namespace QMgr;
 
 //initialize queue manager instances for on-demand read/write and real-time read/write
-CQueueMgr ng_qRTRead(true, true);
-CQueueMgr ng_qRTWrite(false, true);
-CQueueMgr ng_qRead(true, false);
-CQueueMgr ng_qWrite(false, false);
 
 /**
  * Get reference of on-demand read operation instance
@@ -29,6 +24,7 @@ CQueueMgr ng_qWrite(false, false);
  */
 CQueueMgr& QMgr::getRead()
 {
+	static CQueueMgr ng_qRead(true, false);
 	return ng_qRead;
 }
 
@@ -39,6 +35,7 @@ CQueueMgr& QMgr::getRead()
  */
 CQueueMgr& QMgr::getWrite()
 {
+	static CQueueMgr ng_qWrite(false, false);
 	return ng_qWrite;
 }
 
@@ -49,6 +46,7 @@ CQueueMgr& QMgr::getWrite()
  */
 CQueueMgr& QMgr::getRTRead()
 {
+	static CQueueMgr ng_qRTRead(true, true);
 	return ng_qRTRead;
 }
 
@@ -59,6 +57,7 @@ CQueueMgr& QMgr::getRTRead()
  */
 CQueueMgr& QMgr::getRTWrite()
 {
+	static CQueueMgr ng_qRTWrite(false, true);
 	return ng_qRTWrite;
 }
 
@@ -81,5 +80,4 @@ QMgr::CQueueMgr::CQueueMgr(bool isRead, bool isRealTime)
  */
 QMgr::CQueueMgr::~CQueueMgr()
 {
-	//cleanup();
 }

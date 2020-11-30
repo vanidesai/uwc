@@ -22,11 +22,11 @@
 #include <gtest/gtest.h>
 #endif
 
-vector<std::thread> g_vThreads;
+std::vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.6.1"
+#define APP_VERSION "0.0.6.2"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -
@@ -118,7 +118,7 @@ bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher)
  * @param operation	:[out] operation info
  * @return none
  */
-void getOperation(string topic, globalConfig::COperation& operation)
+void getOperation(std::string topic, globalConfig::COperation& operation)
 {
 	if(std::string::npos != topic.find(POLLING_RT,
 			topic.length() - std::string(POLLING_RT).length(),
@@ -166,7 +166,7 @@ void getOperation(string topic, globalConfig::COperation& operation)
  * @param operation :[in] operation type this thread needs to perform
  * @return None
  */
-void listenOnEIS(string topic, zmq_handler::stZmqContext context, zmq_handler::stZmqSubContext subContext, globalConfig::COperation operation)
+void listenOnEIS(std::string topic, zmq_handler::stZmqContext context, zmq_handler::stZmqSubContext subContext, globalConfig::COperation operation)
 {
 	globalConfig::set_thread_sched_param(operation);
 	globalConfig::display_thread_sched_attr(topic + " listenOnEIS");
@@ -174,7 +174,7 @@ void listenOnEIS(string topic, zmq_handler::stZmqContext context, zmq_handler::s
 
 	if(context.m_pContext == NULL || subContext.sub_ctx == NULL)
 	{
-		std::cout << "Cannot start listening on EIS for topic : " << topic << endl;
+		std::cout << "Cannot start listening on EIS for topic : " << topic << std::endl;
 		DO_LOG_ERROR("Cannot start listening on EIS for topic : " + topic);
 		return;
 	}
@@ -203,7 +203,6 @@ void listenOnEIS(string topic, zmq_handler::stZmqContext context, zmq_handler::s
 				if (ret == MSG_ERR_EINTR)
 				{
 					DO_LOG_ERROR("received MSG_ERR_EINT");
-					//break;
 				}
 				DO_LOG_ERROR("Failed to receive message errno: " + std::to_string(ret));
 				continue;
@@ -213,7 +212,7 @@ void listenOnEIS(string topic, zmq_handler::stZmqContext context, zmq_handler::s
 			processMsg(msg, mqttPublisher);
 
 		}
-		catch (exception &ex)
+		catch (std::exception &ex)
 		{
 			DO_LOG_FATAL((std::string)ex.what()+" for topic : "+topic);
 		}
@@ -289,14 +288,8 @@ bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 		}
 		root = NULL;
 
-		//add time stamp before publishing msg on EIS
-		//std::string strTsReceived;
-		//CCommon::getInstance().getCurrentTimestampsInString(strTsReceived);
-
 		addField("tsMsgRcvdFromMQTT", (std::to_string(CCommon::getInstance().get_micros(a_oRcvdMsg.getTimestamp()))).c_str());
-		//addField("tsMsgPublishOnEIS", strTsReceived);
 		addField("sourcetopic", a_oRcvdMsg.getTopic());
-
 		
 		std::string strTsReceived{""};
 		bool bRet = true;
@@ -319,7 +312,7 @@ bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 	{
 		DO_LOG_ERROR(strException);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -379,7 +372,7 @@ void processMsgToSendOnEIS(CMessageObject &recvdMsg, const std::string a_sEisTop
 			}
 		}
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -424,9 +417,9 @@ void set_thread_priority_for_eis(bool& isRealtime, bool& isRead)
 		}
 		globalConfig::set_thread_sched_param(operation);
 		DO_LOG_DEBUG("Set thread priorities");
-		std::cout << "** Set thread priorities for isRead: " << isRead << ", isRealtime : " << isRealtime << endl;
+		std::cout << "** Set thread priorities for isRead: " << isRead << ", isRealtime : " << isRealtime << std::endl;
 	}
-	catch(exception &e)
+	catch(std::exception &e)
 	{
 		DO_LOG_FATAL(e.what());
 	}
@@ -501,7 +494,7 @@ void postMsgstoMQTT()
 	DO_LOG_DEBUG("Initializing threads to start listening on EIS topics...");
 
 	// get sub topic list
-	vector<string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
+	std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
 
 	for (auto &topic : vFullTopics)
 	{
@@ -567,7 +560,7 @@ bool initEISContext()
 		}
 		else
 		{
-			cout << "***** Sub Topics :: " << static_cast<std::string>(env_subTopics) << endl;
+			std::cout << "***** Sub Topics :: " << static_cast<std::string>(env_subTopics) << std::endl;
 			CcommonEnvManager::Instance().splitString(static_cast<std::string>(env_subTopics),',');
 		}
 	}
@@ -598,19 +591,19 @@ int main(int argc, char *argv[])
 		DO_LOG_DEBUG("Starting MQTT Export ...");
 
 		DO_LOG_INFO("MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION));
-		cout << "MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION) << endl;
+		std::cout << "MQTT-Expprt container app version is set to :: "+  std::string(APP_VERSION) << std::endl;
 
 		// load global configuration for container real-time setting
 		bool bRetVal = globalConfig::loadGlobalConfigurations();
 		if(!bRetVal)
 		{
 			DO_LOG_INFO("Global configuration is set with some default parameters");
-			cout << "\nGlobal configuration is set with some default parameters\n\n";
+			std::cout << "\nGlobal configuration is set with some default parameters\n\n";
 		}
 		else
 		{
 			DO_LOG_INFO("Global configuration is set successfully");
-			cout << "\nGlobal configuration for container real-time is set successfully\n\n";
+			std::cout << "\nGlobal configuration for container real-time is set successfully\n\n";
 		}
 
 		globalConfig::CPriorityMgr::getInstance();

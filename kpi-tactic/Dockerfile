@@ -16,9 +16,6 @@ LABEL description="KPI Tactic Application"
 FROM ia_common:$EIS_VERSION as kpitactic
 WORKDIR /
 
-# Create utils directory inside include
-RUN mkdir -p /KPIApp/include/utils
-
 # copy required dependencies
 COPY KPIApp /KPIApp/. 
 COPY --from=uwc_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
@@ -31,9 +28,8 @@ COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_common /usr/include/MQTT* /KPIApp/include/
 COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /KPIApp/include/log4cpp
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* /KPIApp/lib/
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so /KPIApp/lib/
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /KPIApp/lib/
 COPY --from=uwc_common /uwc_util/include/* /KPIApp/include/
-COPY --from=uwc_common /uwc_util/include/utils/* /KPIApp/include/utils/
 
 # build sources
 RUN cd /KPIApp/Release \
@@ -61,7 +57,7 @@ COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=kpitactic /KPIApp/Config/log4cpp.properties /opt/intel/config
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so ${APP_WORK_DIR}
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so ${APP_WORK_DIR}
 
 # set permissions to working dir for eisuser
 RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \

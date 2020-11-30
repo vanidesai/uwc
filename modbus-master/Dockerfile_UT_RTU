@@ -33,9 +33,6 @@ RUN mkdir -p reports/modbus-rtu-master
 # Copy built library from images
 COPY --from=uwc_test_common /usr/yaml /bin/yaml-cpp/.
 
-# Create utils directory inside include
-RUN mkdir -p /Modbus-App/include/utils
-
 COPY Modbus-App /Modbus-App/. 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
 COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
@@ -45,16 +42,15 @@ COPY --from=uwc_test_common /EIS/log4cpp/build/include/log4cpp /Modbus-App/inclu
 COPY --from=uwc_test_common /EIS/log4cpp/build/lib/* /Modbus-App/lib/
 COPY --from=uwc_test_common /usr/yaml/include/yaml-cpp /Modbus-App/include/
 COPY --from=uwc_test_common /usr/yaml/lib* /Modbus-App/lib/
-COPY --from=uwc_test_common /uwc_util/Release/libuwc-util.so /Modbus-App/lib/
+COPY --from=uwc_test_common /uwc_util/Release/libuwc-common.so /Modbus-App/lib/
 COPY --from=uwc_test_common /uwc_util/include/* /Modbus-App/include/
-COPY --from=uwc_test_common /uwc_util/include/utils/* /Modbus-App/include/utils/
 COPY --from=uwc_test_common /usr/paho-cpp/lib/lib* /Modbus-App/lib/
 COPY --from=uwc_test_common /usr/lib/libpaho* /Modbus-App/lib/
 COPY --from=uwc_test_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 
 RUN cp /Modbus-App/lib/* /usr/local/lib/
 RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Build.test/src/subdir.mk 
-RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Build.test/src/utils/subdir.mk 
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /Modbus-App/Build.test/Test/src/subdir.mk 
 RUN cd /Modbus-App/Build.test \
     &&	export LD_LIBRARY_PATH='/Modbus-App/lib:/usr/local/lib\
     :/bin/yaml-cpp/lib' \

@@ -10,7 +10,7 @@
 
 #include "Logger.hpp"
 
-#include "utils/YamlUtil.hpp"
+#include "YamlUtil.hpp"
 #include <thread>
 #include <mutex>
 #include <functional>
@@ -244,7 +244,7 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
 		iLen = iLen - i;
 		if((iLen / 2) != iOpLen)
 		{
-			DO_LOG_ERROR("width mismatch " + to_string(iLen) + "!=" + to_string(iOpLen));
+			DO_LOG_ERROR("width mismatch " + std::to_string(iLen) + "!=" + std::to_string(iOpLen));
 			return -1;
 		}
 		iLen = iLen + i;
@@ -282,7 +282,6 @@ int hex2bin(const std::string &src, int iOpLen, uint8_t* target)
  */
 bool onDemandHandler::validateInputJson(std::string stSourcetopic, std::string stWellhead, std::string stCommand)
 {
-	//DO_LOG_DEBUG("End");
 	bool retValue = false;
 	try
 	{
@@ -321,7 +320,6 @@ bool onDemandHandler::validateInputJson(std::string stSourcetopic, std::string s
 		DO_LOG_DEBUG("i/p json wellhead or command mismatch with sourcetopic");
 	}
 
-	//DO_LOG_DEBUG("End");
 	return retValue;
 }
 
@@ -365,7 +363,6 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 			{
 				if(!a_stMbusApiPram.m_stOnDemandReqData.m_sValue.empty())
 				{
-					//strValue = value->valuestring;
 					strValue = a_stMbusApiPram.m_stOnDemandReqData.m_sValue;
 				}
 				else
@@ -774,7 +771,7 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg,
 	}
 
 #ifdef INSTRUMENTATION_LOG
-		DO_LOG_DEBUG("On-demand request received on "+ stTopic + " realtime:: "+ to_string(a_bIsRT) + " with following parameters::");
+		DO_LOG_DEBUG("On-demand request received on "+ stTopic + " realtime:: "+ std::to_string(a_bIsRT) + " with following parameters::");
 #endif
 
 	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = getMsgElement(msg, "app_seq");

@@ -56,7 +56,6 @@ CMQTTHandler& CMQTTHandler::instance()
 			DO_LOG_ERROR("MQTT_URL_FOR_EXPORT Environment variable is not set");
 			std::cout << __func__ << ":" << __LINE__ << " Error : MQTT_URL_FOR_EXPORT Environment variable is not set" <<  std::endl;
 			throw std::runtime_error("Missing required config..");
-			//throw ("Missing required config..");
 		}
 	}
 
@@ -100,7 +99,7 @@ void CMQTTHandler::subscribeTopics()
 
 		DO_LOG_DEBUG("Subscribed topics with internal broker");
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -117,7 +116,7 @@ void CMQTTHandler::connected(const std::string &a_sCause)
 	{
 		signalIntMQTTConnDoneThread();
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -134,7 +133,7 @@ void CMQTTHandler::msgRcvd(mqtt::const_message_ptr a_pMsg)
 	{
 		CMQTTHandler::instance().pushMsgInQ(a_pMsg);
 	}
-	catch(exception &ex)
+	catch(std::exception &ex)
 	{
 		DO_LOG_ERROR(ex.what());
 	}
@@ -197,7 +196,7 @@ void CMQTTHandler::handleConnSuccessThread()
 			} while(0);
 
 		}
-		catch (exception &e)
+		catch (std::exception &e)
 		{
 			DO_LOG_ERROR("failed to initiate request :: " + std::string(e.what()));
 		}

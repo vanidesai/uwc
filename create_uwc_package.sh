@@ -34,7 +34,7 @@ checkrootUser()
 createUWCPackage()
 {
 	rm -rf ${Current_Dir}/Release/UWC.tar.gz
-	tar  --exclude='modbus-master/bin'  --exclude='Old_scripts.zip' --exclude='create_uwc_package.sh' --exclude='README.md' modbus-master/ MQTT/  mqtt-export/ scada-rtu/ Others/ *.yml uwc_common/ DBS_Patches/ kpi-tactic/ -zcvf UWC.tar.gz 
+	tar  --exclude='modbus-master/bin' --exclude='.svn' --exclude='DBS_Patches/.svn' --exclude='kpi-tactic/.svn' --exclude='modbus-master/.svn' --exclude='MQTT/.svn' --exclude='mqtt-export/.svn' --exclude='Others/.svn' --exclude='scada-rtu/.svn' --exclude='uwc_common/.svn' --exclude='Old_scripts.zip' --exclude='create_uwc_package.sh' --exclude='README.md' modbus-master/ MQTT/  mqtt-export/ scada-rtu/ Others/ *.yml uwc_common/ DBS_Patches/ kpi-tactic/ license.txt -zcvf UWC.tar.gz 
 	
 	if [ "$?" -ne "0" ];then
 		echo "${RED}Failed to create UWC package.${NC}"

@@ -17,20 +17,31 @@ void SparkPlugDevMgr_ut::TearDown()
 	// TearDown code
 }
 
-
-
-TEST_F(SparkPlugDevMgr_ut, DBirthMsg_false)
+/**
+ * Test case to check prepareDBirthMessage() with Invalid device name
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(SparkPlugDevMgr_ut, prepareDBirthMessage_InvalidDevName)
 {
 	bool RetVal = CSparkPlugDevManager::getInstance().prepareDBirthMessage(dbirth_payload, DevName, true);
-    EXPECT_EQ(false, RetVal);
+	EXPECT_EQ(false, RetVal);
 
 }
 
-
-TEST_F(SparkPlugDevMgr_ut, DeviceList)
+/**
+ * Test case to check getDeviceList() when spark plug device name map is not empty
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(SparkPlugDevMgr_ut, getDeviceList_NonEmptySprkPlgDevMAp)
 {
 	auto vDevList = CSparkPlugDevManager::getInstance().getDeviceList();
-	EXPECT_EQ(true, true);
+
+	//Returned vector should not be empty
+	EXPECT_EQ(false, vDevList.empty());
 
 }
 
