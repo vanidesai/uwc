@@ -1,0 +1,72 @@
+# Copyright (c) 2020 Intel Corporation.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+version: '3.6'
+
+services:
+  mqtt_container:
+    depends_on:
+      - ia_eisbase
+      - uwc_common
+    build:
+      context: $PWD/../uwc/MQTT/
+      dockerfile: $PWD/../uwc/MQTT/Dockerfile
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+    image: ${DOCKER_REGISTRY}mqtt_container:${EIS_VERSION}
+    container_name: mqtt_container
+    hostname: mqtt_container
+    read_only: true
+    restart: unless-stopped
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "3"
+            max-size: "10m"
+    environment:
+      AppName: "MQTT"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${no_proxy}
+    user: ${EIS_UID}
+    # userns_mode: host
+    secrets:
+      - ca_broker
+      - broker_cert
+      - broker_key
+    security_opt:
+      - no-new-privileges
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    healthcheck:
+      test: ["CMD-SHELL", "timeout --foreground 5 mosquitto_sub --cafile /run/secrets/ca_broker -h 127.0.0.1 -p 11883 --cert /run/secrets/broker_cert --key /run/secrets/broker_key -t '$$SYS/#' -C 1 | grep -v Error || exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
+
+secrets:
+  broker_cert:
+    file: provision/Certificates/MQTT/MQTT_client_certificate.pem
+  broker_key:
+    file: provision/Certificates/MQTT/MQTT_client_key.pem

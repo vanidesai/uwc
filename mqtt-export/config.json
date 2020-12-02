@@ -4,26 +4,169 @@
     "interfaces": {
         "Subscribers": [
             {
-                "Name": "default",
+                "Name": "TCP_PolledData",
                 "Type": "zmq_ipc",
                 "EndPoint": "/EIS/sockets",
-                "PublisherAppName": "VideoIngestion",
+                "PublisherAppName": "TCP",
                 "Topics": [
-                    "camera1_stream"
+                    "TCP_PolledData"
                 ],
-                "zmq_recv_hwm": 50
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "TCP_RdResp",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "TCP",
+                "Topics": [
+                    "TCP_RdResp"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "TCP_WrResp",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "TCP",
+                "Topics": [
+                    "TCP_WrResp"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "RTU_PolledData",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "RTU",
+                "Topics": [
+                    "RTU_PolledData"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "RTU_RdResp",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "RTU",
+                "Topics": [
+                    "RTU_RdResp"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "RTU_WrResp",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "RTU",
+                "Topics": [
+                    "RTU_WrResp"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "TCP_PolledData_RT",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "TCP",
+                "Topics": [
+                    "TCP_PolledData_RT"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "TCP_RdResp_RT",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "TCP",
+                "Topics": [
+                    "TCP_RdResp_RT"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "TCP_WrResp_RT",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "TCP",
+                "Topics": [
+                    "TCP_WrResp_RT"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "RTU_PolledData_RT",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "RTU",
+                "Topics": [
+                    "RTU_PolledData_RT"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "RTU_RdResp_RT",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "RTU",
+                "Topics": [
+                    "RTU_RdResp_RT"
+                ],
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "Name": "RTU_WrResp_RT",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
+                "PublisherAppName": "RTU",
+                "Topics": [
+                    "RTU_WrResp_RT"
+                ],
+                "zmq_recv_hwm": 1000
             }
         ],
         "Publishers": [
             {
-                "Name": "default",
-                "Type": "zmq_tcp",
-                "EndPoint": "127.0.0.1:65013",
+                "Name": "MQTT_Export_RdReq",
+                "Type": "zmq_ipc",
+                "EndPoint": "/EIS/sockets",
                 "Topics": [
-                    "camera1_stream_results"
+                    "MQTT_Export_RdReq"
                 ],
                 "AllowedClients": [
-                    "*"
+                    "TCP,RTU"
+                ]
+            },
+            {
+                "Name": "RTU_RdResp",
+                "Type": "zmq_tcp",
+                "EndPoint": "/EIS/sockets",
+                "Topics": [
+                    "RTU_RdResp"
+                ],
+                "AllowedClients": [
+                    "TCP,RTU"
+                ]
+            },
+            {
+                "Name": "RTU_RdResp",
+                "Type": "zmq_tcp",
+                "EndPoint": "/EIS/sockets",
+                "Topics": [
+                    "RTU_RdResp"
+                ],
+                "AllowedClients": [
+                    "TCP,RTU"
+                ]
+            },
+            {
+                "Name": "RTU_RdResp",
+                "Type": "zmq_tcp",
+                "EndPoint": "/EIS/sockets",
+                "Topics": [
+                    "RTU_RdResp"
+                ],
+                "AllowedClients": [
+                    "TCP,RTU"
                 ]
             }
         ]
