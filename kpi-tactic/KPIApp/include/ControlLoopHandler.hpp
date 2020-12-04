@@ -8,6 +8,8 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/*** ControlLoopHandler.hpp maintains control loop data and operations */
+
 #ifndef INCLUDE_CONTROLLOOPHANDLER_HPP_
 #define INCLUDE_CONTROLLOOPHANDLER_HPP_
 
@@ -18,19 +20,20 @@
 #include "QueueHandler.hpp"
 #include "Logger.hpp"
 
+/** class for control loop operations*/
 class CControlLoopOp
 {
 private:
-	std::string m_sId;
-	std::string m_sPolledTopic;
-	std::string m_sWritePointFullPath;
-	std::string m_sWriteDevName;
-	std::string m_sWriteWellheadName;
-	std::string m_sWritePointName;
-	uint32_t m_uiDelayMs;
-	std::string m_sVal;
-	CQueueHandler m_q;
-	std::thread m_thread;
+	std::string m_sId; /** site ID value*/
+	std::string m_sPolledTopic; /**Polled topic name*/
+	std::string m_sWritePointFullPath; /** value write point*/
+	std::string m_sWriteDevName; /** name of write device*/
+	std::string m_sWriteWellheadName; /** name of well head*/
+	std::string m_sWritePointName; /** point name*/
+	uint32_t m_uiDelayMs; /** value of delay in milliseconds*/
+	std::string m_sVal; /** site value*/
+	CQueueHandler m_q; /** object of class CQueueHandler*/
+	std::thread m_thread; //thread
 
 	void threadPollMonitoring();
 
@@ -79,23 +82,25 @@ public:
 	void postDummyAnalysisMsg(const std::string &a_sAppSeq, const std::string &a_sError) const;
 };
 
+
 class CKPIAppConfig;
 
+/** class for control loop mapping operations*/
 class CControlLoopMapper
 {
-	friend CKPIAppConfig;
-	std::map<std::string, std::vector<CControlLoopOp>> m_oControlLoopMap;
-	std::vector<std::string> m_vsPollTopics;
-	std::vector<std::string> m_vsWrRspTopics;
-	uint32_t m_uiCtrlLoopCnt;
+	friend CKPIAppConfig; //friend class
+	std::map<std::string, std::vector<CControlLoopOp>> m_oControlLoopMap; /** control loop map*/
+	std::vector<std::string> m_vsPollTopics; /** vector of poll topics*/
+	std::vector<std::string> m_vsWrRspTopics; /** vector of response topics*/
+	uint32_t m_uiCtrlLoopCnt; /** count of control loops*/
 
-	// Default constructor
+	/** Default constructor*/
 	CControlLoopMapper(): m_oControlLoopMap{}, m_uiCtrlLoopCnt{0}
 	{}
 
-	// delete copy and move constructors and assign operators
-	CControlLoopMapper(const CControlLoopMapper&) = delete;	 			// Copy construct
-	CControlLoopMapper& operator=(const CControlLoopMapper&) = delete;	// Copy assign
+	/** delete copy and move constructors and assign operators*/
+	CControlLoopMapper(const CControlLoopMapper&) = delete;	 			/** Copy construct*/
+	CControlLoopMapper& operator=(const CControlLoopMapper&) = delete;	/** Copy assign*/
 
 	bool insertControlLoopData(const std::string &a_sPolledTopic, const std::string &a_sWriteTopic, uint32_t a_uiDelayMs, const std::string &a_sVal);
 
@@ -116,11 +121,13 @@ public:
 	bool publishWriteReq(const CControlLoopOp& a_rCtrlLoop, const std::string &a_sWrSeq, CMessageObject &a_oPollMsg);
 };
 
+/** structure for poll write data*/
 struct stPollWrData
 {
-	CMessageObject m_oPollData;
-	struct timespec m_tsStartWrReqCreate;
+	CMessageObject m_oPollData; //object of class CMessageObject
+	struct timespec m_tsStartWrReqCreate;// reference of structure timespec
 
+	/** constructor*/
 	stPollWrData() 
 	: m_oPollData{}, m_tsStartWrReqCreate{}
 	{
@@ -131,13 +138,14 @@ struct stPollWrData
 	}
 };
 
+/** class maintaining poll and write request mapping*/
 class CPollNWriteReqMapper
 {
 private:
-	std::map<std::string, struct stPollWrData> m_mapPollWrite;
-	std::mutex m_mapMutex;
+	std::map<std::string, struct stPollWrData> m_mapPollWrite; /** map for poll and write data*/
+	std::mutex m_mapMutex; /** mutex for  map*/
 
-	CPollNWriteReqMapper() {};
+	CPollNWriteReqMapper() {};/** default constructor*/
 public:
 	static CPollNWriteReqMapper& getInstace()
 	{

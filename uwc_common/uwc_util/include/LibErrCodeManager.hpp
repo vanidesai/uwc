@@ -7,16 +7,19 @@
  * property right is granted to or conferred upon you by disclosure or delivery of
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
+
+/***LibErrCodeManager.hpp holds the information for error code of library*/
+
 #ifndef INCLUDE_INC_LIBERRCODE_HPP_
 #define INCLUDE_INC_LIBERRCODE_HPP_
 
-// This enumerator defines modbus app error codes
+/** This enumerator defines modbus app error codes */
 enum eUWCLibErrorCode
 {
 	UWCLIB_SUCCESS = 0,
 	UWCLIB_NULL_ARG = 200,
 	UWCLIB_EXEPTION = 201,
-	UWCLIB_INVLID_TOPIC_TYPE = 202, //TBD to be removed, duplicate error type
+	UWCLIB_INVLID_TOPIC_TYPE = 202, /** TBD to be removed, duplicate error type */
 	UWCLIB_ERR_APP_DATA_NOT_SET = 300,
 	UWCLIB_ERR_CFGMNGR_CLIENT_CR = 301,
 	UWCLIB_ERR_CFGMNGRENV_CLIENT_CR = 302,

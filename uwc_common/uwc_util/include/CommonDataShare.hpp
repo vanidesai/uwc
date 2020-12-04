@@ -8,35 +8,36 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  *************************************************************************************/
 
+/***  CommonDataShare.hpp To share module related common data to uwc-common library */
+
 #ifndef UWC_COMMONDATASHARE_HPP_
 #define UWC_COMMONDATASHARE_HPP_
 
 #include <iostream>
 #include "Logger.hpp"
 
-/*
- * Common data recieved from calling app
- */
+/*Common data recieved from calling app*/
 struct stUWCComnDataVal_t
 {
-	std::string								m_sAppName;
-	bool									m_devMode;
-	bool 			m_isCommonDataInitialised = false;
+	std::string	m_sAppName; /** App name */
+	bool m_devMode; /** DEv mode(true or false)*/
+	bool m_isCommonDataInitialised = false;
 };
 
+/** Class to manage the common environment*/
 class CcommonEnvManager{
 
 private:
 	stUWCComnDataVal_t CommonDataFromApp;
-	std::vector<std::string> m_vect_TopicList;
+	std::vector<std::string> m_vect_TopicList; /** vector of topic list */
 
-	/// Constructor
+	/** Constructor */
 	CcommonEnvManager();
 
-	/// copy constructor is private
+	/** copy constructor is private */
 	CcommonEnvManager(CcommonEnvManager const&);
 
-	/// assignment operator is private
+	/** assignment operator is private */
 	CcommonEnvManager& operator=(CcommonEnvManager const&);
 
 public:
@@ -48,22 +49,22 @@ public:
 	 */
 	static CcommonEnvManager& Instance();
 
-	/// Get app name
+	/** Get app name */
 	std::string getAppName(){
 		return CommonDataFromApp.m_sAppName;
 	}
 
-	/// Get Dev mode
+	/** Get Dev mode */
 	bool getDevMode(){
 		return CommonDataFromApp.m_devMode;
 	}
 
-	/// Function to set stUWCComnDataVal_t structure.
+	/** Function to set stUWCComnDataVal_t structure.*/
 	void ShareToLibUwcCmnData(stUWCComnDataVal_t &ImportFromApp_Locobj) {
 		CommonDataFromApp = ImportFromApp_Locobj;
 	}
 
-	/// Function to split string with given delimeter
+	/** Function to split string with given delimeter */
 	void splitString(const std::string &str, char delim);
 
 	/**
@@ -83,7 +84,7 @@ public:
 		m_vect_TopicList.push_back(a_sTopic);
 	}
 
-	/// function to read current time and usec
+	/** function to read current time and usec */
 	void getTimeParams(std::string &a_sTimeStamp, std::string &a_sUsec);
 };
 

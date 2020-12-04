@@ -1,12 +1,12 @@
 /*************************************************************************************
-* The source code contained or described herein and all documents related to
-* the source code ("Material") are owned by Intel Corporation. Title to the
-* Material remains with Intel Corporation.
-*
-* No license under any patent, copyright, trade secret or other intellectual
-* property right is granted to or conferred upon you by disclosure or delivery of
-* the Materials, either expressly, by implication, inducement, estoppel or otherwise.
-*************************************************************************************/
+ * The source code contained or described herein and all documents related to
+ * the source code ("Material") are owned by Intel Corporation. Title to the
+ * Material remains with Intel Corporation.
+ *
+ * No license under any patent, copyright, trade secret or other intellectual
+ * property right is granted to or conferred upon you by disclosure or delivery of
+ * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
+ *************************************************************************************/
 
 #include <iostream>
 #include <atomic>
@@ -27,76 +27,76 @@ using namespace CommonUtils;
 // Unnamed namespace to define globals 
 namespace  
 {
-	eNetworkType g_eNetworkType{eNetworkType::eALL};
-	std::atomic<bool> g_bIsStarted{false};
-	std::map<std::string, CWellSiteInfo> g_mapYMLWellSite;
-	std::map<std::string, CRTUNetworkInfo> g_mapRTUNwInfo;
-	std::map<std::string, CUniqueDataPoint> g_mapUniqueDataPoint;
-	std::map<std::string, CUniqueDataDevice> g_mapUniqueDataDevice;
-	std::vector<std::string> g_sErrorYMLs;
-	unsigned short g_usTotalCnt{0};
+eNetworkType g_eNetworkType{eNetworkType::eALL};
+std::atomic<bool> g_bIsStarted{false};
+std::map<std::string, CWellSiteInfo> g_mapYMLWellSite;
+std::map<std::string, CRTUNetworkInfo> g_mapRTUNwInfo;
+std::map<std::string, CUniqueDataPoint> g_mapUniqueDataPoint;
+std::map<std::string, CUniqueDataDevice> g_mapUniqueDataDevice;
+std::vector<std::string> g_sErrorYMLs;
+unsigned short g_usTotalCnt{0};
 
-	/**
-	 * Populate unique point data
-	 * @param a_oWellSite :[in] well site to populate info of
-	 */
-	void populateUniquePointData(const CWellSiteInfo &a_oWellSite)
+/**
+ * Populate unique point data
+ * @param a_oWellSite :[in] well site to populate info of
+ */
+void populateUniquePointData(const CWellSiteInfo &a_oWellSite)
+{
+	DO_LOG_DEBUG("Start");
+	for(auto &objWellSiteDev : a_oWellSite.getDevices())
 	{
-		DO_LOG_DEBUG("Start");
-		for(auto &objWellSiteDev : a_oWellSite.getDevices())
+		std::string devID(SEPARATOR_CHAR+ objWellSiteDev.getID() + SEPARATOR_CHAR + a_oWellSite.getID());
+
+		// populate device data
+		CUniqueDataDevice objDevice{a_oWellSite, objWellSiteDev};
+		g_mapUniqueDataDevice.emplace(devID, objDevice);
+
+		auto &refUniqueDev = g_mapUniqueDataDevice.at(devID);
+
+		for(auto &objPt : objWellSiteDev.getDevInfo().getDataPoints())
 		{
-			std::string devID(SEPARATOR_CHAR+ objWellSiteDev.getID() + SEPARATOR_CHAR + a_oWellSite.getID());
+			std::string sUniqueId(SEPARATOR_CHAR + objWellSiteDev.getID()
+					+ SEPARATOR_CHAR + a_oWellSite.getID() + SEPARATOR_CHAR +
+					objPt.getID());
 
-			// populate device data
-			CUniqueDataDevice objDevice{a_oWellSite, objWellSiteDev};
-			g_mapUniqueDataDevice.emplace(devID, objDevice);
+			// Build unique data point
+			CUniqueDataPoint oUniquePoint{sUniqueId, a_oWellSite, objWellSiteDev, objPt};
+			g_mapUniqueDataPoint.emplace(sUniqueId, oUniquePoint);
 
-			auto &refUniqueDev = g_mapUniqueDataDevice.at(devID);
+			refUniqueDev.addPoint(std::ref(g_mapUniqueDataPoint.at(sUniqueId)));
 
-			for(auto &objPt : objWellSiteDev.getDevInfo().getDataPoints())
-			{
-				std::string sUniqueId(SEPARATOR_CHAR + objWellSiteDev.getID()
-						+ SEPARATOR_CHAR + a_oWellSite.getID() + SEPARATOR_CHAR +
-										objPt.getID());
-				
-				// Build unique data point
-				CUniqueDataPoint oUniquePoint{sUniqueId, a_oWellSite, objWellSiteDev, objPt};
-				g_mapUniqueDataPoint.emplace(sUniqueId, oUniquePoint);
-
-				refUniqueDev.addPoint(std::ref(g_mapUniqueDataPoint.at(sUniqueId)));
-
-				DO_LOG_INFO(oUniquePoint.getID() +
-							"=" +
-							std::to_string(oUniquePoint.getMyRollID()));
-			}
+			DO_LOG_INFO(oUniquePoint.getID() +
+					"=" +
+					std::to_string(oUniquePoint.getMyRollID()));
 		}
-		DO_LOG_DEBUG("End");
 	}
+	DO_LOG_DEBUG("End");
+}
 
-	
-	std::vector<std::string> g_sWellSiteFileList;
 
-	/**
-	 * Get well site list
-	 * @return 	true : on success,
-	 * 			false : on error
-	 */
-	bool _getWellSiteList(string a_strSiteListFileName)
+std::vector<std::string> g_sWellSiteFileList;
+
+/**
+ * Get well site list
+ * @return 	true : on success,
+ * 			false : on error
+ */
+bool _getWellSiteList(string a_strSiteListFileName)
+{
+	DO_LOG_DEBUG(" Start: Reading site_list.yaml");
+	try
 	{
-		DO_LOG_DEBUG(" Start: Reading site_list.yaml");
-		try
-		{
-			YAML::Node Node = CommonUtils::loadYamlFile(a_strSiteListFileName);
-			CommonUtils::convertYamlToList(Node, g_sWellSiteFileList);
-		}
-		catch(YAML::Exception &e)
-		{
-			DO_LOG_FATAL(e.what());
-			return false;
-		}
-		DO_LOG_DEBUG("End:");
-		return true;
+		YAML::Node Node = CommonUtils::loadYamlFile(a_strSiteListFileName);
+		CommonUtils::convertYamlToList(Node, g_sWellSiteFileList);
 	}
+	catch(YAML::Exception &e)
+	{
+		DO_LOG_FATAL(e.what());
+		return false;
+	}
+	DO_LOG_DEBUG("End:");
+	return true;
+}
 }
 
 /**
@@ -129,13 +129,13 @@ int network_info::CDeviceInfo::addDataPoint(CDataPoint a_oDataPoint)
 	// If not present, add it
 
 	DO_LOG_DEBUG("Start: To add DataPoint - " +
-				a_oDataPoint.getID());
+			a_oDataPoint.getID());
 	for(auto oDataPoint: m_DataPointList)
 	{
 		if(0 == oDataPoint.getID().compare(a_oDataPoint.getID()))
 		{
 			DO_LOG_ERROR(":Already present DataPoint with id" +
-						a_oDataPoint.getID());
+					a_oDataPoint.getID());
 			// This point name is already present. Ignore this point
 			return -1;
 		}
@@ -143,7 +143,7 @@ int network_info::CDeviceInfo::addDataPoint(CDataPoint a_oDataPoint)
 	m_DataPointList.push_back(a_oDataPoint);
 
 	DO_LOG_DEBUG("End: Added DataPoint - " +
-				a_oDataPoint.getID());
+			a_oDataPoint.getID());
 	return 0;
 }
 
@@ -165,7 +165,7 @@ int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 	//    If not present, add it
 
 	DO_LOG_DEBUG(" Start: To add DataPoint - " +
-				a_oDevice.getID());
+			a_oDevice.getID());
 	// Check network type
 	if (g_eNetworkType != a_oDevice.getAddressInfo().m_NwType)
 	{
@@ -180,7 +180,7 @@ int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 			return -2;
 		}
 	}
-	
+
 	// Search whether given device name is already present
 	for(auto oDev: m_DevList)
 	{
@@ -192,7 +192,7 @@ int network_info::CWellSiteInfo::addDevice(CWellSiteDevInfo a_oDevice)
 	}
 	m_DevList.push_back(a_oDevice);
 	DO_LOG_DEBUG(" End: Added device - " +
-				a_oDevice.getID());
+			a_oDevice.getID());
 	return 0;
 }
 
@@ -214,7 +214,7 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 				a_oWellSite.m_sId = test.second.as<std::string>();
 
 				DO_LOG_INFO(" : Scanning site: " +
-							a_oWellSite.m_sId);
+						a_oWellSite.m_sId);
 				bIsIdPresent = true;
 				continue;
 			}
@@ -233,20 +233,20 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 						if(0 == i32RetVal)
 						{
 							DO_LOG_INFO(" : Added device with id: " +
-										objWellsiteDev.getID());
+									objWellsiteDev.getID());
 						}
 						else if(-1 == i32RetVal)
 						{
 							DO_LOG_ERROR("Ignoring device with id : " +
-							objWellsiteDev.getID() +
-							", since this point name is already present. Ignore this point.");
+									objWellsiteDev.getID() +
+									", since this point name is already present. Ignore this point.");
 							std::cout << "Ignoring device with id : " << objWellsiteDev.getID() << ", since this point name is already present. Ignore this point."<< std::endl;
 						}
 						else if(-2 == i32RetVal)
 						{
 							DO_LOG_ERROR("Ignoring device with id : " +
-							objWellsiteDev.getID() +
-							", since Device type and network type are not matching.");
+									objWellsiteDev.getID() +
+									", since Device type and network type are not matching.");
 							std::cout << "Ignoring device with id : " << objWellsiteDev.getID() << ", since Device type and network type are not matching."<< std::endl;
 						}
 					}
@@ -284,9 +284,9 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
  */
 bool network_info::validateIpAddress(const string &ipAddress)
 {
-    struct sockaddr_in sa;
-    int result = inet_pton(AF_INET, ipAddress.c_str(), &(sa.sin_addr));
-    return result;
+	struct sockaddr_in sa;
+	int result = inet_pton(AF_INET, ipAddress.c_str(), &(sa.sin_addr));
+	return result;
 }
 
 /**
@@ -366,7 +366,7 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 				a_oWellSiteDevInfo.m_sId = it.second.as<std::string>();
 
 				DO_LOG_INFO(" : Scanning site device: " +
-							a_oWellSiteDevInfo.m_sId);
+						a_oWellSiteDevInfo.m_sId);
 				bIsIdPresent = true;
 				continue;
 			}
@@ -444,8 +444,8 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 						bIsProtocolPresent = true;
 
 						DO_LOG_INFO(" : TCP protocol: " +
-									a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress +
-									":" +std::to_string(a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber));
+								a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_sIPAddress +
+								":" +std::to_string(a_oWellSiteDevInfo.m_stAddress.m_stTCP.m_ui16PortNumber));
 					}
 					catch(std::exception &e)
 					{
@@ -458,7 +458,7 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 				{
 					// error
 					DO_LOG_ERROR(" : Unknown protocol: " +
-								tempMap.at("protocol"));
+							tempMap.at("protocol"));
 					std::cout << __func__<< " : Unknown protocol: " << tempMap.at("protocol") << std::endl;
 					throw YAML::Exception(YAML::Mark::null_mark(), "Unknown protocol found");
 				}
@@ -490,7 +490,7 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 		std::cout << __func__<<" Exception :: " << e.what()<<std::endl;
 		throw;
 	}
-	
+
 	DO_LOG_DEBUG("End");
 }
 
@@ -527,7 +527,7 @@ void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_
 				YAML::Node node = CommonUtils::loadYamlFile(test.second.as<std::string>());
 
 				DO_LOG_INFO(" : pointlist found: " +
-							test.second.as<std::string>());
+						test.second.as<std::string>());
 
 				for (auto it : node)
 				{
@@ -619,7 +619,7 @@ const std::map<std::string, CUniqueDataDevice>& network_info::getUniqueDeviceLis
 eEndPointType network_info::CDataPoint::getPointType(const std::string& a_type)
 {
 	DO_LOG_DEBUG(" Start: Received type: " +
-				a_type);
+			a_type);
 	eEndPointType type;
 	if(a_type == "INPUT_REGISTER")
 	{
@@ -640,7 +640,7 @@ eEndPointType network_info::CDataPoint::getPointType(const std::string& a_type)
 	else
 	{
 		DO_LOG_ERROR(" : Unknown type: " +
-					a_type);
+				a_type);
 		throw YAML::Exception(YAML::Mark::null_mark(), "Unknown Modbus point type");
 	}
 
@@ -656,11 +656,11 @@ eEndPointType network_info::CDataPoint::getPointType(const std::string& a_type)
  */
 bool network_info:: isNumber(string s)
 {
-    for (uint32_t i32Count = 0; i32Count < s.length(); i32Count++)
-        if (isdigit(s[i32Count]) == false)
-            return false;
+	for (uint32_t i32Count = 0; i32Count < s.length(); i32Count++)
+		if (isdigit(s[i32Count]) == false)
+			return false;
 
-    return true;
+	return true;
 }
 
 /**
@@ -716,14 +716,24 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 		a_oCDataPoint.m_sId = a_oData["id"].as<std::string>();
 		a_oCDataPoint.m_stAddress.m_eType = getPointType(a_oData["attributes"]["type"].as<std::string>());
 		a_oCDataPoint.m_stAddress.m_iAddress = a_oData["attributes"]["addr"].as<std::int32_t>();
-		a_oCDataPoint.m_stAddress.m_iWidth =  a_oData["attributes"]["width"].as<std::int32_t>();
+
+		if((a_oCDataPoint.m_stAddress.m_eType == eEndPointType::eCoil) && (a_oData["attributes"]["width"].as<std::int32_t>() != 1))
+		{
+			DO_LOG_ERROR("Invalid width value is specified in yml file. hence ignoring the point : " + a_oCDataPoint.m_sId);
+			std::cout << "ERROR:: Invalid width value is specified in yml file. hence ignoring the point : "<< a_oCDataPoint.m_sId << std::endl;
+			throw YAML::Exception(YAML::Mark::null_mark(), "Width should be 1 for COIL type");
+		}
+		else
+		{
+			a_oCDataPoint.m_stAddress.m_iWidth =  a_oData["attributes"]["width"].as<std::int32_t>();
+		}
 
 		// validate width
 		if (a_oCDataPoint.m_stAddress.m_iWidth <= 0)
 		{
 			DO_LOG_ERROR("Invalid width value is specified in yml file. hence ignoring the point : " + a_oCDataPoint.m_sId);
 			std::cout << "ERROR:: Invalid width value is specified in yml file. hence ignoring the point : "<< a_oCDataPoint.m_sId << std::endl;
-			throw YAML::Exception(YAML::Mark::null_mark(), "Invalid value for width");;
+			throw YAML::Exception(YAML::Mark::null_mark(), "Invalid value for width");
 		}
 
 		if (a_oData["attributes"]["byteswap"])
@@ -774,21 +784,21 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 void printWellSite(CWellSiteInfo a_oWellSite)
 {
 	DO_LOG_DEBUG(" Start: wellsite: " +
-				a_oWellSite.getID());
+			a_oWellSite.getID());
 
 	for(auto &objWellSiteDev : a_oWellSite.getDevices())
 	{
 		DO_LOG_DEBUG(a_oWellSite.getID() +
-					"\\" +
-					objWellSiteDev.getID());
+				"\\" +
+				objWellSiteDev.getID());
 
 		for(auto &objPt : objWellSiteDev.getDevInfo().getDataPoints())
 		{
 			DO_LOG_DEBUG(a_oWellSite.getID() +
-						"\\" +
-						objWellSiteDev.getID() +
-						"\\" +
-						objPt.getID());
+					"\\" +
+					objWellSiteDev.getID() +
+					"\\" +
+					objPt.getID());
 		}
 	}
 	DO_LOG_DEBUG("End");
@@ -813,7 +823,7 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 	// Set the flag to avoid all future calls to this function. 
 	// This is done to keep data structures in tact once network is built
 	g_bIsStarted = true;
-	
+
 	// Set the network type TCP or RTU
 	transform(a_strNetworkType.begin(), a_strNetworkType.end(), a_strNetworkType.begin(), ::toupper);
 
@@ -837,13 +847,13 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 
 	std::cout << "Network set as: " << (int)g_eNetworkType << std::endl;
 	DO_LOG_INFO(" Network set as: " +
-				std::to_string((int)g_eNetworkType));
-	
+			std::to_string((int)g_eNetworkType));
+
 	// Following stage is needed only when configuration files are placed in a docker volume
 
 	//std::cout << "Config files are kept in a docker volume\n";
 	//DO_LOG_INFO(" Config files are kept in a docker volume");
-	
+
 	// get list of well sites
 	if(false == _getWellSiteList(a_strSiteListFileName))
 	{
@@ -867,12 +877,12 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 			// It means record exists
 			std::cout << __func__ << " " << sWellSiteFile <<" : is already scanned. Ignoring";
 			DO_LOG_INFO(sWellSiteFile +
-						"Already scanned YML file: Ignoring it.");
+					"Already scanned YML file: Ignoring it.");
 			continue;
 		}
 
 		DO_LOG_INFO(" New YML file: " +
-					sWellSiteFile);
+				sWellSiteFile);
 
 		try
 		{
@@ -884,16 +894,16 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 			g_mapYMLWellSite.emplace(sWellSiteFile, objWellSite);
 
 			DO_LOG_INFO(" Successfully scanned: " +
-						sWellSiteFile +
-						": Id = " +
-						objWellSite.getID());
+					sWellSiteFile +
+					": Id = " +
+					objWellSite.getID());
 		}
 		catch(YAML::Exception &e)
 		{
 			DO_LOG_FATAL(" Ignoring YML:" +
-						sWellSiteFile +
-						"Error: " +
-						e.what());
+					sWellSiteFile +
+					"Error: " +
+					e.what());
 			// Add this file to error YML files
 			g_sErrorYMLs.push_back(sWellSiteFile);
 		}
@@ -938,37 +948,37 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
  * @param a_rPoint		:[in] data points
  */
 CUniqueDataPoint::CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
-				const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint) :
-				m_uiMyRollID{((unsigned int)g_usTotalCnt)+1}, m_sId{a_sId},
-				m_rWellSite{a_rWellSite}, m_rWellSiteDev{a_rWellSiteDev}, m_rPoint{a_rPoint}, m_bIsAwaitResp{false}, m_bIsRT{a_rPoint.getPollingConfig().m_bIsRealTime}
-{
-	++g_usTotalCnt;
-}
+		const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint) :
+						m_uiMyRollID{((unsigned int)g_usTotalCnt)+1}, m_sId{a_sId},
+						m_rWellSite{a_rWellSite}, m_rWellSiteDev{a_rWellSiteDev}, m_rPoint{a_rPoint}, m_bIsAwaitResp{false}, m_bIsRT{a_rPoint.getPollingConfig().m_bIsRealTime}
+						{
+							++g_usTotalCnt;
+						}
 
-/**
- * Constructor
- * @param a_objPt 		:[in] reference CUniqueDataPoint object for copy constructor
- */
-CUniqueDataPoint::CUniqueDataPoint(const CUniqueDataPoint &a_objPt) :
-				m_uiMyRollID{a_objPt.m_uiMyRollID}, m_sId{a_objPt.m_sId},
-				m_rWellSite{a_objPt.m_rWellSite}, m_rWellSiteDev{a_objPt.m_rWellSiteDev}, m_rPoint{a_objPt.m_rPoint}, m_bIsAwaitResp{false}
-{
-		m_bIsRT.store(a_objPt.m_bIsRT);
-}
+						/**
+						 * Constructor
+						 * @param a_objPt 		:[in] reference CUniqueDataPoint object for copy constructor
+						 */
+						CUniqueDataPoint::CUniqueDataPoint(const CUniqueDataPoint &a_objPt) :
+						m_uiMyRollID{a_objPt.m_uiMyRollID}, m_sId{a_objPt.m_sId},
+						m_rWellSite{a_objPt.m_rWellSite}, m_rWellSiteDev{a_objPt.m_rWellSiteDev}, m_rPoint{a_objPt.m_rPoint}, m_bIsAwaitResp{false}
+						{
+							m_bIsRT.store(a_objPt.m_bIsRT);
+						}
 
-/**
- * Check if response is received or not for specific point
- * @return 	true : on success,
- * 			false : on error
- */
-bool CUniqueDataPoint::isIsAwaitResp() const {
-	return m_bIsAwaitResp.load();
-}
+						/**
+						 * Check if response is received or not for specific point
+						 * @return 	true : on success,
+						 * 			false : on error
+						 */
+						bool CUniqueDataPoint::isIsAwaitResp() const {
+							return m_bIsAwaitResp.load();
+						}
 
-/**
- * Set the response status for point
- * @param isAwaitResp	:[out] true/false based on response received or not
- */
-void CUniqueDataPoint::setIsAwaitResp(bool isAwaitResp) const {
-	m_bIsAwaitResp.store(isAwaitResp);
-}
+						/**
+						 * Set the response status for point
+						 * @param isAwaitResp	:[out] true/false based on response received or not
+						 */
+						void CUniqueDataPoint::setIsAwaitResp(bool isAwaitResp) const {
+							m_bIsAwaitResp.store(isAwaitResp);
+						}

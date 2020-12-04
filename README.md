@@ -20,11 +20,16 @@ The directory comprises of following:
   This directory contains the mqtt-export container sources and docker file for building the container 
   For detail, please refer to `README-mqtt-export.md` file of mqtt-export folder
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/MQTT">MQTT</a> :
-  This directory contains the mqtt container sources and docker file for building the container.  
+  This directory contains the mqtt container sources and docker file for building the container.
   For detail, please refer to `README-MQTT.md` file of MQTT folder
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/scada-rtu">scada-rtu</a> :
   This directory contains the scada-rtu sources and docker file for building the container.
   For detail, please refer to `README_SCADA_RTU.md` file of scada-rtu folder
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/uwc-common">uwc-common</a> :
+  This directory contains sources for uwc common library container & Dockerfile to install all the dependencies and libraries needed by all the containers. For detail, please refer to `README-UWC_Common.md` file of uwc_common folder
+* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/kpi-tactic">kpi-tactic</a> :
+  This directory contains the kpi-tactic container sources and docker file for building the container 
+  For detail, please refer to `README-kpi-tactic.md` file of kpi-tactic folder
 * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Others">Others</a> :
   This directory contains configurations for ETCD required during provisioning
 * <a href="https://github.impcloud.net/uwc/UWC-Core/blob/master/docker-compose.yml">docker-compose.yml</a> :

@@ -8,6 +8,8 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/*** MqttHandler.hpp is handler for MQTT operations*/
+
 #ifndef MQTT_PUBLISH_HANDLER_HPP_
 #define MQTT_PUBLISH_HANDLER_HPP_
 
@@ -15,15 +17,16 @@
 #include "MQTTPubSubClient.hpp"
 #include "QueueMgr.hpp"
 
+/** Handler class for mqtt*/
 class CMqttHandler : public CMQTTBaseHandler
 {
-	sem_t m_semConnSuccess;
+	sem_t m_semConnSuccess; /** semaphore for connection success*/
 
-	CMqttHandler(const std::string &strPlBusUrl, int iQOS);
+	CMqttHandler(const std::string &strPlBusUrl, int iQOS);//constructor
 
-	// delete copy and move constructors and assign operators
-	CMqttHandler(const CMqttHandler&) = delete;	 			// Copy construct
-	CMqttHandler& operator=(const CMqttHandler&) = delete;	// Copy assign
+	/** delete copy and move constructors and assign operators*/
+	CMqttHandler(const CMqttHandler&) = delete;	 			/** Copy construct*/
+	CMqttHandler& operator=(const CMqttHandler&) = delete;	/** Copy assign*/
 
 	void subscribeTopics();
 	void connected(const std::string &a_sCause) override;
@@ -35,8 +38,8 @@ class CMqttHandler : public CMQTTBaseHandler
 	bool pushMsgInQ(mqtt::const_message_ptr& a_msgMQTT);
 
 public:
-	~CMqttHandler();
-	static CMqttHandler& instance(); //function to get single instance of this class
+	~CMqttHandler();/** destructor*/
+	static CMqttHandler& instance(); /** function to get single instance of this class*/
 };
 
 #endif

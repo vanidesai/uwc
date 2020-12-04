@@ -8,26 +8,29 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/*** KPIAppConfigMgr.hpp handles the configuration of kpi app */
+
 #ifndef INCLUDE_KPIAPPCONFIGMGR_HPP_
 #define INCLUDE_KPIAPPCONFIGMGR_HPP_
 
 #include "ControlLoopHandler.hpp"
 
+/** class for kpi app configuration*/
 class CKPIAppConfig
 {
-	uint32_t m_uiExecTimeMin;
-	bool m_bIsMQTTModeApp;
-	bool m_bIsRTModeForPolledPoints;
-	bool m_bIsRTModeForWriteOp;
+	uint32_t m_uiExecTimeMin; /** Execution time in minutes*/
+	bool m_bIsMQTTModeApp; /** mqtt mode on or not(true or false*/
+	bool m_bIsRTModeForPolledPoints; /** RT mode for polled points(true or false) */
+	bool m_bIsRTModeForWriteOp; /** RT mode for write operation(true or false) */
 
-	CControlLoopMapper m_oCtrlLoopMap;
+	CControlLoopMapper m_oCtrlLoopMap; //object of class CControlLoopMapper
 
-	// Default constructor
+	/** Default constructor*/
 	CKPIAppConfig(): m_uiExecTimeMin{0}, m_bIsMQTTModeApp{false}, 
 		m_bIsRTModeForPolledPoints{true}, m_bIsRTModeForWriteOp{true}, m_oCtrlLoopMap{}
 	{}
 
-	// delete copy and move constructors and assign operators
+	/** delete copy and move constructors and assign operators*/
 	CKPIAppConfig(const CKPIAppConfig&) = delete;	 			// Copy construct
 	CKPIAppConfig& operator=(const CKPIAppConfig&) = delete;	// Copy assign
 

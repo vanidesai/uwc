@@ -123,12 +123,12 @@ bool CQueueHandler::getSubMsgFromQ(CMessageObject& msg)
 {
 	try
 	{
+		std::lock_guard<std::mutex> lock(m_queueMutex);
 		if(m_msgQ.empty())
 		{
 			return false;
 		}
-
-		std::lock_guard<std::mutex> lock(m_queueMutex);
+		
 		msg = m_msgQ.front();
 		m_msgQ.pop();
 	}

@@ -8,6 +8,10 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/**
+ * File contains the class CMQTTHandler to manage instance of MQTT connection
+ */
+
 #ifndef MQTTHANDLER_HPP_
 #define MQTTHANDLER_HPP_
 
@@ -18,9 +22,12 @@
 #include "mqtt/async_client.h"
 #include "MQTTPubSubClient.hpp"
 
+/**
+ * MQTT Handler class to manage instance of MQTT connection
+ */
 class CMQTTHandler : public CMQTTBaseHandler
 {
-	sem_t m_semConnSuccess;
+	sem_t m_semConnSuccess; /*!< an instance of semaphore */
 
 	CMQTTHandler(const std::string &strPlBusUrl, int iQOS);
 

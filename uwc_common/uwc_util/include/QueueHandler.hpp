@@ -7,6 +7,7 @@
  * property right is granted to or conferred upon you by disclosure or delivery of
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
+/*** QueueHandler.hpp is used to handle mqtt message queue.*/
 
 #ifndef QHANDLER_HPP_
 #define QHANDLER_HPP_
@@ -23,7 +24,7 @@
 	 */
 	class CMessageObject
 	{
-		mqtt::const_message_ptr m_mqttMsg;
+		mqtt::const_message_ptr m_mqttMsg; /** mqtt-export message*/
 		struct timespec m_stTs;
 
 		public:
@@ -57,6 +58,7 @@
 	        return *this; 
 	    }
 
+		/** function to get topic*/
 		std::string getTopic() 
 		{
 			if (NULL == m_mqttMsg)
@@ -65,6 +67,7 @@
 			}
 			return m_mqttMsg->get_topic();
 		}
+		/** function to string msg*/
 		std::string getStrMsg() 
 		{
 			if (NULL == m_mqttMsg)
@@ -83,16 +86,16 @@
 	{
 		bool initSem();
 
-		std::mutex m_queueMutex;
-		std::queue<CMessageObject> m_msgQ;
-		sem_t m_semaphore;
+		std::mutex m_queueMutex; /** queue mutex*/
+		std::queue<CMessageObject> m_msgQ; /** message queue*/
+		sem_t m_semaphore;/** semaphore*/
 
 		// delete copy and move constructors and assign operators
 		CQueueHandler& operator=(const CQueueHandler&)=delete;	// Copy assign
 		CQueueHandler(const CQueueHandler&)=delete;	 			// Copy construct
 
 	public:
-		CQueueHandler();
+		CQueueHandler();//default constructor
 		virtual ~CQueueHandler();
 
 		bool pushMsg(CMessageObject msg);

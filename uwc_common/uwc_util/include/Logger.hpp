@@ -8,6 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
+/*** Logger.hpp is used to log debug and error informations using `log4cpp` library*/
+
 #ifndef INCLUDE_LOGGER_HPP_
 #define INCLUDE_LOGGER_HPP_
 
@@ -54,12 +56,13 @@
 	} \
 }
 
+/** class holds information of logger and log levels*/
 class CLogger {
 private:
-	log4cpp::Category *logger;
-	bool m_bIsExternal;
+	log4cpp::Category *logger; /** reference to the log4cpp*/
+	bool m_bIsExternal; /** Is external or not(true or false)*/
 
-	// Private constructor so that no objects can be created.
+	/** Private constructor so that no objects can be created.*/
 	CLogger();
 	CLogger(const CLogger & obj){logger = NULL;}
 	CLogger& operator=(CLogger const&);
@@ -101,6 +104,7 @@ public:
 	void LogError(std::string msg);
 	void LogFatal(std::string msg);
 
+	/** function to check level supported or not */
 	bool isLevelSupported(int priority)
 	{
 		if(NULL != logger)

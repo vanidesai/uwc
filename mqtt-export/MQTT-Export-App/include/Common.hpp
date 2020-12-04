@@ -7,6 +7,9 @@
 * property right is granted to or conferred upon you by disclosure or delivery of
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
+/**
+ * File contains the class CCommon that manages common environment variables
+ */
 
 #ifndef INCLUDE_COMMON_HPP_
 #define INCLUDE_COMMON_HPP_
@@ -14,6 +17,9 @@
 #include <string>
 #include <vector>
 
+/**
+ * class CCommon that manages common environment variables & timestamp for msg payload
+ */
 class CCommon
 {
 private:
@@ -23,7 +29,7 @@ private:
 	CCommon& operator=(CCommon const&);
 
 	std::vector<std::string> m_vecEnv{"ReadRequest", "WriteRequest",
-		"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE", "ReadRequest_RT", "WriteRequest_RT"};
+		"AppName", "MQTT_URL_FOR_EXPORT", "DEV_MODE", "ReadRequest_RT", "WriteRequest_RT"}; /*!< a vector of strings of common environment variables */
 
 public:
 	virtual ~CCommon();

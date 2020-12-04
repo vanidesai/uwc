@@ -8,6 +8,8 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/***QueueMgr.hpp is for queue managing operations*/
+
 #ifndef QMGR_HPP_
 #define QMGR_HPP_
 
@@ -20,20 +22,19 @@
 #include <string>
 #include "QueueHandler.hpp"
 
-/**
- * namespace for Queue manager
- */
+/**namespace for Queue manager*/
 namespace QMgr
 {
 
+/** structure maintains mqtt msg related functionalities*/
 struct stMqttMsg
 {
-	std::string m_strSite;
-	std::string m_strDevice;
-	std::string m_strDataPoint;
-	std::string m_mqttTopic;
-	mqtt::const_message_ptr m_mqttMsg;
-	std::map<std::string, std::string> m_datapoint_key_val;
+	std::string m_strSite; /** site name*/
+	std::string m_strDevice; /** device name*/
+	std::string m_strDataPoint; /** data point name*/
+	std::string m_mqttTopic; /** name of mqtt topic*/
+	mqtt::const_message_ptr m_mqttMsg; /** mqtt msg*/
+	std::map<std::string, std::string> m_datapoint_key_val;/** map for data point key value*/
 	/**
 	 * Set data point name on which to send message for SCADA
 	 * @param a_sTopic :[in] data point name to set
@@ -137,7 +138,7 @@ struct stMqttMsg
 	}
 };
 
-//functions to get on-demand operation instances
+/** functions to get on-demand operation instances*/
 CQueueHandler& getDatapointsQ();
 CQueueHandler& getScadaSubQ();
 }

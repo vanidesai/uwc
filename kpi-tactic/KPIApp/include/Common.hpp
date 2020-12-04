@@ -7,6 +7,7 @@
  * property right is granted to or conferred upon you by disclosure or delivery of
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
+/*** Common.hpp handles common functionalities like getting value from msg, adding field to msg, creating write request*/
 
 #ifndef INCLUDE_COMMON_HPP_
 #define INCLUDE_COMMON_HPP_
@@ -17,6 +18,7 @@
 #include "QueueHandler.hpp"
 #include "ControlLoopHandler.hpp"
 
+/** namespace maintains functions for getting value from json, log analysis , creating write request*/
 namespace commonUtilKPI
 {
 	std::string getValueofKeyFromJSONMsg(const std::string &a_sMsg, const std::string &a_sKey);
@@ -35,9 +37,10 @@ namespace commonUtilKPI
 	void logAnalysisMsg(struct stPollWrData &a_stPollWrData, CMessageObject &a_msgWrResp);
 }
 
+/** Class for common settings*/
 class commonSettings
 {
-	bool m_devMode;
+	bool m_devMode; /** dev mode or not(true or false)*/
 
 	commonSettings(){}
 	commonSettings(const commonSettings&) = delete;

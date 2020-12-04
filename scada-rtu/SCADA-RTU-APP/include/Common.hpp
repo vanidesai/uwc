@@ -8,6 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
+/*** Common.hpp for common operations of scada-RTU*/
+
 #ifndef INCLUDE_COMMON_HPP_
 #define INCLUDE_COMMON_HPP_
 
@@ -24,21 +26,23 @@ using namespace globalConfig;
 #define SCADA_CONFIG_FILE_PATH "/opt/intel/eis/uwc_data/scada-rtu/scada_config.yml"
 #define SCADA_SPARKPLUG_VERSION "2.0"
 
+/** class handling common operations*/
 class CCommon
 {
 private:
+	/** vector of env variables*/
 	std::vector<std::string> m_vecEnv{"AppName", "INTERNAL_MQTT_URL", "DEV_MODE", "NETWORK_TYPE", "DEVICES_GROUP_LIST_FILE_NAME"};
 	// Private constructor so that no objects can be created.
 	CCommon();
 	CCommon(const CCommon & obj) = delete;
 	CCommon& operator=(CCommon const&) = delete;
 
-	std::string m_strExtMqttURL;
-	int m_nQos;
-	std::string m_strNodeConfPath;
-	std::string m_strGroupId;
-	std::string m_strNodeName;
-	bool m_bIsScadaTLS;
+	std::string m_strExtMqttURL; /** external mqtt url*/
+	int m_nQos; /** qos value*/
+	std::string m_strNodeConfPath; /** node configuration path*/
+	std::string m_strGroupId; /** value of group ID*/
+	std::string m_strNodeName; /** node name*/
+	bool m_bIsScadaTLS; /** scada TLS(true or false)*/
 
 	void setScadaRTUIds();
 
@@ -54,13 +58,8 @@ private:
 	}
 
 public:
-	~CCommon();
+	~CCommon();//destructor
 
-	/**
-	 * load config required for scada-rtu container from scada_config.yml file
-	 * @param None
-	 * @return true/false based on condition
-	 */
 	bool loadYMLConfig();
 
 	/**

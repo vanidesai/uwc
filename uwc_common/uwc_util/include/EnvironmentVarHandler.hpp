@@ -8,6 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
+/*** EnvironmentVarHandler.hpp is used to handle environment variables of the calling application */
+
 #ifndef INC_ENVIRONMENTVARHANDLER_HPP_
 #define INC_ENVIRONMENTVARHANDLER_HPP_
 
@@ -16,30 +18,31 @@
 #include <mutex>
 #include <string>
 
+/** class holds the information about the environment*/
 class EnvironmentInfo
 {
-	/// map with key as Environment Var Name and value as its value
+	/** map with key as Environment Var Name and value as its value */
 	std::unordered_map<std::string, std::string> m_umapEnv;
 
-	/// Default Constructor
+	/** Default Constructor */
 	EnvironmentInfo(){}
 
-	/// Copy Constructor
+	/** Copy Constructor */
 	EnvironmentInfo(const EnvironmentInfo&) = delete;
 
-	/// Assignment Operator
+	/** Assignment Operator */
 	EnvironmentInfo& operator=(const EnvironmentInfo&) = delete;
 public:
-	/// Default Destructor
+	/** Default Destructor */
 	~EnvironmentInfo(){}
 
-	/// Function to read common environment variables
+	/** Function to read common environment variables */
 	bool readCommonEnvVariables(std::vector<std::string>);
 
-	/// Function to add environment variable data to Map
+	/** Function to add environment variable data to Map */
 	bool addDataToEnvMap(std::string, std::string);
 
-	/// Function to get environment variable data from Map based on key
+	/** Function to get environment variable data from Map based on key */
 	std::string getDataFromEnvMap(std::string);
 
 	/** Returns instance of EnvironmentInfo class

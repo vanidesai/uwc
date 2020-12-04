@@ -8,6 +8,8 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/** SCADAHandler.hpp is handler for scada operations*/
+
 #ifndef SCADAHANDLER_HPP_
 #define SCADAHANDLER_HPP_
 
@@ -29,26 +31,27 @@ extern "C"
 {
 #include <tahu.h>
 }
-//
 
+/** namespace for network information*/
 using namespace network_info;
 
+/** SCADA handler class*/
 class CSCADAHandler : public CMQTTBaseHandler
 {
-	uint64_t m_uiBDSeq = 0; 
+	uint64_t m_uiBDSeq = 0; // sequence
 
-	sem_t m_semSCADAConnSuccess;
-	sem_t m_semIntMQTTConnLost;
-	sem_t m_semIntMQTTConnEstablished;
+	sem_t m_semSCADAConnSuccess; /** semaphore for connection success*/
+	sem_t m_semIntMQTTConnLost; /** semaphore for internal mqtt connection lost*/
+	sem_t m_semIntMQTTConnEstablished; /** semaphore for internal mqtt connection established*/
 
-	std::atomic<bool> m_bIsInitDone = false;
+	std::atomic<bool> m_bIsInitDone = false; //flag for initialization check
 
-	// Default constructor
+	/** Default constructor*/
 	CSCADAHandler(const std::string &strPlBusUrl, int iQOS);
 
-	// delete copy and move constructors and assign operators
-	CSCADAHandler(const CSCADAHandler&) = delete;	 			// Copy construct
-	CSCADAHandler& operator=(const CSCADAHandler&) = delete;	// Copy assign
+	/** delete copy and move constructors and assign operators*/
+	CSCADAHandler(const CSCADAHandler&) = delete;	 			/** Copy construct*/
+	CSCADAHandler& operator=(const CSCADAHandler&) = delete;	/** Copy assign*/
 
 	bool getInitStatus() {return m_bIsInitDone.load();}
 	void setInitStatus(bool a_bStatus) {return m_bIsInitDone.store(a_bStatus);}
@@ -73,6 +76,7 @@ class CSCADAHandler : public CMQTTBaseHandler
 	bool publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payload, string a_topic);
 
 public:
+	/** Destructor*/
 	~CSCADAHandler();
 	static CSCADAHandler& instance();
 

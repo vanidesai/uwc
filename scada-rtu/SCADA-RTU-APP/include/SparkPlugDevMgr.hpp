@@ -8,6 +8,9 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/*** SparkPlugDevMgr.hpp handles operations for managing spark plug device like device birth msg,
+ * deivce death, process birth, process death */
+
 #ifndef SPARKPLUG_DEV_MGR_HPP_
 #define SPARKPLUG_DEV_MGR_HPP_
 
@@ -28,12 +31,14 @@ extern "C"
 #include "cjson/cJSON.h"
 }
 
+/** Class to maintain spark plug device operations*/
 class CSparkPlugDevManager
 {
-	devSparkplugMap_t m_mapSparkPlugDev;
-	CVendorAppList m_objVendorAppList;
-	std::mutex m_mutexDevList;
+	devSparkplugMap_t m_mapSparkPlugDev; /** reference of devSparkplugMap_t*/
+	CVendorAppList m_objVendorAppList; /** object of class CVendorAppList*/
+	std::mutex m_mutexDevList; /** mutext for device list*/
 
+	/** default constructor*/
 	CSparkPlugDevManager()
 	{
 		;

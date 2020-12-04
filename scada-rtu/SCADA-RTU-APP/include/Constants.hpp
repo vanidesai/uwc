@@ -8,6 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 *************************************************************************************/
 
+/**Constants.hpp specifying constants for kpi App */
+
 #ifndef INCLUDE_CONSTANTS_HPP_
 #define INCLUDE_CONSTANTS_HPP_
 

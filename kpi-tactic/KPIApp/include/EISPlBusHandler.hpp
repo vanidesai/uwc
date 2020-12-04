@@ -7,6 +7,9 @@
  * property right is granted to or conferred upon you by disclosure or delivery of
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
+
+/** EISBusHandler.hpp handles EIS bus operations*/
+
 #ifndef INCLUDE_EISPLBUSHANDLER_HPP_
 #define INCLUDE_EISPLBUSHANDLER_HPP_
 
@@ -17,9 +20,10 @@
 #include <functional>
 #include <string>
 
+/** Handler class for EIS Bus*/
 class CEISPlBusHandler
 {
-    std::vector<std::thread> m_vThreads;
+    std::vector<std::thread> m_vThreads; /** vector of threads*/
 
     void listenOnEIS(std::string topic, zmq_handler::stZmqContext context,
 			zmq_handler::stZmqSubContext subContext, bool a_bIsPolling);

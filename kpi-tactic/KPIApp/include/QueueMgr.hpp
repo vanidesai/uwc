@@ -8,6 +8,8 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/*** QueueMgr.hpp for queue managing operations*/
+
 #ifndef QMGR_HPP_
 #define QMGR_HPP_
 
@@ -26,6 +28,7 @@ namespace QMgr
 	CQueueHandler& WriteRespMsgQ();
 }
 
+/** nmaespace for Bus manager*/
 namespace PlBusMgr
 {
 	void initPlatformBusHandler(bool a_bIsMQTTMode);

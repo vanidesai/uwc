@@ -8,11 +8,18 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/**
+ * File contains the class CMQTTPublishHandler that manages instance that handles Publish message on MQTT broker
+ */
+
 #ifndef MQTT_PUBLISH_HANDLER_HPP_
 #define MQTT_PUBLISH_HANDLER_HPP_
 
 #include "MQTTPubSubClient.hpp"
 
+/**
+ * CMQTTPublishHandler class manages instance that handles Publish message on MQTT broker
+ */
 class CMQTTPublishHandler : public CMQTTBaseHandler
 {
 public:

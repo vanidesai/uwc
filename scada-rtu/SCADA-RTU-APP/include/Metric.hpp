@@ -8,6 +8,8 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/*** Metric.hpp maintains spark plug information*/
+
 #ifndef METRIC_HPP_
 #define METRIC_HPP_
 
@@ -45,19 +47,21 @@ extern "C"
 #define VALUE_ASSINED      (4)
 #define SUBDEV_SEPARATOR_CHAR ("-")
 
-using var_t = std::variant<std::monostate, bool, uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, float, double, std::string>;
-using var_metric_ref_t = std::variant<std::monostate, std::reference_wrapper<const network_info::CUniqueDataPoint>>; 
+using var_t = std::variant<std::monostate, bool, uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, float, double, std::string>;/**Type alias for metric value*/
+using var_metric_ref_t = std::variant<std::monostate, std::reference_wrapper<const network_info::CUniqueDataPoint>>; /**Type alias for metric value*/
 
+/** class for value object*/
 class CValObj
 {
-	friend class CMetric;
-	uint32_t m_uiDataType;
-	var_t m_objVal;
+	friend class CMetric; //friend class
+	uint32_t m_uiDataType; /** data type*/
+	var_t m_objVal; /** object value*/
 
 	bool setValObj(std::string a_sDatatype, cJSON *a_cjValue);
 	bool setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_metric);
 
 public:
+	/**default constructor*/
 	CValObj() :
 			m_uiDataType{0}, m_objVal{}
 	{
@@ -79,22 +83,24 @@ public:
 
 	CValObj& operator=(const CValObj &a_obj);
 
+	/** Function  to compare the data types*/
 	uint8_t compareDataType(const CValObj &a_obj) const
 	{
 		if (a_obj.m_uiDataType == m_uiDataType)
 		{
-			// Datatypes are equal
+			/** Datatypes are equal*/
 			return SAMEVALUE_OR_DTATYPE;
 		}
-		// Datatypes are different
+		/** Datatypes are different*/
 		return DATATYPE_DIFFERENT;
 	}
 
+	/** Function compares values*/
 	uint8_t compareValue(const CValObj &a_obj) const
 	{
 		if (SAMEVALUE_OR_DTATYPE == compareDataType(a_obj))
 		{
-			// Datatypes are equal
+			/** Datatypes are equal*/
 			if (a_obj.m_objVal == m_objVal)
 			{
 				// Values are same
@@ -107,6 +113,7 @@ public:
 		return DATATYPE_DIFFERENT;
 	}
 
+	/** Function assigns value*/
 	uint8_t assignValue(const CValObj &a_obj)
 	{
 		uint8_t uiRetVal = compareValue(a_obj);
@@ -124,17 +131,20 @@ public:
 		return DATATYPE_DIFFERENT;
 	}
 
+	/**Function assigns new data type to value */
 	void assignNewDataTypeValue(uint32_t a_uiDataType, const CValObj &a_obj) 
 	{
 		m_uiDataType = a_uiDataType;
 		m_objVal = a_obj.m_objVal;
 	}
 
+	/** Function to read data type*/
 	uint32_t getDataType() const
 	{
 		return m_uiDataType;
 	}
 
+    /*Function to read value */
 	var_t& getValue()
 	{
 		return m_objVal;
@@ -144,6 +154,7 @@ public:
 
 	bool assignToCJSON(cJSON *a_cjMetric) const;
 
+	/** function to print*/
 	void print()
 	{
 		std::cout << "\t DataType: " << m_uiDataType << "\t Value: ";
@@ -180,37 +191,44 @@ public:
 	}
 };
 
+/** Class to manage sparkplug name and values*/
 class CMetric
 {
-	std::string m_sName;
-	std::string m_sSparkPlugName;
-	CValObj m_objVal;
-	uint64_t m_timestamp;
-	var_metric_ref_t m_rDirectProp;
+	std::string m_sName; /** site name*/
+	std::string m_sSparkPlugName; /** spark plug name*/
+	CValObj m_objVal; /** object of class CValObj*/
+	uint64_t m_timestamp; /** Time sta,p value*/
+	var_metric_ref_t m_rDirectProp; /** refernce to var_metric_ref_t*/
 	
-	friend class CSparkPlugDevManager;
-	friend class CSparkPlugDev;
+	friend class CSparkPlugDevManager; /** frind class*/
+	friend class CSparkPlugDev; /* friend class*/
+
+	/**constructor*/
 	CMetric() : m_timestamp {0}, m_rDirectProp{}
 	{
 		m_timestamp = get_current_timestamp();
 	}
 
+	/**Function set name*/
 	void setName(std::string a_sName)
 	{
 		m_sName = a_sName;
 	}
 
+	/** function set object value for data type*/
 	bool setValObj(std::string a_sDatatype, cJSON *a_cjValue)
 	{
 		return m_objVal.setValObj(a_sDatatype, a_cjValue);
 	}
 
+	/** function set value of object for spark plug metric*/
 	bool setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric)
 	{
 		return m_objVal.setValObj(a_sparkplugMetric);
 	}
 
 public:
+	/** constructor*/
 	CMetric(std::string a_sName) :
 			m_sName{ a_sName }, m_sSparkPlugName{ a_sName },
 			m_objVal{ }, m_timestamp{get_current_timestamp()}, m_rDirectProp{std::monostate{}}
@@ -232,41 +250,49 @@ public:
 		;
 	}
 
+	/** function to get name*/
 	std::string getName() const
 	{
 		return m_sName;
 	}
 	
+	/** function to get spark plug name*/
 	std::string getSparkPlugName() const
 	{
 		return m_sSparkPlugName;
 	}
 	
+	/** function gets object value*/
 	CValObj& getValue()
 	{
 		return m_objVal;
 	}
 
+	/** function to set spark plug name*/
 	void setSparkPlugName(std::string a_sVal)
 	{
 		m_sSparkPlugName = a_sVal;
 	}
 
+	/** function to set value*/
 	void setValue(const CValObj &a_objVal)
 	{
 		m_objVal.assignValue(a_objVal);
 	}
 
+	/** function to set time stamp value*/
 	void setTimestamp(const uint64_t a_timestamp)
 	{
 		m_timestamp = a_timestamp;
 	}
 
+	/** function to get time stamp value*/
 	uint64_t getTimestamp() const
 	{
 		return m_timestamp;
 	}
 
+	/** function to print*/
 	void print()
 	{
 		std::cout << "Metric Name: " << m_sName;

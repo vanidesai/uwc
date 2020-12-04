@@ -8,6 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
+/*** ConfigManager.hpp is used to handle configuration management using ConfigManager eis library*/
+
 #ifndef UWC_CONFIGMANAGER_HPP_
 #define UWC_CONFIGMANAGER_HPP_
 
@@ -28,6 +30,7 @@
 
 #ifndef SCADA_RTU
 
+/** CfgManager class to manage the configuration*/
 class CfgManager {
 public:
 
@@ -66,33 +69,31 @@ public:
 
 private:
 
-	/// True for success and false for failure
+	/** True for success and false for failure */
 	bool isClientCreated;
 
-	/// Local object for EIS ENV Manager
+	/** Local object for EIS ENV Manager */
 	env_config_t* env_config_client;
 
-	/// Local object for EIS Config Manager
+	/** Local object for EIS Config Manager */
 	config_mgr_t* config_mgr_client;
 
-	/** Constructor
-	 */
+	/** Constructor*/
 	CfgManager();
 
-    /** copy constructor is private
-     */
+    /** copy constructor is private*/
 	CfgManager(CfgManager const&);
 
-    /** assignment operator is private
-     */
+    /** assignment operator is private */
 	CfgManager& operator=(CfgManager const&);
 };
 #endif
 
+/** globalConfig namespace consists of default values to be used for setting global configuration for all operations*/
 namespace globalConfig
 {
 
-// default values to be used for setting global configuration for all operations
+/** default values to be used for setting global configuration for all operations */
 #define DEFAULT_OPERATION_PRIORITY 1
 #define DEFAULT_REALTIME false
 #define DEFAULT_RETRIES 0
@@ -123,10 +124,10 @@ typedef enum eThreadScheduler
 	UNKNOWN//!< UNKNOWN
 }threadScheduler;
 
-//struct to hold thread info
+/** struct to hold thread info*/
 struct stThreadInfo
 {
-	int priority;
+	int priority; /** priority number*/
 	eThreadScheduler sched;
 };
 
@@ -180,8 +181,8 @@ public:
 	}
 
 private:
-	std::string m_sGroupId;
-	std::string m_stNodeName;
+	std::string m_sGroupId;/** Group ID number*/
+	std::string m_stNodeName; /** Node name*/
 };
 
 /**
@@ -189,14 +190,14 @@ private:
  */
 class COperation
 {
-	bool m_isRT;
-	int m_operationPriority;
-	int m_qos;
-	int m_retries;
+	bool m_isRT; /**RT or non-RT(true or false)*/
+	int m_operationPriority; /** Operation priority number*/
+	int m_qos; /** qos number*/
+	int m_retries; /** number of reties*/
 
 public:
 
-	// default constructor to initialize default values
+	/** default constructor to initialize default values */
 	COperation();
 
 	/** Populate COperation data structures
@@ -254,15 +255,15 @@ public:
  */
 class COperationInfo
 {
-	eOperationType m_opType;
-	bool m_defaultIsRT;
+	eOperationType m_opType; /** operation type*/
+	bool m_defaultIsRT; /** default is RT or non-rt(true or false)*/
 
 	COperation m_RTConfig;
 	COperation m_NonRTConfig;
 
 public:
 
-	// default constructor
+	/** default constructor */
 	COperationInfo();
 
 	/** Populate COperation data structures
@@ -370,10 +371,10 @@ public:
  */
 class CPriorityMgr
 {
-	//map holds operational priority wise information about thread scheduler and thread priority
+	/** map holds operational priority wise information about thread scheduler and thread priority*/
 	std::map<int, std::pair<int, threadScheduler>> m_opPriorityThreadInfo;
 
-	// Private constructor so that no objects can be created.
+	/** Private constructor so that no objects can be created. */
 	CPriorityMgr();
 	CPriorityMgr(const CPriorityMgr & obj)=delete;
 	CPriorityMgr& operator=(CPriorityMgr const&)=delete;
@@ -459,10 +460,10 @@ void set_thread_sched_param(const COperation a_OpsInfo,
 		const eThreadScheduler a_eSched = OTHER,
 		const bool a_bIsOperation = false);
 
-// functions added for displaying thread attr
+/** functions added for displaying thread attr */
 void display_thread_sched_attr(const std::string a_sMsg);
 void display_sched_attr(int policy, struct sched_param& param);
 
-}  // namespace globalConfig
+}  /** namespace globalConfig */
 
 #endif //UWC_CONFIGMANAGER_HPP_

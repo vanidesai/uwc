@@ -8,6 +8,8 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
+/*** PublishJson.hpp to publish json and setting the topics for different RT and non-RT operations*/
+
 #ifndef INCLUDE_PUBLISHJSON_HPP_
 #define INCLUDE_PUBLISHJSON_HPP_
 
@@ -34,36 +36,37 @@
  * Structure to contain state for a publisher thread
  */
 typedef struct {
-    msg_envelope_t* msg;
-    publisher_ctx_t* pub_ctx;
+    msg_envelope_t* msg; /** reference of struct msg_envelope_t*/
+    publisher_ctx_t* pub_ctx; /** publisher context refernce*/
 } pub_thread_ctx_t;
 
+/** handler for publish json*/
 class PublishJsonHandler
 {
-	/// delete copy and move constructors and assign operators
-	PublishJsonHandler(const PublishJsonHandler&) = delete;	 			/// Copy constructor
-	PublishJsonHandler& operator=(const PublishJsonHandler&) = delete;	/// assignmnet operator
+	/** delete copy and move constructors and assign operators*/
+	PublishJsonHandler(const PublishJsonHandler&) = delete;	 			/** Copy constructor */
+	PublishJsonHandler& operator=(const PublishJsonHandler&) = delete;	/** assignmnet operator */
 
-	/// constructor
+	/** constructor */
 	PublishJsonHandler();
 
-	// topic for publish
-	std::string m_sPolledDataTopic;
-	std::string m_sPolledDataTopic_RT;
-	std::string m_sReadResponseTopic;
-	std::string m_sReadResponseTopic_RT;
-	std::string m_sWriteResponseTopic;
-	std::string m_sWriteResponseTopic_RT;
+	/** topic for publish */
+	std::string m_sPolledDataTopic; /** polled data topic name*/
+	std::string m_sPolledDataTopic_RT; /** polled RT data topic name*/
+	std::string m_sReadResponseTopic; /** Read response topic name */
+	std::string m_sReadResponseTopic_RT; /** read RT response topic name*/
+	std::string m_sWriteResponseTopic; /** write response topic name*/
+	std::string m_sWriteResponseTopic_RT; /** write RT response topic name */
 
-	uint32_t u32CutoffIntervalPercentage;
+	uint32_t u32CutoffIntervalPercentage; /** cutoff interval in percentage*/
 
-	std::string m_sAppName;
-	std::atomic<unsigned short> m_u16TxId;
+	std::string m_sAppName; /** App name*/
+	std::atomic<unsigned short> m_u16TxId; /** Transaction ID*/
 
-	std::mutex m_mutexPublish;
+	std::mutex m_mutexPublish;/** publish mutex*/
 
 public:
-	// function to get single instance of this class
+	/** function to get single instance of this class */
 	static PublishJsonHandler& instance();
 	bool setTopicForOperation(std::string a_sTopic);
 

@@ -8,6 +8,10 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
+/**
+ * Queue manager file contains class to manage instances of on-demand operations for msg handling
+ */
+
 #ifndef QMGR_HPP_
 #define QMGR_HPP_
 
@@ -23,8 +27,8 @@ namespace QMgr
  */
 class CQueueMgr : public CQueueHandler
 {
-	bool m_bIsRead;
-	bool m_bIsRealTime;
+	bool m_bIsRead;		/*!< a bool value for on-demand read/write operation*/
+	bool m_bIsRealTime; /*!< a bool value for on-demand real-time read/write operation*/
 public:
 	CQueueMgr(bool isRead, bool isRealTime);
 	~CQueueMgr();
