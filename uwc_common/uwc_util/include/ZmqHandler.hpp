@@ -23,9 +23,9 @@
 #include <eis/utils/config.h>
 #include <eis/utils/json_config.h>
 #include <eis/msgbus/msgbus.h>
-#include <eis/config_manager/env_config.h>
-#include <eis/config_manager/config_manager.h>
-
+//eii configmgr
+#include "eis/config_manager/config_mgr.hpp"
+// uwc configmgr
 #include "ConfigManager.hpp"
 #include "CommonDataShare.hpp"
 #include "LibErrCodeManager.hpp"
@@ -59,7 +59,20 @@ namespace zmq_handler
 		recv_ctx_t* sub_ctx; /** sub context*/
 	};
 
-	bool prepareCommonContext(std::string topicType/*, char** ppcTopics*/);
+	/**
+	 * Prepare all EIS contexts for zmq communications based on topic configured in
+	 * SubTopics or PubTopics section from docker-compose.yml file
+	 * Following is the sequence of context creation
+	 * 	1. Get the topic from SubTopics/PubTopics section
+	 * 	2. Create msgbus config
+	 * 	3. Create the msgbus context based on msgbus config
+	 * 	4. Once msgbus context is successful then create pub and sub context for zmq publisher/subscriber
+	 *
+	 * @param topicType	:[in] topic type to create context for, value is either "sub" or "pub"
+	 * @return 	true : on success,
+	 * 			false : on error
+	 */
+	bool prepareCommonContext(std::string topicType);
 
 	bool prepareContext(bool a_bIsPub,
 			void* msgbus_ctx,
@@ -98,6 +111,21 @@ namespace zmq_handler
 
 	/** function to publish json data on ZMQ*/
 	bool publishJson(std::string &a_sUsec, msg_envelope_t* msg, const std::string &a_sTopic, std::string a_sPubTimeField);
+
+	/**
+	 *  function to return all pub/sub topics
+	 *  @param topicType     : [in] pub or sub
+	 *  @param vector         : [out] vector of topics of pub/sub
+	 *  @return bool          : true for success. false for failure
+	 **/
+	bool returnAllTopics(std::string topicType, std::vector<std::string>& vecTopics);
+
+	/**
+	 *  function to return number of pub/sub topics
+	 *  @param topicType     : [in] pub or sub
+	 *  @return size_t       : [out] count of publishers or subscribers
+	 **/
+	 size_t getNumPubOrSub(std::string topicType);
 }
 
 #endif /* INCLUDE_INC_ZMQHANDLDER_HPP_ */

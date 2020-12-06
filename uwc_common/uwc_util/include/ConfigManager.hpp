@@ -19,14 +19,16 @@
 #include <string.h>
 #include <iostream>
 #include <unistd.h>
-#include <eis/config_manager/env_config.h>
-#include <eis/config_manager/config_manager.h>
+// EII configmgr
+#include "eis/config_manager/config_mgr.hpp"
 #include <yaml-cpp/yaml.h>
 #include "CommonDataShare.hpp"
 
 #define DIR_PATH "/config"
 #define GLOBAL_CONFIG_FILE_PATH "/opt/intel/eis/uwc_data/common_config/Global_Config.yml"
 #define handle_error_en(en, msg) do { errno = en; perror(msg); } while (0)
+
+using namespace eis::config_manager;
 
 #ifndef SCADA_RTU
 
@@ -42,41 +44,29 @@ public:
 	static CfgManager& Instance();
 
 
-	/** Returns the client status of creation
+	/** Returns if EII configmgr is created or not
 	 *
 	 * @param : Nothing
 	 * @return: true/false based on status
 	 */
 	bool IsClientCreated();
 
-	/** Returns client from EIS Env library
+	/** Returns EII configMgr reference from EIS CfgMgr library
 	 *
 	 * @param : Nothing
-	 * @return: Configuration object
-	 */
-	const config_mgr_t* getConfigClient() const {
-		return config_mgr_client;
-	}
-
-	/** Returns client from EIS Config library
-	 *
-	 * @param : Nothing
-	 * @return: ENV object
-	 */
-	const env_config_t* getEnvClient() const {
-		return env_config_client;
+	 * @return: EII Configuration object reference
+	 */ // getConfigClient()
+	const ConfigMgr* getEiiCfgMgr() const {
+		return m_eii_cfg;
 	}
 
 private:
 
-	/** True for success and false for failure */
+	// EII ConfigMgr reference
+	ConfigMgr* m_eii_cfg = NULL;
+
+	/// True for success and false for failure for eii cfgmgr creation
 	bool isClientCreated;
-
-	/** Local object for EIS ENV Manager */
-	env_config_t* env_config_client;
-
-	/** Local object for EIS Config Manager */
-	config_mgr_t* config_mgr_client;
 
 	/** Constructor*/
 	CfgManager();

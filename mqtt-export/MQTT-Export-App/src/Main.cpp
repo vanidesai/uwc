@@ -17,12 +17,15 @@
 #include "MQTTPublishHandler.hpp"
 #include "ConfigManager.hpp"
 #include "EnvironmentVarHandler.hpp"
+#include "ZmqHandler.hpp"
 
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
 #endif
 
-std::vector<std::thread> g_vThreads;
+using namespace zmq_handler;
+
+vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
@@ -494,7 +497,11 @@ void postMsgstoMQTT()
 	DO_LOG_DEBUG("Initializing threads to start listening on EIS topics...");
 
 	// get sub topic list
-	std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
+	vector<string> vFullTopics;
+	bool tempRet = zmq_handler::Instance().returnAllTopics("sub", vFullTopics);
+	if(tempRet == false) {
+		return -1;
+	} 
 
 	for (auto &topic : vFullTopics)
 	{
@@ -530,10 +537,10 @@ bool initEISContext()
 	bool retVal = true;
 
 	// Initializing all the pub/sub topic base context for ZMQ
-	const char* env_pubTopics = std::getenv("PubTopics");
-	if (env_pubTopics != NULL)
+	int num_of_publishers = zmq_handler::Instance().getNumPubOrSub("pub");
+	// const char* env_pubTopics = std::getenv("PubTopics");
+	if (num_of_publishers >= 1)
 	{
-		DO_LOG_DEBUG("List of topic configured for Pub are :: "+ (std::string)(env_pubTopics));
 		if (true != zmq_handler::prepareCommonContext("pub"))
 		{
 			DO_LOG_ERROR("Context creation failed for sub topic ");
@@ -543,13 +550,13 @@ bool initEISContext()
 	}
 	else
 	{
-		DO_LOG_ERROR("could not find PubTopics in environment variables");
-		std::cout << __func__ << ":" << __LINE__ << " Error : could not find PubTopics in environment variables" <<  std::endl;
+		DO_LOG_ERROR("could not find any Publishers in publisher Configuration ");
+		std::cout << __func__ << ":" << __LINE__ << " Error : could not find any Publishers in publisher Configuration " <<  std::endl;
 		retVal = false;
 	}
 
-	const char* env_subTopics = std::getenv("SubTopics");
-	if(env_subTopics != NULL)
+	int num_of_subscribers = zmq_handler::Instance().getNumPubOrSub("sub");
+	if(num_of_subscribers >= 1)
 	{
 		DO_LOG_DEBUG("List of topic configured for Sub are :: "+ (std::string)(env_subTopics));
 		if (true != zmq_handler::prepareCommonContext("sub"))
@@ -566,8 +573,8 @@ bool initEISContext()
 	}
 	else
 	{
-		DO_LOG_ERROR("could not find SubTopics in environment variables");
-		std::cout << __func__ << ":" << __LINE__ << " Error : could not find SubTopics in environment variables" <<  std::endl;
+		DO_LOG_ERROR("could not find any subscribers in subscriber Configuration");
+		std::cout << __func__ << ":" << __LINE__ << " Error : could not find any subscribers in subscriber Configuration" <<  std::endl;
 		retVal = false;
 	}
 

@@ -656,6 +656,11 @@ void onDemandHandler::createOnDemandListener()
 	bool a_bIsWriteReq = false;
 
 	std::vector<std::string> stTopics = CcommonEnvManager::Instance().getTopicList();
+	std::vector<std::string> stTopics;
+	bool tempRet = zmq_handler::Instance().returnAllTopics("sub", stTopics);
+	if(tempRet == false) {
+		exit 1;
+	} 
 	for(std::vector<std::string>::iterator it = stTopics.begin(); it != stTopics.end(); ++it)
 	{
 		if(it->empty()) {

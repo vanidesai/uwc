@@ -25,6 +25,9 @@
 #include "ConfigManager.hpp"
 #include "Logger.hpp"
 #include "CommonDataShare.hpp"
+#include "ZmqHandler.hpp"
+
+
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>
 #endif
@@ -49,6 +52,8 @@ std::vector<string> m_vecEnv{"DEVICES_GROUP_LIST_FILE_NAME",
 	"AppName",
 	"MY_APP_ID"
 };
+
+using namespace zmq_handler;
 
 /**
  * Populate polling data
@@ -307,7 +312,7 @@ void readEnvData()
 int main(int argc, char* argv[])
 {
 	try
-	{
+	{	
 		CLogger::initLogger(std::getenv("Log4cppPropsFile"));
 		DO_LOG_DEBUG("Starting Modbus_App ...");
 
@@ -345,43 +350,52 @@ int main(int argc, char* argv[])
 		std::cout << "Cutoff is set to: "
 				<< PublishJsonHandler::instance().getCutoffIntervalPercentage() << std::endl;
 
+		int num_of_publishers = zmq_handler::Instance().getNumPubOrSub("pub");
 		// Initializing all the pub/sub topic base context for ZMQ
-		if(const char* pcPubTopic = std::getenv("PubTopics"))
+		if(num_of_publishers >= 1)
 		{
-			DO_LOG_INFO("List of topic configured for Pub are :: " + std::string(pcPubTopic));
-
 			if(true != zmq_handler::prepareCommonContext("pub"))
 			{
 				DO_LOG_ERROR("Context creation failed for pub topic ");
+				// exit the application if the context creation fails
+				return -1; 
 			}
 			else
 			{
-				std::stringstream ss(pcPubTopic);
-				std::string item;
-				char dele = ',';
-				while (std::getline(ss, item, dele))
-				{
-					PublishJsonHandler::instance().setTopicForOperation(item);
-				}
+				std::vector<std::string> vecTopics;
+				bool tempRet = zmq_handler::Instance().returnAllTopics("pub", vecTopics);
+				if(tempRet == false) {
+					return -1;
+				} 
+				for(auto eachTopic : vecTopics) {
+					PublishJsonHandler::instance().setTopicForOperation(eachTopic);
+				} 
 			}
 		}
-		if(char* pcSubTopic = std::getenv("SubTopics"))
+		else
 		{
-			DO_LOG_INFO("List of topic configured for Sub are :: " + std::string(pcSubTopic));
+			DO_LOG_ERROR("could not find any Publishers in publisher Configuration ");
+			std::cout << __func__ << ":" << __LINE__ << " Error : could not find any Publishers in publisher Configuration " <<  std::endl;
+		}
 
+		int num_of_subscribers = zmq_handler::Instance().getNumPubOrSub("sub");
+		if(num_of_subscribers >= 1)
+		{
 			if( true != zmq_handler::prepareCommonContext("sub"))
 			{
 				DO_LOG_ERROR("Context creation failed for sub topic ");
 			}
 			else
 			{
-				std::stringstream ss(pcSubTopic);
-				std::string item;
-				while (std::getline(ss, item, ','))
-				{
-					PublishJsonHandler::instance().setTopicForOperation(item);
-				}
-				CcommonEnvManager::Instance().splitString(static_cast<std::string>(pcSubTopic),',');
+				std::vector<std::string> vecTopics;
+				bool tempRet = zmq_handler::Instance().returnAllTopics("sub", vecTopics);
+				if(tempRet == false) {
+					return -1;
+				} 
+				for(auto eachTopic : vecTopics) {
+					PublishJsonHandler::instance().setTopicForOperation(eachTopic);
+				} 
+				//CcommonEnvManager::Instance().splitString(static_cast<std::string>(pcSubTopic),',');
 			}
 		}
 

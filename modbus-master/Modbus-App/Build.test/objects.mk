@@ -10,5 +10,4 @@
 
 USER_OBJS :=
 
-LIBS := -lgtest_main -lgtest -llog4cpp -leismsgbus -luwc-common -lModbusMasterStack -leisconfigmgr -lpaho-mqtt3a -lpaho-mqtt3c -lpaho-mqtt3as -lpaho-mqtt3cs -lpaho-mqttpp3 -leismsgenv -leisutils -leismsgbus -lyaml-cpp -lsafestring -lpthread -lcjson -lrt
-
+LIBS := -lgtest_main -lgtest -llog4cpp -leismsgbus -luwc-common -lModbusMasterStack -leisconfigmanager -lpaho-mqtt3a -lpaho-mqtt3c -lpaho-mqtt3as -lpaho-mqtt3cs -lpaho-mqttpp3 -leismsgenv -leisutils -leismsgbus -lyaml-cpp -lsafestring -lpthread -lcjson -lrt

@@ -24,43 +24,14 @@
  */
 CfgManager:: CfgManager()
 {
-	// this client is used to read environment variables mentioned in SubTopics/PubTopics given in
-	// docker-compose.yml file
-	env_config_client = env_config_new();
-
-	if(NULL == env_config_client)
-	{
-		DO_LOG_ERROR("Failed to create new env config client");
-		goto err;
-	}
-
-	// based on DEV_MODE env variable this will create config_mgr_client instance
-	if(true == CcommonEnvManager::Instance().getDevMode())
-	{
-		/// create client without certificates
-		config_mgr_client = config_mgr_new((char *)"etcd", (char *)"", (char *)"", (char *)"");
-	}
-	else
-	{
-		/// create client with certificates
-		std::string sCert = "/run/secrets/etcd_" + CcommonEnvManager::Instance().getAppName() + "_cert";
-		std::string sKey = "/run/secrets/etcd_" + CcommonEnvManager::Instance().getAppName() + "_key";
-		config_mgr_client = config_mgr_new((char *)"etcd", (char *)sCert.c_str(),
-				(char *)sKey.c_str(),
-				(char *)"/run/secrets/ca_etcd");
-	}
-
-	if(NULL == config_mgr_client)
-	{
-		DO_LOG_ERROR("Config manager client creation failed");
-	}
-
-	isClientCreated = (getConfigClient() !=NULL && getEnvClient() !=NULL)?true:false;
-	return;
-
-	err:
 	isClientCreated = false;
-
+	try {
+        m_eii_cfg = new ConfigMgr();
+		isClientCreated true;
+    } catch (...) {
+        LOG_ERROR_0("Exception occured in creation of CfgManager of EII");
+        return;
+    }
 }
 
 /** Returns the single instance of this class

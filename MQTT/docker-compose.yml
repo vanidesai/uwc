@@ -66,6 +66,8 @@ services:
       start_period: 0s
 
 secrets:
+  ca_broker:
+    file: provision/Certificates/ca/ca_certificate.pem
   broker_cert:
     file: provision/Certificates/MQTT/MQTT_client_certificate.pem
   broker_key:

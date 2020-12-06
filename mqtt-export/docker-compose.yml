@@ -58,6 +58,10 @@ services:
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000" 
       MQTT_URL_FOR_EXPORT: "ssl://mqtt_container:11883"
+      ReadRequest: MQTT_Export_RdReq
+      WriteRequest: MQTT_Export_WrReq
+      ReadRequest_RT: MQTT_Export_RdReq_RT
+      WriteRequest_RT: MQTT_Export_WrReq_RT
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       # general topics
@@ -71,7 +75,7 @@ services:
     user: ${EIS_UID}
     # userns_mode: host
     volumes:
-      - "vol_uwc_socket:${SOCKET_DIR}:z"
+      - "vol_uwc_socket:${SOCKET_DIR}"
       - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
       - "${EIS_INSTALL_PATH}/container_logs/mqtt-export:/opt/intel/app/logs"
     secrets:
@@ -83,9 +87,15 @@ services:
       - client_key
 
 secrets:
+  ca_etcd:
+    file: provision/Certificates/ca/ca_certificate.pem
   etcd_MQTT_Export_cert:
     file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
   etcd_MQTT_Export_key:
     file: provision/Certificates/MQTT_Export/MQTT_Export_client_key.pem
-    
-
+  ca_broker:
+    file: provision/Certificates/ca/ca_certificate.pem
+  client_cert:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
+  client_key:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem

@@ -15,6 +15,10 @@
 
 #include <iostream>
 #include "Logger.hpp"
+//eii configmgr
+#include "eis/config_manager/config_mgr.hpp"
+// uwc configmgr
+#include "ConfigManager.hpp"
 
 /** Common data recieved from calling app*/
 struct stUWCComnDataVal_t

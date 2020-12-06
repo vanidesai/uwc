@@ -22,6 +22,7 @@
 #include <functional>
 #include "ConfigManager.hpp"
 
+using namespace eis::config_manager;
 using namespace zmq_handler;
 
 std::mutex fileMutex;
@@ -73,14 +74,14 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 	if(NULL == msgbus_ctx || NULL == config || a_sTopic.empty())
 	{
 		DO_LOG_ERROR("NULL pointers received while creating context for topic ::" + a_sTopic);
-		goto err;
+		return false;
 	}
 
 	if(a_bIsPub)
 	{
 		retVal = msgbus_publisher_new(msgbus_ctx, a_sTopic.c_str(), &pub_ctx);
 	}
-	else
+	else // else if sub
 	{
 		retVal = msgbus_subscriber_new(msgbus_ctx, a_sTopic.c_str(), NULL, &sub_ctx);
 	}
@@ -90,7 +91,7 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 		/// cleanup
 		DO_LOG_ERROR("Failed to create publisher or subscriber for topic "+a_sTopic + " with error code:: "+std::to_string(retVal));
 		std::cout << "ERROR:: Failed to create publisher or subscriber for topic : "<< a_sTopic<< " with error code:: "<< std::to_string(retVal)<<std::endl;
-		goto err;
+		return false;
 	}
 	else
 	{
@@ -154,111 +155,80 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 {
 	DO_LOG_DEBUG("Start:");
 	bool retValue = false;
-	size_t topic_count = 0;
-	char **head = NULL;
-	std::string topic = "";
+
+	PublisherCfg* pub_ctx;
+	SubscriberCfg* sub_ctx;
+	config_t* pub_config;
+	config_t* sub_config;
+	void* g_msgbus_ctx = NULL;
 
 	if(!(topicType == "pub" || topicType == "sub"))
 	{
 		DO_LOG_ERROR("Invalid TopicType parameter ::" + topicType);
 		return retValue;
 	}
+	// This check if EII cfgmgr is created or not
 	if(CfgManager::Instance().IsClientCreated())
 	{
-		/// parse all the topics
-		char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
+		if(topicType == "pub") {
+			int numPublishers = CfgManager::Instance().getEiiCfgMgr()->getNumPublishers();
+			for(size_t it =0; it<numPublishers; ++it) {
+				pub_ctx = CfgManager::Instance().getEiiCfgMgr()->getPublisherByIndex(it);	
+				pub_config = pub_ctx->getMsgBusConfig();
+    			if (pub_config == NULL) {
+        			DO_LOG_ERROR("Failed to get message bus config");
+        			return false;
+    			}
 
-		if(NULL != ppcTopics)
-		{
-			// store the head node for string array
-			head = ppcTopics;
-			while (*ppcTopics != NULL)
-			{
-				++topic_count;
-				topic = *ppcTopics;
+				g_msgbus_ctx = msgbus_initialize(pub_config);
+    			if (g_msgbus_ctx == NULL) {
+        			LOG_ERROR_0("Failed to initialize message bus");
+        			return false;
+    			}
 
-				try
-				{
-					retValue = true;
-					config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
-							CfgManager::Instance().getConfigClient(),
-							ppcTopics , topic_count, topicType.c_str());
-					if(config == NULL)
-					{
-						DO_LOG_ERROR("Failed to get publisher message bus config ::" + topic);
-						continue;
-					}
-
-					void* msgbus_ctx = msgbus_initialize(config);
-					if(msgbus_ctx == NULL)
-					{
-						/// cleanup
-						DO_LOG_ERROR("Failed to get message bus context with config for topic ::" + topic);
-
-						/// free config context
-						if(config != NULL)
-						{
-							config_destroy(config);
-						}
-						continue;
-					}
-					if(topicType == "pub")
-					{
-						std::cout << "Topic for ZMQ Publish is :: "<< topic << std::endl;
-						prepareContext(true, msgbus_ctx, topic, config);
-					}
-					else
-					{
-						std::size_t pos = topic.find('/');
-						if (std::string::npos != pos)
-						{
-							std::string subTopic(topic.substr(pos + 1));
-							std::cout << __func__ << " Context created and stored for config for topic :: " << subTopic << std::endl;
-							std::cout << "Topic for ZMQ subscribe is :: "<< subTopic << std::endl;
-
-							prepareContext(false, msgbus_ctx, subTopic, config);
-						}
-					}
-				}
-				catch(std::exception &e)
-				{
-					DO_LOG_FATAL("Exception occurred for topic :" + topic + " with exception code:: " + e.what());
-					std::cout << __func__ << ":" << __LINE__ << "Exception occurred for topic :" + topic +
-							" with exception code:: " + e.what() << std::endl;
-					retValue = false;
-				}
-
-				DO_LOG_INFO("Context created and stored for config for topic :: " + topic);
-
-				// free used data
-				if(*ppcTopics)
-				{
-					free (*ppcTopics);
-					*ppcTopics = NULL;
-				}
-
-				// go to next topic
-				ppcTopics++;
+				std::vector<std::string> topics = pub_ctx->getTopics();
+				if(topics.empty()){
+        			DO_LOG_ERROR("Failed to get topics");
+        			return false;
+    			}
+				for (int topic_it = 0; topic_it < topics.size(); topic_it++) {
+     				std::string ind_topic = topics.at(topic_it);
+					 DO_LOG_INFO("Topic for ZMQ Publish is :: ",ind_topic);
+					prepareContext(true, g_msgbus_ctx, ind_topic, pub_config);
+    			}
+				
 			}
-
-			// free base pointer
-			if(head)
-			{
-				free(head);
-				head = NULL;
+		} else {  // else if its sub
+			int numSubscribers = CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers();
+			for(size_t it =0; it<numSubscribers; ++it) {
+				sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(it);
+				
+				sub_config = pub_ctx->getMsgBusConfig();
+    			if (sub_config == NULL) {
+        			DO_LOG_ERROR("Failed to get message bus config");
+        			return false;
+    			}
+				g_msgbus_ctx = msgbus_initialize(sub_config);
+    			if (g_msgbus_ctx == NULL) {
+        			LOG_ERROR_0("Failed to initialize message bus");
+        			return false;
+    			}
+				std::vector<std::string> topics = sub_ctx->getTopics();
+				if(topics.empty()){
+        			DO_LOG_ERROR("Failed to get topics");
+        			return false;
+    			}
+				for (int topic_it = 0; topic_it < topics.size(); topic_it++) {
+     				std::string ind_topic = topics.at(topic_it);
+					prepareContext(true, g_msgbus_ctx, ind_topic, sub_config);
+    			}
 			}
-		}
-		else
-		{
-			DO_LOG_ERROR("topic list is empty");
-			std::cout << "topic list is empty" << std::endl;
-			return false;
-		}
-	}
+		}	// end of sub part else
+	} // end of if eii configmgr created if() 
 	else
 	{
-		DO_LOG_ERROR("Context creation failed !! config manager client is empty!! ");
-		std::cout << "Context creation failed !! config manager client is empty!! " <<std::endl;
+		DO_LOG_ERROR("EII Configmgr creation failed !! ");
+		std::cout << "EII Configmgr creation failed !!  " <<endl;
 	}
 	DO_LOG_DEBUG("End: ");
 
@@ -455,4 +425,45 @@ bool zmq_handler::publishJson(std::string &a_sUsec, msg_envelope_t* msg, const s
 		return false;
 	}
 	return true;
+}
+
+bool zmq_handler::returnAllTopics(std::string topicType, std::vector<std::string>& vecTopics) {
+	int numPubsOrSubs;
+	if(topicType == "pub") {
+		numPubsOrSubs = CfgManager::Instance().getEiiCfgMgr()->getNumPublishers();
+	} else if(topicType == "sub") {
+		numPubsOrSubs = CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers();
+	}
+	
+	for(size_t pub-or-sub-id=0; pub-or-sub-id<numPubsOrSubs; ++pub-or-sub-id) {
+		std::vector<std::string> topics;
+		if(topicType == "pub") {
+			PublisherCfg* pub_ctx = getPublisherByIndex(pub-or-sub-id);
+			topics = pub_ctx->getTopics();
+		} else {
+			SubscriberCfg* sub_ctx = getPublisherByIndex(pub-or-sub-id);
+			topics = sub_ctx->getTopics();
+		}
+		
+		if(topics.empty()){
+        DO_LOG_ERROR("Failed to get topics");
+        return false;
+    	}
+		size_t numTopics = topics.size(); // num of topics in indivisual publisher or subscriber
+		for(size_t indv_topic=0; indv_topic < numTopics; ++indv_topic) {
+			vecTopics.push_back(topics[indv_topic])
+		}
+		// return true if everything goes well. 
+		return true;
+	}
+}
+
+size_t zmq_handler::getNumPubOrSub(std::string topicType) {
+	size_t count = 0;
+	if(topicType == "pub") {
+		count = CfgManager::Instance().getEiiCfgMgr()->getNumPublishers();
+	} else {
+		count = CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers();
+	}
+	return count;
 }
