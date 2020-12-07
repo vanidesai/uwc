@@ -655,7 +655,7 @@ void onDemandHandler::createOnDemandListener()
 	long a_lPriority;
 	bool a_bIsWriteReq = false;
 
-	std::vector<std::string> stTopics = CcommonEnvManager::Instance().getTopicList();
+	//std::vector<std::string> stTopics = CcommonEnvManager::Instance().getTopicList();
 	std::vector<std::string> stTopics;
 	bool tempRet = zmq_handler::Instance().returnAllTopics("sub", stTopics);
 	if(tempRet == false) {

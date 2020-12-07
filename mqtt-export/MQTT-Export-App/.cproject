@@ -113,7 +113,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqtt3c"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisconfigmgr"/>
+                                    <listOptionValue builtIn="false" value="eisconfigmanager"/>
                                     									
                                     <listOptionValue builtIn="false" value="eismsgenv"/>
                                     									
@@ -247,7 +247,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqtt3c"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisconfigmgr"/>
+                                    <listOptionValue builtIn="false" value="eisconfigmanager"/>
                                     									
                                     <listOptionValue builtIn="false" value="eismsgenv"/>
                                     									
@@ -435,7 +435,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqtt3c"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisconfigmgr"/>
+                                    <listOptionValue builtIn="false" value="eisconfigmanager"/>
                                     									
                                     <listOptionValue builtIn="false" value="eismsgenv"/>
                                     									

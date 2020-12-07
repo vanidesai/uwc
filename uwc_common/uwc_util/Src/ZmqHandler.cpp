@@ -116,7 +116,6 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 
 	return bRetVal;
 
-err:
 	// remove mgsbus context
 	removeCTX(a_sTopic);
 
@@ -172,7 +171,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 	{
 		if(topicType == "pub") {
 			int numPublishers = CfgManager::Instance().getEiiCfgMgr()->getNumPublishers();
-			for(size_t it =0; it<numPublishers; ++it) {
+			for(auto it =0; it<numPublishers; ++it) {
 				pub_ctx = CfgManager::Instance().getEiiCfgMgr()->getPublisherByIndex(it);	
 				pub_config = pub_ctx->getMsgBusConfig();
     			if (pub_config == NULL) {
@@ -191,16 +190,16 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
         			DO_LOG_ERROR("Failed to get topics");
         			return false;
     			}
-				for (int topic_it = 0; topic_it < topics.size(); topic_it++) {
+				for (auto topic_it = 0; topic_it < topics.size(); topic_it++) {
      				std::string ind_topic = topics.at(topic_it);
-					 DO_LOG_INFO("Topic for ZMQ Publish is :: ",ind_topic);
+					 DO_LOG_INFO("Topic for ZMQ Publish is :: " + ind_topic);
 					prepareContext(true, g_msgbus_ctx, ind_topic, pub_config);
     			}
 				
 			}
 		} else {  // else if its sub
 			int numSubscribers = CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers();
-			for(size_t it =0; it<numSubscribers; ++it) {
+			for(auto it =0; it<numSubscribers; ++it) {
 				sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(it);
 				
 				sub_config = pub_ctx->getMsgBusConfig();
@@ -218,7 +217,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
         			DO_LOG_ERROR("Failed to get topics");
         			return false;
     			}
-				for (int topic_it = 0; topic_it < topics.size(); topic_it++) {
+				for (auto topic_it = 0; topic_it < topics.size(); topic_it++) {
      				std::string ind_topic = topics.at(topic_it);
 					prepareContext(true, g_msgbus_ctx, ind_topic, sub_config);
     			}
@@ -435,13 +434,13 @@ bool zmq_handler::returnAllTopics(std::string topicType, std::vector<std::string
 		numPubsOrSubs = CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers();
 	}
 	
-	for(size_t pub-or-sub-id=0; pub-or-sub-id<numPubsOrSubs; ++pub-or-sub-id) {
+	for(auto pub_or_sub_id=0; pub_or_sub_id<numPubsOrSubs; ++pub_or_sub_id) {
 		std::vector<std::string> topics;
 		if(topicType == "pub") {
-			PublisherCfg* pub_ctx = getPublisherByIndex(pub-or-sub-id);
+			PublisherCfg* pub_ctx = CfgManager::Instance().getEiiCfgMgr()->getPublisherByIndex(pub_or_sub_id);
 			topics = pub_ctx->getTopics();
 		} else {
-			SubscriberCfg* sub_ctx = getPublisherByIndex(pub-or-sub-id);
+			SubscriberCfg* sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(pub_or_sub_id);
 			topics = sub_ctx->getTopics();
 		}
 		
@@ -451,7 +450,7 @@ bool zmq_handler::returnAllTopics(std::string topicType, std::vector<std::string
     	}
 		size_t numTopics = topics.size(); // num of topics in indivisual publisher or subscriber
 		for(size_t indv_topic=0; indv_topic < numTopics; ++indv_topic) {
-			vecTopics.push_back(topics[indv_topic])
+			vecTopics.push_back(topics[indv_topic]);
 		}
 		// return true if everything goes well. 
 		return true;

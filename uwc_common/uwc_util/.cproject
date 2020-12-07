@@ -287,7 +287,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqttpp3"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisconfigmgr"/>
+                                    <listOptionValue builtIn="false" value="eisconfigmanager"/>
                                     									
                                     <listOptionValue builtIn="false" value="eismsgenv"/>
                                     									

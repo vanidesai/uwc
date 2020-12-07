@@ -56,7 +56,7 @@ public:
 	 * @param : Nothing
 	 * @return: EII Configuration object reference
 	 */ // getConfigClient()
-	const ConfigMgr* getEiiCfgMgr() const {
+	ConfigMgr* getEiiCfgMgr()  {
 		return m_eii_cfg;
 	}
 

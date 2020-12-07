@@ -97,7 +97,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="log4cpp"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisconfigmgr"/>
+                                    <listOptionValue builtIn="false" value="eisconfigmanager"/>
                                     									
                                     <listOptionValue builtIn="false" value="eismsgenv"/>
                                     									
@@ -255,7 +255,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="log4cpp"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisconfigmgr"/>
+                                    <listOptionValue builtIn="false" value="eisconfigmanager"/>
                                     									
                                     <listOptionValue builtIn="false" value="eismsgenv"/>
                                     									
@@ -427,7 +427,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="ModbusMasterStack"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisconfigmgr"/>
+                                    <listOptionValue builtIn="false" value="eisconfigmanager"/>
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqtt3a"/>
                                     									

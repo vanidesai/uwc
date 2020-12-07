@@ -46,21 +46,21 @@ void CcommonEnvManager::splitString(const std::string &str, char delim)
 	}
 }
 
-std::vector<std::string> getTopicList(std::string topicType) const {
-	std::vector<std::string> topics;
-	if(topicType == "sub") {
-		for(size_t it =0;it<(CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers());++it) {
-			SubscriberCfg* sub_ctx = getSubscriberByIndex(it);
-			topics = sub_ctx->getTopics();
-		}
-	} else if(topicType == "pub") {
-		for(size_t it =0;it<(CfgManager::Instance().getEiiCfgMgr()->getNumPublishers());++it) {
-			PublisherCfg* pub_ctx = getPublisherByIndex(it);
-			topics = pub_ctx->getTopics();
-		}
-	}
-	return topics;
-}
+// std::vector<std::string> CcommonEnvManager::getTopicList(std::string topicType) const {
+// 	std::vector<std::string> topics;
+// 	if(topicType == "sub") {
+// 		for(size_t it =0;it<(CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers());++it) {
+// 			SubscriberCfg* sub_ctx = getSubscriberByIndex(it);
+// 			topics = sub_ctx->getTopics();
+// 		}
+// 	} else if(topicType == "pub") {
+// 		for(size_t it =0;it<(CfgManager::Instance().getEiiCfgMgr()->getNumPublishers());++it) {
+// 			PublisherCfg* pub_ctx = getPublisherByIndex(it);
+// 			topics = pub_ctx->getTopics();
+// 		}
+// 	}
+// 	return topics;
+// }
 
 
 /**

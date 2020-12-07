@@ -75,9 +75,9 @@ public:
 	 * Get subscribe topic list
 	 * @return vector containing topic list
 	 */
-	std::vector<std::string> getTopicList() const {
-		return m_vect_TopicList;
-	}
+	// std::vector<std::string> getTopicList() const {
+	// 	return m_vect_TopicList;
+	// }
 
 	/**
 	 * Insert topic to topiclist vector

@@ -31,7 +31,7 @@ RUN mkdir -p ${OPENSSL_DIR} \
 FROM eisbase as build-pahoc
 RUN mkdir -p /usr/paho-c
 
-COPY --from=openssl-build /usr/ssl /usr/
+COPY --from=openssl-build /usr/ssl /usr/local
 RUN git clone --branch develop https://github.com/eclipse/paho.mqtt.c.git \
     &&	cd paho.mqtt.c && git reset --hard ecbdce240558bc185944f54c5ef7c3cca9efb8fb \
     &&	mkdir build && cd build \
@@ -41,7 +41,7 @@ RUN git clone --branch develop https://github.com/eclipse/paho.mqtt.c.git \
     &&	make -s \
     &&	make install
 
-# Build Paho CPP Library
+#Build Paho CPP Library
 FROM ia_common:$EIS_VERSION
 COPY --from=build-pahoc /usr/paho-c /usr/.
 COPY --from=openssl-build /usr/ssl /usr/ssl

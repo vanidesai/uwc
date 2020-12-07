@@ -22,12 +22,12 @@
 #ifndef SCADA_RTU
 /** Constructor
  */
-CfgManager:: CfgManager()
+CfgManager::CfgManager()
 {
 	isClientCreated = false;
 	try {
         m_eii_cfg = new ConfigMgr();
-		isClientCreated true;
+		isClientCreated = true;
     } catch (...) {
         LOG_ERROR_0("Exception occured in creation of CfgManager of EII");
         return;
