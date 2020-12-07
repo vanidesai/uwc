@@ -139,7 +139,7 @@ public:
 	bool checkMetric(std::string& strs)
 	{
 		bool flag = false;
-		for(auto ele : m_mapMetrics)
+		for(auto &ele : m_mapMetrics)
 		{
 			if(strs == ele.second.getName())
 			{

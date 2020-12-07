@@ -75,6 +75,7 @@ services:
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
         ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}modbus-master:${EIS_VERSION}
     container_name: modbus-tcp-master
     hostname: modbus-tcp-master
@@ -150,6 +151,7 @@ services:
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
         ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}modbus-rtu-master:${EIS_VERSION}
     container_name: modbus-rtu-master
     hostname: modbus-rtu-master
@@ -227,6 +229,7 @@ services:
       args:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}mqtt_container:${EIS_VERSION}
     container_name: mqtt_container
     hostname: mqtt_container
@@ -274,6 +277,7 @@ services:
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
         ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}mqtt-export:${EIS_VERSION}
     container_name: mqtt-export
     hostname: mqtt-export
@@ -361,6 +365,7 @@ services:
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
         ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
     container_name: scada-rtu
     hostname: scada-rtu

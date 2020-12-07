@@ -75,6 +75,7 @@ services:
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
         ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}modbus-master-test:${EIS_VERSION}
     container_name: modbus-tcp-master-test
     hostname: modbus-tcp-master-test
@@ -134,6 +135,7 @@ services:
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
         ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}modbus-rtu-test-master:${EIS_VERSION}
     container_name: modbus-rtu-test-master
     hostname: modbus-rtu-test-master
@@ -200,6 +202,7 @@ services:
       args:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}mqtt_test_container:${EIS_VERSION}
     container_name: mqtt_test_container
     hostname: mqtt_test_container
@@ -226,6 +229,7 @@ services:
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
         ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}mqtt-export-test:${EIS_VERSION}
     container_name: mqtt-export-test
     hostname: mqtt-export-test
@@ -294,6 +298,7 @@ services:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
     container_name: scada-rtu-test
     hostname: scada-rtu-test
@@ -345,6 +350,7 @@ services:
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
         ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}kpi-tactic-test:${EIS_VERSION}
     container_name: kpi-tactic-test
     hostname: kpi-tactic-test
@@ -417,6 +423,7 @@ services:
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
         ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
     image: ${DOCKER_REGISTRY}uwc-util-test:${EIS_VERSION}
     container_name: uwc-util-test
     hostname: uwc-util-test

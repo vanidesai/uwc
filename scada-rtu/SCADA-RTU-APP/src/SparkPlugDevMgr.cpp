@@ -252,6 +252,11 @@ bool CSparkPlugDevManager::processMetric(CMetric &a_oMetric, cJSON *a_cjArrayEle
 			}
 
 			cJSON *cjName = cJSON_GetObjectItem(a_cjArrayElemMetric, "name");
+			if (cjName == NULL)
+			{
+				DO_LOG_ERROR("Invalid payload: Name is not found.");
+				return false;
+			}
 			char *strName = cjName->valuestring;
 			if (strName == NULL)
 			{
@@ -334,9 +339,7 @@ bool CSparkPlugDevManager::processDCMDMetric(CSparkPlugDev& a_SPDev, CMetric &a_
 			return false;
 		}
 
-		//std::cout<<"###--- "<<a_sparkplugMetric.value.string_value;
 		std::string str(a_sparkplugMetric.value.string_value);
-
 
 		if (str.empty())
 		{
@@ -384,11 +387,12 @@ CSparkPlugDevManager& CSparkPlugDevManager::getInstance()
 metricMap_t CSparkPlugDevManager::parseVendorAppBirthDataMessage(std::string a_sPayLoad)
 {
 	metricMap_t oMetricMap;
+	cJSON *cjRoot = NULL;
 	do
 	{
 		try
 		{
-			cJSON *cjRoot = cJSON_Parse(a_sPayLoad.c_str());
+			cjRoot = cJSON_Parse(a_sPayLoad.c_str());
 			if (NULL == cjRoot)
 			{
 				DO_LOG_ERROR(
@@ -427,6 +431,11 @@ metricMap_t CSparkPlugDevManager::parseVendorAppBirthDataMessage(std::string a_s
 			DO_LOG_ERROR(std::string("Error:") + e.what());
 		}
 	} while (0);
+
+	if (NULL != cjRoot)
+	{
+		cJSON_Delete(cjRoot);
+	}
 
 	return oMetricMap;
 }
