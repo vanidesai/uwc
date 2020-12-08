@@ -37,3 +37,21 @@ TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_EmptyVector)
 	EXPECT_EQ(true, result);
 }
 
+
+TEST_F(InternalMQTTSubscriber_ut, writeRequest)
+{
+	/*std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev;
+	metricMap_t m_mapChangedMetrics;
+	bool result = CIntMqttHandler.instance().prepareWriteMsg(a_refSparkPlugDev, m_mapChangedMetrics);*/
+
+	/*bool result;
+	for (auto &itr : stRefActionVec)
+	{
+		metricMap_t m_metrics = itr.m_mapChangedMetrics;
+		result = CIntMqttHandler::instance().prepareWriteMsg(itr.m_refSparkPlugDev, itr.m_mapChangedMetrics);
+	}*/
+	/*std::cout<<"########################################"<<std::endl;
+		std::cout<<result<<std::endl;
+		std::cout<<"########################################"<<std::endl;*/
+
+}

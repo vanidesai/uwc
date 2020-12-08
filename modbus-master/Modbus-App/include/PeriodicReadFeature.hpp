@@ -29,7 +29,7 @@ using zmq_handler::stZmqPubContext;
 
 class CRefDataForPolling;
 
-/*class for time record*/
+/**class for time record*/
 class CTimeRecord
 {
 	private:
@@ -89,7 +89,7 @@ class CTimeRecord
 	bool isNonRTListAvailable() { return m_bIsNonRTAvailable; };
 };
 
-/*Structure of polling tracker*/
+/**Structure of polling tracker*/
 struct StPollingTracker
 {
 	uint32_t m_uiPollInterval; /**  polling interval*/
@@ -102,7 +102,7 @@ struct StPollingTracker
 	}
 };
 
-/*class for time mapper*/
+/**class for time mapper*/
 class CTimeMapper
 {
 	private:
@@ -157,7 +157,7 @@ class CTimeMapper
 	void addToPollingTracker(uint32_t a_uiCounter, CTimeRecord &a_objTimeRecord, bool a_bIsPolling);
 };
 
-/*Structure for polling instance
+/**Structure for polling instance
 */
 struct StPollingInstance
 {
@@ -237,7 +237,7 @@ public:
 	}
 };
 
-/*structure for last good response
+/**structure for last good response
 */
 struct stLastGoodResponse
 {

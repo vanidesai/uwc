@@ -69,8 +69,8 @@ namespace network_info
 	class CDataPoint
 	{
 		std::string m_sId; /** ID value*/
-		struct stDataPointAddress m_stAddress;
-		struct stPollingData m_stPollingConfig;
+		struct stDataPointAddress m_stAddress; /** data point address*/
+		struct stPollingData m_stPollingConfig; /** polling configuration */
 		static eEndPointType getPointType(const std::string&);
 		
 		public:
@@ -181,7 +181,7 @@ namespace network_info
 		}
 	};
 
-	/** class holding information for well =site device information */
+	/** class holding information for wellsite device information */
 	class CWellSiteDevInfo
 	{
 		mutable int32_t m_iCtx; /** context value*/
@@ -259,9 +259,9 @@ namespace network_info
 	{
 		const unsigned int m_uiMyRollID; /** ID value*/
 		const std::string m_sId; /** site ID value*/
-		const CWellSiteInfo &m_rWellSite;
-		const CWellSiteDevInfo &m_rWellSiteDev;
-		const CDataPoint &m_rPoint;
+		const CWellSiteInfo &m_rWellSite; /** reference of wellsite*/
+		const CWellSiteDevInfo &m_rWellSiteDev; /** reference of wellsite device*/
+		const CDataPoint &m_rPoint; /** reference of datapoint*/
 		mutable std::atomic<bool> m_bIsAwaitResp;/**(true or false) */
 		mutable std::atomic<bool> m_bIsRT; /** RT or non-RT(true or false)*/
 

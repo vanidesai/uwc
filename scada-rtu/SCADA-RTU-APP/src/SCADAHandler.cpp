@@ -81,7 +81,7 @@ bool CSCADAHandler::init()
 		std::cout << "*******Could not create unnamed semaphore for Internal MQTT connection established\n";
 		return false;
 	}
-	std::thread{ std::bind(&CSCADAHandler::handleIntMQTTConnLostThread,
+	std::thread{ std::bind(&CSCADAHandler::handleIntMQTTConnEstablishThread,
 		std::ref(*this)) }.detach();
 
 
@@ -164,15 +164,15 @@ void CSCADAHandler::handleIntMQTTConnLostThread()
 					{
 						// Connection is established.
 						// No need to send remaining DDEATH messages
-						DO_LOG_ERROR("Info: Internal MQTT connection is established. No More DDEATH to be sent.");
+						DO_LOG_INFO("Info: Internal MQTT connection is established. No More DDEATH to be sent.");
 						break;
 					}
 					if(false == getInitStatus())
 					{
-						DO_LOG_ERROR("Node init is not done. SparkPlug message publish is not done");
+						DO_LOG_INFO("Node init is not done. SparkPlug message publish is not done");
 						break;
 					}
-					DO_LOG_ERROR("Sending DDEATH for : " + itrDevice);
+					DO_LOG_INFO("Sending DDEATH for : " + itrDevice);
 					publishMsgDDEATH(itrDevice);
 					CSparkPlugDevManager::getInstance().setMsgPublishedStatus(enDEVSTATUS_DOWN, itrDevice);
 				}
@@ -207,7 +207,12 @@ void CSCADAHandler::handleIntMQTTConnEstablishThread()
 				{
 					break;
 				}
-				DO_LOG_ERROR("INFO: Internal MQTT connection established. DBIRTH to be sent");
+				if(false == getInitStatus())
+				{
+					DO_LOG_INFO("Node init is not done. SparkPlug DBIRTH message publish is not attempted on internal MQTT connection establishment.");
+					break;
+				}
+				DO_LOG_INFO("INFO: Internal MQTT connection established. DBIRTH to be attempted.");
 
 				// Publish the DBIRTH for all devices
 				publishAllDevBirths(false);

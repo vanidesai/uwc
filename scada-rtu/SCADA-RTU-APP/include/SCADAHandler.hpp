@@ -38,13 +38,13 @@ using namespace network_info;
 /** SCADA handler class*/
 class CSCADAHandler : public CMQTTBaseHandler
 {
-	uint64_t m_uiBDSeq = 0; // sequence
+	uint64_t m_uiBDSeq = 0; /** sequence number for birth message */
 
 	sem_t m_semSCADAConnSuccess; /** semaphore for connection success*/
 	sem_t m_semIntMQTTConnLost; /** semaphore for internal mqtt connection lost*/
 	sem_t m_semIntMQTTConnEstablished; /** semaphore for internal mqtt connection established*/
 
-	std::atomic<bool> m_bIsInitDone = false; //flag for initialization check
+	std::atomic<bool> m_bIsInitDone = false; /** flag for initialization check */
 
 	/** Default constructor*/
 	CSCADAHandler(const std::string &strPlBusUrl, int iQOS);

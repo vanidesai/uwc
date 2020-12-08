@@ -178,4 +178,202 @@ TEST_F(Metric_ut, assignToSparkPlug_METRIC_DATA_TYPE_STRING)
 	EXPECT_EQ( false, CValObj_main.assignToSparkPlug(a_metric) );
 }
 
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_BOOLEAN,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_BOOLEAN)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{true};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_BOOLEAN, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(true, result);
+
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_UINT8,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT8)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{1};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_UINT8, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_UINT16,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT16)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{123};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_UINT16, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_INT8,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT8)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{8};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_INT8, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_INT16,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT16)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{166};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_INT16, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_INT32,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT32)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{3233};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_INT32, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(true, result);
+
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_UINT32,
+ * and invalide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT32)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{3233};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_UINT32, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_UINT64,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT64)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{344};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_UINT64, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_INT64,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT64)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{54443};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_INT64, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_FLOAT,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_FLOAT)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{5.4443};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_FLOAT, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_DOUBLE,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_DOUBLE)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{54443};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_DOUBLE, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+}
+
+/**
+ * Test case to check assignToCJSON() behaviour when m_uiDataType is METRIC_DATA_TYPE_STRING,
+ * and valide m_objVal
+ * @return :bool
+ */
+TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_STRING)
+{
+	cJSON *root =  cJSON_CreateObject();
+	var_t a_objVal{"54443"};
+	CValObj CValObj_obj{METRIC_DATA_TYPE_STRING, a_objVal};
+	bool result = CValObj_obj.assignToCJSON(root);
+    EXPECT_EQ(false, result);
+}
+
+/**
+ * Test case to check addMetricNameValue() behaviour
+ * @return :bool
+ */
+TEST_F(Metric_ut, Add_MEtricNameValue)
+{
+
+	bool result = CMetric_obj.addMetricNameValue(a_metric);
+	EXPECT_EQ(true, result);
+}
+
+/**
+ * Test case to check addMetricForBirth() behaviour
+ * @return :bool
+ */
+TEST_F(Metric_ut, Add_MetricFor_Birth)
+{
+	bool result = CMetric_obj.addMetricForBirth(a_metric);
+	EXPECT_EQ(true, result);
+}
+
+
 

@@ -49,8 +49,7 @@ struct stOnDemandRequest
 	bool m_isByteSwap; /** ByteSwap(true or false)**/
 	bool m_isWordSwap; /** WordSwap(true or false) **/
 	bool m_isRT; /** Real Time(true or false) **/
-	struct timespec m_obtReqRcvdTS;
-	//long m_lPriority;
+	struct timespec m_obtReqRcvdTS; /** Timestamp showing when a request is received **/
 	std::string m_strMqttTime; /** value of mqtt time **/
 	std::string m_strEisTime; /** value of eis time **/
 };
@@ -95,7 +94,7 @@ unsigned char GetFunctionCode(uint8_t u8ReadWrite,
 								  uint16_t u16Quantity,
 								  uint8_t u8MbudTable);
 
- /*This enumerator defines modbus app error codes
+/**This enumerator defines modbus app error codes
   * SUCCESS: code 0
   * DUMMY_RESPONSE: code 100
   * REQUEST_SEND_FAILED: code 101
@@ -127,7 +126,7 @@ typedef enum MbusAppErrorCode
 	APP_ERROR_CODE_MAX
 }eMbusAppErrorCode;
 
-/*This enumerator defines modbus app Request type code
+/**This enumerator defines modbus app Request type code
  * NONE: code 0
  * READ: code 1
  * READRT: code 2
@@ -143,7 +142,7 @@ enum eMbusRequestType
 	MBUS_REQUEST_WRITERT,
 };
 
-/*This enumerator defines the Modbus app call back type code
+/**This enumerator defines the Modbus app call back type code
  * POLLING: code 0
  * POLLING_RT: code 1
  * ONDEMAND_READ: code 2
@@ -171,7 +170,7 @@ void OnDemandReadRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackPar
 void OnDemandWrite_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
 void OnDemandWriteRT_AppCallback(stMbusAppCallbackParams_t *pstMbusAppCallbackParams, uint16_t uTxID);
 
-/*This namespace handles the common functionality of getting the request Json, inserting entry in map
+/**This namespace handles the common functionality of getting the request Json, inserting entry in map
  * updating the map and removing the entry from the map
 */
 namespace common_Handler

@@ -32,14 +32,22 @@ public:
 	network_info::CWellSiteInfo			CWellSiteInfo_obj;
 		network_info::CWellSiteDevInfo		CWellSiteDevInfo_obj;
 		network_info::CDataPoint			CDataPoint_obj;
-	//	zmq_handler::stZmqContext a_BusContext;
-		//zmq_handler::stZmqPubContext a_objPubContext;
-		//CTimeRecord CTimeRecord_obj;
 		uint8_t a_uiFuncCode;
 		uint32_t U32_code;
-		//std::vector<CRefDataForPolling> m_PolledPoints;
-		//std::mutex m_2vectorMutex;
 		bool bRet = true;
+		std::string a_sSubDev = "device";
+		std::string a_sSparkPlugName = "A";
+		bool a_bIsVendorApp = false;
+		std::vector<stRefForSparkPlugAction> stRefActionVec;
+
+		org_eclipse_tahu_protobuf_Payload_Metric a_metric = { NULL, false, 0, true, get_current_timestamp(), true,
+								METRIC_DATA_TYPE_UNKNOWN, false, 0, false, 0, false,
+								true, false,
+					org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+								false,
+										org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+								0,
+								{ 0 } };
 
 		network_info::CUniqueDataPoint	CUniqueDataPoint_obj
 		{
@@ -48,6 +56,14 @@ public:
 			CWellSiteDevInfo_obj,
 			CDataPoint_obj
 		};
+
+		org_eclipse_tahu_protobuf_Payload dbirth_payload = { true, get_current_timestamp(), 0, &a_metric,
+				true, 0, NULL, NULL, NULL};
+
+
+		CSparkPlugDev CSparkPlugDev_obj{a_sSubDev, a_sSparkPlugName, a_bIsVendorApp};
+
+
 
 };
 

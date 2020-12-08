@@ -98,6 +98,3 @@ TEST_F(SparkPlugDevices_ut, processNewData_EmptyMetricList)
 	metricMap_t oMetricMap = CSparkPlugDev_obj.processNewData(a_MetricList);
 
 }
-
-
-

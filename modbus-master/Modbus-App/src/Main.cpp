@@ -37,7 +37,7 @@ std::mutex mtx;
 std::condition_variable cv;
 bool g_stop = false;
 
-#define APP_VERSION "0.0.6.3"
+#define APP_VERSION "0.0.6.4"
 #define TIMER_TICK_FREQ 1000 // in microseconds
 
 /// flag to stop all running threads

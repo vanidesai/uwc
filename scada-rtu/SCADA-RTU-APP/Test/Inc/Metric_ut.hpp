@@ -36,7 +36,8 @@ org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
 					org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
 			0,
 			{ 0 } };
-
+	std::string SpargPlugName = "A";
+	CMetric CMetric_obj{SpargPlugName};
 
 
 };

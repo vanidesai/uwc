@@ -136,16 +136,71 @@ public:
 	;
 
 	/**function to check metric*/
-	bool checkMetric(std::string& strs)
+	bool checkMetric(org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric)
 	{
 		bool flag = false;
-		for(auto &ele : m_mapMetrics)
+		try
 		{
-			if(strs == ele.second.getName())
+			//
+			if(NULL != a_sparkplugMetric.name)
 			{
-				flag = true;
-				break;
+				std::string sName{a_sparkplugMetric.name};
+				auto itr = m_mapMetrics.find(sName);
+				if(m_mapMetrics.end() != itr)
+				{
+					// metric name is found
+					// Check if datatypes match
+					switch(itr->second.getValue().getDataType())
+					{
+					case METRIC_DATA_TYPE_INT8:
+					case METRIC_DATA_TYPE_INT16:
+					case METRIC_DATA_TYPE_INT32:
+					case METRIC_DATA_TYPE_INT64:
+					case METRIC_DATA_TYPE_BOOLEAN:
+					case METRIC_DATA_TYPE_FLOAT:
+					case METRIC_DATA_TYPE_DOUBLE:
+					case METRIC_DATA_TYPE_STRING:
+						if(itr->second.getValue().getDataType() == a_sparkplugMetric.datatype)
+						{
+							flag = true;
+						}
+						break;
+
+					// Unsigned datatypes are sometimes just treated as integers
+					// Accordingly a datatype is received
+					case METRIC_DATA_TYPE_UINT8:
+					case METRIC_DATA_TYPE_UINT16:
+					case METRIC_DATA_TYPE_UINT32:
+					case METRIC_DATA_TYPE_UINT64:
+						if(
+							(METRIC_DATA_TYPE_UINT8 == a_sparkplugMetric.datatype) ||
+							(METRIC_DATA_TYPE_UINT16 == a_sparkplugMetric.datatype) ||
+							(METRIC_DATA_TYPE_INT8 == a_sparkplugMetric.datatype) ||
+							(METRIC_DATA_TYPE_INT16 == a_sparkplugMetric.datatype) ||
+							(METRIC_DATA_TYPE_INT32 == a_sparkplugMetric.datatype) ||
+							(METRIC_DATA_TYPE_UINT32 == a_sparkplugMetric.datatype) ||
+							(METRIC_DATA_TYPE_UINT64 == a_sparkplugMetric.datatype) ||
+							(METRIC_DATA_TYPE_INT64 == a_sparkplugMetric.datatype)
+						)
+						{
+							flag = true;
+						}
+						break;
+					}
+					if(false == flag)
+					{
+						DO_LOG_ERROR("Datatypes do not match for given metric: " + sName);
+					}
+				}
+				else
+				{
+					DO_LOG_ERROR("Metric not found: " + sName);
+				}
 			}
+		}
+		catch (std::exception &e)
+		{
+			DO_LOG_ERROR("Unable to check whether metric is correct. Exception : " + std::string(e.what()));
 		}
 		return flag;
 	}

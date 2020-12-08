@@ -34,4 +34,31 @@ TEST_F(Common_ut, getTopicParts_Test01)
 	EXPECT_EQ("PartC_UT",TopicParts[2]);
 }
 
+/**
+ * Test case to check if function getDatapointsQ() executes successfully
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(Common_ut, getDataPointInQ)
+{
+	QMgr::getDatapointsQ();
+	EXPECT_EQ(true, true);
+}
+
+/**
+ * Test case to check if function getScadaSubQ() executes successfully
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(Common_ut, ScadaSubQ)
+{
+	QMgr::getScadaSubQ();
+	EXPECT_EQ(true, true);
+}
+
+
+
+
 

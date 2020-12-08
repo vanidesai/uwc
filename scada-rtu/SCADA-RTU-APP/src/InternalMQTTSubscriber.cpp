@@ -540,8 +540,6 @@ bool CIntMqttHandler::prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_st
 			}
 
 			//list of changed metrics for which to send CMD or write-on-demand CJSON request
-			metricMap_t m_metrics = itr.m_mapChangedMetrics;
-
 			if(itr.m_refSparkPlugDev.get().isVendorApp())
 			{
 				prepareCMDMsg(itr.m_refSparkPlugDev, itr.m_mapChangedMetrics);

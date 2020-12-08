@@ -19,7 +19,7 @@
 /** class is for action failure or success related to mqtt*/
 class action_listener : public virtual mqtt::iaction_listener
 {
-	std::string name_;
+	std::string name_;/** name of listener*/
 
 	void on_failure(const mqtt::token& tok) override;
 	void on_success(const mqtt::token& tok) override;
@@ -33,16 +33,15 @@ class CMQTTPubSubClient : public virtual mqtt::callback,
 					public virtual mqtt::iaction_listener
 
 {
-	int nretry_;
-	int m_iQOS;
-	std::string m_sClientID;
-	mqtt::async_client m_Client;
-	mqtt::connect_options m_ConOptions;
+	int m_iQOS; /** QoS value to be used for publishing*/
+	std::string m_sClientID; /** client id to be used for mqtt connection*/
+	mqtt::async_client m_Client; /** mqtt async client*/
+	mqtt::connect_options m_ConOptions; /** mqtt async client connection options*/
 	/** An action listener to display the result of actions.*/
 	action_listener m_Listener;
 
 	/** Callback functions for various operations*/
-	bool m_bNotifyConnection = false;
+	bool m_bNotifyConnection = false; 
 	mqtt::async_client::connection_handler m_fcbConnected;
 
 	bool m_bNotifyDisConnection = false;
@@ -51,8 +50,6 @@ class CMQTTPubSubClient : public virtual mqtt::callback,
 	bool m_bNotifyMsgRcvd = false;
 	mqtt::async_client::message_handler m_fcbMsgRcvd;
 
-	std::vector<std::string> m_sTopicList;
-	
 	/** Re-connection failure */
 	void on_failure(const mqtt::token& tok) override;
 
@@ -124,7 +121,7 @@ public:
 class CMQTTBaseHandler
 {
 protected: 
-	CMQTTPubSubClient m_MQTTClient;
+	CMQTTPubSubClient m_MQTTClient; /** mqtt client*/
 	int m_QOS; /** qos value*/
 
 	/** delete copy and move constructors and assign operators*/

@@ -16,19 +16,19 @@
 #include <iostream>
 #include "Logger.hpp"
 
-/*Common data recieved from calling app*/
+/** Common data recieved from calling app*/
 struct stUWCComnDataVal_t
 {
 	std::string	m_sAppName; /** App name */
-	bool m_devMode; /** DEv mode(true or false)*/
-	bool m_isCommonDataInitialised = false;
+	bool m_devMode; /** DEV mode(true or false)*/
+	bool m_isCommonDataInitialised = false; /** tells whether common data init is done*/
 };
 
 /** Class to manage the common environment*/
 class CcommonEnvManager{
 
 private:
-	stUWCComnDataVal_t CommonDataFromApp;
+	stUWCComnDataVal_t CommonDataFromApp; /** object to hold common data */
 	std::vector<std::string> m_vect_TopicList; /** vector of topic list */
 
 	/** Constructor */

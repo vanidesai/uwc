@@ -33,6 +33,18 @@ TEST_F(QueueMgr_ut, initPlatformBusHandler_MqttMode)
 //	PlBusMgr::stopListeners();
 }
 
+/**
+ * Test case to check behaviour of initPlatformBusHandler() function in mqttMode is false
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(QueueMgr_ut, platfomBusHandler_false)
+{
+	PlBusMgr::initPlatformBusHandler(false);
+	EXPECT_EQ(true, check);
+}
+
 
 /**
  * Test case to check if PollMsgQ() function return reference of on-demand read operation instance

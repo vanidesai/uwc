@@ -29,7 +29,7 @@
 #include "ConfigManager.hpp"
 #include "API.h"
 
-/*node for response Q*/
+/**node for response Q*/
 struct stStackResponse
 {
 	stException_t m_stException; /** reference of struct stException_t*/

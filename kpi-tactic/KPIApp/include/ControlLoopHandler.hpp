@@ -33,7 +33,7 @@ private:
 	uint32_t m_uiDelayMs; /** value of delay in milliseconds*/
 	std::string m_sVal; /** site value*/
 	CQueueHandler m_q; /** object of class CQueueHandler*/
-	std::thread m_thread; //thread
+	std::thread m_thread; /** thread id for this control loop handling */
 
 	void threadPollMonitoring();
 
@@ -124,8 +124,8 @@ public:
 /** structure for poll write data*/
 struct stPollWrData
 {
-	CMessageObject m_oPollData; //object of class CMessageObject
-	struct timespec m_tsStartWrReqCreate;// reference of structure timespec
+	CMessageObject m_oPollData; /** object of class CMessageObject */
+	struct timespec m_tsStartWrReqCreate;/** reference of structure timespec */
 
 	/** constructor*/
 	stPollWrData() 

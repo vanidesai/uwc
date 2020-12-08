@@ -25,7 +25,7 @@
 	class CMessageObject
 	{
 		mqtt::const_message_ptr m_mqttMsg; /** mqtt-export message*/
-		struct timespec m_stTs;
+		struct timespec m_stTs; /** timestamp when this object is created*/
 
 		public:
 		CMessageObject() : m_mqttMsg{}, m_stTs{}

@@ -22,7 +22,7 @@
 #include "cjson/cJSON.h"
 #include "PeriodicReadFeature.hpp"
 
-/*onDemandHandler class includes the On-demand functionality
+/**onDemandHandler class includes the On-demand functionality
  * On demand Handler class to start processing of on-demand requests
 */
 class onDemandHandler

@@ -330,22 +330,12 @@ bool CSparkPlugDevManager::processDCMDMetric(CSparkPlugDev& a_SPDev, CMetric &a_
 {
 	try
 	{
-		//to check if given metric is a part of the device
-		std::string strs = a_sparkplugMetric.name;
-		bool metricFlag = a_SPDev.checkMetric(strs);
-
-		if(!metricFlag)
-		{
-			return false;
-		}
-
-		std::string str(a_sparkplugMetric.value.string_value);
-
-		if (str.empty())
-		{
-			return false;
-		}
 		if(a_sparkplugMetric.name == NULL)
+		{
+			return false;
+		}
+		//to check if given metric is a part of the device
+		if(false == a_SPDev.checkMetric(a_sparkplugMetric))
 		{
 			return false;
 		}

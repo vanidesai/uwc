@@ -437,6 +437,14 @@ bool CValObj::setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_metric)
 			break;
 
 		case METRIC_DATA_TYPE_STRING:
+			if(NULL == a_metric.value.string_value)
+			{
+				return false;
+			}
+			if (((string)a_metric.value.string_value).empty())
+			{
+				return false;
+			}
 			m_objVal = (string)a_metric.value.string_value;
 			break;
 

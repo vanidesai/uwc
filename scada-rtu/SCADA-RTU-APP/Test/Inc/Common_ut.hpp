@@ -12,6 +12,7 @@
 #define TEST_INCLUDE_COMMON_UT_H_
 
 #include "Common.hpp"
+#include "QueueMgr.hpp"
 
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>

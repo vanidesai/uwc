@@ -23,7 +23,7 @@ class CKPIAppConfig
 	bool m_bIsRTModeForPolledPoints; /** RT mode for polled points(true or false) */
 	bool m_bIsRTModeForWriteOp; /** RT mode for write operation(true or false) */
 
-	CControlLoopMapper m_oCtrlLoopMap; //object of class CControlLoopMapper
+	CControlLoopMapper m_oCtrlLoopMap; /** object of class CControlLoopMapper */
 
 	/** Default constructor*/
 	CKPIAppConfig(): m_uiExecTimeMin{0}, m_bIsMQTTModeApp{false}, 

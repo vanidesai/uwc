@@ -14,6 +14,7 @@
 #include "InternalMQTTSubscriber.hpp"
 #include "Common.hpp"
 #include "ConfigManager.hpp"
+#include "SparkPlugDevices.hpp"
 #include <gtest/gtest.h>
 
 class InternalMQTTSubscriber_ut : public::testing::Test
