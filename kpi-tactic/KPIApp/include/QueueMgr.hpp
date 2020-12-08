@@ -33,7 +33,7 @@ namespace PlBusMgr
 {
 	void initPlatformBusHandler(bool a_bIsMQTTMode);
 	bool publishWriteReq(const CControlLoopOp& a_rCtrlLoop, 
-			const std::string &a_sWrSeq, CMessageObject &a_oPollMsg);
+			const std::string &a_sWrSeq);
 	void stopListeners();
 }
 #endif

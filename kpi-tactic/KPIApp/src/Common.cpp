@@ -42,7 +42,7 @@ void commonUtilKPI::getCurrentTimestampsInString(std::string &strCurTime)
 
 /**
  * For logging control loop analysis data, a separate logger is used.
- * This function does creates teh analysis message and logs it into required logger.
+ * This function creates the analysis message and logs it into required logger.
  * @param a_stPollWrData[in]  polling and write data
  * @param a_msgWrResp	[in]  write response message
  * @return none
