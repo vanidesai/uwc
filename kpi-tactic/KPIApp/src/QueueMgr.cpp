@@ -99,10 +99,11 @@ bool publishWriteReqOnMQTT(const std::string &a_sPubTopic, const std::string &a_
  * Forms and publishes write request
  * @param a_rCtrlLoop	[in]: Control loop for which write needs to be published
  * @param a_sWrSeq		[in]: Sequence number to be used in write request
+ * @param a_oPollMsg	[in]: Poll message for which write is being sent
  * @return true/false based on success/failure
  */
 bool PlBusMgr::publishWriteReq(const CControlLoopOp& a_rCtrlLoop, 
-			const std::string &a_sWrSeq)
+			const std::string &a_sWrSeq, CMessageObject &a_oPollMsg)
 {
 	try
 	{
@@ -118,7 +119,7 @@ bool PlBusMgr::publishWriteReq(const CControlLoopOp& a_rCtrlLoop,
 			a_rCtrlLoop.getPointNameForWrReq(), a_rCtrlLoop.getValue(), sWrRT,
 			sPubTopic, CKPIAppConfig::getInstance().isMQTTModeOn()))
 		{
-			DO_LOG_ERROR(a_sWrSeq + ": Unable to create a write request. Ignoring the message");
+			DO_LOG_ERROR(a_oPollMsg.getStrMsg() + ": Unable to create a write request. Ignoring the message");
 			return false;
 		}
 

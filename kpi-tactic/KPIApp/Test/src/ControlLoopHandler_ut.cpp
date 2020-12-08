@@ -28,35 +28,10 @@ void ControlLoopHandler_ut::TearDown()
  */
 TEST_F(ControlLoopHandler_ut, DummyAnalysisMsg)
 {
-	std::string AppSeq = "12-34";
+	std::string AppSeq = "1234";
 	CControlLoopOp_obj.postDummyAnalysisMsg("AppSeq", "WrReqInitFailed");
 }
 
-/**
- * Test case to check if postDummyAnalysisMsg() function posts a dummy analysis message in case of error successfully
- * @param :[in] None
- * @param :[out] None
- * @return None
- */
-TEST_F(ControlLoopHandler_ut, PostDummyanalysisMsg)
-{
-	std::string AppSeq = "1234";
-	CControlLoopOp_obj.postDummyAnalysisMsg(stPollWrData_obj, AppSeq, "WrReqInitFailed");
-}
-
-/**
- * Test case to check if isPresent() function's  behavior
- * @param :[in] None
- * @param :[out] None
- * @return bool
- */
-TEST_F(ControlLoopHandler_ut, present_check)
-{
-	std::string sID = "site-id";
-	std::string sLastWrSeqVal{""};
-	bool result = CMapOfReqMapper::getInstace().isPresent(sID, sLastWrSeqVal);
-	EXPECT_EQ(0, result);
-}
 /**
  * Test case to check if triggerControlLoops() function fails to receive  a polling message and returns false on failure
  * @param :[in] None
@@ -68,7 +43,7 @@ TEST_F(ControlLoopHandler_ut, triggerLoops_false)
 	std::string Point = "3454";
 	//CControlLoopMapper CControlLoopMapper_obj;
 	bool RetVal = CKPIAppConfig::getInstance().getControlLoopMapper().triggerControlLoops(Point, recvdMsg);
-	EXPECT_EQ(true, RetVal);
+	EXPECT_EQ(false, RetVal);
 }
 
 /**
@@ -168,7 +143,7 @@ TEST_F(ControlLoopHandler_ut, ControlLoopWtRspPoint_false)
 TEST_F(ControlLoopHandler_ut, PublishWtRq_false)
 {
 	bool RetVal = CKPIAppConfig::getInstance().getControlLoopMapper().publishWriteReq(CControlLoopOp_obj, strMsg, recvdMsg);
-	EXPECT_EQ(1, RetVal);
+	EXPECT_EQ(0, RetVal);
 }
 
 /**
@@ -209,19 +184,7 @@ TEST_F(ControlLoopHandler_ut, destroyCtx)
 	bool RetVal = CKPIAppConfig::getInstance().getControlLoopMapper().destroySubCtx();
 	//EXPECT_EQ(true, RetVal);
 	EXPECT_EQ(false, RetVal);
-}
-
-/**
- * Test case to check if pushAnalysisMsg() function's behavior
- * @param :[in] None
- * @param :[out] None
- * @return None
- */
-TEST_F(ControlLoopHandler_ut, PushAnalysisMsg)
-{
-	struct stPollWrData a_stPollWrData;
-	CMessageObject a_msgWrResp;
-	CControlLoopMapper& oCtrlLoopMapper = CKPIAppConfig::getInstance().getControlLoopMapper();
-	oCtrlLoopMapper.pushAnalysisMsg(a_stPollWrData, a_msgWrResp);
 
 }
+
+

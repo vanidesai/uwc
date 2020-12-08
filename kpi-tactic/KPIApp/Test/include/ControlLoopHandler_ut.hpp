@@ -35,8 +35,6 @@ public:
 		uint32_t uiDelayMs;
 		std::string sVal;
 
-		struct stPollWrData stPollWrData_obj;
-
 		CControlLoopOp CControlLoopOp_obj{uiId,
 			                     	sPolledTopic,
 									sWritePointFullPath,
