@@ -64,7 +64,7 @@ TEST_F(QueueMgr_ut, PollMsg)
  * @param :[out] None
  * @return None
  */
-TEST_F(QueueMgr_ut, )
+TEST_F(QueueMgr_ut, WriteRespMsgQ_test)
 {
 	QMgr::WriteRespMsgQ();
 	EXPECT_EQ(true, check);
@@ -115,9 +115,9 @@ TEST_F(QueueMgr_ut, WriteRqOnMqtt_false)
 TEST_F(QueueMgr_ut, PublishWriteRq)
 {
 	//CControlLoopOp a_rCtrlLoop;
-	CMessageObject a_oPollMsg;
+	//CMessageObject a_oPollMsg;
 	std::string WrSeq = "1234";
-	bool Result = PlBusMgr::publishWriteReq(CControlLoopOp_obj, WrSeq, a_oPollMsg);
+	bool Result = PlBusMgr::publishWriteReq(CControlLoopOp_obj, WrSeq);
 	EXPECT_EQ(false, Result);
 }
 

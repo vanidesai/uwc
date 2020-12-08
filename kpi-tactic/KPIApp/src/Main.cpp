@@ -39,15 +39,16 @@ void postMsgsToWriteOnMQTT(CQueueHandler& qMgr)
 
 	try
 	{
+		CControlLoopMapper& oCtrlLoopMapper = CKPIAppConfig::getInstance().getControlLoopMapper();
 		while (false == g_stopThread.load())
 		{
 			CMessageObject recvdMsg;
 			if(true == qMgr.isMsgArrived(recvdMsg))
 			{
 				std::string sTopic{recvdMsg.getTopic()};
-				if(CKPIAppConfig::getInstance().getControlLoopMapper().isControlLoopPollPoint(sTopic))
+				//if(CKPIAppConfig::getInstance().getControlLoopMapper().isControlLoopPollPoint(sTopic))
 				{
-					CKPIAppConfig::getInstance().getControlLoopMapper().triggerControlLoops(sTopic, recvdMsg);
+					oCtrlLoopMapper.triggerControlLoops(sTopic, recvdMsg);
 				}
 			}
 		}
@@ -68,16 +69,18 @@ void analyzeControlLoopData(CQueueHandler& qMgr)
 {
 	try
 	{
+		CControlLoopMapper& oCtrlLoopMapper = CKPIAppConfig::getInstance().getControlLoopMapper();
 		while (false == g_stopThread.load())
 		{
 			CMessageObject recvdMsg;
 			if(true == qMgr.isMsgArrived(recvdMsg))
 			{
-				if(false == CKPIAppConfig::getInstance().getControlLoopMapper().isControlLoopWrRspPoint(recvdMsg.getTopic()))
+				// Commented following code for optimization 
+				/*if(false == oCtrlLoopMapper.isControlLoopWrRspPoint(recvdMsg.getTopic()))
 				{
 					DO_LOG_DEBUG(recvdMsg.getTopic() + ": Not a part of control loop. Ignored");
 					continue;
-				}
+				}*/
 
 				std::string sAppSeqVal{commonUtilKPI::getValueofKeyFromJSONMsg(recvdMsg.getStrMsg(), "app_seq")};
 				if(true == sAppSeqVal.empty())
@@ -87,13 +90,13 @@ void analyzeControlLoopData(CQueueHandler& qMgr)
 				}
 
 				struct stPollWrData oTempData{};
-				if(true == CPollNWriteReqMapper::getInstace().getForProcessing(sAppSeqVal, oTempData))
+				if(true == CMapOfReqMapper::getInstace().getForProcessing(sAppSeqVal, oTempData))
 				{
-					commonUtilKPI::logAnalysisMsg(oTempData, recvdMsg);
+					oCtrlLoopMapper.pushAnalysisMsg(oTempData, recvdMsg);
 				}
 				else
 				{
-					DO_LOG_ERROR(sAppSeqVal + ": Waited writeRequest is not found in poll mapping");
+					DO_LOG_DEBUG(sAppSeqVal + ": Waited writeRequest is not found in poll mapping");
 				}
 			}
 		}

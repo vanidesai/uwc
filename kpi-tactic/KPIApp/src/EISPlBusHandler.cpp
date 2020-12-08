@@ -111,11 +111,12 @@ bool CEISPlBusHandler::processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
 			return false;
 		}
 		std::string sRcvdTopic{data->body.string};
-		if(false == a_fPointListChecker(sRcvdTopic))
+		// Commented following code for optimization
+		/*if(false == a_fPointListChecker(sRcvdTopic))
 		{
 			DO_LOG_DEBUG(sRcvdTopic + ": This is not a control loop topic. Ignored.")
 			return false;
-		}
+		}*/
 
 		msg_envelope_serialized_part_t *parts = NULL;
 		int num_parts = msgbus_msg_envelope_serialize(msg, &parts);

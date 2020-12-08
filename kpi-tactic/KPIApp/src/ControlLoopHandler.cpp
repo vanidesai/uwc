@@ -20,6 +20,31 @@ extern std::atomic<bool> g_stopThread;
 
 /**
  * This function posts a dummy analysis message in case of error
+ * @param a_oPollData	[in]: Poll data message
+ * @param a_sAppSeq	[in]: Probable app-seq number for write op
+ * @param a_sError	[in]: Error info 
+ * @return none
+ */
+void CControlLoopOp::postDummyAnalysisMsg(struct stPollWrData &a_oPollData, const std::string &a_sAppSeq, const std::string &a_sError) const
+{
+	try
+	{
+		std::string sDummyErrorRep;
+		commonUtilKPI::addFieldToMsg(sDummyErrorRep, "app_seq", a_sAppSeq, false);
+		commonUtilKPI::addFieldToMsg(sDummyErrorRep, "data_topic", m_sWritePointFullPath + "/writeResponse", false);
+		commonUtilKPI::addFieldToMsg(sDummyErrorRep, "error_code", a_sError + "/writeResponse", true);
+		sDummyErrorRep = "{" + sDummyErrorRep + "}";
+		CMessageObject oDummyMsg{"errorDummyTopic", sDummyErrorRep};
+		CKPIAppConfig::getInstance().getControlLoopMapper().pushAnalysisMsg(a_oPollData, oDummyMsg);
+	}
+	catch (std::exception &ex)
+	{
+		DO_LOG_ERROR((std::string)ex.what());
+	}
+}
+
+/**
+ * This function posts a dummy analysis message in case of error
  * @param a_sAppSeq	[in]: Probable app-seq number for write op
  * @param a_sError	[in]: Error info 
  * @return none
@@ -29,14 +54,14 @@ void CControlLoopOp::postDummyAnalysisMsg(const std::string &a_sAppSeq, const st
 	try
 	{
 		struct stPollWrData oTempData{};
-		CPollNWriteReqMapper::getInstace().getForProcessing(a_sAppSeq, oTempData);
-		std::string sDummyErrorRep;
-		commonUtilKPI::addFieldToMsg(sDummyErrorRep, "app_seq", a_sAppSeq, false);
-		commonUtilKPI::addFieldToMsg(sDummyErrorRep, "data_topic", m_sWritePointFullPath + "/writeResponse", false);
-		commonUtilKPI::addFieldToMsg(sDummyErrorRep, "error_code", a_sError + "/writeResponse", true);
-		sDummyErrorRep = "{" + sDummyErrorRep + "}";
-		CMessageObject oDummyMsg{"errorDummyTopic", sDummyErrorRep};
-		commonUtilKPI::logAnalysisMsg(oTempData, oDummyMsg);
+		if(true == CMapOfReqMapper::getInstace().getForProcessing(a_sAppSeq, oTempData))
+		{
+			postDummyAnalysisMsg(oTempData, a_sAppSeq, a_sError);
+		}
+		else
+		{
+			DO_LOG_ERROR(a_sAppSeq + ": Control-loop Data associated with this sequence number not found.");
+		}
 	}
 	catch (std::exception &ex)
 	{
@@ -57,6 +82,7 @@ void CControlLoopOp::threadPollMonitoring()
 	DO_LOG_INFO("Started new thread for : " + m_sPolledTopic 
 		+ ", write point: " + m_sWritePointFullPath);
 	std::string sLastWrSeqVal{""};
+	uint32_t interval = m_uiDelayMs*1000*1000;
 	try
 	{
 		while (false == g_stopThread.load())
@@ -64,13 +90,17 @@ void CControlLoopOp::threadPollMonitoring()
 			CMessageObject recvdMsg{};
 			if(true == m_q.isMsgArrived(recvdMsg))
 			{
+				struct timespec ts;
+				int rc = clock_gettime(CLOCK_MONOTONIC, &ts);
 				// Message is received
 				// Check if writeResponse for last message was received
-				if(true == CPollNWriteReqMapper::getInstace().isPresent(sLastWrSeqVal))
+				if(true == CMapOfReqMapper::getInstace().isPresent(m_sId, sLastWrSeqVal))
 				{
 					postDummyAnalysisMsg(sLastWrSeqVal, "WrRespNotRcvd");
 				}
+				sLastWrSeqVal.clear();
 				
+				// Get driver sequence number for sending a write request
 				std::string sWrSeqVal{commonUtilKPI::getValueofKeyFromJSONMsg(recvdMsg.getStrMsg(), "driver_seq")};
 				if(true == sWrSeqVal.empty())
 				{
@@ -78,8 +108,29 @@ void CControlLoopOp::threadPollMonitoring()
 					continue;
 				}
 				sWrSeqVal.append("-" + EnvironmentInfo::getInstance().getDataFromEnvMap("AppName")+ "-" + m_sId);
+				std::string sPollStatus{commonUtilKPI::getValueofKeyFromJSONMsg(recvdMsg.getStrMsg(), "status")};
+				transform(sPollStatus.begin(), sPollStatus.end(), sPollStatus.begin(), ::toupper);
+				if("BAD" == sPollStatus)
+				{
+					//DO_LOG_ERROR(recvdMsg.getStrMsg() + ": Poll message status is BAD. Write request not sent.");
+					struct timespec tsStartWrReqCreate;
+					timespec_get(&tsStartWrReqCreate, TIME_UTC);
+					struct stPollWrData oTemp{recvdMsg, tsStartWrReqCreate};
+					postDummyAnalysisMsg(oTemp, sWrSeqVal, "WrReqNotSent");
+					continue;
+				}
 				// Sleep for configured delay
-				std::this_thread::sleep_for(std::chrono::milliseconds(m_uiDelayMs));
+				if(0 == rc)
+				{
+					struct timespec sleepts;
+					unsigned long next_tick = (ts.tv_sec * 1000000000L + ts.tv_nsec) + interval;
+					sleepts.tv_sec = next_tick / 1000000000L;
+					sleepts.tv_nsec = next_tick % 1000000000L;
+					do
+					{
+						rc = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &sleepts, NULL);
+					} while(EINTR == rc);
+				}
 
 				CKPIAppConfig::getInstance().getControlLoopMapper().publishWriteReq(*this, sWrSeqVal, recvdMsg);
 				sLastWrSeqVal.assign(sWrSeqVal);
@@ -101,6 +152,7 @@ bool CControlLoopOp::startThread()
 {
 	//
 	m_thread = std::thread(&CControlLoopOp::threadPollMonitoring, this);
+	m_thread.detach();
 	return true;
 }
 
@@ -228,6 +280,7 @@ bool CControlLoopMapper::insertControlLoopData(const std::string &a_sPolledTopic
 			itr->second.push_back(oLoop);
 			m_vsPollTopics.push_back(sPollKey);
 			m_vsWrRspTopics.push_back(a_sWriteTopic + "/writeResponse");
+			CMapOfReqMapper::getInstace().createNewControlLoopMap(oLoop.getMyID());
 		}
 	}
 	catch(std::exception &e)
@@ -244,15 +297,18 @@ bool CControlLoopMapper::insertControlLoopData(const std::string &a_sPolledTopic
  * @param a_oMsg			:[in] Received message
  * @return true/false based on success/failure
  */
-bool CControlLoopMapper::triggerControlLoops(std::string& a_sPolledPoint, CMessageObject a_oMsg)
+bool CControlLoopMapper::triggerControlLoops(std::string& a_sPolledPoint, CMessageObject &a_oMsg)
 {
-	std::vector<std::string> sPolledTopicVector;
 	try
 	{
-		auto &vControlLoop = m_oControlLoopMap.at(a_sPolledPoint);
-		for (auto &itr : vControlLoop) 
+		auto itrLoop = m_oControlLoopMap.find(a_sPolledPoint);
+		if(m_oControlLoopMap.end() != itrLoop)
 		{
-			itr.getQueue().pushMsg(a_oMsg);
+			auto &vControlLoop = itrLoop->second;
+			for (auto &itr : vControlLoop) 
+			{
+				itr.getQueue().pushMsg(a_oMsg);
+			}
 		}
 	}
 	catch(std::exception &ex)
@@ -281,6 +337,13 @@ bool CControlLoopMapper::configControlLoopOps(bool a_bIsRTWrite)
 			{
 				rCtrlLoop.startThread();
 			}
+
+			// Create a thread for creating an analysis log
+			m_threadAnalysisLogger = std::thread(&CControlLoopMapper::threadAnalysisMsg, this);
+			m_threadAnalysisLogger.detach();
+			// Create a thread for sending write request
+			m_threadWrOp = std::thread(&CControlLoopMapper::threadWriteReq, this);
+			m_threadWrOp.detach();
 		}
 		catch(const std::exception& e)
 		{
@@ -290,6 +353,99 @@ bool CControlLoopMapper::configControlLoopOps(bool a_bIsRTWrite)
 
 	std::cout << "Control loop threads are set. Now start listening\n";
 	return true;
+}
+
+/**
+ * For logging control loop analysis data, a separate logger is used.
+ * This function creates the analysis message and sends it to logging thread.
+ * @param a_stPollWrData[in]  polling and write data
+ * @param a_msgWrResp	[in]  write response message
+ * @return none
+ */
+void CControlLoopMapper::pushAnalysisMsg(struct stPollWrData &a_stPollWrData, CMessageObject &a_msgWrResp)
+{
+	try
+	{
+		stAnalysisMsg oMsgSt{a_stPollWrData, a_msgWrResp};
+		m_qAnalysisMsg.pushMsg(oMsgSt);
+	}
+	catch(const std::exception& e)
+	{
+		DO_LOG_ERROR(e.what());
+	}
+}
+
+/**
+ * Thread function: Logs analysis message
+ * @param none
+ * @return none
+ */
+void CControlLoopMapper::threadAnalysisMsg()
+{
+	std::cout << "threadAnalysisMsg started\n";
+
+	while(false == g_stopThread.load())
+	{
+		/// iterate Queue one by one to send message on Pl-bus
+		do
+		{
+			try
+			{
+				stAnalysisMsg oMsgSt;
+				if(true == m_qAnalysisMsg.isMsgArrived(oMsgSt))
+				{
+					if(false == g_stopThread.load())
+					{
+						commonUtilKPI::logAnalysisMsg(oMsgSt.m_stPollWrData, oMsgSt.m_msgWrResp);
+					}
+				}
+			}
+			catch(const std::exception& e)
+			{
+				DO_LOG_ERROR(e.what());
+			}
+		}while(0);
+	}
+}
+
+/**
+ * Thread function: Logs analysis message
+ * @param none
+ * @return none
+ */
+void CControlLoopMapper::threadWriteReq()
+{
+	std::cout << "threadWriteReq started\n";
+
+	while(false == g_stopThread.load())
+	{
+		/// iterate Queue one by one to send message on Pl-bus
+		do
+		{
+			try
+			{
+				stWrOpInputData oWrOpdata{};
+				if(true == m_qWrOpData.isMsgArrived(oWrOpdata))
+				{
+					if(false == g_stopThread.load())
+					{
+						if(NULL != oWrOpdata.m_pCtrlLoop)
+						{
+							if(false == PlBusMgr::publishWriteReq(*(oWrOpdata.m_pCtrlLoop), oWrOpdata.m_sWrSeq))
+							{
+								DO_LOG_ERROR("Failed publishing for point: " + oWrOpdata.m_pCtrlLoop->getWritePoint());
+								oWrOpdata.m_pCtrlLoop->postDummyAnalysisMsg(oWrOpdata.m_sWrSeq, "WrReqInitFailed");
+							}
+						}
+					}
+				}
+			}
+			catch(const std::exception& e)
+			{
+				DO_LOG_ERROR(e.what());
+			}
+		}while(0);
+	}
 }
 
 /**
@@ -349,6 +505,15 @@ bool CControlLoopMapper::stopControlLoopOps()
 			}
 
 			PlBusMgr::stopListeners();
+
+			if (m_threadAnalysisLogger.joinable())
+			{
+				m_threadAnalysisLogger.join();
+			}
+			if (m_threadWrOp.joinable())
+			{
+				m_threadWrOp.join();
+			}
 		}
 		catch(const std::exception& e)
 		{
@@ -405,13 +570,9 @@ bool CControlLoopMapper::publishWriteReq(const CControlLoopOp& a_rCtrlLoop,
 		struct timespec tsStartWrReqCreate;
 		timespec_get(&tsStartWrReqCreate, TIME_UTC);
 		struct stPollWrData oTemp{a_oPollMsg, tsStartWrReqCreate};
-		CPollNWriteReqMapper::getInstace().insertForTracking(a_sWrSeq, oTemp);
-		if(false == PlBusMgr::publishWriteReq(a_rCtrlLoop, a_sWrSeq, a_oPollMsg))
-		{
-			DO_LOG_ERROR("Failed publishing for point: " + a_rCtrlLoop.getWritePoint());
-			a_rCtrlLoop.postDummyAnalysisMsg(a_sWrSeq, "WrReqInitFailed");
-			return false;
-		}
+		CMapOfReqMapper::getInstace().insertForTracking(a_rCtrlLoop.getMyID(), a_sWrSeq, oTemp);
+		stWrOpInputData oWrOpdata{a_sWrSeq, &a_rCtrlLoop};
+		m_qWrOpData.pushMsg(oWrOpdata);
 		return true;
 	}
 	catch(const std::exception& e)
@@ -421,3 +582,173 @@ bool CControlLoopMapper::publishWriteReq(const CControlLoopOp& a_rCtrlLoop,
 	
 	return false;
 }
+
+/**
+ * Clean up, destroy semaphores, disables callback, disconnect from MQTT broker
+ * @param None
+ * @return None
+ */
+template <class T>
+void CCtrlLoopInternalQueue<T>::cleanup()
+{
+	sem_destroy(&m_semaphore);
+}
+
+/**
+ * Clear queue
+ * @param None
+ * @return None
+ */
+template <class T>
+void CCtrlLoopInternalQueue<T>::clear()
+{
+	std::lock_guard<std::mutex> lock(m_queueMutex);
+	m_msgQ = {};
+}
+
+/**
+ * Constructor of queue manager
+ * @param isRead :[in] set if operational instance is for read operation
+ * 					or write (toggle between read and write)
+ * @param isRealTime :[in] set if operational instance is for real-time operation
+ * 					or non-RT (toggle between RT and non-RT)
+ * @return None
+ */
+template <class T>
+CCtrlLoopInternalQueue<T>::CCtrlLoopInternalQueue()
+{
+	initSem();
+}
+
+/**
+ * Destructor
+ */
+template <class T>
+CCtrlLoopInternalQueue<T>::~CCtrlLoopInternalQueue()
+{
+	cleanup();
+}
+
+/**
+ * Initialize semaphores
+ * @param None
+ * @return true on success; application exits if fails to initialize semaphore
+ */
+template <class T>
+bool CCtrlLoopInternalQueue<T>::initSem()
+{
+	/* Initial value of zero*/
+	if(-1 == sem_init(&m_semaphore, 0, 0))
+	{
+	   DO_LOG_ERROR("could not create semaphore, exiting");
+	   std::cout << __func__ << ":" << __LINE__ << " Error : could not create semaphore, exiting" <<  std::endl;
+	   exit(0);
+	}
+
+	DO_LOG_DEBUG("Semaphore initialized successfully");
+
+	return true;
+}
+
+/**
+ * Push message in operational queue
+ * @param msg :[in] MQTT message to push in message queue
+ * @return true/false based on success/failure
+ */
+template <class T>
+bool CCtrlLoopInternalQueue<T>::pushMsg(T msg)
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(m_queueMutex);
+		m_msgQ.push(msg);
+
+		sem_post(&m_semaphore);
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Push message in operational queue
+ * @param none
+ * @return true/false based on success/failure
+ */
+template <class T>
+bool CCtrlLoopInternalQueue<T>::breakWaitOnQ()
+{
+	try
+	{
+		sem_post(&m_semaphore);
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Retrieve non-RT read message from message queue to publish on EIS
+ * @param msg :[in] reference to message to retrieve from queue
+ * @return true/false based on success/failure
+ */
+template <class T>
+bool CCtrlLoopInternalQueue<T>::getSubMsgFromQ(T& msg)
+{
+	try
+	{
+		if(m_msgQ.empty())
+		{
+			return false;
+		}
+
+		std::lock_guard<std::mutex> lock(m_queueMutex);
+		msg = m_msgQ.front();
+		m_msgQ.pop();
+	}
+	catch (const std::exception &e)
+	{
+		DO_LOG_ERROR(e.what());
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Checks if a new message has arrived and retrieves the message
+ * @param msg :[out] reference to new message
+ * @return	true/false based on success/failure
+ */
+template <class T>
+bool CCtrlLoopInternalQueue<T>::isMsgArrived(T& msg)
+{
+	try
+	{
+		if((sem_wait(&m_semaphore)) == -1 && errno == EINTR)
+		{
+			// Continue if interrupted by handler
+			return false;
+		}
+		else
+		{
+			if (false == getSubMsgFromQ(msg))
+			{
+				DO_LOG_INFO("No message to send to EIS in queue");
+				return false;
+			}
+		}
+	}
+	catch(std::exception &e)
+	{
+		DO_LOG_ERROR(e.what());
+		return false;
+	}
+	return true;
+}
+

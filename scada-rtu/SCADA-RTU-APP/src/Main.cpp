@@ -28,7 +28,7 @@ std::atomic<bool> g_shouldStop(false);
 #define APP_VERSION "0.0.6.4"
 
 /**
- * Process a message to be sent on internal MQTT broker
+ * Processes a message to be sent on internal MQTT broker
  * @param a_objCDataPointsMgr :[in] reference of data points manager class
  * @param a_qMgr :[in] reference of queue from which message is to be processed
  * @return none
@@ -55,7 +55,7 @@ void processExternalMqttMsgs(CQueueHandler& a_qMgr)
 
 
 /**
- * Process a message to be sent on external MQTT broker
+ * Processes a message to be sent on external MQTT broker
  * @param a_objCDataPointsMgr :[in] reference of data points manager class
  * @param a_qMgr :[in] reference of queue from which message is to be processed
  * @return none
