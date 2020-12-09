@@ -45,6 +45,7 @@ COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /SCADA-RTU-APP/lib/
 COPY --from=uwc_common /uwc_util/include/* /SCADA-RTU-APP/include/
 
 
+
 RUN mkdir kw10 ; \
        export http_proxy="http://proxy-chain.intel.com:911"; \
        export https_proxy="http://proxy-chain.intel.com:911"; \
@@ -72,11 +73,16 @@ ADD  ltoken .klocwork/
 RUN mv .klocwork ~
 RUN ls -la ~/.klocwork
 
+
 # build sources
 RUN cd /SCADA-RTU-APP/Release \
     &&	export LD_LIBRARY_PATH='/SCADA-RTU-APP/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
     &&	/kw10/bin/kwinject make clean all -s
+    
+RUN cd /SCADA-RTU-APP/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
+       /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
 
 # Build scada-rtu container service
 FROM ia_common:$EIS_VERSION as scada-rtu-service
@@ -89,10 +95,6 @@ RUN mkdir -p /opt/intel/app \
 	&& mkdir -p /opt/intel/config \
 	&& mkdir -p /opt/intel/eis/uwc_data
 
-RUN cd /SCADA-RTU-APP/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
-       /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
-       
 WORKDIR ${APP_WORK_DIR}
 
 # copy required dependencies
