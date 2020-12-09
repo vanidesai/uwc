@@ -79,10 +79,11 @@ RUN cd /SCADA-RTU-APP/Release \
     &&	export LD_LIBRARY_PATH='/SCADA-RTU-APP/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
     &&	/kw10/bin/kwinject make clean all -s
-    
+
+ARG BUILD_NUMBER
 RUN cd /SCADA-RTU-APP/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
        /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC --name UWC_SCADARTUApp_$BUILD_NUMBER;
 
 # Build scada-rtu container service
 FROM ia_common:$EIS_VERSION as scada-rtu-service
