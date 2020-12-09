@@ -51,18 +51,16 @@ RUN ls -al /kw10/bin
 # compile modbus stack
 COPY SoftMod_Stack /SoftMod_Stack/.
 WORKDIR SoftMod_Stack
-
 RUN cd Release \
     && /kw10/bin/kwinject --output kwinject.out make all -s;
-    
+
 RUN ls -la Release
-
-
+ARG BUILD_NUMBER
 RUN cd Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
       /kw10/bin/kwdeploy install INTEL.BANNED.FUNCTION_MEMSET --url https://klocwork-jf6.devtools.intel.com:8100; \  
        /kw10/bin/kwbuildproject --verbose --license-host klocwork03p.elic.intel.com --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;	
-
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
+       
 # Build Modbus application
 FROM ia_common:$EIS_VERSION as modbus-app
 WORKDIR /
@@ -70,20 +68,17 @@ WORKDIR /
 # Copy built library from images
 COPY --from=uwc_common /usr/yaml /bin/yaml-cpp/.
 
-# Create utils directory inside include
-RUN mkdir -p /Modbus-App/include/utils
-
 COPY Modbus-App /Modbus-App/. 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
 COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
 COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* /Modbus-App/lib/
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so /Modbus-App/lib/
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /Modbus-App/lib/
 COPY --from=uwc_common /uwc_util/include/* /Modbus-App/include/
-COPY --from=uwc_common /uwc_util/include/utils/* /Modbus-App/include/utils/
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* /Modbus-App/lib/
 COPY --from=uwc_common /usr/lib/libpaho* /Modbus-App/lib/
 COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
+
 
 
 RUN mkdir kw10 ; \
@@ -121,12 +116,11 @@ RUN cd /Modbus-App/Release \
     &&  export INCLUDE_DIR='/bin' \
     &&	/kw10/bin/kwinject make clean all -s;
 
-
 RUN cd /Modbus-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
 	/kw10/bin/kwdeploy install INTEL.BANNED.FUNCTION_MEMSET --url https://klocwork-jf6.devtools.intel.com:8100; \
        /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
        /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
-
+       
 # Build Modbus container service
 FROM ia_common:$EIS_VERSION as modbus-service
 WORKDIR /
@@ -145,7 +139,7 @@ COPY --from=modbus-app /Modbus-App/Release/ModbusMaster ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=modbus-app /Modbus-App/Config/log4cpp.properties /opt/intel/config
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so ${APP_WORK_DIR}
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/lib/libpaho* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 
