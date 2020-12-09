@@ -46,6 +46,8 @@ class CSCADAHandler : public CMQTTBaseHandler
 
 	std::atomic<bool> m_bIsInitDone = false; /** flag for initialization check */
 
+	std::mutex m_mutexSparkPlugMsgPub; /** mutex to control publishing */
+
 	/** Default constructor*/
 	CSCADAHandler(const std::string &strPlBusUrl, int iQOS);
 
@@ -73,7 +75,9 @@ class CSCADAHandler : public CMQTTBaseHandler
 	void disconnected(const std::string &a_sCause) override;
 	void msgRcvd(mqtt::const_message_ptr a_pMsg) override;
 
-	bool publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payload, string a_topic);
+	bool publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payload, string a_topic, bool a_bIsNBirth);
+
+	void defaultPayload(org_eclipse_tahu_protobuf_Payload& a_payload);
 
 public:
 	/** Destructor*/

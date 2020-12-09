@@ -248,17 +248,45 @@ void CSCADAHandler::signalIntMQTTConnEstablishThread()
 
 /**
  *
+ * Initializes payload to 0
+ * @param a_payload :[in] SparkPlug payload to reset
+ * @return none
+ */
+void CSCADAHandler::defaultPayload(org_eclipse_tahu_protobuf_Payload& a_payload)
+{
+	memset(&a_payload, 0, sizeof(org_eclipse_tahu_protobuf_Payload));
+	a_payload.has_timestamp = true;
+	a_payload.timestamp = get_current_timestamp();
+	a_payload.has_seq = true;
+	a_payload.seq = 0;
+}
+
+/**
+ *
  * Publish message on MQTT broker for MQTT-Export
  * @param a_ddata_payload :[in] spark plug message to publish
  * @param a_topic :[in] topic on which to publish message
+ * @param a_bIsNBirth: [in] tells whether message is NBIRTH
  * @return true/false based on success/failure
  */
-bool CSCADAHandler::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payload, string a_topic)
+bool CSCADAHandler::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_payload, string a_topic, bool a_bIsNBirth = false)
 {
+	std::lock_guard<std::mutex> lck(m_mutexSparkPlugMsgPub);
+	static uint8_t payload_sequence = 0;
 	try
 	{
 		// Encode the payload into a binary format so it can be published in the MQTT message.
 		size_t buffer_length = 0;
+
+		uint8_t next_payload_sequence = payload_sequence + 1;
+		if(true == a_bIsNBirth)
+		{
+			next_payload_sequence = 0;
+		}
+
+		// Set sequence number for this payload
+		a_payload.has_seq = true;
+		a_payload.seq = next_payload_sequence;
 
 		bool encode_passed = pb_get_encoded_size(&buffer_length, org_eclipse_tahu_protobuf_Payload_fields, &a_payload);
 		if(encode_passed == false)
@@ -289,6 +317,7 @@ bool CSCADAHandler::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_pay
 		mqtt::message_ptr pubmsg = mqtt::make_message(a_topic, (void*)binary_buffer, message_length, m_QOS, false);
 
 		m_MQTTClient.publishMsg(pubmsg);
+		payload_sequence = next_payload_sequence;
 
 		// Free the memory
 		if(binary_buffer != NULL)
@@ -316,7 +345,8 @@ void CSCADAHandler::prepareNodeDeathMsg(bool a_bPublishMsg)
 	{
 		// Create the NDEATH payload
 		org_eclipse_tahu_protobuf_Payload ndeath_payload;
-		get_next_payload(&ndeath_payload);
+		//get_next_payload(&ndeath_payload);
+		defaultPayload(ndeath_payload);
 
 		add_simple_metric(&ndeath_payload, "bdSeq", false, 0,
 					METRIC_DATA_TYPE_UINT64, false, false, &m_uiBDSeq, sizeof(m_uiBDSeq));
@@ -391,7 +421,8 @@ void CSCADAHandler::publish_device_birth(string a_deviceName, bool a_bIsNBIRTHPr
 {
 	// Create the DBIRTH payload
 	org_eclipse_tahu_protobuf_Payload dbirth_payload;
-	get_next_payload(&dbirth_payload);
+	//get_next_payload(&dbirth_payload);
+	defaultPayload(dbirth_payload);
 
 	try
 	{
@@ -460,9 +491,9 @@ CSCADAHandler::~CSCADAHandler()
  */
 void CSCADAHandler::publish_node_birth()
 {
-	reset_sparkplug_sequence();
 	org_eclipse_tahu_protobuf_Payload nbirth_payload;
-	get_next_payload(&nbirth_payload);
+	//get_next_payload(&nbirth_payload);
+	defaultPayload(nbirth_payload);
 	try
 	{
 		// Create the NBIRTH payload
@@ -484,7 +515,7 @@ void CSCADAHandler::publish_node_birth()
 				&m_uiBDSeq, sizeof(m_uiBDSeq));
 
 		std::cout << "Publishing nbirth message ..." << std::endl;
-			publishSparkplugMsg(nbirth_payload, CCommon::getInstance().getNBirthTopic());
+		publishSparkplugMsg(nbirth_payload, CCommon::getInstance().getNBirthTopic(), true);
 
 		nbirth_payload.uuid = NULL;
 	}
@@ -582,7 +613,8 @@ bool CSCADAHandler::publishMsgDDATA(const stRefForSparkPlugAction& a_stRefAction
 {
 	//prepare and publish one sparkplug msg for this device
 	org_eclipse_tahu_protobuf_Payload sparkplug_payload;
-	get_next_payload(&sparkplug_payload);
+	//get_next_payload(&sparkplug_payload);
+	defaultPayload(sparkplug_payload);
 	try
 	{
 		if(enMSG_DATA != a_stRefAction.m_enAction)
@@ -646,7 +678,9 @@ bool CSCADAHandler::publishMsgDDEATH(const stRefForSparkPlugAction& a_stRefActio
 {
 	//prepare and publish one sparkplug msg for this device
 	org_eclipse_tahu_protobuf_Payload sparkplug_payload;
-	get_next_payload(&sparkplug_payload);
+	//get_next_payload(&sparkplug_payload);
+	defaultPayload(sparkplug_payload);
+	
 	try
 	{
 		if(enMSG_DEATH != a_stRefAction.m_enAction)
@@ -733,7 +767,8 @@ bool CSCADAHandler::publishMsgDDEATH(const std::string &a_sDevName)
 {
 	//prepare and publish one sparkplug msg for this device
 	org_eclipse_tahu_protobuf_Payload sparkplug_payload;
-	get_next_payload(&sparkplug_payload);
+	//get_next_payload(&sparkplug_payload);
+	defaultPayload(sparkplug_payload);
 	try
 	{
 		if (a_sDevName.size() == 0)
