@@ -27,9 +27,6 @@ RUN apt-get update && apt-get install -y libmosquitto-dev \
 FROM ia_common:$EIS_VERSION as scada-rtu
 WORKDIR /
 
-# Create utils directory inside include
-RUN mkdir -p /SCADA-RTU-APP/include/utils
-
 # copy required dependencies
 COPY SCADA-RTU-APP /SCADA-RTU-APP/. 
 COPY --from=uwc_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
@@ -44,9 +41,8 @@ COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /SCADA-RTU-APP/include
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* /SCADA-RTU-APP/lib/
 COPY --from=build-tahu /EIS/tahu/client_libraries/c/lib/libtahu.so /SCADA-RTU-APP/lib/
 COPY --from=build-tahu /EIS/tahu/client_libraries/c/include/* /SCADA-RTU-APP/include/tahu/
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so /SCADA-RTU-APP/lib/
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /SCADA-RTU-APP/lib/
 COPY --from=uwc_common /uwc_util/include/* /SCADA-RTU-APP/include/
-COPY --from=uwc_common /uwc_util/include/utils/* /SCADA-RTU-APP/include/utils/
 
 
 RUN mkdir kw10 ; \
@@ -76,18 +72,12 @@ ADD  ltoken .klocwork/
 RUN mv .klocwork ~
 RUN ls -la ~/.klocwork
 
-
 # build sources
 RUN cd /SCADA-RTU-APP/Release \
     &&	export LD_LIBRARY_PATH='/SCADA-RTU-APP/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
     &&	/kw10/bin/kwinject make clean all -s
-    
-RUN cd /SCADA-RTU-APP/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
-       /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
-       
-       
+
 # Build scada-rtu container service
 FROM ia_common:$EIS_VERSION as scada-rtu-service
 
@@ -99,6 +89,10 @@ RUN mkdir -p /opt/intel/app \
 	&& mkdir -p /opt/intel/config \
 	&& mkdir -p /opt/intel/eis/uwc_data
 
+RUN cd /SCADA-RTU-APP/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
+       /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC;
+       
 WORKDIR ${APP_WORK_DIR}
 
 # copy required dependencies
@@ -113,7 +107,7 @@ COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=build-tahu /EIS/tahu/client_libraries/c/lib/libtahu.so ${APP_WORK_DIR}/lib/
 COPY --from=build-tahu /EIS/tahu/client_libraries/c/include/* ${APP_WORK_DIR}/include/tahu/
 COPY --from=scada-rtu /SCADA-RTU-APP/Config/log4cpp.properties /opt/intel/config
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so ${APP_WORK_DIR}
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so ${APP_WORK_DIR}
 
 # set permissions to working dir for eisuser
 RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
