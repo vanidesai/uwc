@@ -47,7 +47,7 @@ RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /SoftMod_Stack/Release/Src/subdir
 
 # compile modbus stack 
 WORKDIR SoftMod_Stack
-RUN cd Release \
+RUN cd Release; make clean ;\
     /kw10/bin/kwinject --output kwinject.out make all -s;
 
 RUN ls -la Release
