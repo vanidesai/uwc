@@ -16,9 +16,6 @@ LABEL description="KPI Tactic Application"
 FROM ia_common:$EIS_VERSION as kpitactic
 WORKDIR /
 
-# Create utils directory inside include
-RUN mkdir -p /KPIApp/include/utils
-
 # copy required dependencies
 COPY KPIApp /KPIApp/. 
 COPY --from=uwc_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
@@ -31,9 +28,8 @@ COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_common /usr/include/MQTT* /KPIApp/include/
 COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /KPIApp/include/log4cpp
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* /KPIApp/lib/
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so /KPIApp/lib/
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /KPIApp/lib/
 COPY --from=uwc_common /uwc_util/include/* /KPIApp/include/
-COPY --from=uwc_common /uwc_util/include/utils/* /KPIApp/include/utils/
 
 
 RUN mkdir kw10 ; \
@@ -67,12 +63,15 @@ RUN ls -la ~/.klocwork
 RUN cd /KPIApp/Release \
     &&	export LD_LIBRARY_PATH='/KPIApp/lib:/usr/local/lib' \
     &&	/kw10/bin/kwinject make clean all -s
+    
+
+
 
 ARG BUILD_NUMBER
 RUN cd /KPIApp/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
        /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
        /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC --name UWC_KPITacticApp_$BUILD_NUMBER;
-       
+
 # Build KPI App container service
 FROM ia_common:$EIS_VERSION as KPIApp-service
 
@@ -94,7 +93,7 @@ COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=kpitactic /KPIApp/Config/log4cpp.properties /opt/intel/config
-COPY --from=uwc_common /uwc_util/Release/libuwc-util.so ${APP_WORK_DIR}
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so ${APP_WORK_DIR}
 
 # set permissions to working dir for eisuser
 RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
@@ -106,4 +105,3 @@ ENV LD_LIBRARY_PATH ${APP_WORK_DIR}:/usr/local/lib
 
 # Run the container
 CMD ./KPIApp
-
