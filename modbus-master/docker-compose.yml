@@ -32,10 +32,10 @@ services:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
-        ETCD_HOST: ${ETCD_HOST}
     image: ${DOCKER_REGISTRY}modbus-master:${EIS_VERSION}
     container_name: modbus-tcp-master
     hostname: modbus-tcp-master
+    network_mode: host
     read_only: true
     restart: unless-stopped
     ulimits:
@@ -45,8 +45,10 @@ services:
     environment:
       AppName: "TCP"
       ETCD_HOST: ${ETCD_HOST}
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
       DEV_MODE: ${DEV_MODE}
-      no_proxy: ${no_proxy}
+      no_proxy: ${eis_no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       MY_APP_ID: 1
       CUTOFF_INTERVAL_PERCENTAGE: 90

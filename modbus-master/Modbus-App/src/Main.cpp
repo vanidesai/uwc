@@ -350,7 +350,7 @@ int main(int argc, char* argv[])
 		std::cout << "Cutoff is set to: "
 				<< PublishJsonHandler::instance().getCutoffIntervalPercentage() << std::endl;
 
-		int num_of_publishers = zmq_handler::Instance().getNumPubOrSub("pub");
+		int num_of_publishers = zmq_handler::getNumPubOrSub("pub");
 		// Initializing all the pub/sub topic base context for ZMQ
 		if(num_of_publishers >= 1)
 		{
@@ -363,7 +363,7 @@ int main(int argc, char* argv[])
 			else
 			{
 				std::vector<std::string> vecTopics;
-				bool tempRet = zmq_handler::Instance().returnAllTopics("pub", vecTopics);
+				bool tempRet = zmq_handler::returnAllTopics("pub", vecTopics);
 				if(tempRet == false) {
 					return -1;
 				} 
@@ -378,7 +378,7 @@ int main(int argc, char* argv[])
 			std::cout << __func__ << ":" << __LINE__ << " Error : could not find any Publishers in publisher Configuration " <<  std::endl;
 		}
 
-		int num_of_subscribers = zmq_handler::Instance().getNumPubOrSub("sub");
+		int num_of_subscribers = zmq_handler::getNumPubOrSub("sub");
 		if(num_of_subscribers >= 1)
 		{
 			if( true != zmq_handler::prepareCommonContext("sub"))
@@ -388,7 +388,7 @@ int main(int argc, char* argv[])
 			else
 			{
 				std::vector<std::string> vecTopics;
-				bool tempRet = zmq_handler::Instance().returnAllTopics("sub", vecTopics);
+				bool tempRet = zmq_handler::returnAllTopics("sub", vecTopics);
 				if(tempRet == false) {
 					return -1;
 				} 

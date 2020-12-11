@@ -55,6 +55,8 @@ services:
       DEV_MODE: ${DEV_MODE}
       no_proxy: ${no_proxy}
       ETCD_HOST: ${ETCD_HOST}
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000" 
       MQTT_URL_FOR_EXPORT: "ssl://mqtt_container:11883"

@@ -74,6 +74,7 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 	if(NULL == msgbus_ctx || NULL == config || a_sTopic.empty())
 	{
 		DO_LOG_ERROR("NULL pointers received while creating context for topic ::" + a_sTopic);
+		std::cout<<"[preparecontext]NULL pointers received while creating context for topic\n";
 		return false;
 	}
 
@@ -96,21 +97,26 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 	else
 	{
 		bRetVal = true;
-
+		std::cout<<"###################before insertCTX################ in prepareCntext()\n"<<a_sTopic.c_str()<<std::endl;
 		stZmqContext objTempCtx{msgbus_ctx};
 		zmq_handler::insertCTX(a_sTopic, objTempCtx);
-
+		std::cout<<"###################After insertCTX################ in prepareCntext()\n";
+		std::cout<<"$$$$$$$$$$$###########-a_bIsPub="<<a_bIsPub<<"######\n";
 		if(a_bIsPub)
 		{
+			std::cout<<"################[prepareContext]: inside PUB if##########\n";
 			stZmqPubContext objTempPubCtx;
 			objTempPubCtx.m_pContext= pub_ctx;
 			zmq_handler::insertPubCTX(a_sTopic, objTempPubCtx);
+			std::cout<<"################[prepareContext]: inside PUB if after insertpub##########\n";
 		}
 		else
 		{
+			std::cout<<"################[prepareContext]: inside SUB else##########\n";
 			stZmqSubContext objTempSubCtx;
 			objTempSubCtx.sub_ctx= sub_ctx;
 			zmq_handler::insertSubCTX(a_sTopic, objTempSubCtx);
+			std::cout<<"################[prepareContext]: inside SUB else after insertSub##########\n";
 		}
 	}
 
@@ -166,60 +172,102 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 		DO_LOG_ERROR("Invalid TopicType parameter ::" + topicType);
 		return retValue;
 	}
+
+	fprintf(stderr,"############################## INSIED prepareCommonContext JUST BEFORE IF ELSE OF PUB SUB STARTS  ##############################");
+	std::cout<<"############################## INSIDE prepareCommonContext JUST BEFORE IF ELSE OF PUB SUB STARTS ##############################"<<std::endl;
+
 	// This check if EII cfgmgr is created or not
 	if(CfgManager::Instance().IsClientCreated())
 	{
 		if(topicType == "pub") {
 			int numPublishers = CfgManager::Instance().getEiiCfgMgr()->getNumPublishers();
 			for(auto it =0; it<numPublishers; ++it) {
-				pub_ctx = CfgManager::Instance().getEiiCfgMgr()->getPublisherByIndex(it);	
+				std::cout<<"\nTEMP CHECK\n";
+				pub_ctx = CfgManager::Instance().getEiiCfgMgr()->getPublisherByIndex(it);	// ngk
 				pub_config = pub_ctx->getMsgBusConfig();
     			if (pub_config == NULL) {
         			DO_LOG_ERROR("Failed to get message bus config");
+					fprintf(stderr,"############################## PUB PART Failed to get message bus config ##############################");
+					std::cout<<"##############################PUB PART Failed to get message bus config##############################"<<std::endl;
         			return false;
     			}
 
+				config_value_t* interface_value = pub_ctx->getInterfaceValue("Name");
+				std::cout<<"###########################PUB PART interface_value is"<<interface_value->body.string<<"######################"<<std::endl;
+
+				//LOG_INFO("Obtained interface value: %s", interface_value->body.string)
+
 				g_msgbus_ctx = msgbus_initialize(pub_config);
     			if (g_msgbus_ctx == NULL) {
-        			LOG_ERROR_0("Failed to initialize message bus");
+        			DO_LOG_ERROR("Failed to initialize message bus");
+					fprintf(stderr,"##############################PUB PART Failed to initialize message bus##############################");
+					std::cout<<"##############################PUB PART Failed to initialize message bus##############################"<<std::endl;
         			return false;
     			}
+
+				fprintf(stderr,"##############################PUB PART After msgbus_initialize() but before getTopics() ##############################");
+				std::cout<<"############################## PUB PART After msgbus_initialize() but before getTopics()##############################"<<std::endl;
 
 				std::vector<std::string> topics = pub_ctx->getTopics();
 				if(topics.empty()){
         			DO_LOG_ERROR("Failed to get topics");
+					fprintf(stderr,"############################## PUB PART Failed to get topics ##############################");
+					std::cout<<"############################## PUB PART Failed to get topics ##############################"<<std::endl;
         			return false;
     			}
+
+				fprintf(stderr,"##############################JUST OUTSIDE PUB PART prepareContext() for loop ##############################");
+				std::cout<<"##############################JUST OUTSIDE PUB PART prepareContext() for loop ##############################"<<std::endl;
+
 				for (auto topic_it = 0; topic_it < topics.size(); topic_it++) {
+					fprintf(stderr,"##############################JUST INSIDE PUB PART prepareContext() for loop ##############################");
+				std::cout<<"##############################JUST INSIDE PUB PART prepareContext() for loop ##############################"<<std::endl;
      				std::string ind_topic = topics.at(topic_it);
 					 DO_LOG_INFO("Topic for ZMQ Publish is :: " + ind_topic);
 					prepareContext(true, g_msgbus_ctx, ind_topic, pub_config);
+					fprintf(stderr,"############################## PUB PART after  prepareContext() call inside for loop ##############################");
+				std::cout<<"############################## PUB PART after  prepareContext() call inside for loop ##############################"<<std::endl;
     			}
 				
 			}
 		} else {  // else if its sub
+			fprintf(stderr,"############################## SUB else PART before getNumSubscribers ##############################");
+			std::cout<<"############################## SUB else PART before getNumSubscribers ##############################"<<std::endl;
 			int numSubscribers = CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers();
+			fprintf(stderr,"############################## SUB else PART after getNumSubscribers ##############################");
+			std::cout<<"############################## SUB else PART after getNumSubscribers ##############################"<<std::endl;	
 			for(auto it =0; it<numSubscribers; ++it) {
-				sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(it);
-				
-				sub_config = pub_ctx->getMsgBusConfig();
-    			if (sub_config == NULL) {
-        			DO_LOG_ERROR("Failed to get message bus config");
-        			return false;
+			fprintf(stderr,"@@############################## SUB else PART before getSubscriberByIndex ##############################");
+			std::cout<<"@@############################## SUB else PART before getSubscriberByIndex ##############################"<<std::endl;	
+			sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(it);
+			fprintf(stderr,"@@############################## SUB else PART after getSubscriberByIndex ##############################");
+			std::cout<<"@@############################## SUB else PART after getSubscriberByIndex ##############################"<<std::endl;		
+			sub_config = sub_ctx->getMsgBusConfig();
+    		if (sub_config == NULL) {
+        		DO_LOG_ERROR("Failed to get message bus config");
+				fprintf(stderr,"##############################Failed to get message bus config##############################");
+				std::cout<<"##############################Failed to get message bus config##############################"<<std::endl;
+        		return false;
     			}
+				fprintf(stderr,"@@############################## SUB else PART after getMsgBusConfig() ##############################");
+				std::cout<<"@@############################## SUB else PART after getMsgBusConfig() ##############################"<<std::endl;		
 				g_msgbus_ctx = msgbus_initialize(sub_config);
     			if (g_msgbus_ctx == NULL) {
         			LOG_ERROR_0("Failed to initialize message bus");
+					fprintf(stderr,"##############################Failed to initialize message bus##############################");
+					std::cout<<"##############################Failed to initialize message bus##############################"<<std::endl;
         			return false;
     			}
 				std::vector<std::string> topics = sub_ctx->getTopics();
 				if(topics.empty()){
         			DO_LOG_ERROR("Failed to get topics");
+					fprintf(stderr,"##############################Failed to get topics##############################");
+					std::cout<<"##############################Failed to get topics##############################"<<std::endl;
         			return false;
     			}
 				for (auto topic_it = 0; topic_it < topics.size(); topic_it++) {
      				std::string ind_topic = topics.at(topic_it);
-					prepareContext(true, g_msgbus_ctx, ind_topic, sub_config);
+					prepareContext(false, g_msgbus_ctx, ind_topic, sub_config);
     			}
 			}
 		}	// end of sub part else
@@ -230,8 +278,9 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 		std::cout << "EII Configmgr creation failed !!  " <<endl;
 	}
 	DO_LOG_DEBUG("End: ");
-
-	return retValue;
+	fprintf(stderr,"##############################Just before returning in end of preparecommoncontext##############################");
+	std::cout<<"##############################Just before returning in end of preparecommoncontext##############################"<<retValue<<std::endl;
+	return true;
 }
 
 /**
@@ -243,7 +292,8 @@ stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
 {
 	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
-
+	std:;cout<<"###########getSubCTX########## TOPIC IS="<<a_sTopic<<"###"<<std::endl;
+	std::cout<<"######size of g_mapSubContextMap="<<g_mapSubContextMap.size()<<"######\n";
 	/// return the request ID
 	return g_mapSubContextMap.at(a_sTopic);
 }
@@ -257,7 +307,7 @@ void zmq_handler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRef)
 {
 	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
-
+	std::cout<<"$$$$$$$$$$-TOPIC INSERTED IN insertSubCTX is"<<a_sTopic<<"$$$$$$$$$$$$$$$\n";
 	/// insert the data in map
 	g_mapSubContextMap.insert(std::pair <std::string, stZmqSubContext> (a_sTopic, ctxRef));
 	DO_LOG_DEBUG("End: ");
@@ -285,7 +335,8 @@ stZmqContext& zmq_handler::getCTX(std::string a_sTopic)
 {
 	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__ctxMapLock);
-
+	std::cout<<"#############[getCTX]: a_stopic="<<a_sTopic<<"######No: of keys in a_stopic map is="<<g_mapContextMap.size()<<std::endl;
+	
 	/// return the request ID
 	return g_mapContextMap.at(a_sTopic);
 }
@@ -452,6 +503,7 @@ bool zmq_handler::returnAllTopics(std::string topicType, std::vector<std::string
 		for(size_t indv_topic=0; indv_topic < numTopics; ++indv_topic) {
 			vecTopics.push_back(topics[indv_topic]);
 		}
+		// vecTopics = TCP_PolledData, 
 		// return true if everything goes well. 
 		return true;
 	}

@@ -494,14 +494,17 @@ void postMsgsToEIS(QMgr::CQueueMgr& qMgr)
  */
 void postMsgstoMQTT()
 {
+	std::cout<<"#################Initializing threads to start listening on EIS topics...###############\n";
 	DO_LOG_DEBUG("Initializing threads to start listening on EIS topics...");
 
 	// get sub topic list
 	vector<string> vFullTopics;
-	bool tempRet = zmq_handler::Instance().returnAllTopics("sub", vFullTopics);
+	bool tempRet = zmq_handler::returnAllTopics("sub", vFullTopics);
 	if(tempRet == false) {
 		return -1;
 	} 
+
+	std::cout<<"################# [postMsgstoMQTT] before 1st for...###############\n";
 
 	for (auto &topic : vFullTopics)
 	{
@@ -510,12 +513,12 @@ void postMsgstoMQTT()
 			DO_LOG_ERROR("found empty MQTT subscriber topic");
 			continue;
 		}
-
+		std::cout<<"################# [postMsgstoMQTT] before zmq_handler::getCTX(topic) ...###############\n";
 		zmq_handler::stZmqContext& context = zmq_handler::getCTX(topic);
-
+		std::cout<<"################# [postMsgstoMQTT] after zmq_handler::getCTX(topic) ...###############\n";
 		//will give topic context
 		zmq_handler::stZmqSubContext& subContext = zmq_handler::getSubCTX(topic);
-
+		std::cout<<"################# [postMsgstoMQTT] before zmq_handler::getSubCTX(topic) ...###############\n";
 		DO_LOG_DEBUG("Full topic - " + topic + " AND listening on: " + topic);
 
 		//get operation depending on the topic
@@ -537,14 +540,14 @@ bool initEISContext()
 	bool retVal = true;
 
 	// Initializing all the pub/sub topic base context for ZMQ
-	int num_of_publishers = zmq_handler::Instance().getNumPubOrSub("pub");
+	int num_of_publishers = zmq_handler::getNumPubOrSub("pub");
 	// const char* env_pubTopics = std::getenv("PubTopics");
 	if (num_of_publishers >= 1)
 	{
 		if (true != zmq_handler::prepareCommonContext("pub"))
 		{
-			DO_LOG_ERROR("Context creation failed for sub topic ");
-			std::cout << __func__ << ":" << __LINE__ << " Error : Context creation failed for sub topic" <<  std::endl;
+			DO_LOG_ERROR("Context creation failed for pub topic ");
+			std::cout << __func__ << ":" << __LINE__ << " Error : Context creation failed for pub topic" <<  std::endl;
 			retVal = false;
 		}
 	}
@@ -555,20 +558,14 @@ bool initEISContext()
 		retVal = false;
 	}
 
-	int num_of_subscribers = zmq_handler::Instance().getNumPubOrSub("sub");
+	int num_of_subscribers = zmq_handler::getNumPubOrSub("sub");
 	if(num_of_subscribers >= 1)
 	{
-		DO_LOG_DEBUG("List of topic configured for Sub are :: "+ (std::string)(env_subTopics));
 		if (true != zmq_handler::prepareCommonContext("sub"))
 		{
 			DO_LOG_ERROR("Context creation failed for sub topic");
 			std::cout << __func__ << ":" << __LINE__ << " Error : Context creation failed for sub topic" <<  std::endl;
 			retVal = false;
-		}
-		else
-		{
-			std::cout << "***** Sub Topics :: " << static_cast<std::string>(env_subTopics) << std::endl;
-			CcommonEnvManager::Instance().splitString(static_cast<std::string>(env_subTopics),',');
 		}
 	}
 	else
@@ -623,7 +620,10 @@ int main(int argc, char *argv[])
 		CMQTTHandler::instance();
 
 		//Prepare ZMQ contexts for publishing & subscribing data
-		initEISContext();
+		if(initEISContext()) {
+			DO_LOG_ERROR("Error in initEISContext");
+		}
+		std::cout<<"#################initEISContext passed fine###############\n";
 
 #ifdef UNIT_TEST
 	::testing::InitGoogleTest(&argc, argv);
@@ -632,7 +632,7 @@ int main(int argc, char *argv[])
 
 		//Start listening on EIS & publishing to MQTT
 		postMsgstoMQTT();
-
+		std::cout<<"#################postMsgstoMQTT() passed fine###############\n";
 		//threads to send on-demand requests on EIS
 		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRTRead())));
 		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRTWrite())));

@@ -60,10 +60,13 @@ public:
 		return m_eii_cfg;
 	}
 
-private:
-
 	// EII ConfigMgr reference
 	ConfigMgr* m_eii_cfg = NULL;
+
+private:
+
+	// // EII ConfigMgr reference
+	// ConfigMgr* m_eii_cfg = NULL;
 
 	/// True for success and false for failure for eii cfgmgr creation
 	bool isClientCreated;
