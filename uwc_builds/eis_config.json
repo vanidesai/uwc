@@ -1,0 +1,239 @@
+{
+    "/GlobalEnv/": {
+        "C_LOG_LEVEL": "DEBUG",
+        "ETCD_KEEPER_PORT": "7070",
+        "GO_LOG_LEVEL": "INFO",
+        "GO_VERBOSE": "0",
+        "PY_LOG_LEVEL": "INFO"
+    },
+    "/EtcdUI/config": {},
+    "/EtcdUI/interfaces": {},
+    "/MQTT/config": {},
+    "/MQTT/interfaces": {},
+    "/modbus-master/config": {},
+    "/modbus-master/interfaces": {
+        "Publishers": [
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_PolledData",
+                "Topics": [
+                    "TCP_PolledData"
+                ],
+                "Type": "zmq_ipc"
+            },
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_PolledData_RT",
+                "Topics": [
+                    "TCP_PolledData_RT"
+                ],
+                "Type": "zmq_ipc"
+            },
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_RdResp",
+                "Topics": [
+                    "TCP_RdResp"
+                ],
+                "Type": "zmq_ipc"
+            },
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_WrResp",
+                "Topics": [
+                    "TCP_WrResp"
+                ],
+                "Type": "zmq_ipc"
+            },
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_WrResp_RT",
+                "Topics": [
+                    "TCP_WrResp_RT"
+                ],
+                "Type": "zmq_ipc"
+            },
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_RdResp_RT",
+                "Topics": [
+                    "TCP_RdResp_RT"
+                ],
+                "Type": "zmq_ipc"
+            }
+        ],
+        "Subscribers": [
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "MQTT_Export_RdReq",
+                "PublisherAppName": "mqtt-export",
+                "Topics": [
+                    "MQTT_Export_RdReq"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "MQTT_Export_RdReq_RT",
+                "PublisherAppName": "mqtt-export",
+                "Topics": [
+                    "MQTT_Export_RdReq_RT"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "MQTT_Export_WrReq",
+                "PublisherAppName": "mqtt-export",
+                "Topics": [
+                    "MQTT_Export_WrReq"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "MQTT_Export_WrReq_RT",
+                "PublisherAppName": "mqtt-export",
+                "Topics": [
+                    "MQTT_Export_WrReq_RT"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            }
+        ]
+    },
+    "/mqtt-export/config": {},
+    "/mqtt-export/interfaces": {
+        "Publishers": [
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "MQTT_Export_RdReq",
+                "Topics": [
+                    "MQTT_Export_RdReq"
+                ],
+                "Type": "zmq_ipc"
+            },
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "MQTT_Export_WrReq",
+                "Topics": [
+                    "MQTT_Export_WrReq"
+                ],
+                "Type": "zmq_ipc"
+            },
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "MQTT_Export_RdReq_RT",
+                "Topics": [
+                    "MQTT_Export_RdReq_RT"
+                ],
+                "Type": "zmq_ipc"
+            },
+            {
+                "AllowedClients": [
+                    "*"
+                ],
+                "EndPoint": "/EIS/sockets",
+                "Name": "MQTT_Export_WrReq_RT",
+                "Topics": [
+                    "MQTT_Export_WrReq_RT"
+                ],
+                "Type": "zmq_ipc"
+            }
+        ],
+        "Subscribers": [
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_PolledData",
+                "PublisherAppName": "modbus-master",
+                "Topics": [
+                    "TCP_PolledData"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_RdResp",
+                "PublisherAppName": "modbus-master",
+                "Topics": [
+                    "TCP_RdResp"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_WrResp",
+                "PublisherAppName": "modbus-master",
+                "Topics": [
+                    "TCP_WrResp"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_PolledData_RT",
+                "PublisherAppName": "modbus-master",
+                "Topics": [
+                    "TCP_PolledData_RT"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_RdResp_RT",
+                "PublisherAppName": "modbus-master]",
+                "Topics": [
+                    "TCP_RdResp_RT"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": "/EIS/sockets",
+                "Name": "TCP_WrResp_RT",
+                "PublisherAppName": "modbus-master",
+                "Topics": [
+                    "TCP_WrResp_RT"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            }
+        ]
+    },
+    "/uwc_common/config": {},
+    "/uwc_common/interfaces": {}
+}

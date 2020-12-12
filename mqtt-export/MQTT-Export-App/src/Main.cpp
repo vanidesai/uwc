@@ -538,9 +538,10 @@ void postMsgstoMQTT()
 bool initEISContext()
 {
 	bool retVal = true;
-
+	std::cout<<"%%%%%%%%%%%%%%Enterted initEISContext%%%%%%%%%%%\n";
 	// Initializing all the pub/sub topic base context for ZMQ
 	int num_of_publishers = zmq_handler::getNumPubOrSub("pub");
+	std::cout<<"%%%%%%%%%%%%%%num_of_publishers%%%%%%%%%%%\n"<<num_of_publishers<<"\n";
 	// const char* env_pubTopics = std::getenv("PubTopics");
 	if (num_of_publishers >= 1)
 	{
@@ -559,6 +560,7 @@ bool initEISContext()
 	}
 
 	int num_of_subscribers = zmq_handler::getNumPubOrSub("sub");
+	std::cout<<"%%%%%%%%%%%%%%num_of_subscribers%%%%%%%%%%%\n"<<num_of_subscribers<<"\n";
 	if(num_of_subscribers >= 1)
 	{
 		if (true != zmq_handler::prepareCommonContext("sub"))
@@ -574,7 +576,7 @@ bool initEISContext()
 		std::cout << __func__ << ":" << __LINE__ << " Error : could not find any subscribers in subscriber Configuration" <<  std::endl;
 		retVal = false;
 	}
-
+	std::cout<<"%%%%%%%%%%%%Just before returning from initEISContext%%%%%%%%%%%%%%%%\n";
 	return retVal;
 }
 
@@ -620,7 +622,7 @@ int main(int argc, char *argv[])
 		CMQTTHandler::instance();
 
 		//Prepare ZMQ contexts for publishing & subscribing data
-		if(initEISContext()) {
+		if(!initEISContext()) {
 			DO_LOG_ERROR("Error in initEISContext");
 		}
 		std::cout<<"#################initEISContext passed fine###############\n";

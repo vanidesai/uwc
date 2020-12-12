@@ -126,28 +126,6 @@
         ],
         "Publishers": [
             {
-                "Name": "RTU_RdResp2",
-                "Type": "zmq_ipc",
-                "EndPoint": "/EIS/sockets",
-                "Topics": [
-                    "RTU_RdResp2"
-                ],
-                "AllowedClients": [
-                    "TCP,RTU"
-                ]
-            },
-            {
-                "Name": "RTU_RdResp",
-                "Type": "zmq_ipc",
-                "EndPoint": "/EIS/sockets",
-                "Topics": [
-                    "RTU_RdResp3"
-                ],
-                "AllowedClients": [
-                    "TCP,RTU"
-                ]
-            },
-            {
                 "Name": "MQTT_Export_RdReq",
                 "Type": "zmq_ipc",
                 "EndPoint": "/EIS/sockets",
@@ -159,22 +137,22 @@
                 ]
             },
             {
-                "Name": "RTU_RdResp",
+                "Name": "MQTT_Export_WrReq",
                 "Type": "zmq_ipc",
                 "EndPoint": "/EIS/sockets",
                 "Topics": [
-                    "RTU_RdResp3"
+                    "MQTT_Export_WrReq"
                 ],
                 "AllowedClients": [
                     "TCP,RTU"
                 ]
             },
             {
-                "Name": "RTU_RdResp3",
+                "Name": "MQTT_Export_RdReq_RT",
                 "Type": "zmq_ipc",
                 "EndPoint": "/EIS/sockets",
                 "Topics": [
-                    "RTU_RdResp3"
+                    "MQTT_Export_RdReq_RT"
                 ],
                 "AllowedClients": [
                     "TCP,RTU"
