@@ -21,74 +21,69 @@
 version: '3.6'
 
 services:
-  ## Define MQTT-Export service
-  mqtt-export:
+  modbus-tcp-master:
     depends_on:
     - ia_eisbase
     - uwc_common
     build:
-      context: $PWD/../uwc/mqtt-export/
-      dockerfile: $PWD/../uwc/mqtt-export/Dockerfile
+      context: $PWD/../uwc/modbus-master/
+      dockerfile: $PWD/../uwc/modbus-master/Dockerfile
       args:
         EIS_VERSION: ${EIS_VERSION}
         EIS_UID: ${EIS_UID}
         EIS_USER_NAME: ${EIS_USER_NAME}
-    image: ${DOCKER_REGISTRY}mqtt-export:${EIS_VERSION}
-    container_name: mqtt-export
-    hostname: mqtt-export
+    image: ${DOCKER_REGISTRY}modbus-tcp-master:${EIS_VERSION}
+    container_name: modbus-tcp-master
+    hostname: modbus-tcp-master
     network_mode: host
+    read_only: true
     restart: unless-stopped
     ulimits:
       rtprio:
         soft: "99" # these are the maximum values of priorites to be used inside the container application
         hard: "99"
     environment:
-      AppName: "MQTT_Export"
-      DEV_MODE: ${DEV_MODE}
-      no_proxy: ${eis_no_proxy}
+      AppName: "TCP"
       ETCD_HOST: ${ETCD_HOST}
+      # ETCD_HOST: ${HOST_IP} to be discussed for network mode or not.
       ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
       ETCD_PREFIX: ${ETCD_PREFIX}
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${eis_no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
-      ZMQ_RECV_HWM: "1000"
-      MQTT_URL_FOR_EXPORT: "ssl://10.223.97.112:11883"
-      ReadRequest: MQTT_Export_RdReq
-      WriteRequest: MQTT_Export_WrReq
-      ReadRequest_RT: MQTT_Export_RdReq_RT
-      WriteRequest_RT: MQTT_Export_WrReq_RT
+      MY_APP_ID: 1
+      CUTOFF_INTERVAL_PERCENTAGE: 90
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
-      # general topics
-      mqtt_SubReadTopic: "/+/+/+/read"
-      mqtt_SubWriteTopic: "/+/+/+/write"
+      NETWORK_TYPE: TCP
+      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
     logging:
       driver: "json-file"
       options:
         max-file: "3"
         max-size: "10m"
+    volumes:
+    - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+    - "vol_uwc_socket:${SOCKET_DIR}:z"
+    - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+    - "${EIS_INSTALL_PATH}/container_logs/modbus-tcp-master:/opt/intel/app/logs"
     user: ${EIS_UID}
     # userns_mode: host
-    volumes:
-    - "vol_uwc_socket:${SOCKET_DIR}"
-    - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-    - "${EIS_INSTALL_PATH}/container_logs/mqtt-export:/opt/intel/app/logs"
     secrets:
-    - ca_etcd
-    - etcd_MQTT_Export_cert
-    - etcd_MQTT_Export_key
-    - ca_broker
-    - client_cert
-    - client_key
+      - ca_etcd
+      - etcd_TCP_cert
+      - etcd_TCP_key
     security_opt:
-      - no-new-privileges
+    - no-new-privileges
     healthcheck:
-      test: ["CMD-SHELL", "/bin/sh","-c", "ps -C MQTT_Export >/dev/null && echo Running || echo Not running; exit 1"]
+      test: ["CMD-SHELL", "/bin/sh", "-c", "ps -C ModbusMaster >/dev/null && echo\
+          \ Running || echo Not running; exit 1"]
       interval: 60s
       timeout: 30s
       retries: 3
       start_period: 0s
 
-volumes:      
+volumes:
   vol_uwc_socket:
     driver: local
     driver_opts:
@@ -99,13 +94,11 @@ volumes:
 secrets:
   ca_etcd:
     file: provision/Certificates/ca/ca_certificate.pem
-  etcd_MQTT_Export_cert:
-    file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
-  etcd_MQTT_Export_key:
-    file: provision/Certificates/MQTT_Export/MQTT_Export_client_key.pem
-  ca_broker:
-    file: provision/Certificates/ca/ca_certificate.pem
-  client_cert:
-    file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
-  client_key:
-    file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem
+  etcd_root_cert:
+    file: provision/Certificates/root/root_client_certificate.pem
+  etcd_root_key:
+    file: provision/Certificates/root/root_client_key.pem
+  etcd_TCP_cert:
+    file: provision/Certificates/TCP/TCP_client_certificate.pem
+  etcd_TCP_key:
+    file: provision/Certificates/TCP/TCP_client_key.pem
