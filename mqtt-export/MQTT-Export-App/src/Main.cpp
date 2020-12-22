@@ -25,7 +25,7 @@
 
 using namespace zmq_handler;
 
-vector<std::thread> g_vThreads;
+std::vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
@@ -498,7 +498,7 @@ void postMsgstoMQTT()
 	DO_LOG_DEBUG("Initializing threads to start listening on EIS topics...");
 
 	// get sub topic list
-	vector<string> vFullTopics;
+	std::vector<std::string> vFullTopics;
 	bool tempRet = zmq_handler::returnAllTopics("sub", vFullTopics);
 	if(tempRet == false) {
 		return -1;

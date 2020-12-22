@@ -229,7 +229,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 	else
 	{
 		DO_LOG_ERROR("EII Configmgr creation failed !! ");
-		std::cout << "EII Configmgr creation failed !!  " <<endl;
+		std::cout << "EII Configmgr creation failed !!  " <<std::endl;
 	}
 	DO_LOG_DEBUG("End: ");
 	return true;
