@@ -13,69 +13,57 @@
 ```
 ## Directory details
 The directory comprises of following:
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/modbus-master">modbus-master</a> :
-  This directory contains the modbus TCP1 and RTU1 containers sources and docker file for building the container
+* modbus-master :
+  This directory contains the modbus TCP1 and RTU1 containers sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for modbus TCP & RTU services.
   For detail, please refer to `README-modbus-master.md` file of modbus-master folder
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/mqtt-export">mqtt-export</a> :
-  This directory contains the mqtt-export container sources and docker file for building the container 
+* mqtt-export :
+  This directory contains the mqtt-export container sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for mqtt-export service. 
   For detail, please refer to `README-mqtt-export.md` file of mqtt-export folder
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/MQTT">MQTT</a> :
-  This directory contains the mqtt container sources and docker file for building the container.
+* MQTT:
+  This directory contains the mqtt container sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for MQTT internal broker service.
   For detail, please refer to `README-MQTT.md` file of MQTT folder
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/scada-rtu">scada-rtu</a> :
-  This directory contains the scada-rtu sources and docker file for building the container.
+* scada-rtu:
+  This directory contains the scada-rtu sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for SCADA-RTU service.
   For detail, please refer to `README_SCADA_RTU.md` file of scada-rtu folder
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/uwc-common">uwc-common</a> :
+* uwc-common:
   This directory contains sources for uwc common library container & Dockerfile to install all the dependencies and libraries needed by all the containers. For detail, please refer to `README-UWC_Common.md` file of uwc_common folder
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/kpi-tactic">kpi-tactic</a> :
+* kpi-tactic:
   This directory contains the kpi-tactic container sources and docker file for building the container 
   For detail, please refer to `README-kpi-tactic.md` file of kpi-tactic folder
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Others">Others</a> :
+* Others:
   This directory contains configurations for ETCD required during provisioning
-* <a href="https://github.impcloud.net/uwc/UWC-Core/blob/master/docker-compose.yml">docker-compose.yml</a> :
-  This file will deploy the modbus container with EIS in IPC with DEV mode
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_DEV.yml">docker-compose_IPC_DEV.yml</a> :
-  This file is used to deploy UWC containers in IPC with DEV mode
- * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_DEV_scada_TLS.yml">docker-compose_IPC_DEV_scada_TLS.yml</a> :
-  This file is used to deploy UWC containers in IPC with DEV mode , and with scada in TLS mode
-  * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_DEV_without_scada.yml">docker-compose_IPC_DEV_without_scada.yml</a> :
-  This file is used to deploy UWC containers in IPC with DEV mode , and without scada
-   * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_IPC_PROD_nonTLSScada.yml">docker-compose_IPC_PROD_nonTLSScada.yml</a> :
-  This file is used to deploy UWC containers in IPC with PROD mode , and with scada in TLS mode
-   * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_with_kpi.yml">docker-compose_with_kpi.yml</a> :
-  This file is used to deploy UWC containers with kpi
-    * <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_without_scada.yml">docker-compose_without_scada.yml</a> :
-  This file is used to deploy UWC containers without scada
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/docker-compose_unit_test.yml">docker-compose_unit_test.yml</a> :
-  This file is used to run unit test cases
-  
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/Release">Release</a> :
-  This directory contains UWC bundle for deployement
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/create_uwc_package.sh">create_uwc_package.sh</a> :
-  This script will be used to create UWC package
-* <a href="https://github.impcloud.net/uwc/UWC-Core/tree/master/uwc_common">uwc_common</a> :
+* uwc_common:
   This directory contains common dockefiles for UWC
 
 ## Install pre-requisites
 ```
-1. EdgeInsightsSoftware-v2.2-PV version of EIS should be available on deploy machine before deployment. 
-2. Copy files from "Release" diectory (e.g. all shell scripts, tar.gz file, etc.) into "EdgeInsightsSoftware-v2.2-PV/IEdgeInsights" directory. Please ensure that shell scripts have "execute" permission (sudo chmod +x <script name>).
-3. Open a terminal and go to EdgeInsightsSoftware-v2.2-PV/IEdgeInsights directory.
-4. Uninstall previously deployed and running UWC containers, using "sudo ./04_uninstall_EIS.sh" command on terminal.
-5. Run below command on terminal to install all pre-requisites required to deploy UWC containers.
-sudo ./01_pre-requisites.sh
+1. After having successfully repo-synched the uwc.xml recipe from eis-manifest repo
+Generate the consolidated docker-compose.yml & eis_config.json using the eis_builder utility from the eis-core repo. Can either use "build/uwc-pipeline-without-scada.yml" , "build/uwc-pipeline-with-scada.yml", "build/uwc-pipeline-modbus-TCP-only.yml" or "build/uwc-pipeline-modbus-RTU-only.yml" with eis-builder based on the services needed for use case.
+2. Run "sudo sh pre_req.sh" from builds directory. This creates necessary directories in/opt/intel/eis/ for log files storage & also copies UWC YAML configuration files. 
+3. cd to "<working-dir>/IEdgeInsights/build" & then open .env. 
+4. Update the key "DEV_MODE=true/false" based on the intended mode of running the services in either DEVELOPMENT (DEV_MODE=true) or PRODUCTION MODE (DEV_MODE=false).
+5. Update the key "MQTT_PROTOCOL=tcp/ssl" based on the intended mode of running the services in either DEVELOPMENT (MQTT_PROTOCOL=tcp) or PRODUCTION MODE (MQTT_PROTOCOL=ssl).
+6. Default is prod mode.
+7. NOTE: In prod mode, the "Certificates" directory in "<working-dir>/IEdgeInsights/build/provision" needs 'sudo su" to be accessed. i.e. to open Certificates folder do the following:
+  a. cd <working-dir>/IEdgeInsights/build/provision
+  b. sudo su
+  c. cd Certificates
+8. After accessing Certificates, enter "exit" command & terminal would return back to normal mode.
+9. IMPORTANT NOTE: EVERYTIME THE MODE IS SWITCHED (DEV<->PROD) BY MAKING CHANGES IN .ENV FILE AS ABOVE, MAKE SURE TO RE-RUN THE "eis_builder.py" utility as mentioned above, again, even if the recipe hasn't changed. This is needed to re-generate consolidated docker-compose.yml file in build directory as per dev/prod mode.
 ```
 
-## Provision EIS
+## Provision EIS & UWC services
 ```
-Execute below command on terminal for provisioning EIS.
-sudo ./02_provisionEIS.sh
+Execute below command on terminal for provisioning EIS & UWC services.
+1. cd <working-dir>/IEdgeInsights/build/provision
+2. sudo ./provision_eis.sh ../docker-compose.yml
 ```
 
-## Build and Run all UWC containers
+## Build and Run all UWC & EIS containers
 ```
 Execute below command on terminal for container deployment.
-sudo ./03_DeployEIS.sh
+1. cd <working-dir>/IEdgeInsights/build/
+2. docker-compose up --build -d
 
 ```
 
@@ -83,28 +71,6 @@ sudo ./03_DeployEIS.sh
 ```
 Execute below command on terminal to verify container status.
 sudo docker ps
-```
-
-## Steps to deploy other modes of deployments
-```
-Following zmq modes are available for deployment,
-    1. IPC_PROD – This is default mode for deployment. i.e. IPC communication with production mode
-    2. IPC_DEV – IPC mode with developer mode. (i.e. without security)
-    3. TCP_PROD – TCP communication with secured mode.
-    4. TCP_DEV – TCP communication with non-secure mode.
-Steps:
-    1. Add UWC_DEPLOY_MODE= <Mode of deployment mentioned above> in <EIS>/<docker_setup>/.env file.
-    2. Run 01_pre-requisites.sh, 02_provisionEIS.sh, 03_DeployEIS.sh scripts for further deployment.
-    3. For verification use “docker ps” command 
-
-Please Note: If nothing is specified in .env file, default mode will be deployed. (i.e. IPC_PROD mode)
-```
-
-## Steps to run unit test cases
-```
-1. Installed all the pre-requisites mentioned in ##Install pre-requisites section
-2. Run 06_UnitTestRun.sh script using "sudo ./06_UnitTestRun.sh" command to run unit test cases.
-3. Check the reports in <EIS>/docker_setup/unit_test_reports directory.
 ```
 
 ## Debugging steps
@@ -123,28 +89,22 @@ Please Note: If nothing is specified in .env file, default mode will be deployed
 docker logs modbus-tcp-container > docker.log 2>&1
 ```
 
-## ETCD UI access (*Note : This is not required since we are not storing any configuration data for UWC containers in ETCD)
-1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL. (username - root , password- eis123)
+1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL for dev mode & `https://localhost:7071/etcdkeeper/` for prod mode . (username - root , password- eis123)
+2. EIS Message Bus related interface configurations (including secrets) for all UWC & EII containers are stored in ia_etcd server, which can be accessed using EtcdUI as mentioned above.
 
 ## Steps to apply new configuration (i.e. YML files or docker-compose.yml)
   Once YML files/docker-compose.yml are changed/Modified in /opt/intel/eis/uwc_data directory then execute following command to apply new configurations,
  ```
-  sudo ./05_applyConfigChanges.sh
+  1. cd <working-dir>/IEdgeInsights/build
+  2. docker-compose down && docker-compose up --build -d
 ```
-## Steps to create bundle out of sources - Optional 
-```
-Execute below script to create UWC bundle for deployment.
-sudo ./create_uwc_package.sh
-```
-
 ## How to bring up/down UWC containers
 ```
-cd EIS..../docker_setup
-export PWD=$(pwd)
+cd <working-dir>/IEdgeInsights/build
 docker-compose down  - bring down all containers
-docker-compose up - bring up all containers
+docker-compose up -d - bring up all containers in background
 
 ## Notes
-*  If docker-compose.yml is modified then execute 03_DeployEIS.sh script for build and deployment of UWC containers.
-*  If previous containers are running on deploy machine, then stop those containers using 04_uninstall_EIS.sh script.
-
+*  If docker-compose.yml is modified then bring down the containers & then bring them up as mentioned above.
+*  If previous containers are running on deploy machine, then stop those containers using command for bringing down containers as mentioned above.
+*  Can use MQTT.FX or any other MQTT client to verify teh flow or all 6 operations for RT/Non-RT, read/write,polling operations

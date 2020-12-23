@@ -70,7 +70,7 @@ namespace zmq_handler
 	 *
 	 * @param topicType	:[in] topic type to create context for, value is either "sub" or "pub"
 	 * @return 	true : on success,
-	 * 			false : on error
+	 * 	        false : on error
 	 */
 	bool prepareCommonContext(std::string topicType);
 

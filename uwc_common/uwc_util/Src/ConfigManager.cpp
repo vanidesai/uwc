@@ -26,12 +26,12 @@ CfgManager::CfgManager()
 {
 	isClientCreated = false;
 	try {
-        m_eii_cfg = new ConfigMgr();
+		m_eii_cfg = new ConfigMgr();
 		isClientCreated = true;
-    } catch (...) {
-        LOG_ERROR_0("Exception occured in creation of CfgManager of EII");
-        return;
-    }
+	} catch (...) {
+	    LOG_ERROR_0("Exception occured in creation of CfgManager of EII");
+	    return;
+	}
 }
 
 /** Returns the single instance of this class
@@ -312,7 +312,6 @@ void globalConfig::COperation::build(const YAML::Node& a_baseNode,
 		ops = "realtime";
 	}
 
-	DO_LOG_INFO("ngk-BEFORE- operation_priority");
 	/// validate priority
 	if (validateParam(a_baseNode[ops], "operation_priority", DT_INTEGER) != 0)
 	{

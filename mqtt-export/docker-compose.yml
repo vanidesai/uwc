@@ -97,8 +97,6 @@ volumes:
       device: ${EIS_INSTALL_PATH}/sockets
 
 secrets:
-  ca_etcd:
-    file: provision/Certificates/ca/ca_certificate.pem
   etcd_MQTT_Export_cert:
     file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
   etcd_MQTT_Export_key:

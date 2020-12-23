@@ -201,13 +201,13 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
     			}
 			}
 		} else {  // else if its sub
-			int numSubscribers = CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers();
-			for(auto it =0; it<numSubscribers; ++it) {
-			sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(it);
-			sub_config = sub_ctx->getMsgBusConfig();
-    		if (sub_config == NULL) {
-        		DO_LOG_ERROR("Failed to get message bus config");
-        		return false;
+				int numSubscribers = CfgManager::Instance().getEiiCfgMgr()->getNumSubscribers();
+				for(auto it =0; it<numSubscribers; ++it) {
+				sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(it);
+				sub_config = sub_ctx->getMsgBusConfig();
+    			if (sub_config == NULL) {
+        			DO_LOG_ERROR("Failed to get message bus config");
+        			return false;
     			}
 				g_msgbus_ctx = msgbus_initialize(sub_config);
     			if (g_msgbus_ctx == NULL) {
@@ -443,15 +443,13 @@ bool zmq_handler::returnAllTopics(std::string topicType, std::vector<std::string
 		}
 		
 		if(topics.empty()){
-        DO_LOG_ERROR("Failed to get topics");
-        return false;
-    	}
+		DO_LOG_ERROR("Failed to get topics");
+		return false;
+		}
 		size_t numTopics = topics.size(); // num of topics in indivisual publisher or subscriber
 		for(size_t indv_topic=0; indv_topic < numTopics; ++indv_topic) {
 			vecTopics.push_back(topics[indv_topic]);
 		}
-		// vecTopics = TCP_PolledData, 
-		// return true if everything goes well. 
 	}
 	return true;
 }

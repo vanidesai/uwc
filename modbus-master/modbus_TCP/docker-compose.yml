@@ -92,8 +92,6 @@ volumes:
       device: ${EIS_INSTALL_PATH}/sockets
 
 secrets:
-  ca_etcd:
-    file: provision/Certificates/ca/ca_certificate.pem
   etcd_root_cert:
     file: provision/Certificates/root/root_client_certificate.pem
   etcd_root_key:

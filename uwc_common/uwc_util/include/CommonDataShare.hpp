@@ -72,14 +72,6 @@ public:
 	void splitString(const std::string &str, char delim);
 
 	/**
-	 * Get subscribe topic list
-	 * @return vector containing topic list
-	 */
-	// std::vector<std::string> getTopicList() const {
-	// 	return m_vect_TopicList;
-	// }
-
-	/**
 	 * Insert topic to topiclist vector
 	 * @param a_sTopic :[in] subscribe topic to add to topiclist vector
 	 * @return
