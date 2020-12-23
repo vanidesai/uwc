@@ -51,7 +51,7 @@ services:
       ETCD_PREFIX: ${ETCD_PREFIX}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
-      MQTT_URL_FOR_EXPORT: "ssl://10.223.97.112:11883"
+      MQTT_URL_FOR_EXPORT: "${MQTT_PROTOCOL}://127.0.0.1:11883"
       ReadRequest: MQTT_Export_RdReq
       WriteRequest: MQTT_Export_WrReq
       ReadRequest_RT: MQTT_Export_RdReq_RT
