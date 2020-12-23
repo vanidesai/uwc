@@ -222,7 +222,6 @@ void globalConfig::setDefaultConfig(const enum eOperationType a_eOpType)
 }
 
 /** Function to validate key in YAML file
- *
  * @param : baseNode [in] : YAML node to read from
  * @param : a_sKey [in] : key to validate
  * @param : a_eDataType [in] : data type

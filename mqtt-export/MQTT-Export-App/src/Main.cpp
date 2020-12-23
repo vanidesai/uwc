@@ -494,7 +494,6 @@ void postMsgsToEIS(QMgr::CQueueMgr& qMgr)
  */
 void postMsgstoMQTT()
 {
-	std::cout<<"#################Initializing threads to start listening on EIS topics...###############\n";
 	DO_LOG_DEBUG("Initializing threads to start listening on EIS topics...");
 
 	// get sub topic list
@@ -504,8 +503,6 @@ void postMsgstoMQTT()
 		return -1;
 	} 
 
-	std::cout<<"################# [postMsgstoMQTT] before 1st for...###############\n";
-
 	for (auto &topic : vFullTopics)
 	{
 		if(topic.empty())
@@ -513,12 +510,10 @@ void postMsgstoMQTT()
 			DO_LOG_ERROR("found empty MQTT subscriber topic");
 			continue;
 		}
-		std::cout<<"################# [postMsgstoMQTT] before zmq_handler::getCTX(topic) ...###############\n";
+
 		zmq_handler::stZmqContext& context = zmq_handler::getCTX(topic);
-		std::cout<<"################# [postMsgstoMQTT] after zmq_handler::getCTX(topic) ...###############\n";
 		//will give topic context
 		zmq_handler::stZmqSubContext& subContext = zmq_handler::getSubCTX(topic);
-		std::cout<<"################# [postMsgstoMQTT] before zmq_handler::getSubCTX(topic) ...###############\n";
 		DO_LOG_DEBUG("Full topic - " + topic + " AND listening on: " + topic);
 
 		//get operation depending on the topic
@@ -538,10 +533,8 @@ void postMsgstoMQTT()
 bool initEISContext()
 {
 	bool retVal = true;
-	std::cout<<"%%%%%%%%%%%%%%Enterted initEISContext%%%%%%%%%%%\n";
 	// Initializing all the pub/sub topic base context for ZMQ
 	int num_of_publishers = zmq_handler::getNumPubOrSub("pub");
-	std::cout<<"%%%%%%%%%%%%%%num_of_publishers%%%%%%%%%%%\n"<<num_of_publishers<<"\n";
 	// const char* env_pubTopics = std::getenv("PubTopics");
 	if (num_of_publishers >= 1)
 	{
@@ -560,7 +553,6 @@ bool initEISContext()
 	}
 
 	int num_of_subscribers = zmq_handler::getNumPubOrSub("sub");
-	std::cout<<"%%%%%%%%%%%%%%num_of_subscribers%%%%%%%%%%%\n"<<num_of_subscribers<<"\n";
 	if(num_of_subscribers >= 1)
 	{
 		if (true != zmq_handler::prepareCommonContext("sub"))
@@ -576,7 +568,6 @@ bool initEISContext()
 		std::cout << __func__ << ":" << __LINE__ << " Error : could not find any subscribers in subscriber Configuration" <<  std::endl;
 		retVal = false;
 	}
-	std::cout<<"%%%%%%%%%%%%Just before returning from initEISContext%%%%%%%%%%%%%%%%\n";
 	return retVal;
 }
 
@@ -625,7 +616,6 @@ int main(int argc, char *argv[])
 		if(!initEISContext()) {
 			DO_LOG_ERROR("Error in initEISContext");
 		}
-		std::cout<<"#################initEISContext passed fine###############\n";
 
 #ifdef UNIT_TEST
 	::testing::InitGoogleTest(&argc, argv);
@@ -634,7 +624,6 @@ int main(int argc, char *argv[])
 
 		//Start listening on EIS & publishing to MQTT
 		postMsgstoMQTT();
-		std::cout<<"#################postMsgstoMQTT() passed fine###############\n";
 		//threads to send on-demand requests on EIS
 		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRTRead())));
 		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRTWrite())));

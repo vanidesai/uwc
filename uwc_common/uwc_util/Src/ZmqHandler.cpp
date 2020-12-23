@@ -257,7 +257,6 @@ void zmq_handler::insertSubCTX(std::string a_sTopic, stZmqSubContext ctxRef)
 {
 	DO_LOG_DEBUG("Start: " + a_sTopic);
 	std::unique_lock<std::mutex> lck(__SubctxMapLock);
-	std::cout<<"$$$$$$$$$$-TOPIC INSERTED IN insertSubCTX is"<<a_sTopic<<"$$$$$$$$$$$$$$$\n";
 	/// insert the data in map
 	g_mapSubContextMap.insert(std::pair <std::string, stZmqSubContext> (a_sTopic, ctxRef));
 	DO_LOG_DEBUG("End: ");

@@ -323,7 +323,6 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
  */
 bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, const CRefDataForPolling* a_objReqData, struct timespec *a_pstTsPolling = NULL)
 {
-	std::cout<<"%%%%%%%%%%%%%%%%%%%1%%%%%%%%%%%%%%%%%%%%%\n";
 	if((MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 			&& NULL == a_objReqData)
 	{
@@ -333,17 +332,14 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 
 	try
 	{
-		std::cout<<"%%%%%%%%%%%%%%%%%%%1%%%%%%%%%%%%%%%%%%%%%\n";
 		std::string sValue{""};
 		if(FALSE == prepareResponseJson(&g_msg, sValue, a_objReqData, a_stResp, a_pstTsPolling))
 		{
-			std::cout<<"%%%%%%%%%%%%%%%%%%%Error in preparing response%%%%%%%%%%%%%%%%%%%%%\n";
 			DO_LOG_INFO( " Error in preparing response");
 			return FALSE;
 		}
 		else
 		{
-			std::cout<<"%%%%%%%%%%%%%%%%%%%2%%%%%%%%%%%%%%%%%%%%%\n";
 			if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 			{
 			}
@@ -352,31 +348,24 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 				common_Handler::removeReqData(a_stResp.u16TransacID);	/// removing request structure from map
 			}
 			std::string sUsec{""};
-			std::cout<<"%%%%%%%%%%%%%%%%%%%3%%%%%%%%%%%%%%%%%%%%%\n";
-			std::cout<<"%%%%%%%%%%%%%%%%%%%m_strResponseTopic is ="<<a_stResp.m_strResponseTopic<<"%%%%%%%%%%%%%%%%%%%%%\n";
 			if(/*!(a_stResp.m_strResponseTopic.empty()) && */true == zmq_handler::publishJson(sUsec, g_msg, a_stResp.m_strResponseTopic, "usec"))
 			{
-				std::cout<<"%%%%%%%%%%%%%%%%%%%4%%%%%%%%%%%%%%%%%%%%%\n";
 				// Message is successfully published
 				// For polling operation having value field, store it as last known value and usec
 				if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
 				{
-					std::cout<<"%%%%%%%%%%%%%%%%%%%5%%%%%%%%%%%%%%%%%%%%%\n";
 					// Check if value was available.
 					if(false == sValue.empty())
 					{
-						std::cout<<"%%%%%%%%%%%%%%%%%%%6%%%%%%%%%%%%%%%%%%%%%\n";
 						// save last known response
 						(const_cast<CRefDataForPolling*>(a_objReqData))->saveGoodResponse(sValue, sUsec);
 					}
 				}
 				DO_LOG_DEBUG("Msg published successfully");
-				std::cout<<"%%%%%%%%%%%%%%%%%%%Msg published successfully%%%%%%%%%%%%%%%%%%%%%\n";
 			}
 			else
 			{
 				DO_LOG_ERROR("Failed to publish msg on EIS");
-				std::cout<<"%%%%%%%%%%%%%%%%%%%Failed to publish msg on EIS%%%%%%%%%%%%%%%%%%%%%\n";
 			}
 
 #ifdef INSTRUMENTATION_LOG
@@ -425,7 +414,6 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 bool CPeriodicReponseProcessor::postDummyBADResponse(CRefDataForPolling& a_objReqData,
 		const stException_t m_stException, struct timespec *a_pstRefPollTime = NULL)
 {
-		std::cout<<"%%%%%%%%%%%%%%%%%%%-ENTRY-OF-postDummyBADResponse%%%%%%%%%%%%%%%%%%%%\n";
 	try
 	{
 		// Prepare dummy response
@@ -472,7 +460,6 @@ bool CPeriodicReponseProcessor::postDummyBADResponse(CRefDataForPolling& a_objRe
  */
 bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp)
 {
-	std::cout<<"%%%%%%%%%%%%%%%iterative postResponseJSON begin-%%%%%%%%%%%%%\n";
 	try
 	{
 		if(MBUS_CALLBACK_POLLING == a_stResp.m_operationType || MBUS_CALLBACK_POLLING_RT == a_stResp.m_operationType)
@@ -538,7 +525,6 @@ eMbusAppErrorCode CPeriodicReponseProcessor::respProcessThreads(eMbusCallbackTyp
 		sem_t& a_refSem,
 		globalConfig::COperation& a_refOps)
 {
-	std::cout<<"%%%%%%%%%%%%%%%%%%%-ENTRY-OF-respProcessThreads%%%%%%%%%%%%%%%%%%%%\n";
 	eMbusAppErrorCode eRetType = APP_SUCCESS;
 	sem_t& l_sem = a_refSem;
 
@@ -565,7 +551,6 @@ eMbusAppErrorCode CPeriodicReponseProcessor::respProcessThreads(eMbusCallbackTyp
 				{
 					break;
 				}
-std::cout<<"%%%%%%%%%%%%%%%%%%%-IN-respProcessThreads:  before postResponseJSON(res)%%%%%%%%%%%%%%%%%%%%\n";
 				// fill the response in JSON
 				postResponseJSON(res);
 				res.m_Value.clear();
@@ -752,7 +737,6 @@ bool CPeriodicReponseProcessor::checkForRetry(struct stStackResponse &a_stStackR
  */
 bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stStackResNode, eMbusCallbackType operationCallbackType)
 {
-	std::cout<<"%%%%%%%%%%%%%%%%%%INSIDE getDataToProcess BEGINGING%%%%%%%%%%%%%%%%%%%%%\n";
 	bool retValue = false;
 	try
 	{
@@ -760,37 +744,30 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 		{
 		case MBUS_CALLBACK_POLLING:
 		{
-			std::cout<<"%%%%%%%%%%%%%%%%%%INSIDE getDataToProcess MBUS_CALLBACK_POLLING%%%%%%%%%%%%%%%%%%%%%\n";
 			std::lock_guard<std::mutex> lock(__resQPollingMutex);
 			if(stackPollingResQ.empty())
 			{
-				std::cout<<"%%%%%%%%%%%%%%%%%%%%%%MBUS_CALLBACK_POLLING:: Response queue is empty%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
 				DO_LOG_DEBUG("Response queue is empty");
 				return false;
 			}
 			a_stStackResNode = stackPollingResQ.front();
 			stackPollingResQ.pop();
-			std::cout<<"%%%%%%%%%%%%%%%%%%%%%%MBUS_CALLBACK_POLLING:: After pop%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
 		}
 		break;
 		case MBUS_CALLBACK_POLLING_RT:
 		{
-			std::cout<<"%%%%%%%%%%%%%%%%%%INSIDE getDataToProcess MBUS_CALLBACK_POLLING_RT%%%%%%%%%%%%%%%%%%%%%\n";
 			std::lock_guard<std::mutex> lock(__resQRTPollingMutex);
 			if(stackRTPollingResQ.empty())
 			{
-				std::cout<<"%%%%%%%%%%%%%%%%%%%%%%MBUS_CALLBACK_POLLING_RT:: Response queue is empty%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
 				DO_LOG_DEBUG("Response queue is empty");
 				return false;
 			}
 			a_stStackResNode = stackRTPollingResQ.front();
 			stackRTPollingResQ.pop();
-			std::cout<<"%%%%%%%%%%%%%%%%%%%%%%MBUS_CALLBACK_POLLING_RT:: After pop%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
 		}
 		break;
 		case MBUS_CALLBACK_ONDEMAND_READ:
 		{
-			std::cout<<"%%%%%%%%%%%%%%%%%%INSIDE getDataToProcess MBUS_CALLBACK_ONDEMAND_READ%%%%%%%%%%%%%%%%%%%%%\n";
 			std::lock_guard<std::mutex> lock(__resQODReadMutex);
 			if(stackOnDemandReadResQ.empty())
 			{
@@ -803,7 +780,6 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 		break;
 		case MBUS_CALLBACK_ONDEMAND_READ_RT:
 		{
-			std::cout<<"%%%%%%%%%%%%%%%%%%INSIDE getDataToProcess MBUS_CALLBACK_ONDEMAND_READ_RT%%%%%%%%%%%%%%%%%%%%%\n";
 			std::lock_guard<std::mutex> lock(__resQODRTReadMutex);
 			if(stackOnDemandRTReadResQ.empty())
 			{
@@ -816,7 +792,6 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 		break;
 		case MBUS_CALLBACK_ONDEMAND_WRITE:
 		{
-			std::cout<<"%%%%%%%%%%%%%%%%%%INSIDE getDataToProcess MBUS_CALLBACK_ONDEMAND_WRITE%%%%%%%%%%%%%%%%%%%%%\n";
 			std::lock_guard<std::mutex> lock(__resQODWriteMutex);
 			if(stackOnDemandWriteResQ.empty())
 			{
@@ -829,7 +804,6 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 		break;
 		case MBUS_CALLBACK_ONDEMAND_WRITE_RT:
 		{
-			std::cout<<"%%%%%%%%%%%%%%%%%%INSIDE getDataToProcess MBUS_CALLBACK_ONDEMAND_WRITE_RT%%%%%%%%%%%%%%%%%%%%%\n";
 			std::lock_guard<std::mutex> lock(__resQODRTWriteMutex);
 			if(stackOnDemandRTWriteResQ.empty())
 			{
@@ -841,7 +815,6 @@ bool CPeriodicReponseProcessor::getDataToProcess(struct stStackResponse &a_stSta
 		}
 		break;
 		default:
-		std::cout<<"%%%%%%%%%%%%%%%%%%Invaid callback to get data from queue%%%%%%%%%%%%%%%%%%%%%\n";
 			DO_LOG_FATAL("Invaid callback to get data from queue.");
 			break;
 		}
