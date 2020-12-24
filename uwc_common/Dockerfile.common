@@ -88,6 +88,7 @@ RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
 COPY uwc_util /uwc_util/.
 
 RUN	cp -r /usr/yaml/include/* /uwc_util/include/yaml-cpp/ \
+        && mkdir -p /uwc_util/lib \
 	&& cp -r /usr/yaml/lib/* /uwc_util/lib/ \
  	&& cp -r /EIS/log4cpp/build/include/* /uwc_util/include/ \
 	&& cp -r /EIS/log4cpp/build/lib/* /uwc_util/lib/ \
