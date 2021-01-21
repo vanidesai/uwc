@@ -173,7 +173,6 @@ int main(int argc, char* argv[])
 
 		setEnvData();
 
-		std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
 #ifdef UNIT_TEST
 		::testing::InitGoogleTest(&argc, argv);
 		return RUN_ALL_TESTS();

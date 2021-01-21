@@ -94,8 +94,10 @@ void CControlLoopOp::threadPollMonitoring()
 				int rc = clock_gettime(CLOCK_MONOTONIC, &ts);
 				// Message is received
 				// Check if writeResponse for last message was received
+				std::cout<<"\nCheck if writeResponse for last message was received\n";
 				if(true == CMapOfReqMapper::getInstace().isPresent(m_sId, sLastWrSeqVal))
 				{
+					std::cout<<"\nBefore calling postdummyanalysismsg()\n";
 					postDummyAnalysisMsg(sLastWrSeqVal, "WrRespNotRcvd");
 				}
 				sLastWrSeqVal.clear();
@@ -457,7 +459,13 @@ bool CControlLoopMapper::destroySubCtx()
 	bool retVal = false;
 	try
 	{
-		std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
+		// get sub topic list
+		std::vector<std::string> vFullTopics;
+		bool tempRet = zmq_handler::returnAllTopics("sub", vFullTopics);
+		if(tempRet == false) {
+			return false;
+		}
+
 		for(auto& sTopic : vFullTopics)
 		{
 			zmq_handler::stZmqContext& ctx = zmq_handler::getCTX(sTopic);

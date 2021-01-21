@@ -54,6 +54,32 @@
                 ],
                 "Type": "zmq_ipc",
                 "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": {
+                    "SocketDir": "/EIS/sockets",
+                    "SocketFile": "backend-socket"
+                },
+                "Name": "KPIAPP_WrReq",
+                "PublisherAppName": "EISZmqBroker",
+                "Topics": [
+                    "KPIAPP_WrReq"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
+            },
+            {
+                "EndPoint": {
+                    "SocketDir": "/EIS/sockets",
+                    "SocketFile": "backend-socket"
+                },
+                "Name": "KPIAPP_WrReq_RT",
+                "PublisherAppName": "EISZmqBroker",
+                "Topics": [
+                    "KPIAPP_WrReq_RT"
+                ],
+                "Type": "zmq_ipc",
+                "zmq_recv_hwm": 1000
             }
         ],
         "Publishers": [

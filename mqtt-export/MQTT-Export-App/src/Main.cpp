@@ -500,7 +500,7 @@ void postMsgstoMQTT()
 	std::vector<std::string> vFullTopics;
 	bool tempRet = zmq_handler::returnAllTopics("sub", vFullTopics);
 	if(tempRet == false) {
-		return -1;
+		return;
 	} 
 
 	for (auto &topic : vFullTopics)

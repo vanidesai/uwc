@@ -39,7 +39,7 @@ The directory comprises of following:
 ```
 1. After having successfully repo-synched the uwc.xml recipe from eis-manifest repo
 Generate the consolidated docker-compose.yml & eis_config.json using the eis_builder utility from the eis-core repo. Can either use "build/uwc-pipeline-without-scada.yml" , "build/uwc-pipeline-with-scada.yml", "build/uwc-pipeline-modbus-TCP-only.yml" or "build/uwc-pipeline-modbus-RTU-only.yml" with eis-builder based on the services needed for use case.
-2. Run "sudo sh pre_req.sh" from builds directory. This creates necessary directories in/opt/intel/eis/ for log files storage & also copies UWC YAML configuration files. 
+2. Run "sudo sh pre_req.sh" from uwc directory. This creates necessary directories in/opt/intel/eis/ for log files storage & also copies UWC YAML configuration files. 
 3. cd to "<working-dir>/IEdgeInsights/build" & then open .env. 
 4. Update the key "DEV_MODE=true/false" based on the intended mode of running the services in either DEVELOPMENT (DEV_MODE=true) or PRODUCTION MODE (DEV_MODE=false).
 5. Update the key "MQTT_PROTOCOL=tcp/ssl" based on the intended mode of running the services in either DEVELOPMENT (MQTT_PROTOCOL=tcp) or PRODUCTION MODE (MQTT_PROTOCOL=ssl).

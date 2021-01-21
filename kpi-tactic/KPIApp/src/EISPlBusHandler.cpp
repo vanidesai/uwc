@@ -14,6 +14,7 @@
 #include "EnvironmentVarHandler.hpp"
 #include "Logger.hpp"
 #include "Common.hpp"
+#include "ZmqHandler.hpp"
 
 // patterns to be used to find on-demand topic strings
 // topic syntax -
@@ -34,46 +35,40 @@ extern std::atomic<bool> g_stopThread;
 bool CEISPlBusHandler::initEISContext()
 {
 	bool retVal = true;
+	// Initializing all the pub/sub topic base context for ZMQ
+	int num_of_publishers = zmq_handler::getNumPubOrSub("pub");
 	try
 	{
-		// Initializing all the pub/sub topic base context for ZMQ
-		const char* env_pubTopics = std::getenv("PubTopics");
-		if (env_pubTopics != NULL)
+		if (num_of_publishers >= 1)
 		{
-			DO_LOG_DEBUG("List of topic configured for Pub are :: "+ (std::string)(env_pubTopics));
 			if (true != zmq_handler::prepareCommonContext("pub"))
 			{
-				DO_LOG_ERROR("Context creation failed for sub topic ");
-				std::cout << __func__ << ":" << __LINE__ << " Error : Context creation failed for sub topic" <<  std::endl;
+				DO_LOG_ERROR("Context creation failed for pub topic ");
+				std::cout << __func__ << ":" << __LINE__ << " Error : Context creation failed for pub topic" <<  std::endl;
 				retVal = false;
 			}
 		}
 		else
 		{
-			DO_LOG_ERROR("could not find PubTopics in environment variables");
-			std::cout << __func__ << ":" << __LINE__ << " Error : could not find PubTopics in environment variables" <<  std::endl;
+			DO_LOG_ERROR("could not find any Publishers in publisher Configuration");
+			std::cout << __func__ << ":" << __LINE__ << " Error : could not find any Publishers in publisher Configuration" <<  std::endl;
 			retVal = false;
 		}
 
-		const char* env_subTopics = std::getenv("SubTopics");
-		if(env_subTopics != NULL)
+		int num_of_subscribers = zmq_handler::getNumPubOrSub("sub");
+		if(num_of_subscribers >= 1)
 		{
-			DO_LOG_DEBUG("List of topic configured for Sub are :: "+ (std::string)(env_subTopics));
 			if (true != zmq_handler::prepareCommonContext("sub"))
 			{
 				DO_LOG_ERROR("Context creation failed for sub topic");
 				std::cout << __func__ << ":" << __LINE__ << " Error : Context creation failed for sub topic" <<  std::endl;
 				retVal = false;
 			}
-			else
-			{
-				CcommonEnvManager::Instance().splitString(static_cast<std::string>(env_subTopics),',');
-			}
 		}
 		else
 		{
-			DO_LOG_ERROR("could not find SubTopics in environment variables");
-			std::cout << __func__ << ":" << __LINE__ << " Error : could not find SubTopics in environment variables" <<  std::endl;
+			DO_LOG_ERROR("could not find any subscribers in subscriber Configuration");
+			std::cout << __func__ << ":" << __LINE__ << " Error : could not find any subscribers in subscriber Configuration" <<  std::endl;
 			retVal = false;
 		}
 	}
@@ -357,7 +352,11 @@ void CEISPlBusHandler::configEISListerners(bool a_bIsPollingRT, bool a_bIsWrOpRT
 	try
 	{
 		// get sub topic list
-		std::vector<std::string> vFullTopics = CcommonEnvManager::Instance().getTopicList();
+		std::vector<std::string> vFullTopics;
+		bool tempRet = zmq_handler::returnAllTopics("sub", vFullTopics);
+		if(tempRet == false) {
+			throw "returnAllTopics failed";
+		}
 		std::string sPollPattern{POLLING_RT}, sWrOpPattern{WRITE_RESPONSE_RT};
 
 		if(false == a_bIsPollingRT)
