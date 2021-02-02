@@ -37,21 +37,29 @@ TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_EmptyVector)
 	EXPECT_EQ(true, result);
 }
 
+/**
+ * Test case to check if prepareCJSONMsg() behaves as expected
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_dataIn_Vector)
+{
+	stRefActionVec1.push_back(stDummyAction);
+	bool result = CIntMqttHandler::instance().prepareCJSONMsg(stRefActionVec1);
+	EXPECT_EQ(false, result);
+}
 
+/**
+ * Test case to check if prepareWriteMsg() behaves as expected
+ * @param :[in] None
+ * @param :[out] None
+ * @return: bool
+ */
 TEST_F(InternalMQTTSubscriber_ut, writeRequest)
 {
-	/*std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev;
+	std::reference_wrapper<CSparkPlugDev>  *a_refSparkPlugDev;
 	metricMap_t m_mapChangedMetrics;
-	bool result = CIntMqttHandler.instance().prepareWriteMsg(a_refSparkPlugDev, m_mapChangedMetrics);*/
-
-	/*bool result;
-	for (auto &itr : stRefActionVec)
-	{
-		metricMap_t m_metrics = itr.m_mapChangedMetrics;
-		result = CIntMqttHandler::instance().prepareWriteMsg(itr.m_refSparkPlugDev, itr.m_mapChangedMetrics);
-	}*/
-	/*std::cout<<"########################################"<<std::endl;
-		std::cout<<result<<std::endl;
-		std::cout<<"########################################"<<std::endl;*/
-
+	bool result = CIntMqttHandler::instance().prepareWriteMsg(*a_refSparkPlugDev, m_mapChangedMetrics);
 }
+

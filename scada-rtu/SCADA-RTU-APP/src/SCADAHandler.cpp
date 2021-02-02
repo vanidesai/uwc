@@ -513,6 +513,8 @@ void CSCADAHandler::publish_node_birth()
 
 		add_simple_metric(&nbirth_payload, "bdSeq", false, 0, METRIC_DATA_TYPE_UINT64, false, false,
 				&m_uiBDSeq, sizeof(m_uiBDSeq));
+		
+		addModbusTemplateDefToNbirth(nbirth_payload);
 
 		std::cout << "Publishing nbirth message ..." << std::endl;
 		publishSparkplugMsg(nbirth_payload, CCommon::getInstance().getNBirthTopic(), true);
@@ -632,32 +634,12 @@ bool CSCADAHandler::publishMsgDDATA(const stRefForSparkPlugAction& a_stRefAction
 
 		string strMsgTopic = CCommon::getInstance().getDDataTopic() + "/" + strDeviceName;
 
-		//these shall be part of a single sparkplug msg
-		for (auto &itrMetric : a_stRefAction.m_mapChangedMetrics)
+		if(true == a_stRefAction.m_refSparkPlugDev.get().prepareDdataMsg(sparkplug_payload, a_stRefAction.m_mapChangedMetrics))
 		{
-			uint64_t timestamp = itrMetric.second.getTimestamp();
-			string strMetricName = itrMetric.second.getName();
-
-			org_eclipse_tahu_protobuf_Payload_Metric metric =
-				{ NULL, false, 0, true, timestamp, true,
-				(const_cast<CMetric&>(itrMetric.second)).getValue().getDataType(), false, 0, false, 0, false,
-				true, false, org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
-				false,	org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
-				0, { 0 } };
-
-			if(false == (const_cast<CMetric&>(itrMetric.second)).addMetricNameValue(metric))
-			{
-				DO_LOG_ERROR(itrMetric.second.getName() + ":Failed to add metric name and value");
-			}
-			else
-			{
-				add_metric_to_payload(&sparkplug_payload, &metric);
-			}
-		}//metric ends
-
-		//publish sparkplug message
-		publishSparkplugMsg(sparkplug_payload, strMsgTopic);
-		a_stRefAction.m_refSparkPlugDev.get().setPublishedStatus(enDEVSTATUS_UP);
+			//publish sparkplug message
+			publishSparkplugMsg(sparkplug_payload, strMsgTopic);
+			a_stRefAction.m_refSparkPlugDev.get().setPublishedStatus(enDEVSTATUS_UP);
+		}
 	}
 	catch(std::exception &ex)
 	{
@@ -829,3 +811,139 @@ bool CSCADAHandler::processDCMDMsg(CMessageObject a_msg, std::vector<stRefForSpa
 	return bRet;
 }
 
+/**
+ * Prepares a sparkplug formatted metric for Modbus device
+ * @param a_rMetric :[out] sparkplug metric
+ * @param a_sName :[in] sparkplug metric name
+ * @param a_sValue :[in] sparkplug metric value
+ * @param a_bIsBirth :[in] indicates whether it is a birth message
+ * @param a_uiPollFreq :[in] poll interval
+ * @param a_bIsRealTime :[in] tells whether it is a RT message
+ * @return true/false
+ */
+bool CSCADAHandler::addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric &a_rMetric, const std::string &a_sName, 
+		const std::string a_sValue, bool a_bIsBirth, uint32_t a_uiPollInterval, bool a_bIsRealTime)
+{
+	try
+	{
+		a_rMetric = org_eclipse_tahu_protobuf_Payload_Metric_init_default;
+		init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, a_sValue.c_str(), a_sValue.length());
+		
+		if(a_bIsBirth)
+		{
+			org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
+			add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, &a_uiPollInterval, sizeof(a_uiPollInterval));
+			add_property_to_set(&prop, "Realtime", PROPERTY_DATA_TYPE_BOOLEAN, &a_bIsRealTime, sizeof(a_bIsRealTime));
+
+			add_propertyset_to_metric(&a_rMetric, &prop);
+		}
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		return false;
+	}
+	
+	return true;
+}
+
+/**
+ * Prepares a sparkplug formatted metric for Modbus device
+ * @param a_rUdt :[out] sparkplug template UDT
+ * @param a_sProtocolVal :[in] protocol value
+ * @return true/false
+ */
+bool CSCADAHandler::addModbusPropForBirth(org_eclipse_tahu_protobuf_Payload_Template &a_rUdt, 
+		const std::string &a_sProtocolVal)
+{
+	try
+	{
+		a_rUdt.parameters_count = 1;
+		a_rUdt.parameters = (org_eclipse_tahu_protobuf_Payload_Template_Parameter *) calloc(1, sizeof(org_eclipse_tahu_protobuf_Payload_Template_Parameter));
+		if(NULL != a_rUdt.parameters)
+		{
+			a_rUdt.parameters[0].has_type = true;
+			a_rUdt.parameters[0].type = PARAMETER_DATA_TYPE_STRING;
+			a_rUdt.parameters[0].which_value = org_eclipse_tahu_protobuf_Payload_Template_Parameter_string_value_tag;
+			a_rUdt.parameters[0].name = strdup("Protocol");
+			a_rUdt.parameters[0].value.string_value = strndup(a_sProtocolVal.c_str(), a_sProtocolVal.length());
+		}
+		else
+		{
+			a_rUdt.parameters_count = 0;
+		}
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		return false;
+	}
+	
+	return true;
+}
+
+/**
+ * Prepare device birth messages to be published on SCADA system
+ * @param a_rTahuPayload :[out] reference of spark plug message payload in which to store birth messages
+ * @return true/false depending on the success/failure
+ */
+bool CSCADAHandler::addModbusTemplateDefToNbirth(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload)
+{
+	try
+	{
+		auto listYML = network_info::getDataPointsYMLList();
+		for (auto& itr : listYML)
+		{
+			org_eclipse_tahu_protobuf_Payload_Template udt_template = org_eclipse_tahu_protobuf_Payload_Template_init_default;
+			udt_template.version = strndup(itr.second.getVersion().c_str(), itr.second.getVersion().length());
+			udt_template.metrics_count = itr.second.getDataPoints().size();
+			udt_template.metrics = (org_eclipse_tahu_protobuf_Payload_Metric *) calloc(itr.second.getDataPoints().size(), sizeof(org_eclipse_tahu_protobuf_Payload_Metric));
+			udt_template.template_ref = NULL;
+			udt_template.has_is_definition = true;
+			udt_template.is_definition = true;
+			int iLoop = 0;
+
+			if(udt_template.metrics != NULL)
+			{
+				for(auto &itrPoint: itr.second.getDataPoints())
+				{
+					if(true != addModbusMetric(udt_template.metrics[iLoop], itrPoint.getID(), "", true, 0, false))
+					{
+						DO_LOG_ERROR(itrPoint.getID() + ":Could not add metric to template definition.");
+					}
+					udt_template.metrics[iLoop].timestamp = get_current_timestamp();
+					udt_template.metrics[iLoop].has_timestamp = true;
+					++iLoop;
+				}
+			}
+
+			// YML file name example - iou_datapoints.yml
+			std::string sYMLFilename{itr.second.getYMLFileName()};
+			{
+				std::size_t found = itr.second.getYMLFileName().rfind(".");
+				if(found!=std::string::npos)
+				{
+					sYMLFilename.assign( itr.second.getYMLFileName().substr(0, found) );
+				}
+			}
+
+			// Add protocl property
+			addModbusPropForBirth(udt_template, "");
+
+			// Create the root UDT definition and add the UDT definition value which includes the UDT members and parameters
+			org_eclipse_tahu_protobuf_Payload_Metric metric = org_eclipse_tahu_protobuf_Payload_Metric_init_default;
+			init_metric(&metric, sYMLFilename.c_str(), false, 0, METRIC_DATA_TYPE_TEMPLATE, false, false, &udt_template, sizeof(udt_template));
+			metric.timestamp = get_current_timestamp();
+			metric.has_timestamp = true;
+
+			// Add the UDT to the payload
+			add_metric_to_payload(&a_rTahuPayload, &metric);
+		}
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		return false;
+	}
+	return true;
+}

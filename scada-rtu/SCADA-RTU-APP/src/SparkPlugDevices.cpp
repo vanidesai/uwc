@@ -9,6 +9,7 @@
  ************************************************************************************/
 #include <string.h>
 #include "SparkPlugDevices.hpp"
+#include "SCADAHandler.hpp"
 
 #include <ctime>
 
@@ -204,6 +205,94 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
 /**
  * Prepare device birth messages to be published on SCADA system
  * @param a_rTahuPayload :[out] reference of spark plug message payload in which to store birth messages
+ * @param a_mapMetrics: [in] list of metrics to be added in message
+ * @param a_bIsBirth: [in] indicates whether DBIRTH is needed as a part of NBIRTH process
+ * @return true/false depending on the success/failure
+ */
+bool CSparkPlugDev::prepareModbusMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, 
+		const metricMap_t &a_mapMetrics, bool a_bIsBirth)
+{
+	try
+	{
+		// Check if it is Modbus device to process data
+		if (true != std::holds_alternative<std::reference_wrapper<const network_info::CUniqueDataDevice>>(m_rDirectDevRef))
+		{
+			return false;
+		}
+		
+		auto &orUniqueDev = std::get<std::reference_wrapper<const network_info::CUniqueDataDevice>>(m_rDirectDevRef);
+		auto &rDev = orUniqueDev.get().getWellSiteDev().getDevInfo();
+		
+		org_eclipse_tahu_protobuf_Payload_Template udt_template = org_eclipse_tahu_protobuf_Payload_Template_init_default;
+		udt_template.version = strndup(rDev.getDataPointsRef().getVersion().c_str(), rDev.getDataPointsRef().getVersion().length());
+		udt_template.metrics_count = a_mapMetrics.size();
+		udt_template.metrics = (org_eclipse_tahu_protobuf_Payload_Metric *) calloc(a_mapMetrics.size(), sizeof(org_eclipse_tahu_protobuf_Payload_Metric));
+		std::string sYMLFilename{rDev.getDataPointsRef().getYMLFileName()};
+		{
+			std::size_t found = rDev.getDataPointsRef().getYMLFileName().rfind(".");
+			if(found!=std::string::npos)
+			{
+				sYMLFilename.assign( rDev.getDataPointsRef().getYMLFileName().substr(0, found) );
+			}
+		}
+		udt_template.template_ref = strndup(sYMLFilename.c_str(), sYMLFilename.length());
+		udt_template.has_is_definition = true;
+		udt_template.is_definition = false;
+		int iLoop = 0;
+
+		if(udt_template.metrics != NULL)
+		{
+			for(auto &itr: a_mapMetrics)
+			{
+				if(true != const_cast<CMetric&>(itr.second).addModbusMetric(udt_template.metrics[iLoop], a_bIsBirth))
+				{
+					DO_LOG_ERROR(itr.second.getSparkPlugName() + ":Could not add metric to device. Trying to add other metrics.");
+				}
+				udt_template.metrics[iLoop].timestamp = itr.second.getTimestamp();
+				udt_template.metrics[iLoop].has_timestamp = true;
+				++iLoop;
+			}
+		}
+		if(true == a_bIsBirth)
+		{
+			std::string sProtocol{""};
+			switch(orUniqueDev.get().getWellSiteDev().getAddressInfo().m_NwType)
+			{
+				case network_info::eNetworkType::eTCP:
+				sProtocol.assign("Modbus TCP");				
+				break;
+
+				case network_info::eNetworkType::eRTU:
+				sProtocol.assign("Modbus RTU");
+				break;
+
+				default:
+				break;
+			}
+
+			CSCADAHandler::instance().addModbusPropForBirth(udt_template, sProtocol);
+		}
+
+		// Create the root UDT definition and add the UDT definition value which includes the UDT members and parameters
+		org_eclipse_tahu_protobuf_Payload_Metric metric = org_eclipse_tahu_protobuf_Payload_Metric_init_default;
+		init_metric(&metric, orUniqueDev.get().getWellSiteDev().getID().c_str(), false, 0, METRIC_DATA_TYPE_TEMPLATE, false, false, &udt_template, sizeof(udt_template));
+		metric.timestamp = get_current_timestamp();
+		metric.has_timestamp = true;
+
+		// Add the UDT to the payload
+		add_metric_to_payload(&a_rTahuPayload, &metric);
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Prepare device birth messages to be published on SCADA system
+ * @param a_rTahuPayload :[out] reference of spark plug message payload in which to store birth messages
  * @param a_bIsNBIRTHProcess: [in] indicates whether DBIRTH is needed as a part of NBIRTH process
  * @return true/false depending on the success/failure
  */
@@ -233,6 +322,12 @@ bool CSparkPlugDev::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 				return false;
 			}
 		}
+		if (true == std::holds_alternative<std::reference_wrapper<const network_info::CUniqueDataDevice>>(m_rDirectDevRef))
+		{
+			// For Modbus device
+			prepareModbusMessage(a_rTahuPayload, m_mapMetrics, true);
+		}
+		else // For vendor app 
 		{
 			for(auto &itr: m_mapMetrics)
 			{
@@ -263,73 +358,6 @@ bool CSparkPlugDev::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 					DO_LOG_ERROR(itr.second.getSparkPlugName() + ":Could not add metric to device. Trying to add other metrics.");
 				}
 			}
-		}
-		if (true == std::holds_alternative<std::reference_wrapper<const network_info::CUniqueDataDevice>>(m_rDirectDevRef))
-		{
-			auto &orUniqueDev = std::get<std::reference_wrapper<const network_info::CUniqueDataDevice>>(m_rDirectDevRef);
-			std::string sSiteName{orUniqueDev.get().getWellSite().getID()};
-			add_simple_metric(&a_rTahuPayload, "Properties/Site info name", false, 0,
-				METRIC_DATA_TYPE_STRING, false, false, sSiteName.c_str(), sSiteName.size()+1);
-			
-			// Add device connection information 
-			auto &oWellSiteDev = orUniqueDev.get().getWellSiteDev();
-			uint64_t current_time = get_current_timestamp();
-
-			// org_eclipse_tahu_protobuf_Payload_Metric : Fields
-			// char *name: NULL, 
-			// bool has_alias: false, uint64_t alias: 0
-			// bool has_timestamp: true, uint64_t timestamp: current_time
-			// bool has_datatype: true, uint32_t datatype: METRIC_DATA_TYPE_UINT16
-			// bool has_is_historical: false, bool is_historical: 0
-			// bool has_is_transient: false, bool is_transient: 0
-			// bool has_is_null: true, bool is_null: false
-			// bool has_metadata: false, org_eclipse_tahu_protobuf_Payload_MetaData metadata: default
-			// bool has_properties: false, org_eclipse_tahu_protobuf_Payload_PropertySet properties: default
-			// pb_size_t which_value: 0, value: {0}
-			org_eclipse_tahu_protobuf_Payload_Metric metric = {NULL, false, 0, true, current_time , true,
-				METRIC_DATA_TYPE_UINT16, false, 0, false, 0, false, true, false,
-				org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
-				false, org_eclipse_tahu_protobuf_Payload_PropertySet_init_default, 0, {0}};
-			metric.name = strdup("Properties/Dev-ID");
-			metric.which_value = org_eclipse_tahu_protobuf_Payload_Metric_int_value_tag;
-			if(network_info::eNetworkType::eTCP == oWellSiteDev.getAddressInfo().m_NwType)
-			{
-				metric.value.int_value = oWellSiteDev.getAddressInfo().m_stTCP.m_uiUnitID;
-
-				org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
-				std::string sProtocol{"Modbus TCP"};
-				add_property_to_set(&prop, "protocol", PROPERTY_DATA_TYPE_STRING, sProtocol.c_str(), sProtocol.length());
-
-				const std::string sIPAddr{oWellSiteDev.getAddressInfo().m_stTCP.m_sIPAddress};
-				add_property_to_set(&prop, "ipaddress", PROPERTY_DATA_TYPE_STRING, sIPAddr.c_str(), sIPAddr.length());
-
-				auto uiPort = oWellSiteDev.getAddressInfo().m_stTCP.m_ui16PortNumber;
-				add_property_to_set(&prop, "port", PROPERTY_DATA_TYPE_UINT16, &uiPort, sizeof(uiPort));
-
-				add_propertyset_to_metric(&metric, &prop);
-			}
-			else if(network_info::eNetworkType::eRTU == oWellSiteDev.getAddressInfo().m_NwType)
-			{
-				metric.value.int_value = oWellSiteDev.getAddressInfo().m_stRTU.m_uiSlaveId;
-				auto &oInfoRTU = oWellSiteDev.getRTUNwInfo();
-
-				org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
-				std::string sProtocol{"Modbus RTU"};
-				add_property_to_set(&prop, "protocol", PROPERTY_DATA_TYPE_STRING, sProtocol.c_str(), sProtocol.length());
-
-				const std::string sPort{oInfoRTU.getPortName()};
-				add_property_to_set(&prop, "com_port_name", PROPERTY_DATA_TYPE_STRING, sPort.c_str(), sPort.length());
-
-				const std::string sParity{oInfoRTU.getParity()};
-				add_property_to_set(&prop, "parity", PROPERTY_DATA_TYPE_STRING, sParity.c_str(), sParity.length());
-
-				auto iBaudRate = oInfoRTU.getBaudRate();
-				add_property_to_set(&prop, "baudrate", PROPERTY_DATA_TYPE_UINT32, &iBaudRate, sizeof(iBaudRate));
-
-				add_propertyset_to_metric(&metric, &prop);
-			}
-
-			add_metric_to_payload(&a_rTahuPayload, &metric);
 		}
 	}
 	catch(std::exception &ex)
@@ -841,5 +869,57 @@ bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMap_t& m_metrics, cJSON *m
 		bRet = false;
 	}
 
+	return bRet;
+}
+
+/**
+ * Prepare and publish a DDATA message in sparkplug format for a device 
+ * @param a_payload :[out] sparkplug payload being created
+ * @param a_mapChangedMetrics :[in] changed metrics for which ddata message to be created
+ * @return true/false based on success/failure
+ */
+bool CSparkPlugDev::prepareDdataMsg(org_eclipse_tahu_protobuf_Payload &a_payload, const metricMap_t &a_mapChangedMetrics)
+{
+	bool bRet = false;
+
+	try
+	{
+
+		if (true == std::holds_alternative<std::reference_wrapper<const network_info::CUniqueDataDevice>>(m_rDirectDevRef))
+		{
+			// For Modbus device
+			bRet = prepareModbusMessage(a_payload, a_mapChangedMetrics, false);
+		}
+		else // For vendor app 
+		{
+			for(auto &itrMetric: a_mapChangedMetrics)
+			{
+				uint64_t timestamp = itrMetric.second.getTimestamp();
+				string strMetricName = itrMetric.second.getName();
+
+				org_eclipse_tahu_protobuf_Payload_Metric metric =
+					{ NULL, false, 0, true, timestamp, true,
+					(const_cast<CMetric&>(itrMetric.second)).getValue().getDataType(), false, 0, false, 0, false,
+					true, false, org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+					false,	org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+					0, { 0 } };
+
+				if(false == (const_cast<CMetric&>(itrMetric.second)).addMetricNameValue(metric))
+				{
+					DO_LOG_ERROR(itrMetric.second.getName() + ":Failed to add metric name and value");
+				}
+				else
+				{
+					add_metric_to_payload(&a_payload, &metric);
+					bRet = true;
+				}
+			}
+		}
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		return false;
+	}
 	return bRet;
 }

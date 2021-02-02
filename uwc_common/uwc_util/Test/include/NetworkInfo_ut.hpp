@@ -27,9 +27,13 @@ public:
 	bool Bool_Res = false;
 	int Int_Res = 111;
 	network_info::CDataPoint CDataPoint_obj;
-	network_info::CDeviceInfo CDeviceInfo_obj;
 
-	network_info::CWellSiteDevInfo CWellSiteDevInfo_obj;
+	std::string YmlFile = "flowmeter_datapoints.yml";
+	std::string DevName = "Device";
+	network_info::CDataPointsYML CDataPointsYML_obj{YmlFile};
+	network_info::CDeviceInfo CDeviceInfo_obj{YmlFile, DevName, CDataPointsYML_obj};
+
+	network_info::CWellSiteDevInfo CWellSiteDevInfo_obj{CDeviceInfo_obj};
 	network_info::CWellSiteInfo CWellSiteInfo_obj;
 
 	/*YAML::Node a_oData = CommonUtils::loadYamlFile("Device_group1.yml");

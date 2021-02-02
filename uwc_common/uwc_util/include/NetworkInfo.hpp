@@ -82,17 +82,40 @@ namespace network_info
 		static void build(const YAML::Node& a_oData, CDataPoint &a_oCDataPoint, bool a_bDefaultRealTime);
 	};
 	
-	/** class holds data for device information*/
-	class CDeviceInfo
+	/** class holds data for data points from YML file*/
+	class CDataPointsYML
 	{
-		std::string m_sName; /** Name*/
+		std::string m_sYMLName; /** YML file name*/
+		std::string m_sVersion; /** YML file version*/
 		std::vector<CDataPoint> m_DataPointList; /** vector for data pont list*/
 		
 		public:
-		int addDataPoint(CDataPoint a_oDataPoint); 
+		CDataPointsYML(const std::string &a_sYMLName)
+		: m_sYMLName{a_sYMLName}, m_sVersion{}, m_DataPointList{}
+		{};
+		
+		int addDataPoint(CDataPoint &a_oDataPoint); 
 		const std::vector<CDataPoint>& getDataPoints() const {return m_DataPointList;}
-
-		static void build(const YAML::Node& a_oData, CDeviceInfo &a_oWellSiteDevInfo);
+		const std::string& getYMLFileName() const {return m_sYMLName;}; 
+		void setVersion(const std::string&a_sVersion) {m_sVersion.assign(a_sVersion);};
+		const std::string& getVersion() const {return m_sVersion;};
+	};
+	
+	/** class holds data for device information*/
+	class CDeviceInfo
+	{
+		std::string m_sYMLName; /** YML file name*/
+		std::string m_sDevName; /** Name*/
+		CDataPointsYML &m_rDataPointsYML; /** vector for data pont list*/
+		
+		public:
+		CDeviceInfo(const std::string &a_sYMLName, const std::string& a_sDevName, CDataPointsYML &a_rDataPointsYML)
+		: m_sYMLName{a_sYMLName}, m_sDevName{a_sDevName}, m_rDataPointsYML{a_rDataPointsYML}
+		{}
+		const std::vector<CDataPoint>& getDataPoints() const {return m_rDataPointsYML.getDataPoints();}
+		const std::string& getYMLFileName() const {return m_sYMLName;};
+		const std::string& getDevName() const {return m_sYMLName;};
+		const CDataPointsYML& getDataPointsRef() const {return m_rDataPointsYML;};
 	};
 	
 	/** structure for TCP address information*/
@@ -188,16 +211,18 @@ namespace network_info
 		std::string m_sId; /** site ID value*/
 		struct stModbusAddrInfo m_stAddress; /** reference of struct stModbusAddrInfo*/
 		struct stTCPMasterInfo m_stTCPMasterInfo; /** reference of struct stTCPMasterInfo*/
-		class CDeviceInfo m_oDev; /** object of class CDeviceInfo*/
+		const CDeviceInfo &m_rDev; /** object of class CDeviceInfo*/
 		class CRTUNetworkInfo m_rtuNwInfo; /** object of class CRTUNetworkInfo*/
 		
-		struct CDeviceInfo& getDevInfo1() {return m_oDev;}
-
 		public:
+		CWellSiteDevInfo(CDeviceInfo &a_rDev)
+		: m_iCtx{-1}, m_sId{""}, m_stAddress{}, m_stTCPMasterInfo{}, m_rDev{a_rDev}, m_rtuNwInfo{}
+		{}
+		
 		std::string getID() const {return m_sId;}
 
 		const struct stModbusAddrInfo& getAddressInfo() const {return m_stAddress;}
-		const struct CDeviceInfo& getDevInfo() const {return m_oDev;}
+		const CDeviceInfo& getDevInfo() const {return m_rDev;}
 
 		const CRTUNetworkInfo& getRTUNwInfo() const {return m_rtuNwInfo;}
 		const int32_t getCtxInfo() const {return m_iCtx;}
@@ -296,6 +321,11 @@ namespace network_info
 	 * @return map of unique device
 	 */
 	const std::map<std::string, CUniqueDataDevice>& getUniqueDeviceList();
+	/**
+	 * Get data points YML file listing objects
+	 * @return map of data points YML file listing objects
+	 */
+	const std::map<std::string, CDataPointsYML>& getDataPointsYMLList();
 
 	bool validateIpAddress(const string &ipAddress);
 	/** Returns true if s is a number else false */

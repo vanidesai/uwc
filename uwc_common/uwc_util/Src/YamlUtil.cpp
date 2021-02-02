@@ -14,15 +14,15 @@
 
 namespace CommonUtils {
 
-/** This function is use to load YAML file from local files
+/** This function is used to load YAML file from local files
  *
- * @filename : This variable is use to pass actual filename to load
- * @return: YAML node
+ * @param filename : This variable is use to pass actual filename to load
+ * @return : YAML node
  */
 YAML::Node loadYamlFile(const std::string& filename)
 {
 	std::string sBasePath{BASE_PATH_YAML_FILE};
-	string sfileToRead = sBasePath + filename;
+	std::string sfileToRead = sBasePath + filename;
 
 	std::cout << "YAML file to be read is :: " + sfileToRead << std::endl;
 	DO_LOG_DEBUG("YAML file to be read is :: " + sfileToRead);
@@ -32,11 +32,11 @@ YAML::Node loadYamlFile(const std::string& filename)
 	return baseNode;
 }
 
-/** This function is use to store YAML to list
+/** This function is used to store YAML data from a node to a string list
  *
- * @filename : This variable is use to pass actual filename to load
- * @vlist : variable to store values from YAML
- * @return: true/false based on success or error
+ * @param node : [in] YML node
+ * @param a_slist : [out] string list
+ * @return : true/false based on success or error
  */
 bool convertYamlToList(YAML::Node &node, std::vector<std::string>& a_slist)
 {
@@ -73,13 +73,13 @@ bool convertYamlToList(YAML::Node &node, std::vector<std::string>& a_slist)
 	return bRetVal;
 }
 
-/** This function is convert string to char array
+/** This function converts IP string to char array
  *
- * @srcString : string to convert
- * @ptrIpAddr : char array to store tokenize key
- * @return: Nothing
+ * @param strIPaddr : IP string to convert
+ * @param ptrIpAddr : char array to store tokenize key
+ * @return : Nothing
  */
-void ConvertIPStringToCharArray(string strIPaddr, unsigned char *ptrIpAddr)
+void ConvertIPStringToCharArray(std::string strIPaddr, unsigned char *ptrIpAddr)
 {
 	std::string delimiter = ".";
 	size_t pos = 0;
@@ -94,7 +94,13 @@ void ConvertIPStringToCharArray(string strIPaddr, unsigned char *ptrIpAddr)
 	ptrIpAddr[i8Index] = (uint8_t)std::stoi(strIPaddr.substr(0,pos).c_str());
 }
 
-bool readEnvVariable(const char *pEnvVarName, string &storeVal)
+/**
+ * Reads environment variable and stores its value in givenn parameter
+ * @param pEnvVarName:[in] Environment variable name
+ * @param storeVal:[out] String to store value of environment variable
+ * @return true on successfule reading, false otherwise
+ */
+bool readEnvVariable(const char *pEnvVarName, std::string &storeVal)
 {
 	if(NULL == pEnvVarName)
 	{

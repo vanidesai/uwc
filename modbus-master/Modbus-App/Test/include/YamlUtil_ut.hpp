@@ -25,7 +25,7 @@ protected:
 public:
 	uint8_t	Arr[3];
 	uint8_t	ExpectedArr[3] = {129, 130, 200};
-	string	Test_Str = "129.130.200";
+	std::string	Test_Str = "129.130.200";
 
 };
 

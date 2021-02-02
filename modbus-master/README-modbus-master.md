@@ -17,19 +17,19 @@ This is applicable for TCP as well as RTU.
 
 1. [Directory and file details](#All-internal-directory-file-details)
 
-2. [Compiling modbus sources on host machine](#Compiling-sources)
+2. [Pre-requisites](#Pre-requisites-Installation)
 
-3. [Pre-requisites](#Pre-requisites-Installation)
+3. [Steps to compile modbus-tcp-master](#Steps-to-compile-modbus-tcp-master)
 
-4. [Steps to compile modbus-tcp-master](#Steps-to-compile-modbus-tcp-master)
+4. [Steps to compile modbus-rtu-master](#Steps-to-compile-modbus-rtu-master)
 
-5. [Steps to compile modbus-rtu-master](#Steps-to-compile-modbus-rtu-master)
+5. [Steps to run modbus executable on machine](#Steps-to-run-modbus-executable-on-machine)
 
-6. [Steps to run modbus executable on machine](#Steps-to-run-modbus-executable-on-machine)
+6. [Steps to deploy sources inside container](#Steps-to-deploy-sources-inside-container)
 
-7. [Steps to deploy sources inside container](#Steps-to-deploy-sources-inside-container)
+7. [Steps to run unit test cases](#Steps-to-run-unit-testcases)
 
-8. [Steps to run unit test cases](#Steps-to-run-unit-testcases)
+8. [Steps to enable/disable instrumentation logs](#Steps-to-enable/disable-instrumentation-logs)
 
 
 # Directory and file details
@@ -48,6 +48,8 @@ Section to describe all directory contents and it's uses.
 	10. `.cproject` - Eclipse project configuration files
 	11. `.project` - Eclipse project configuration files
 	12. `sonar-project.properties` - This file is required for Softdel CICD process for sonar qube analysis
+	13. modbus_RTU: This folder is in parallel to Modbus-App & contains indivisual docker-compose & config files for modbus-RTU.
+	14. modbus-TCP: This folder is in parallel to Modbus-App & contains indivisual docker-compose & config files for modbus-RTU.
 
 2. SoftMod_Stack - This directory contains sources for Modbus Stack implementation for TCP and RTU 
 	1. `.settings` - Eclipse project configuration files
@@ -69,7 +71,7 @@ For compiling modbus container sources on machine without container, following p
 1. Install make and cmake 
 2. Install wget by using command "sudo apt-get install wget".
 3. Install Git by using command "sudo apt install git"
-4. Install all the EIS libraries on host from `EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\common\libs` directory. (Refer EIS README files to do the same)
+4. Install all the EIS libraries on host by running the shell script -- `sudo -E ./eis_libs_installer.sh`. Refre the README.md from  `IEdgeInsights\common\README.md` for details.
 5. Install log4cpp (version - 1.1.3, link - https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz) library under /usr/local/ directory.
 6. Install yaml-cpp library (branch - yaml-cpp-0.6.3, version - 0.6.3, link - https://github.com/jbeder/yaml-cpp.git) libraries on host under /usr/local/ directory.
 7. Install paho-cpp (branch develop https://github.com/eclipse/paho.mqtt.c.git) libraries on host under /usr/local/ directory.
@@ -101,13 +103,13 @@ Notes : Above instructions are specified to build the sources in "Release" mode.
 
 # Steps to run modbus executable on machine
 1. Deploy ia_etcd container with dev mode using following steps. 
-	1. Run `01_pre-requisites.sh --deployMode=IPC_DEV --withoutScada=yes` script
-	2. Add `network_mode: host` option in two containers present in EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\docker_setup\provision\dep\docker-compose-provision.yml file.
-	3. Run `02_provisionEIS.sh` script to deploy ia_etcd container
+	1. Run `preReq.sh` script as explained in the main uwc/README.md.
+	2. Add `network_mode: host` option in two containers present in IEdgeInsights\build\provision\dep\docker-compose-provision.yml file.
+	3. Run th eprovisioning command script to deploy ia_etcd container as explainedin main uwc/README/md.
 2. Go to `Sourcecode\modbus-master\Modbus-App\Release` directory and open bash terminal.
 3. Set EIS specific environment variables using below command.
-	`source <Complete Path of .env file present inside EdgeInsightsSoftware-v2.2-PV/IEdgeInsights/docker_setup directory>`
-	For example `source /home/user/SVN/Intel_UWC/trunk/Technical/Others/externals/EIS/EdgeInsightsSoftware-v2.2-PV/IEdgeInsights/docker_setup/.env`
+	`source <Complete Path of .env file present inside IEdgeInsights/build directory>`
+	For example `source /home/intel/uwc-releases/IEdgeInsights/build/.env`
 4. Export all other environment variables required for modbus container. Refer environment section from modbus-tcp-master service present inside docker-compose.yml file (E.g. `export AppName="TCP"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal) for modbus-tcp-master container and for RTU refer same section from modbus-rtu-master container 
 5. After successful compilation, run the application binary with following command,
 	`./ModbusMaster`
@@ -138,3 +140,10 @@ Kindly Refer UWC user guide for container deployments
 	3. After successful execution of step 2, unit test coverage report file `ModbusTCP_report.html/ModbusRTU_report.html` must be generated.
 5. Run unit test cases inside container
 	1. Kindly follow the steps mentioned in section `## Steps to run unit test cases` of file `README.md` in Sourcecode directory.
+
+#Steps to enable/disable instrumentation logs
+1. By default the instrumentation logs are enabled for debug mode & disabled for release mode. 
+2. Go to `Sourcecode\modbus-master\Modbus-App\Release\src` directory and open subdir.mk file.
+3. To enable the instrumentation logs, go to g++ command at line number 41 & add the option "-DINSTRUMENTATION_LOG".
+4. To disable the instrumentation logs,go to g++ command at line number 41 check & remove the option "-DINSTRUMENTATION_LOG" if found.
+

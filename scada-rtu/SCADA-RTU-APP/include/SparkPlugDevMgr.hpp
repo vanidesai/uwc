@@ -78,8 +78,6 @@ public:
 	bool processExternalMQTTMsg(std::string a_sTopic, org_eclipse_tahu_protobuf_Payload& a_payload,
 			std::vector<stRefForSparkPlugAction> &a_stRefAction);
 
-	void printRefActions(std::vector<stRefForSparkPlugAction> &a_stRefActionVec);
-
 	bool addRealDevices();
 
 	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, std::string a_sDevName, bool a_bIsNBIRTHProcess);

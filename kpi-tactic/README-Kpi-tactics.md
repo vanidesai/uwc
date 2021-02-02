@@ -47,8 +47,10 @@ Section to describe all directory contents and it's uses.
 	10. `.cproject` - Eclipse project configuration files
 	11. `.project` - Eclipse project configuration files
 	12. `sonar-project.properties` - This file is required for Softdel CICD process for sonar qube analysis
-3. `Dockerfile` - Dockerfile to build Kpi-tactic container.
-4. `Dockerfile_UT` - Dockerfile to build unit test container for Kpi-tactic sources testing.
+2. `Dockerfile` - Dockerfile to build Kpi-tactic container.
+3. `Dockerfile_UT` - Dockerfile to build unit test container for Kpi-tactic sources testing.
+4. docker-compose.yml -- Ingredient docker-compose.yml for KPI-tactic micro service.
+5. config.json - Ingredient config.json for KPI-tactic micro service.
 
 # Pre-requisites Installation
 
@@ -56,7 +58,7 @@ For compiling Kpi-tactics sources on machine without container, following pre-re
 1. Install make and cmake
 2. Install wget by using command "sudo apt-get install wget".
 3. Install Git by using command "sudo apt install git"
-4. Install all the EIS libraries on host from `EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\common\libs` directory. (Refer EIS README files to do the same)
+4. Install all the EIS libraries on host by running the shell script -- `sudo -E ./eis_libs_installer.sh`. Refre the README.md from  `IEdgeInsights\common\README.md` for details.
 5. Install log4cpp (version - 1.1.3, link - https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz) library under /usr/local/ directory.
 6. Install yaml-cpp (branch - yaml-cpp-0.6.3, version - 0.6.3, link - https://github.com/jbeder/yaml-cpp.git) libraries on host under /usr/local/ directory.
 7. Install paho-cpp (branch develop https://github.com/eclipse/paho.mqtt.c.git) libraries on host under /usr/local/ directory.
@@ -74,14 +76,14 @@ Notes : Above instructions are specified to build the sources in "Release" mode.
 
 # Steps to run kpi executable on machine
 1. Deploy ia_etcd container with dev mode using following steps. 
-	1. Run `01_pre-requisites.sh --deployMode=IPC_DEV` script
-	2. Add `network_mode: host` option in two containers present in EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\docker_setup\provision\dep\docker-compose-provision.yml file.
-	3. Run `02_provisionEIS.sh` script to deploy ia_etcd container
+	1. Run `preReq.sh` script as explained in the main uwc/README.md.
+	2. Add `network_mode: host` option in two containers present in IEdgeInsights\build\provision\dep\docker-compose-provision.yml file.
+	3. Run th eprovisioning command script to deploy ia_etcd container as explainedin main uwc/README/md.
 2. Go to `Sourcecode/kpi-tactic/KPIApp/Release` directory and open bash terminal.
 3. Set EIS specific environment variables using below command.
-	`source <Complete Path of .env file present inside EdgeInsightsSoftware-v2.2-PV/IEdgeInsights/docker_setup directory>`
-	For example `source /home/user/SVN/Intel_UWC/trunk/Technical/Others/externals/EIS/EdgeInsightsSoftware-v2.2-PV/IEdgeInsights/docker_setup/.env`
-4. Export all environment variables required for Kpi container. Refer environment section from kpi-tactic service present inside docker-compose_with_kpi.yml file (E.g. `export AppName="KPIAPP"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal).
+	`source <Complete Path of .env file present inside IEdgeInsights/build directory>`
+	For example `source /home/intel/IEdgeInsights/build/.env`
+4. Export all environment variables required for Kpi container. Refer environment section from kpi-tactic's docker-compose.yml file (E.g. `export AppName="KPIAPP"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal).
 5. After successful compilation, run the application binary with following command,
 	`./KPIApp-test`
 

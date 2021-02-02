@@ -79,6 +79,8 @@ class CSCADAHandler : public CMQTTBaseHandler
 
 	void defaultPayload(org_eclipse_tahu_protobuf_Payload& a_payload);
 
+	bool addModbusTemplateDefToNbirth(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload);
+
 public:
 	/** Destructor*/
 	~CSCADAHandler();
@@ -90,6 +92,12 @@ public:
 
 	void signalIntMQTTConnLostThread();
 	void signalIntMQTTConnEstablishThread();
+
+	bool addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric &a_rMetric, const std::string &a_sName, 
+		const std::string a_sValue, bool a_bIsBirth, uint32_t a_uiPollInterval, bool a_bIsRealTime);
+
+	bool addModbusPropForBirth(org_eclipse_tahu_protobuf_Payload_Template &a_rUdt, 
+		const std::string &a_sProtocolVal);
 };
 
 #endif

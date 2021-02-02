@@ -39,6 +39,7 @@ public:
 						{ 0 } };
 	std::vector<std::string> RetVec;
 	org_eclipse_tahu_protobuf_Payload dbirth_payload;
+	std::vector<stRefForSparkPlugAction> stRefActionVec;
 
 };
 

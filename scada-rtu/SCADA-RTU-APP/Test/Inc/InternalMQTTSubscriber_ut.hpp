@@ -28,6 +28,12 @@ public:
 	std::string			Test_Str = "";
 	std::string			Expected_output = "";
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
+	std::vector<stRefForSparkPlugAction> stRefActionVec1;
+	std::reference_wrapper<CSparkPlugDev> *a_ref;
+		eMsgAction a_enAction = enMSG_NONE;
+		metricMap_t m_mapChangedMetrics;
+
+	stRefForSparkPlugAction stDummyAction{*a_ref, a_enAction, m_mapChangedMetrics};
 
 };
 

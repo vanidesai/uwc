@@ -98,3 +98,61 @@ TEST_F(SparkPlugDevices_ut, processNewData_EmptyMetricList)
 	metricMap_t oMetricMap = CSparkPlugDev_obj.processNewData(a_MetricList);
 
 }
+
+/**
+ * Test case to check  function getCMDMsg() behaves as expected or not
+ * @param :[in] None
+ * @param :[out] None
+ * @return : bool
+ */
+TEST_F(SparkPlugDevices_ut, CMDmsg)
+{
+	std::string topic = "/flowmeter/PL0/Flow/read";
+	cJSON *metricArray = cJSON_CreateArray();
+	bool result = CSparkPlugDev_obj.getCMDMsg(topic, m_metrics, metricArray);
+	EXPECT_EQ(false, result);
+}
+
+/**
+ * Test case to check getWriteMsg() function's behavior
+ * @param :[in] None
+ * @param :[out] None
+ * @return: bool
+ */
+TEST_F(SparkPlugDevices_ut, WriteMsg)
+{
+	std::string topic = "/flowmeter/PL0/Flow/read";
+	cJSON *root = cJSON_CreateObject();
+	int appSeq = 123;
+	std::pair<const std::string,CMetric> *a_metric;
+	bool result = CSparkPlugDev_obj.getWriteMsg(topic, root, *a_metric, appSeq);
+	EXPECT_EQ(false, result);
+}
+
+/**
+ * Test case to check checkMetric() function's behavior
+ * @param :[in] None
+ * @param :[out] None
+ * @return: bool
+ */
+TEST_F(SparkPlugDevices_ut, MetricCheck)
+{
+	bool result = CSparkPlugDev_obj.checkMetric(SparkPlugmetric);
+	EXPECT_EQ(false, result);
+}
+
+/**
+ * Test case to check prepareDdataMsg() function's behavior with empty map
+ * @param :[in] None
+ * @param :[out] None
+ * @return: bool
+ */
+TEST_F(SparkPlugDevices_ut, dDataMsg)
+{
+	bool result = CSparkPlugDev_obj.prepareDdataMsg(dbirth_payload, m_metrics);
+	EXPECT_EQ(false, result);
+}
+
+
+
+

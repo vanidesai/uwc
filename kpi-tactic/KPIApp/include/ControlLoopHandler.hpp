@@ -150,6 +150,8 @@ struct stAnalysisMsg
 	stAnalysisMsg(const stAnalysisMsg &a_oMsg)
 	: m_stPollWrData{a_oMsg.m_stPollWrData}, m_msgWrResp{a_oMsg.m_msgWrResp}
 	{}
+
+	stAnalysisMsg& operator=(const stAnalysisMsg&) = default;	/** Copy assign*/
 };
 
 /** structure to hold reference data for write request to be sent*/
@@ -168,6 +170,8 @@ struct stWrOpInputData
 	stWrOpInputData(const stWrOpInputData &a_oWrOpIpData)
 	: m_sWrSeq{a_oWrOpIpData.m_sWrSeq}, m_pCtrlLoop{a_oWrOpIpData.m_pCtrlLoop}
 	{}
+
+	stWrOpInputData& operator=(const stWrOpInputData&) = default;	/** Copy assign*/
 };
 
 /** class for control loop mapping operations*/
@@ -225,6 +229,7 @@ private:
 public:
 	CPollNWriteReqMapper() : m_mapMutex{} {}; //default constructor
 	CPollNWriteReqMapper(const CPollNWriteReqMapper &a_oLoopMapper) : m_mapMutex{} {};
+	CPollNWriteReqMapper& operator=(const CPollNWriteReqMapper&) = delete;	/** Copy assign*/
 	bool insertForTracking(const std::string &a_sKey, struct stPollWrData &a_oData)
 	{
 		std::unique_lock<std::mutex> lck(m_mapMutex);

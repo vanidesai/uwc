@@ -25,7 +25,7 @@ vector<std::thread> g_vThreads;
 
 std::atomic<bool> g_shouldStop(false);
 
-#define APP_VERSION "0.0.6.4"
+#define APP_VERSION "0.0.6.6"
 
 /**
  * Processes a message to be sent on internal MQTT broker

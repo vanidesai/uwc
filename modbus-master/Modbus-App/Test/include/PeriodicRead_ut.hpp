@@ -57,8 +57,12 @@ public:
 	};
 	struct Some_Other_Str Some_Other_Str_obj;
 
+	std::string YmlFile = "flowmeter_datapoints.yml";
+	std::string DevName = "Device";
+	network_info::CDataPointsYML CDataPointsYML_obj{YmlFile};
+	network_info::CDeviceInfo CDeviceInfo_obj{YmlFile, DevName, CDataPointsYML_obj};
 	network_info::CWellSiteInfo	CWellSiteInfo_obj;
-	network_info::CWellSiteDevInfo CWellSiteDevInfo_obj;
+	network_info::CWellSiteDevInfo CWellSiteDevInfo_obj{CDeviceInfo_obj};
 	network_info::CDataPoint CDataPoint_obj;
 
 	string str1;

@@ -13,7 +13,6 @@
 #ifndef YAMLUTIL_H_
 #define YAMLUTIL_H_
 #include "yaml-cpp/yaml.h"  // IWYU pragma: keep
-#include "NetworkInfo.hpp"
 
 #define BASE_PATH_YAML_FILE "/opt/intel/eis/uwc_data/"
 

@@ -263,7 +263,7 @@ public:
 	}
 	
 	/** function gets object value*/
-	CValObj& getValue()
+	CValObj& getValue()  
 	{
 		return m_objVal;
 	}
@@ -301,6 +301,7 @@ public:
 
 	bool addMetricNameValue(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric);
 	bool addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric);
+	bool addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric, bool a_bIsBirth);
 };
 
 #endif

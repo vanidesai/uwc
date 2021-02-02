@@ -29,9 +29,16 @@ protected:
 public:
 	bool Bool_Res = false;
 
-	network_info::CWellSiteInfo			CWellSiteInfo_obj;
-		network_info::CWellSiteDevInfo		CWellSiteDevInfo_obj;
-		network_info::CDataPoint			CDataPoint_obj;
+
+	std::string YmlFile = "flowmeter_datapoints.yml";
+	std::string DevName = "Device";
+	network_info::CDataPointsYML CDataPointsYML_obj{YmlFile};
+	network_info::CDeviceInfo CDeviceInfo_obj{YmlFile, DevName, CDataPointsYML_obj};
+
+
+	network_info::CWellSiteInfo	CWellSiteInfo_obj;
+		network_info::CWellSiteDevInfo CWellSiteDevInfo_obj{CDeviceInfo_obj};
+		network_info::CDataPoint CDataPoint_obj;
 		uint8_t a_uiFuncCode;
 		uint32_t U32_code;
 		bool bRet = true;
@@ -41,13 +48,28 @@ public:
 		std::vector<stRefForSparkPlugAction> stRefActionVec;
 
 		org_eclipse_tahu_protobuf_Payload_Metric a_metric = { NULL, false, 0, true, get_current_timestamp(), true,
-								METRIC_DATA_TYPE_UNKNOWN, false, 0, false, 0, false,
-								true, false,
-					org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
-								false,
-										org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
-								0,
-								{ 0 } };
+										METRIC_DATA_TYPE_UNKNOWN, false, 0, false, 0, false,
+										true, false,
+							org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+										false,
+												org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+										0,
+										{ 0 } };
+		std::string m_sSparkPlugName = "A";
+		char *name = NULL;
+
+
+
+		org_eclipse_tahu_protobuf_Payload_Metric SparkPlugmetric = {SparkPlugmetric.name = strdup(m_sSparkPlugName.c_str()) , false, 0, true, get_current_timestamp(), true,
+										METRIC_DATA_TYPE_UNKNOWN, false, 0, false, 0, false,
+										true, false,
+							org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+										false,
+												org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+										0,
+										{ 0 } };
+
+
 
 		network_info::CUniqueDataPoint	CUniqueDataPoint_obj
 		{
@@ -60,6 +82,7 @@ public:
 		org_eclipse_tahu_protobuf_Payload dbirth_payload = { true, get_current_timestamp(), 0, &a_metric,
 				true, 0, NULL, NULL, NULL};
 
+		metricMap_t m_metrics;
 
 		CSparkPlugDev CSparkPlugDev_obj{a_sSubDev, a_sSparkPlugName, a_bIsVendorApp};
 

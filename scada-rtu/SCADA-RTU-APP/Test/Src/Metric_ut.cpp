@@ -366,7 +366,7 @@ TEST_F(Metric_ut, Add_MEtricNameValue)
 }
 
 /**
- * Test case to check addMetricForBirth() behaviour
+ * Test case to check addMetricForBirth() behavior
  * @return :bool
  */
 TEST_F(Metric_ut, Add_MetricFor_Birth)

@@ -72,6 +72,8 @@ class CSparkPlugDev
 		uint32_t a_error_code,
 		bool &a_bIsGood, bool &a_bIsDeathCode);
 
+	bool prepareModbusMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, 
+		const metricMap_t &a_mapMetrics, bool a_bIsBirth);
 public:
 	/** constructor*/
 	CSparkPlugDev(std::string a_sSubDev, std::string a_sSparkPluName,
@@ -265,6 +267,8 @@ public:
 
 	bool getWriteMsg(std::string& a_sTopic, cJSON *a_root, std::pair<const std::string,CMetric>& a_metric, const int& a_appSeqNo);
 	bool getCMDMsg(std::string& a_sTopic, metricMap_t& m_metrics, cJSON *metricArray);
+
+	bool prepareDdataMsg(org_eclipse_tahu_protobuf_Payload &a_payload, const metricMap_t &a_mapChangedMetrics);
 };
 
 
@@ -376,7 +380,7 @@ enum eMsgAction
 /** Structure maintaing reference for sparkplug actions*/
 struct stRefForSparkPlugAction
 {
-	std::reference_wrapper<CSparkPlugDev> m_refSparkPlugDev; /** wrapper for spark lug device*/
+	std::reference_wrapper<CSparkPlugDev> m_refSparkPlugDev; /** wrapper for sparkplug device*/
 	eMsgAction m_enAction; /** reference for enum eMsgAction*/
 	metricMap_t m_mapChangedMetrics; /** reference for metricMap_t*/
 

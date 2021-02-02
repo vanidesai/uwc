@@ -23,7 +23,7 @@ void NetworkInfo_ut::TearDown()
 // addDataPoint: datapoints not added previously
 TEST_F(NetworkInfo_ut, addDataPoint_NotPresent)
 {
-	Int_Res = CDeviceInfo_obj.addDataPoint(CDataPoint_obj);
+	Int_Res = CDataPointsYML_obj.addDataPoint(CDataPoint_obj);
 
 	EXPECT_EQ(0, Int_Res);
 }
@@ -31,8 +31,8 @@ TEST_F(NetworkInfo_ut, addDataPoint_NotPresent)
 // addDataPoint: datapoints added previously
 TEST_F(NetworkInfo_ut, addDataPoint_AlreadyPresent)
 {
-	Int_Res = CDeviceInfo_obj.addDataPoint(CDataPoint_obj);
-	Int_Res = CDeviceInfo_obj.addDataPoint(CDataPoint_obj);
+	Int_Res = CDataPointsYML_obj.addDataPoint(CDataPoint_obj);
+	Int_Res = CDataPointsYML_obj.addDataPoint(CDataPoint_obj);
 
 	EXPECT_EQ(-1, Int_Res);
 }

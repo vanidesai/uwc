@@ -33,6 +33,8 @@ std::map<std::string, CWellSiteInfo> g_mapYMLWellSite;
 std::map<std::string, CRTUNetworkInfo> g_mapRTUNwInfo;
 std::map<std::string, CUniqueDataPoint> g_mapUniqueDataPoint;
 std::map<std::string, CUniqueDataDevice> g_mapUniqueDataDevice;
+std::map<std::string, CDeviceInfo> g_mapDeviceInfo;
+std::map<std::string, CDataPointsYML> g_mapDataPointsYML;
 std::vector<std::string> g_sErrorYMLs;
 unsigned short g_usTotalCnt{0};
 
@@ -53,12 +55,12 @@ void populateUniquePointData(const CWellSiteInfo &a_oWellSite)
 
 		auto &refUniqueDev = g_mapUniqueDataDevice.at(devID);
 
-		for(auto &objPt : objWellSiteDev.getDevInfo().getDataPoints())
+		auto &oPointList = objWellSiteDev.getDevInfo().getDataPoints();
+		for(auto &objPt : oPointList)
 		{
 			std::string sUniqueId(SEPARATOR_CHAR + objWellSiteDev.getID()
 					+ SEPARATOR_CHAR + a_oWellSite.getID() + SEPARATOR_CHAR +
 					objPt.getID());
-
 			// Build unique data point
 			CUniqueDataPoint oUniquePoint{sUniqueId, a_oWellSite, objWellSiteDev, objPt};
 			g_mapUniqueDataPoint.emplace(sUniqueId, oUniquePoint);
@@ -78,6 +80,7 @@ std::vector<std::string> g_sWellSiteFileList;
 
 /**
  * Get well site list
+ * @param a_strSiteListFileName :[in] well site listing file
  * @return 	true : on success,
  * 			false : on error
  */
@@ -97,6 +100,195 @@ bool _getWellSiteList(string a_strSiteListFileName)
 	DO_LOG_DEBUG("End:");
 	return true;
 }
+
+/**
+ * Reads datapoints yml file and builds an object of CDataPointsYML if needed
+ * @param a_sDataPointsYML:[in] Datapoints YAML file name
+ * @return Object of CDataPointsYML
+ */
+CDataPointsYML& getDataPointsYML(const std::string& a_sDataPointsYML)
+{
+	try
+	{
+		// Check if object for this YML is already present
+		auto itr = g_mapDataPointsYML.find(a_sDataPointsYML);
+		if(itr != g_mapDataPointsYML.end())
+		{
+			return itr->second;
+		}
+		// Data Poinst YML object not found. Insert a new one in map.
+		std::cout << "YML file: " << a_sDataPointsYML << std::endl;
+		YAML::Node node = CommonUtils::loadYamlFile(a_sDataPointsYML);
+
+		DO_LOG_INFO("pointlist found: " + a_sDataPointsYML);
+		{
+			CDataPointsYML oDataPointsYML{a_sDataPointsYML};
+			g_mapDataPointsYML.insert(std::pair <std::string, CDataPointsYML> (a_sDataPointsYML, oDataPointsYML));
+		}
+
+		// Get object for processsing
+		auto& orPointList = g_mapDataPointsYML.at(a_sDataPointsYML);
+		for (auto it : node)
+		{
+			if(it.first.as<std::string>() == "file" && it.second.IsMap())
+			{
+				try
+				{
+					std::string sVersion = it.second["version"].as<std::string>();
+					orPointList.setVersion(sVersion);
+					std::cout << sVersion << ": data points YML version\n";
+					continue;
+				}
+				catch(std::exception &e)
+				{
+					std::cout << ": version not found in data points YML \n";
+				}
+			}
+			if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
+			{
+				const YAML::Node& points =  it.second;
+				for (auto it1 : points)
+				{
+					try
+					{
+						CDataPoint objCDataPoint;
+						CDataPoint::build(it1, objCDataPoint, globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
+						if(0 == orPointList.addDataPoint(objCDataPoint))
+						{
+							DO_LOG_INFO("Added point with id: " + objCDataPoint.getID());
+						}
+						else
+						{
+							DO_LOG_ERROR("Ignoring duplicate point ID from polling :"+ objCDataPoint.getID());
+							std::cout << "ERROR: Ignoring duplicate point ID from polling :"<< objCDataPoint.getID() <<std::endl;
+						}
+					}
+					catch (YAML::Exception& ye)
+					{
+						DO_LOG_ERROR("Error while parsing datapoint with Exception :: " + std::string(ye.what()));
+					}
+					catch (std::exception& e)
+					{
+						DO_LOG_ERROR("Error while parsing datapoint with Exception :: " + std::string(e.what()));
+					}
+				}
+			}
+		}
+	}
+	catch(YAML::Exception &e)
+	{
+		DO_LOG_ERROR(e.what());
+		std::cout << __func__<<" Exception :: " << e.what()<<std::endl;
+		throw;
+	}
+	return g_mapDataPointsYML.at(a_sDataPointsYML);
+}
+
+/**
+ * Reads base parameters needed to create a DeviceInfo object
+ * @param a_oDevInfoYML:[in] YAML data node to read from
+ * @param a_sDevName:[out] String to store device name
+ * @param a_sPointListYML:[out] String to store pointlist YML name
+ */
+void getBaseParamsForDeviceInfo(const YAML::Node& a_oDevInfoYML, std::string &a_sDevName, std::string &a_sPointListYML)
+{
+	bool bIsNameFound = false;
+	bool bIsPointsYMLFound = false;
+	try
+	{
+		for (auto test : a_oDevInfoYML)
+		{
+			if(test.first.as<std::string>() == "device_info")
+			{
+				try
+				{
+					a_sDevName = test.second["name"].as<std::string>();
+					bIsNameFound = true;
+					continue;
+				}
+				catch(std::exception &e)
+				{
+					DO_LOG_FATAL(e.what());
+					throw YAML::Exception(YAML::Mark::null_mark(), "name key not found in device_info");
+				}				
+			}
+			if(test.first.as<std::string>() == "pointlist")
+			{
+				a_sPointListYML = test.second.as<std::string>();
+				bIsPointsYMLFound = true;
+				continue;
+			}
+		}
+		if(false == bIsNameFound)
+		{
+			DO_LOG_ERROR(" Device without name is found. Ignoring this device.");
+			throw YAML::Exception(YAML::Mark::null_mark(), "name or device_info key not found");
+		}
+		if(false == bIsPointsYMLFound)
+		{
+			DO_LOG_ERROR(" Device without pointlist is found. Ignoring this device.");
+			throw YAML::Exception(YAML::Mark::null_mark(), "pointlist key not found");
+		}
+	}
+	catch(YAML::Exception &e)
+	{
+		DO_LOG_ERROR(e.what());
+		std::cout << __func__<<" Exception :: " << e.what()<<std::endl;
+		throw;
+	}
+}
+
+/**
+ * Builds an object of CDeviceInfo if needed
+ * @param a_oWellSiteDevData:[in] YAML data node to read from
+ * @return Object of CDeviceInfo
+ */
+CDeviceInfo& getDeviceInfo(const YAML::Node& a_oWellSiteDevData)
+{
+	bool bIsDevRefPresent = false;
+	std::string sDevInfoYML{""};
+	try
+	{
+		for (auto it : a_oWellSiteDevData)
+		{
+			std::cout << "getDeviceInfo: key: " << it.first.as<std::string>() << std::endl;
+			if(it.first.as<std::string>() == "deviceinfo")
+			{
+				sDevInfoYML = it.second.as<std::string>();
+				std::cout << "Device Info YML file: " << sDevInfoYML << std::endl;
+				// Check if object for this device info YML is already present
+				auto itr = g_mapDeviceInfo.find(sDevInfoYML);
+				if(itr != g_mapDeviceInfo.end())
+				{
+					return itr->second;
+				}
+				// Device info object not found. Insert a new one in map.
+				YAML::Node node = CommonUtils::loadYamlFile(sDevInfoYML);
+				std::string sDevName{""};
+				std::string sDataPointsYML{""};
+				getBaseParamsForDeviceInfo(node, sDevName, sDataPointsYML);
+				CDataPointsYML &rDataPointsYML = getDataPointsYML(sDataPointsYML);
+				CDeviceInfo oDevInfo{sDevInfoYML, sDevName, rDataPointsYML};
+				g_mapDeviceInfo.insert(std::pair <std::string, CDeviceInfo> (sDevInfoYML, oDevInfo));
+				bIsDevRefPresent = true;
+			}
+		}
+		if(false == bIsDevRefPresent)
+		{
+			DO_LOG_ERROR(" Device information is not found. Ignoring this well device.");
+			std::cout << __func__ << " Device information is not found. Ignoring this well device." << std::endl;
+			throw YAML::Exception(YAML::Mark::null_mark(), "deviceinfo not found");
+		}
+	}
+	catch(YAML::Exception &e)
+	{
+		DO_LOG_ERROR(e.what());
+		std::cout << __func__<<" Exception :: " << e.what()<<std::endl;
+		throw;
+	}
+	return g_mapDeviceInfo.at(sDevInfoYML);
+}
+
 }
 
 /**
@@ -113,38 +305,6 @@ void network_info::CUniqueDataDevice::addPoint(const CUniqueDataPoint &a_rPoint)
 	{
 		DO_LOG_ERROR(e.what());
 	}
-}
-
-/**
- * Add data point in m_DataPointList
- * @param a_oDataPoint :[in] data point values to be add
- * if DataPoint id is same in one file then it will be ignored
- * @return 	0 : on success,
- * 			-1 : on error (if point id is duplicate in datapoints file then this point will be ignored)
- */
-int network_info::CDeviceInfo::addDataPoint(CDataPoint a_oDataPoint)
-{
-	// Search whether given point name is already present
-	// If present, ignore the datapoint
-	// If not present, add it
-
-	DO_LOG_DEBUG("Start: To add DataPoint - " +
-			a_oDataPoint.getID());
-	for(auto oDataPoint: m_DataPointList)
-	{
-		if(0 == oDataPoint.getID().compare(a_oDataPoint.getID()))
-		{
-			DO_LOG_ERROR(":Already present DataPoint with id" +
-					a_oDataPoint.getID());
-			// This point name is already present. Ignore this point
-			return -1;
-		}
-	}
-	m_DataPointList.push_back(a_oDataPoint);
-
-	DO_LOG_DEBUG("End: Added DataPoint - " +
-			a_oDataPoint.getID());
-	return 0;
 }
 
 /**
@@ -226,13 +386,13 @@ void network_info::CWellSiteInfo::build(const YAML::Node& a_oData, CWellSiteInfo
 				{
 					try
 					{
-						CWellSiteDevInfo objWellsiteDev;
-						int32_t i32RetVal = 0;
+						CDeviceInfo& rDevInfo = getDeviceInfo(nodes);
+						CWellSiteDevInfo objWellsiteDev{rDevInfo};
 						CWellSiteDevInfo::build(nodes, objWellsiteDev);
-						i32RetVal = a_oWellSite.addDevice(objWellsiteDev);
+						int i32RetVal = a_oWellSite.addDevice(objWellsiteDev);
 						if(0 == i32RetVal)
 						{
-							DO_LOG_INFO(" : Added device with id: " +
+							DO_LOG_INFO("Added device with id: " + 
 									objWellsiteDev.getID());
 						}
 						else if(-1 == i32RetVal)
@@ -463,12 +623,6 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 					throw YAML::Exception(YAML::Mark::null_mark(), "Unknown protocol found");
 				}
 			}
-
-			if(it.first.as<std::string>() == "deviceinfo")
-			{
-				YAML::Node node = CommonUtils::loadYamlFile(it.second.as<std::string>());
-				CDeviceInfo::build(node, a_oWellSiteDevInfo.getDevInfo1());
-			}
 		}
 		if(false == bIsIdPresent)
 		{
@@ -495,91 +649,33 @@ void network_info::CWellSiteDevInfo::build(const YAML::Node& a_oData, CWellSiteD
 }
 
 /**
- * This function is used to read data points YML files and store it in CDeviceInfo data struct
- * All the datapoints.yml file data will be stored in data structures
- * @param a_oData			:[in] YAML data node to read from
- * @param a_oCDeviceInfo:[in] Data structure to be updated
+ * Add data point in m_DataPointList
+ * @param a_oDataPoint :[in] data point values to be add
+ * if DataPoint id is same in one file then it will be ignored
+ * @return 	0 : on success,
+ * 			-1 : on error (if point id is duplicate in datapoints file then this point will be ignored)
  */
-void network_info::CDeviceInfo::build(const YAML::Node& a_oData, CDeviceInfo &a_oCDeviceInfo )
+int network_info::CDataPointsYML::addDataPoint(CDataPoint &a_oDataPoint)
 {
-	DO_LOG_DEBUG("Start");
-	bool bIsNameFound = false;
-	try
+	// Search whether given point name is already present
+	// If present, ignore the datapoint
+	// If not present, add it
+
+	DO_LOG_DEBUG("Start: To add DataPoint - " +	a_oDataPoint.getID());
+	for(auto oDataPoint: m_DataPointList)
 	{
-		for (auto test : a_oData)
+		if(0 == oDataPoint.getID().compare(a_oDataPoint.getID()))
 		{
-			if(test.first.as<std::string>() == "device_info")
-			{
-				try
-				{
-					a_oCDeviceInfo.m_sName = test.second["name"].as<std::string>();
-					bIsNameFound = true;
-					continue;
-				}
-				catch(std::exception &e)
-				{
-					DO_LOG_FATAL(e.what());
-					throw YAML::Exception(YAML::Mark::null_mark(), "name key not found in device_info");
-				}				
-			}
-			if(test.first.as<std::string>() == "pointlist")
-			{
-				YAML::Node node = CommonUtils::loadYamlFile(test.second.as<std::string>());
-
-				DO_LOG_INFO(" : pointlist found: " +
-						test.second.as<std::string>());
-
-				for (auto it : node)
-				{
-					if(it.first.as<std::string>() == "file" && it.second.IsMap())
-					{
-						// store if required
-					}
-					if(it.second.IsSequence() && it.first.as<std::string>() == "datapoints")
-					{
-						const YAML::Node& points =  it.second;
-						for (auto it1 : points)
-						{
-							try
-							{
-								CDataPoint objCDataPoint;
-								CDataPoint::build(it1, objCDataPoint, globalConfig::CGlobalConfig::getInstance().getOpPollingOpConfig().getDefaultRTConfig());
-								if(0 == a_oCDeviceInfo.addDataPoint(objCDataPoint))
-								{
-									DO_LOG_INFO("Added point with id: " +
-											objCDataPoint.getID());
-								}
-								else
-								{
-									DO_LOG_ERROR("Ignoring duplicate point ID from polling :"+ objCDataPoint.getID());
-									std::cout << "ERROR: Ignoring duplicate point ID from polling :"<< objCDataPoint.getID() <<std::endl;
-								}
-							}
-							catch (YAML::Exception& ye)
-							{
-								DO_LOG_ERROR("Error while parsing datapoint with Exception :: " + std::string(ye.what()));
-							}
-							catch (std::exception& e)
-							{
-								DO_LOG_ERROR("Error while parsing datapoint with Exception :: " + std::string(e.what()));
-							}
-						}
-					}
-				}
-			}
-		}
-		if(false == bIsNameFound)
-		{
-			DO_LOG_ERROR(" Device without name is found. Ignoring this device.");
-			throw YAML::Exception(YAML::Mark::null_mark(), "name key not found");
+			DO_LOG_ERROR(a_oDataPoint.getID() + 
+					" : Already present DataPoint with id. Ignored new instance.");
+			// This point name is already present. Ignore this point
+			return -1;
 		}
 	}
-	catch(YAML::Exception &e)
-	{
-		DO_LOG_FATAL(e.what());
-		throw;
-	}
-	DO_LOG_DEBUG("End");
+	m_DataPointList.push_back(a_oDataPoint);
+
+	DO_LOG_INFO("Added DataPoint - " + a_oDataPoint.getID() + ". Total points: " + std::to_string(m_DataPointList.size()));
+	return 0;
 }
 
 /**
@@ -609,6 +705,15 @@ const std::map<std::string, CUniqueDataPoint>& network_info::getUniquePointList(
 const std::map<std::string, CUniqueDataDevice>& network_info::getUniqueDeviceList()
 {
 	return g_mapUniqueDataDevice;
+}
+
+/**
+ * Get data points YML file listing objects
+ * @return map of data points YML file listing objects
+ */
+const std::map<std::string, CDataPointsYML>& network_info::getDataPointsYMLList()
+{
+	return g_mapDataPointsYML;
 }
 
 /**
@@ -849,11 +954,6 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 	DO_LOG_INFO(" Network set as: " +
 			std::to_string((int)g_eNetworkType));
 
-	// Following stage is needed only when configuration files are placed in a docker volume
-
-	//std::cout << "Config files are kept in a docker volume\n";
-	//DO_LOG_INFO(" Config files are kept in a docker volume");
-
 	// get list of well sites
 	if(false == _getWellSiteList(a_strSiteListFileName))
 	{
@@ -911,7 +1011,6 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 
 	// Once network information is read, prepare a list of unique points
 	// Set variables for unique point listing
-	//if(const char* env_p = std::getenv("MY_APP_ID"))
 	if(!a_strAppId.empty())
 	{
 		DO_LOG_INFO(": MY_APP_ID value = " + a_strAppId);
@@ -925,7 +1024,7 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
 		DO_LOG_INFO("Assuming value as 0");
 		g_usTotalCnt = 0;
 	}
-	DO_LOG_INFO(": Count start from = " +g_usTotalCnt);
+	DO_LOG_INFO(": Count start from = " + std::to_string(g_usTotalCnt));
 	for(auto &a: g_mapYMLWellSite)
 	{
 		populateUniquePointData(g_mapYMLWellSite.at(a.first));
@@ -949,36 +1048,38 @@ void network_info::buildNetworkInfo(string a_strNetworkType, string a_strSiteLis
  */
 CUniqueDataPoint::CUniqueDataPoint(std::string a_sId, const CWellSiteInfo &a_rWellSite,
 		const CWellSiteDevInfo &a_rWellSiteDev, const CDataPoint &a_rPoint) :
-						m_uiMyRollID{((unsigned int)g_usTotalCnt)+1}, m_sId{a_sId},
-						m_rWellSite{a_rWellSite}, m_rWellSiteDev{a_rWellSiteDev}, m_rPoint{a_rPoint}, m_bIsAwaitResp{false}, m_bIsRT{a_rPoint.getPollingConfig().m_bIsRealTime}
-						{
-							++g_usTotalCnt;
-						}
+									m_uiMyRollID{((unsigned int)g_usTotalCnt)+1}, m_sId{a_sId},
+									m_rWellSite{a_rWellSite}, m_rWellSiteDev{a_rWellSiteDev}, m_rPoint{a_rPoint}, m_bIsAwaitResp{false}, m_bIsRT{a_rPoint.getPollingConfig().m_bIsRealTime}
+									{
+										++g_usTotalCnt;
+									}
 
-						/**
-						 * Constructor
-						 * @param a_objPt 		:[in] reference CUniqueDataPoint object for copy constructor
-						 */
-						CUniqueDataPoint::CUniqueDataPoint(const CUniqueDataPoint &a_objPt) :
-						m_uiMyRollID{a_objPt.m_uiMyRollID}, m_sId{a_objPt.m_sId},
-						m_rWellSite{a_objPt.m_rWellSite}, m_rWellSiteDev{a_objPt.m_rWellSiteDev}, m_rPoint{a_objPt.m_rPoint}, m_bIsAwaitResp{false}
-						{
-							m_bIsRT.store(a_objPt.m_bIsRT);
-						}
+									/**
+									 * Constructor
+									 * @param a_objPt 		:[in] reference CUniqueDataPoint object for copy constructor
+									 */
+									CUniqueDataPoint::CUniqueDataPoint(const CUniqueDataPoint &a_objPt) :
+									m_uiMyRollID{a_objPt.m_uiMyRollID}, m_sId{a_objPt.m_sId},
+									m_rWellSite{a_objPt.m_rWellSite}, m_rWellSiteDev{a_objPt.m_rWellSiteDev}, m_rPoint{a_objPt.m_rPoint}, m_bIsAwaitResp{false}
+									{
+										m_bIsRT.store(a_objPt.m_bIsRT);
+									}
 
-						/**
-						 * Check if response is received or not for specific point
-						 * @return 	true : on success,
-						 * 			false : on error
-						 */
-						bool CUniqueDataPoint::isIsAwaitResp() const {
-							return m_bIsAwaitResp.load();
-						}
+									/**
+									 * Check if response is received or not for specific point
+									 * @return 	true : on success,
+									 * 			false : on error
+									 */
+									bool CUniqueDataPoint::isIsAwaitResp() const
+									{
+										return m_bIsAwaitResp.load();
+									}
 
-						/**
-						 * Set the response status for point
-						 * @param isAwaitResp	:[out] true/false based on response received or not
-						 */
-						void CUniqueDataPoint::setIsAwaitResp(bool isAwaitResp) const {
-							m_bIsAwaitResp.store(isAwaitResp);
-						}
+									/**
+									 * Set the response status for point
+									 * @param isAwaitResp	:[out] true/false based on response received or not
+									 */
+									void CUniqueDataPoint::setIsAwaitResp(bool isAwaitResp) const
+									{
+										m_bIsAwaitResp.store(isAwaitResp);
+									}

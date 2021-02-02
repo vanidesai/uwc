@@ -84,7 +84,7 @@ bool CSparkPlugDevManager::processExternalMQTTMsg(std::string a_sTopic,
 
 		bool bIsFound = false;
 		auto itr = [&] () mutable -> devSparkplugMap_t::iterator
-				{
+		{
 			bIsFound = false;
 			std::lock_guard<std::mutex> lck(m_mutexDevList);
 			auto i = m_mapSparkPlugDev.find(strDevName);
@@ -93,18 +93,23 @@ bool CSparkPlugDevManager::processExternalMQTTMsg(std::string a_sTopic,
 				bIsFound = true;
 			}
 			return i;
-				}();
+		}();
 
-				if(false == bIsFound)
-				{
-					DO_LOG_ERROR("Device is not present in list : " + strDevName);
-					return false;
-				}
+		if(false == bIsFound)
+		{
+			DO_LOG_ERROR("Device is not present in list : " + strDevName);
+			return false;
+		}
 
-				for (pb_size_t i = 0; i < a_payload.metrics_count; i++)
+		for (pb_size_t i = 0; i < a_payload.metrics_count; i++)
+		{
+			CMetric oMetric;
+			if(METRIC_DATA_TYPE_TEMPLATE == a_payload.metrics[i].datatype)
+			{
+				org_eclipse_tahu_protobuf_Payload_Template &udt_template = a_payload.metrics[i].value.template_value;
+				for(int iLoop = 0; iLoop < udt_template.metrics_count; iLoop++)
 				{
-					CMetric oMetric;
-					if (false == processDCMDMetric(itr->second, oMetric, a_payload.metrics[i]))
+					if (false == processDCMDMetric(itr->second, oMetric, udt_template.metrics[iLoop]))
 					{
 						DO_LOG_DEBUG("Could not process metric");
 						return false;
@@ -114,11 +119,25 @@ bool CSparkPlugDevManager::processExternalMQTTMsg(std::string a_sTopic,
 						oMetricMap.emplace(oMetric.getName(), oMetric);
 					}
 				}
+			}
+			else 
+			{
+				if (false == processDCMDMetric(itr->second, oMetric, a_payload.metrics[i]))
+				{
+					DO_LOG_DEBUG("Could not process metric");
+					return false;
+				}
+				else
+				{
+					oMetricMap.emplace(oMetric.getName(), oMetric);
+				}
+			}
+		}
 
-				auto &mapSparkPlugDev = itr->second;
-				stRefForSparkPlugAction stCMDAction
-				{ std::ref(mapSparkPlugDev), enMSG_DCMD_WRITE, oMetricMap };
-				a_stRefActionVec.push_back(stCMDAction);
+		auto &mapSparkPlugDev = itr->second;
+		stRefForSparkPlugAction stCMDAction
+		{ std::ref(mapSparkPlugDev), enMSG_DCMD_WRITE, oMetricMap };
+		a_stRefActionVec.push_back(stCMDAction);
 	}
 	catch (std::exception &e)
 	{
@@ -677,7 +696,7 @@ void CSparkPlugDevManager::processUpdateMsg(std::string a_sDeviceName,
 			// Find the device in list
 			bool bIsFound = false;			
 			auto itr = [&] () mutable -> devSparkplugMap_t::iterator
-					{
+			{
 				bIsFound = false;
 				std::lock_guard<std::mutex> lck(m_mutexDevList);
 				auto i = m_mapSparkPlugDev.find(sDevName);
@@ -686,24 +705,24 @@ void CSparkPlugDevManager::processUpdateMsg(std::string a_sDeviceName,
 					bIsFound = true;
 				}
 				return i;
-					}();
+			}();
 
-					if (false == bIsFound)
-					{
-						DO_LOG_ERROR("Invalid real device. Ignoring.");
-						break;
-					}
+			if (false == bIsFound)
+			{
+				DO_LOG_ERROR("Invalid real device. Ignoring.");
+				break;
+			}
 
-					auto &oDev = itr->second;
+			auto &oDev = itr->second;
 
-					// Parse message and get metric info
-					bool bRet = oDev.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec);
+			// Parse message and get metric info
+			bool bRet = oDev.processRealDeviceUpdateMsg(a_sPayLoad, a_stRefActionVec);
 
-					if(false == bRet)
-					{
-						DO_LOG_ERROR("Message processing failed. Ignored message: " + a_sPayLoad);
-						break;
-					}
+			if(false == bRet)
+			{
+				DO_LOG_ERROR("Message processing failed. Ignored message: " + a_sPayLoad);
+				break;
+			}
 		}
 		catch (const std::exception &e)
 		{
@@ -797,30 +816,6 @@ void CSparkPlugDevManager::processDataMsg(std::string a_sAppName,
 			DO_LOG_ERROR(std::string("Error:") + e.what());
 		}
 	} while (0);
-}
-
-/**
- * Helper function to print devices, its actions and metrics
- * @param a_stRefActionVec :[in] map which needs to be printed
- */
-void CSparkPlugDevManager::printRefActions(std::vector<stRefForSparkPlugAction> &a_stRefActionVec)
-{
-	/*std::cout
-			<< "--------------------------------- Printing actions ---------------------------------\n";
-	for (auto &itr : a_stRefActionVec)
-	{
-		std::cout << "**********************\n";
-		std::cout << "Device: "
-				<< itr.m_refSparkPlugDev.get().getSparkPlugName()
-				<< "\tAction: " << itr.m_enAction << "\tChanged metrics:\n";
-
-		for (auto &itrMetric : itr.m_mapChangedMetrics)
-		{
-			itrMetric.second.print();
-		}
-		std::cout << "**********************\n";
-	}
-	std::cout << "---------------------------------\n";*/
 }
 
 /**

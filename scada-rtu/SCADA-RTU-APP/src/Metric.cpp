@@ -10,6 +10,7 @@
 #include <string.h>
 #include <limits>
 #include "Metric.hpp"
+#include "SCADAHandler.hpp"
 
 /**
  * Assign values to sparkplug metric data-structure according to the sparkplug specification
@@ -475,7 +476,7 @@ bool CMetric::addMetricNameValue(org_eclipse_tahu_protobuf_Payload_Metric& a_rMe
 	try
 	{
 		{
-			a_rMetric.name = strdup(m_sSparkPlugName.c_str());
+			a_rMetric.name = strndup(m_sSparkPlugName.c_str(), m_sSparkPlugName.length());
 			if(a_rMetric.name == NULL)
 			{
 				DO_LOG_ERROR("Failed to allocate new memory");
@@ -500,7 +501,7 @@ bool CMetric::addMetricNameValue(org_eclipse_tahu_protobuf_Payload_Metric& a_rMe
 
 /**
  * Prepare device birth messages to be published on SCADA system
- * @param dbirth_payload :[out] reference of spark plug message payload in which to store birth messages
+ * @param a_rMetric :[out] reference of sparkplug metric to store data
  * @return true/false depending on the success/failure
  */
 bool CMetric::addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric)
@@ -509,57 +510,50 @@ bool CMetric::addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMet
 	try
 	{
 		{
-			if(addMetricNameValue(a_rMetric) == false)
-			{
-				DO_LOG_ERROR(m_sSparkPlugName + ":Failed to add metric name and value");
-				return false;
-			};
-
 			if (true == std::holds_alternative<std::reference_wrapper<const network_info::CUniqueDataPoint>>(m_rDirectProp))
 			{
-				org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
 				auto &orUniqueDataPoint = std::get<std::reference_wrapper<const network_info::CUniqueDataPoint>>(m_rDirectProp);
 				
-				int iAddr = orUniqueDataPoint.get().getDataPoint().getAddress().m_iAddress;
-				add_property_to_set(&prop, "Addr", PROPERTY_DATA_TYPE_INT32, &iAddr, sizeof(iAddr));
-
-				int iWidth = orUniqueDataPoint.get().getDataPoint().getAddress().m_iWidth;
-				add_property_to_set(&prop, "Width", PROPERTY_DATA_TYPE_INT32, &iWidth, sizeof(iWidth));
-
-				string strDataType = orUniqueDataPoint.get().getDataPoint().getAddress().m_sDataType;
-				add_property_to_set(&prop, "DataType", PROPERTY_DATA_TYPE_STRING, strDataType.c_str(), strDataType.length());
-
-				eEndPointType endPointType = orUniqueDataPoint.get().getDataPoint().getAddress().m_eType;
-
-				string strType = "";
-				switch(endPointType)
+				CSCADAHandler::instance().addModbusMetric(a_rMetric, m_sSparkPlugName, (std::get<std::string>(m_objVal.getValue())),
+					true, orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_uiPollFreq,
+					orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_bIsRealTime);
+			}
+			else
+			{
+				if(addMetricNameValue(a_rMetric) == false)
 				{
-				case eEndPointType::eCoil:
-					strType = "COIL";
-					break;
-				case eEndPointType::eDiscrete_Input:
-					strType = "DISCRETE_INPUT";
-					break;
-				case eEndPointType::eHolding_Register:
-					strType = "HOLDING_REGISTER";
-					break;
-				case eEndPointType::eInput_Register:
-					strType = "INPUT_REGISTER";
-					break;
-				default:
-					DO_LOG_ERROR("Invalid type of data-point in yml file");
+					DO_LOG_ERROR(m_sSparkPlugName + ":Failed to add metric name and value");
 					return false;
 				}
-				add_property_to_set(&prop, "Type", PROPERTY_DATA_TYPE_STRING, strType.c_str(), strType.length());
-
-				uint32_t iPollingInterval = orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_uiPollFreq;
-				add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, &iPollingInterval, sizeof(iPollingInterval));
-
-				bool bVal = orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_bIsRealTime;
-				add_property_to_set(&prop, "Realtime", PROPERTY_DATA_TYPE_BOOLEAN, &bVal, sizeof(bVal));
-
-				add_propertyset_to_metric(&a_rMetric, &prop);
 			}
+		}
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Prepare sparkplug formatted metric for modbus device
+ * @param a_rMetric :[out] reference of sparkplug metric to store data
+ * @param a_bIsBirth :[In] Indicates whether it is a birth message
+ * @return true/false depending on the success/failure
+ */
+bool CMetric::addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric, bool a_bIsBirth)
+{
+	using namespace network_info;
+	try
+	{
+		if (true == std::holds_alternative<std::reference_wrapper<const network_info::CUniqueDataPoint>>(m_rDirectProp))
+		{
+			auto &orUniqueDataPoint = std::get<std::reference_wrapper<const network_info::CUniqueDataPoint>>(m_rDirectProp);
+			
+			CSCADAHandler::instance().addModbusMetric(a_rMetric, m_sSparkPlugName, (std::get<std::string>(m_objVal.getValue())),
+				a_bIsBirth, orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_uiPollFreq,
+				orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_bIsRealTime);
 		}
 	}
 	catch(std::exception &ex)

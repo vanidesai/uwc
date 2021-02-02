@@ -48,4 +48,17 @@ TEST_F(SparkPlugDevMgr_ut, getDeviceList_NonEmptySprkPlgDevMAp)
 
 }
 
+/**
+ * Test case to check processExternalMQTTMsg() with empty vector value
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(SparkPlugDevMgr_ut, ExternamMqttMsg)
+{
+	std::string topic = "/flowmeter/PL0/Flow/read";
+	bool result = CSparkPlugDevManager::getInstance().processExternalMQTTMsg(topic, dbirth_payload, stRefActionVec);
+	EXPECT_EQ(false, result);
+}
+
 
