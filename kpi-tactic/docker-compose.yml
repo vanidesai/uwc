@@ -58,7 +58,7 @@ services:
         CertType: "zmq"
         BUILD_NUMBER: ${BUILD_NUMBER}
         PROFILING_MODE: ${PROFILING_MODE}
-        WriteRequest_RT: "KPIAPP_WrReq_RT"
+        WriteRequest_RT: "RT_KPIAPP_WrReq_RT"
         WriteRequest: "KPIAPP_WrReq"
       logging:
           driver: "json-file"

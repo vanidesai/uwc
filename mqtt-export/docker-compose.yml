@@ -54,8 +54,8 @@ services:
       MQTT_URL_FOR_EXPORT: "${MQTT_PROTOCOL}://127.0.0.1:11883"
       ReadRequest: MQTT_Export_RdReq
       WriteRequest: MQTT_Export_WrReq
-      ReadRequest_RT: MQTT_Export_RdReq_RT
-      WriteRequest_RT: MQTT_Export_WrReq_RT
+      ReadRequest_RT: RT_MQTT_Export_RdReq_RT
+      WriteRequest_RT: RT_MQTT_Export_WrReq_RT
       CertType: "zmq"
       PROFILING_MODE: ${PROFILING_MODE}
       # general topics

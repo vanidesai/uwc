@@ -47,10 +47,10 @@
                     "SocketDir": "/EIS/sockets",
                     "SocketFile": "backend-socket"
                 },
-                "Name": "TCP_PolledData_RT",
+                "Name": "RT_TCP_PolledData_RT",
                 "PublisherAppName": "EISZmqBroker",
                 "Topics": [
-                    "TCP_PolledData_RT"
+                    "RT_TCP_PolledData_RT"
                 ],
                 "Type": "zmq_ipc",
                 "zmq_recv_hwm": 1000
@@ -60,10 +60,10 @@
                     "SocketDir": "/EIS/sockets",
                     "SocketFile": "backend-socket"
                 },
-                "Name": "TCP_RdResp_RT",
+                "Name": "RT_TCP_RdResp_RT",
                 "PublisherAppName": "EISZmqBroker",
                 "Topics": [
-                    "TCP_RdResp_RT"
+                    "RT_TCP_RdResp_RT"
                 ],
                 "Type": "zmq_ipc",
                 "zmq_recv_hwm": 1000
@@ -73,10 +73,10 @@
                     "SocketDir": "/EIS/sockets",
                     "SocketFile": "backend-socket"
                 },
-                "Name": "TCP_WrResp_RT",
+                "Name": "RT_TCP_WrResp_RT",
                 "PublisherAppName": "EISZmqBroker",
                 "Topics": [
-                    "TCP_WrResp_RT"
+                    "RT_TCP_WrResp_RT"
                 ],
                 "Type": "zmq_ipc",
                 "zmq_recv_hwm": 1000
@@ -125,10 +125,10 @@
                     "SocketDir": "/EIS/sockets",
                     "SocketFile": "backend-socket"
                 },
-                "Name": "RTU_PolledData_RT",
+                "Name": "RT_RTU_PolledData_RT",
                 "PublisherAppName": "EISZmqBroker",
                 "Topics": [
-                    "RTU_PolledData_RT"
+                    "RT_RTU_PolledData_RT"
                 ],
                 "Type": "zmq_ipc",
                 "zmq_recv_hwm": 1000
@@ -138,10 +138,10 @@
                     "SocketDir": "/EIS/sockets",
                     "SocketFile": "backend-socket"
                 },
-                "Name": "RTU_RdResp_RT",
+                "Name": "RT_RTU_RdResp_RT",
                 "PublisherAppName": "EISZmqBroker",
                 "Topics": [
-                    "RTU_RdResp_RT"
+                    "RT_RTU_RdResp_RT"
                 ],
                 "Type": "zmq_ipc",
                 "zmq_recv_hwm": 1000
@@ -151,10 +151,10 @@
                     "SocketDir": "/EIS/sockets",
                     "SocketFile": "backend-socket"
                 },
-                "Name": "RTU_WrResp_RT",
+                "Name": "RT_RTU_WrResp_RT",
                 "PublisherAppName": "EISZmqBroker",
                 "Topics": [
-                    "RTU_WrResp_RT"
+                    "RT_RTU_WrResp_RT"
                 ],
                 "Type": "zmq_ipc",
                 "zmq_recv_hwm": 1000
@@ -201,9 +201,9 @@
                     "SocketDir": "/EIS/sockets",
                     "SocketFile": "frontend-socket"
                 },
-                "Name": "MQTT_Export_RdReq_RT",
+                "Name": "RT_MQTT_Export_RdReq_RT",
                 "Topics": [
-                    "MQTT_Export_RdReq_RT"
+                    "RT_MQTT_Export_RdReq_RT"
                 ],
                 "Type": "zmq_ipc",
                 "BrokerAppName":"EISZmqBroker",
@@ -217,9 +217,9 @@
                     "SocketDir": "/EIS/sockets",
                     "SocketFile": "frontend-socket"
                 },
-                "Name": "MQTT_Export_WrReq_RT",
+                "Name": "RT_MQTT_Export_WrReq_RT",
                 "Topics": [
-                    "MQTT_Export_WrReq_RT"
+                    "RT_MQTT_Export_WrReq_RT"
                 ],
                 "Type": "zmq_ipc",
                 "BrokerAppName":"EISZmqBroker",

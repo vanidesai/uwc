@@ -97,7 +97,6 @@ void CControlLoopOp::threadPollMonitoring()
 				std::cout<<"\nCheck if writeResponse for last message was received\n";
 				if(true == CMapOfReqMapper::getInstace().isPresent(m_sId, sLastWrSeqVal))
 				{
-					std::cout<<"\nBefore calling postdummyanalysismsg()\n";
 					postDummyAnalysisMsg(sLastWrSeqVal, "WrRespNotRcvd");
 				}
 				sLastWrSeqVal.clear();

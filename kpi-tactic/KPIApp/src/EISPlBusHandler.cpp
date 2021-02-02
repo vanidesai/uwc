@@ -377,14 +377,12 @@ void CEISPlBusHandler::configEISListerners(bool a_bIsPollingRT, bool a_bIsWrOpRT
 
 			bool bIsPolling = true;
 			// Pattern matching
-			if(std::string::npos != sTopic.find(sPollPattern, 
-				sTopic.length() - sPollPattern.length() ))
+			if(std::string::npos != sTopic.find(sPollPattern))
 			{
 				// This topic is for polling
 				bIsPolling = true;
 			}
-			else if(std::string::npos != sTopic.find(sWrOpPattern,
-				sTopic.length() - sWrOpPattern.length() ))
+			else if(std::string::npos != sTopic.find(sWrOpPattern))
 			{
 				// This topic is for write response processing 
 				bIsPolling = false;
