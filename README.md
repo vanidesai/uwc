@@ -37,8 +37,10 @@ The directory comprises of following:
 
 ## Install pre-requisites
 ```
-1.Install python3.6 version
-sudo apt-get install python3.6
+1.Install python3.6 version and required packages
+$sudo apt-get install python3.6
+$sudo python3.6  -m  pip install jsonmerge
+$python3.6  -m  pip install  ruamel.yaml
 2.After having successfully repo-synched the uwc.xml recipe from eis-manifest repo
 Generate the consolidated docker-compose.yml & eis_config.json using the eis_builder utility from the eis-core repo. Can either use "build/uwc-pipeline-without-scada.yml" , "build/uwc-pipeline-with-scada.yml", "build/uwc-pipeline-with-kpi-no-scada.yml" with eis-builder based on the services needed for use case. Also, the recipe YML files can be edited as per the services needed.
 Steps for running this eis_builder utility can be obtained from "https://github.impcloud.net/uwc/eii-core#eis-pre-requisites".
