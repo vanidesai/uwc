@@ -117,6 +117,7 @@ docker-compose up -d - bring up all containers in background
 *  If docker-compose.yml is modified then bring down the containers & then bring them up as mentioned above.
 *  If previous containers are running on deploy machine, then stop those containers using command for bringing down containers as mentioned above.
 *  Can use MQTT.FX or any other MQTT client to verify teh flow or all 6 operations for RT/Non-RT, read/write,polling operations
-
+```
 ## Troubleshooting
+```
 Follow Method 2 from here https://www.thegeekdiary.com/how-to-configure-docker-to-use-proxy/ to set proxy for docker
