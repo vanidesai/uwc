@@ -37,24 +37,26 @@ The directory comprises of following:
 
 ## Install pre-requisites
 ```
-1. After having successfully repo-synched the uwc.xml recipe from eis-manifest repo
+1.Install python3.6 version
+sudo apt-get install python3.6
+2.After having successfully repo-synched the uwc.xml recipe from eis-manifest repo
 Generate the consolidated docker-compose.yml & eis_config.json using the eis_builder utility from the eis-core repo. Can either use "build/uwc-pipeline-without-scada.yml" , "build/uwc-pipeline-with-scada.yml", "build/uwc-pipeline-with-kpi-no-scada.yml" with eis-builder based on the services needed for use case. Also, the recipe YML files can be edited as per the services needed.
 Steps for running this eis_builder utility can be obtained from "https://github.impcloud.net/uwc/eii-core#eis-pre-requisites".
 An example to use eis_builder utility is also shown as below. This generates consolidated docker-compose.yml & eis_config.json with the services mentioned in the "services recipe YML file" uwc-pipeline-with-kpi-no-scada.yml:
 $cd "<working-dir>"/IEdgeInsights/<build>
 $python3.6 eis_builder.py -f uwc-pipeline-with-kpi-no-scada.yml
 
-2. Run "sudo sh pre_req.sh" from "<working-dir>/IEdgeInsights/uwc" directory. This creates necessary directories in /opt/intel/eis/ for log files storage & also copies UWC YAML configuration files. 
-3. cd to "<working-dir>/IEdgeInsights/build" & then open .env. 
-4. Update the key "DEV_MODE=true/false" based on the intended mode of running the services in either DEVELOPMENT (DEV_MODE=true) or PRODUCTION MODE (DEV_MODE=false).
-5. Update the key "MQTT_PROTOCOL=tcp/ssl" based on the intended mode of running the services in either DEVELOPMENT (MQTT_PROTOCOL=tcp) or PRODUCTION MODE (MQTT_PROTOCOL=ssl).
-6. Default is prod mode.
-7. NOTE: In prod mode, the "Certificates" directory in "<working-dir>/IEdgeInsights/build/provision" needs 'sudo su" to be accessed. i.e. to open Certificates folder do the following:
+3. Run "sudo sh pre_req.sh" from "<working-dir>/IEdgeInsights/uwc" directory. This creates necessary directories in /opt/intel/eis/ for log files storage & also copies UWC YAML configuration files. 
+4. cd to "<working-dir>/IEdgeInsights/build" & then open .env. 
+5. Update the key "DEV_MODE=true/false" based on the intended mode of running the services in either DEVELOPMENT (DEV_MODE=true) or PRODUCTION MODE (DEV_MODE=false).
+6. Update the key "MQTT_PROTOCOL=tcp/ssl" based on the intended mode of running the services in either DEVELOPMENT (MQTT_PROTOCOL=tcp) or PRODUCTION MODE (MQTT_PROTOCOL=ssl).
+7. Default is prod mode.
+8. NOTE: In prod mode, the "Certificates" directory in "<working-dir>/IEdgeInsights/build/provision" needs 'sudo su" to be accessed. i.e. to open Certificates folder do the following:
   a. cd <working-dir>/IEdgeInsights/build/provision
   b. sudo su
   c. cd Certificates
-8. After accessing Certificates, enter "exit" command & terminal would return back to normal mode.
-9. IMPORTANT NOTE: EVERYTIME THE MODE IS SWITCHED (DEV<->PROD) BY MAKING CHANGES IN .ENV FILE AS ABOVE, MAKE SURE TO RE-RUN THE "eis_builder.py" utility as mentioned above, again, even if the recipe hasn't changed. This is needed to re-generate consolidated docker-compose.yml file in build directory as per dev/prod mode.
+9. After accessing Certificates, enter "exit" command & terminal would return back to normal mode.
+10. IMPORTANT NOTE: EVERYTIME THE MODE IS SWITCHED (DEV<->PROD) BY MAKING CHANGES IN .ENV FILE AS ABOVE, MAKE SURE TO RE-RUN THE "eis_builder.py" utility as mentioned above, again, even if the recipe hasn't changed. This is needed to re-generate consolidated docker-compose.yml file in build directory as per dev/prod mode.
 ```
 
 ## Provision EIS & UWC services
