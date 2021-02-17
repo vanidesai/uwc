@@ -1,0 +1,501 @@
+# Copyright (c) 2020 Intel Corporation.
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+version: '3.6'
+
+services:
+
+  ##----Start: EIS Base Images -- This Base images must be included for building any EIS servcies ----
+  ## Define ia_eisbase service
+  ia_eisbase:
+    build:
+      context: $PWD/../common
+      dockerfile: $PWD/../common/dockerfiles/Dockerfile.eisbase
+      args:
+        UBUNTU_IMAGE_VERSION: ${UBUNTU_IMAGE_VERSION}
+        EIS_VERSION: ${EIS_VERSION}
+        HOST_TIME_ZONE: ${HOST_TIME_ZONE}
+        GO_VERSION: ${GO_VERSION}
+    image: ${DOCKER_REGISTRY}ia_eisbase:${EIS_VERSION}
+    ipc: "none"
+
+  ## Define ia_common service
+  ia_common:
+    depends_on:
+    - ia_eisbase
+    build:
+      context: $PWD/../common
+      dockerfile: $PWD/../common/dockerfiles/Dockerfile.common
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+          # set CMAKE_BUILD_TYPE value to "Debug" to generate debug symbols
+        CMAKE_BUILD_TYPE: "Release"
+        RUN_TESTS: "OFF"
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY}
+    read_only: true
+    image: ${DOCKER_REGISTRY}ia_common:${EIS_VERSION}
+    ipc: "none"
+
+  ##----End: EIS Base Images---- -- This Base images must be included for building any EIS servcies ----
+
+## uwc_common image
+  uwc_test_common:
+    depends_on:
+    - ia_eisbase
+    build:
+      context: $PWD/../uwc/uwc_common
+      dockerfile: $PWD/../uwc/uwc_common/Dockerfile.common.test
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+    read_only: true
+    image: ${DOCKER_REGISTRY}uwc_test_common:${EIS_VERSION}
+
+  ia_etcd_ui:
+    depends_on:
+    - ia_common
+    build:
+      context: $PWD/../EtcdUI
+      dockerfile: $PWD/../EtcdUI/Dockerfile
+      args:
+        ETCD_VERSION: ${ETCD_VERSION}
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY}
+    read_only: true
+    image: ${DOCKER_REGISTRY}ia_etcd_ui:${EIS_VERSION}
+    container_name: ia_etcd_ui
+    hostname: ia_etcd_ui
+    network_mode: host
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "exit", "0"]
+      interval: 5m
+    environment:
+      AppName: "EtcdUI"
+      DEV_MODE: ${DEV_MODE}
+      NGINX_PORT: 7071
+      CertType: "pem"
+      no_proxy: ${eis_no_proxy},${ETCD_HOST}
+      ETCD_HOST: ${ETCD_HOST}
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
+    volumes:
+    - "vol_etcd_keeper:/tmp/nginx"
+    user: ${EIS_UID}
+    ipc: "none"
+    # secrets:
+    # - ca_etcd
+    # - etcd_EtcdUI_cert
+    # - etcd_EtcdUI_key
+    # - etcd_etcduser_cert
+    # - etcd_etcduser_key
+
+  ia_eis_zmq_broker:
+    depends_on:
+    - ia_common
+    build:
+      context: $PWD/../EISZmqBroker
+      dockerfile: $PWD/../EISZmqBroker/Dockerfile
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY}
+        # set CMAKE_BUILD_TYPE value to "Debug" to generate debug symbols
+        CMAKE_BUILD_TYPE: "Release"
+    image: ${DOCKER_REGISTRY}ia_eis_zmq_broker:${EIS_VERSION}
+    container_name: ia_eis_zmq_broker
+    hostname: ia_eis_zmq_broker
+    network_mode: host
+    restart: unless-stopped
+    user: ${EIS_UID}
+    security_opt:
+    - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "exit", "0"]
+      interval: 5m
+    environment:
+      AppName: "EISZmqBroker"
+      CertType: "zmq"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${eis_no_proxy},${ETCD_HOST}
+      ETCD_HOST: ${ETCD_HOST}
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
+    volumes:
+    - "vol_eis_socket:${SOCKET_DIR}"
+    # secrets:
+    # - ca_etcd
+    # - etcd_EISZmqBroker_cert
+    # - etcd_EISZmqBroker_key
+
+  mqtt_test_container:
+    depends_on:
+    - ia_eisbase
+    - uwc_test_common
+    build:
+      context: $PWD/../uwc/MQTT/
+      dockerfile: $PWD/../uwc/MQTT/Dockerfile
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+    image: ${DOCKER_REGISTRY}mqtt_test_container:${EIS_VERSION}
+    container_name: mqtt_test_container
+    hostname: mqtt_test_container
+    network_mode: host
+    read_only: true
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "10m"
+    environment:
+      AppName: "MQTT"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${eis_no_proxy}
+      CertType: "zmq"
+    user: ${EIS_UID}
+    # userns_mode: host
+    # secrets:
+    # - ca_broker
+    # - broker_cert
+    # - broker_key
+    security_opt:
+    - no-new-privileges
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    healthcheck:
+      test: ["CMD-SHELL", "timeout --foreground 5 mosquitto_sub --cafile /run/secrets/ca_broker\
+          \ -h 127.0.0.1 -p 11883 --cert /run/secrets/broker_cert --key /run/secrets/broker_key\
+          \ -t '$$SYS/#' -C 1 | grep -v Error || exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
+    ports:
+    - 0.0.0.0:11883:11883
+
+  mqtt-export-test:
+    depends_on:
+    - ia_eisbase
+    - uwc_test_common
+    build:
+      context: $PWD/../uwc/mqtt-export/
+      dockerfile: $PWD/../uwc/mqtt-export/Dockerfile_UT
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+    image: ${DOCKER_REGISTRY}mqtt-export-test:${EIS_VERSION}
+    container_name: mqtt-export-test
+    hostname: mqtt-export-test
+    network_mode: host
+    restart: unless-stopped
+    ulimits:
+      rtprio:
+        soft: "99" # these are the maximum values of priorites to be used inside the container application
+        hard: "99"
+    environment:
+      AppName: "MQTT_Export"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${eis_no_proxy}
+      ETCD_HOST: ${ETCD_HOST}
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+      ZMQ_RECV_HWM: "1000"
+      MQTT_URL_FOR_EXPORT: "${MQTT_PROTOCOL}://mqtt_test_container:11883"
+      ReadRequest: MQTT_Export_RdReq
+      WriteRequest: MQTT_Export_WrReq
+      ReadRequest_RT: MQTT_Export_RdReq_RT
+      WriteRequest_RT: MQTT_Export_WrReq_RT
+      CertType: "zmq"
+      PROFILING_MODE: ${PROFILING_MODE}
+      # general topics
+      mqtt_SubReadTopic: "/+/+/+/read"
+      mqtt_SubWriteTopic: "/+/+/+/write"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "10m"
+    user: ${EIS_UID}
+    # userns_mode: host
+    volumes:
+    - "vol_uwc_socket:${SOCKET_DIR}:z"
+    - "$PWD/unit_test_reports/mqtt-export:/reports/mqtt-export"
+    - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+    - "${EIS_INSTALL_PATH}/container_logs/mqtt-export:/opt/intel/app/logs"
+    # secrets:
+    # - ca_etcd
+    # - etcd_MQTT_Export_cert
+    # - etcd_MQTT_Export_key
+    # - ca_broker
+    # - client_cert
+    # - client_key
+    security_opt:
+    - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/sh", "-c", "ps -C MQTT_Export >/dev/null && echo Running\
+          \ || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
+
+  modbus-tcp-master-test:
+    depends_on:
+    - ia_eisbase
+    - uwc_test_common
+    build:
+      context: $PWD/../uwc/modbus-master/
+      dockerfile: $PWD/../uwc/modbus-master/Dockerfile_UT
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+    image: ${DOCKER_REGISTRY}modbus-tcp-master-test:${EIS_VERSION}
+    container_name: modbus-tcp-master-test
+    hostname: modbus-tcp-master-test
+    network_mode: host
+    read_only: true
+    restart: unless-stopped
+    ulimits:
+      rtprio:
+        soft: "99" # these are the maximum values of priorites to be used inside the container application
+        hard: "99"
+    environment:
+      AppName: "TCP"
+      ETCD_HOST: ${ETCD_HOST}
+      # ETCD_HOST: ${HOST_IP} to be discussed for network mode or not.
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${eis_no_proxy}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+      MY_APP_ID: 1
+      CUTOFF_INTERVAL_PERCENTAGE: 90
+      CertType: "zmq"
+      PROFILING_MODE: ${PROFILING_MODE}
+      NETWORK_TYPE: TCP
+      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "10m"
+    volumes:
+    - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+    - "vol_uwc_socket:${SOCKET_DIR}:z"
+    - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+    - "${EIS_INSTALL_PATH}/container_logs/modbus-tcp-master:/opt/intel/app/logs"
+    - "$PWD/unit_test_reports/modbus-tcp-master:/reports/modbus-tcp-master"
+    user: ${EIS_UID}
+    # userns_mode: host
+    # secrets:
+    # - ca_etcd
+    # - etcd_TCP_cert
+    # - etcd_TCP_key
+    security_opt:
+    - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/sh", "-c", "ps -C ModbusMaster >/dev/null && echo\
+          \ Running || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
+
+  modbus-rtu-test-master:
+    depends_on:
+    - ia_eisbase
+    - uwc_test_common
+    build:
+      context: $PWD/../uwc/modbus-master/
+      dockerfile: $PWD/../uwc/modbus-master/Dockerfile_UT_RTU
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+    image: ${DOCKER_REGISTRY}modbus-rtu-master-test:${EIS_VERSION}
+    container_name: modbus-rtu-master-test
+    hostname: modbus-rtu-master-test
+    network_mode: host
+    read_only: true
+    restart: unless-stopped
+    ulimits:
+      rtprio:
+        soft: "99" # these are the maximum values of priorites to be used inside the container application
+        hard: "99"
+    environment:
+      AppName: "RTU"
+      ETCD_HOST: ${ETCD_HOST}
+      # ETCD_HOST: ${HOST_IP} to be discussed for network mode or not.
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${eis_no_proxy}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+      MY_APP_ID: 2
+      CUTOFF_INTERVAL_PERCENTAGE: 90
+      SERIAL_PORT_RETRY_INTERVAL: 1
+      CertType: "zmq"
+      PROFILING_MODE: ${PROFILING_MODE}
+      NETWORK_TYPE: RTU
+      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "10m"
+    volumes:
+    - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+    - "vol_uwc_socket:${SOCKET_DIR}:z"
+    - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+    - "${EIS_INSTALL_PATH}/container_logs/modbus-rtu-master:/opt/intel/app/logs"
+    - "$PWD/unit_test_reports/modbus-rtu-master:/reports/modbus-rtu-master"
+    user: ${EIS_UID}
+    # userns_mode: host
+    devices:
+    - /dev:/dev
+    privileged: true
+    # secrets:
+    # - ca_etcd
+    # - etcd_RTU_cert
+    # - etcd_RTU_key
+    security_opt:
+    - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/sh", "-c", "ps -C ModbusMaster >/dev/null && echo\
+          \ Running || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
+
+  # uwc-util-test:
+  #   depends_on:
+  #     - ia_eisbase
+  #     - uwc_test_common
+  #   build:
+  #     context: $PWD/../uwc_common/
+  #     dockerfile: $PWD/../uwc_common/Dockerfile_UT
+  #     args:
+  #       EIS_VERSION: ${EIS_VERSION}
+  #       EIS_UID: ${EIS_UID}
+  #       EIS_USER_NAME: ${EIS_USER_NAME}
+  #       ETCD_HOST: ${ETCD_HOST}
+  #       BUILD_NUMBER: ${BUILD_NUMBER}
+  #   image: ${DOCKER_REGISTRY}uwc-util-test:${EIS_VERSION}
+  #   container_name: uwc-util-test
+  #   hostname: uwc-util-test
+  #   ulimits:
+  #    rtprio:
+  #      soft: "99" # these are the maximum values of priorites to be used inside the container application
+  #      hard: "99"
+  #   environment:
+  #     AppName: "UWCUTIL"
+  #     DEV_MODE: ${DEV_MODE}
+  #     no_proxy: ${no_proxy}
+  #     PubTopics: "TCP_WrReq"
+  #     SubTopics: "TCP/TCP_WrResp"
+  #     TCP_WrReq_cfg: "zmq_ipc,/home/user/socket"
+  #     TCP_WrResp_cfg: "zmq_ipc,/home/user/socket"
+  #   volumes:
+  #     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+  #     - "vol_uwc_socket:${SOCKET_DIR}:z"
+  #     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+  #     - "$PWD/unit_test_reports/uwc-util:/reports/uwc-util"
+  #   secrets:
+  #     - ca_etcd
+  #     - etcd_TCP_cert
+  #     - etcd_TCP_key
+  #     - ca_broker
+  #     - client_cert
+  #     - client_key      
+
+volumes:
+  vol_eis_socket:
+    driver: local
+    driver_opts:
+      type: local
+      o: bind
+      device: ${EIS_INSTALL_PATH}/sockets
+
+  vol_etcd_keeper:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+
+  vol_uwc_socket:
+    driver: local
+    driver_opts:
+      type: local
+      o: bind
+      device: ${EIS_INSTALL_PATH}/sockets
+
+# secrets:
+#   ca_etcd:
+#     file: provision/Certificates/ca/ca_certificate.pem
+#   etcd_etcduser_cert:
+#     file: provision/Certificates/root/root_client_certificate.pem
+#   etcd_etcduser_key:
+#     file: provision/Certificates/root/root_client_key.pem
+#   etcd_EtcdUI_cert:
+#     file: provision/Certificates/EtcdUI/EtcdUI_client_certificate.pem
+#   etcd_EtcdUI_key:
+#     file: provision/Certificates/EtcdUI/EtcdUI_client_key.pem
+#   etcd_EISZmqBroker_cert:
+#     file: provision/Certificates/EISZmqBroker/EISZmqBroker_client_certificate.pem
+#   etcd_EISZmqBroker_key:
+#     file: provision/Certificates/EISZmqBroker/EISZmqBroker_client_key.pem
+#   ca_broker:
+#     file: provision/Certificates/ca/ca_certificate.pem
+#   broker_cert:
+#     file: provision/Certificates/mymqttcerts/mymqttcerts_server_certificate.pem
+#   broker_key:
+#     file: provision/Certificates/mymqttcerts/mymqttcerts_server_key.pem
+#   etcd_MQTT_Export_cert:
+#     file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
+#   etcd_MQTT_Export_key:
+#     file: provision/Certificates/MQTT_Export/MQTT_Export_client_key.pem
+#   client_cert:
+#     file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
+#   client_key:
+#     file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem
+#   etcd_root_cert:
+#     file: provision/Certificates/root/root_client_certificate.pem
+#   etcd_root_key:
+#     file: provision/Certificates/root/root_client_key.pem
+#   etcd_TCP_cert:
+#     file: provision/Certificates/TCP/TCP_client_certificate.pem
+#   etcd_TCP_key:
+#     file: provision/Certificates/TCP/TCP_client_key.pem
+#   etcd_RTU_cert:
+#     file: provision/Certificates/RTU/RTU_client_certificate.pem
+#   etcd_RTU_key:
+#     file: provision/Certificates/RTU/RTU_client_key.pem

@@ -30,7 +30,7 @@ TEST_F(MQTTSubscribeHandler_ut, recvdMsg_readTopic)
 {
 
 	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
-				"MQTT_Export_ReadRequest/read",
+				"MQTT_Export_RdReq/read",
 				"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}");
 
 	CMQTTHandler::instance().msgRcvd(recvdMsg);
@@ -98,7 +98,7 @@ TEST_F(MQTTSubscribeHandler_ut, recvdMsg_NonRTPayLoad_read)
 {
 
 	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
-					"MQTT_Export_ReadRequest/read",
+					"MQTT_Export_RdReq/read",
 					"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"0\"}");
 
 	CMQTTHandler::instance().msgRcvd(recvdMsg);

@@ -48,7 +48,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvServiceReq)
 	stMbusApiPram.m_stOnDemandReqData.m_strEisTime				= "2020-03-31 12:34:56";
 	stMbusApiPram.m_stOnDemandReqData.m_strMetric				= "Flow";
 	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime				= "2020-03-13 12:34:56";
-	stMbusApiPram.m_stOnDemandReqData.m_strTopic				= "/flowmeter/PL0/Flow/read";
+	stMbusApiPram.m_stOnDemandReqData.m_strTopic				= "/flowmeter/PL0/D1/read";
 	stMbusApiPram.m_stOnDemandReqData.m_strVersion				= "2.1";
 	stMbusApiPram.m_stOnDemandReqData.m_strWellhead				= "PL0";
 	stMbusApiPram.m_stOnDemandReqData.m_sUsec					= "0";
@@ -321,9 +321,9 @@ TEST_F(ModbusOnDemandHandler_ut, validateInputJson_ValidJason)
 
 	try
 	{
-		bool Value = onDemandHandler::Instance().validateInputJson("/flowmeter/PL0/Flow/read",
+		bool Value = onDemandHandler::Instance().validateInputJson("/flowmeter/PL0/D1/read",
 				"PL0",
-				"Flow");
+				"D1");
 
 		EXPECT_EQ(true, Value);
 	}
@@ -346,9 +346,9 @@ TEST_F(ModbusOnDemandHandler_ut, validateInputJson_InValidJason)
 
 	try
 	{
-		bool Value = onDemandHandler::Instance().validateInputJson("/flowmeter/PL0/Flow/read",
+		bool Value = onDemandHandler::Instance().validateInputJson("/flowmeter/PL0/D1/read",
 				"Invalid",
-				"Flow");
+				"D1");
 
 		EXPECT_EQ(false, Value);
 	}

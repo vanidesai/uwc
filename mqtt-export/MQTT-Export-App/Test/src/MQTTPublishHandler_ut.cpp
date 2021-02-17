@@ -26,7 +26,9 @@ void MQTTPublishHandler_ut::TearDown() {
  */
 TEST_F(MQTTPublishHandler_ut, createNPubMsg_EmptyTopic)
 {
-	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", EmptyTopic, 1);
+	// CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:11883", EmptyTopic, 1);
+	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:11883", EmptyTopic, 1);
+	std::cout<<"1\n";
 	EXPECT_EQ( false, mqttPublisher_ut.createNPubMsg(ValidMsg, EmptyTopic) );
 }
 
@@ -36,11 +38,12 @@ TEST_F(MQTTPublishHandler_ut, createNPubMsg_EmptyTopic)
  * @param :[out] None
  * @return None
  */
-TEST_F(MQTTPublishHandler_ut, createNPubMsg_EmptyMsg)
-{
-	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", EmptyTopic, 1);
-	EXPECT_EQ( false, mqttPublisher_ut.createNPubMsg(EmptyMsg, ValidTopic) );
-}
+// TEST_F(MQTTPublishHandler_ut, createNPubMsg_EmptyMsg)
+// {
+// 	// CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", EmptyTopic, 1);
+// 	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:11883", EmptyTopic, 1);
+// 	EXPECT_EQ( false, mqttPublisher_ut.createNPubMsg(EmptyMsg, ValidTopic) );
+// }
 
 /**
  * Test case to check the behaviour of createNPubMsg() when topic and message both are valid
@@ -48,9 +51,9 @@ TEST_F(MQTTPublishHandler_ut, createNPubMsg_EmptyMsg)
  * @param :[out] None
  * @return None
  */
-TEST_F(MQTTPublishHandler_ut, createNPubMsg_ValidTopic_ValidMsg)
-{
-	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:1883", ValidTopic, 1);
-	EXPECT_EQ( true, mqttPublisher_ut.createNPubMsg(ValidMsg, ValidTopic) );
+// TEST_F(MQTTPublishHandler_ut, createNPubMsg_ValidTopic_ValidMsg)
+// {
+// 	CMQTTPublishHandler mqttPublisher_ut("tcp://mqtt_test_container:11883", ValidTopic, 1);
+// 	EXPECT_EQ( true, mqttPublisher_ut.createNPubMsg(ValidMsg, ValidTopic) );
 
-}
+// }
