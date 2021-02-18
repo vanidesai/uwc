@@ -102,12 +102,12 @@ services:
     - "vol_etcd_keeper:/tmp/nginx"
     user: ${EIS_UID}
     ipc: "none"
-    # secrets:
-    # - ca_etcd
-    # - etcd_EtcdUI_cert
-    # - etcd_EtcdUI_key
-    # - etcd_etcduser_cert
-    # - etcd_etcduser_key
+    secrets:
+    - ca_etcd
+    - etcd_EtcdUI_cert
+    - etcd_EtcdUI_key
+    - etcd_etcduser_cert
+    - etcd_etcduser_key
 
   ia_eis_zmq_broker:
     depends_on:
@@ -143,10 +143,10 @@ services:
       ETCD_PREFIX: ${ETCD_PREFIX}
     volumes:
     - "vol_eis_socket:${SOCKET_DIR}"
-    # secrets:
-    # - ca_etcd
-    # - etcd_EISZmqBroker_cert
-    # - etcd_EISZmqBroker_key
+    secrets:
+    - ca_etcd
+    - etcd_EISZmqBroker_cert
+    - etcd_EISZmqBroker_key
 
   mqtt_test_container:
     depends_on:
@@ -176,10 +176,10 @@ services:
       CertType: "zmq"
     user: ${EIS_UID}
     # userns_mode: host
-    # secrets:
-    # - ca_broker
-    # - broker_cert
-    # - broker_key
+    secrets:
+    - ca_broker
+    - broker_cert
+    - broker_key
     security_opt:
     - no-new-privileges
     ulimits:
@@ -213,7 +213,7 @@ services:
     container_name: mqtt-export-test
     hostname: mqtt-export-test
     network_mode: host
-    restart: unless-stopped
+    # restart: unless-stopped
     ulimits:
       rtprio:
         soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -227,7 +227,7 @@ services:
       ETCD_PREFIX: ${ETCD_PREFIX}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       ZMQ_RECV_HWM: "1000"
-      MQTT_URL_FOR_EXPORT: "${MQTT_PROTOCOL}://mqtt_test_container:11883"
+      MQTT_URL_FOR_EXPORT: "${MQTT_PROTOCOL}://127.0.0.1:11883"
       ReadRequest: MQTT_Export_RdReq
       WriteRequest: MQTT_Export_WrReq
       ReadRequest_RT: MQTT_Export_RdReq_RT
@@ -249,13 +249,13 @@ services:
     - "$PWD/unit_test_reports/mqtt-export:/reports/mqtt-export"
     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
     - "${EIS_INSTALL_PATH}/container_logs/mqtt-export:/opt/intel/app/logs"
-    # secrets:
-    # - ca_etcd
-    # - etcd_MQTT_Export_cert
-    # - etcd_MQTT_Export_key
-    # - ca_broker
-    # - client_cert
-    # - client_key
+    secrets:
+    - ca_etcd
+    - etcd_MQTT_Export_cert
+    - etcd_MQTT_Export_key
+    - ca_broker
+    - client_cert
+    - client_key
     security_opt:
     - no-new-privileges
     healthcheck:
@@ -282,7 +282,7 @@ services:
     hostname: modbus-tcp-master-test
     network_mode: host
     read_only: true
-    restart: unless-stopped
+    # restart: unless-stopped
     ulimits:
       rtprio:
         soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -315,10 +315,10 @@ services:
     - "$PWD/unit_test_reports/modbus-tcp-master:/reports/modbus-tcp-master"
     user: ${EIS_UID}
     # userns_mode: host
-    # secrets:
-    # - ca_etcd
-    # - etcd_TCP_cert
-    # - etcd_TCP_key
+    secrets:
+    - ca_etcd
+    - etcd_TCP_cert
+    - etcd_TCP_key
     security_opt:
     - no-new-privileges
     healthcheck:
@@ -345,7 +345,7 @@ services:
     hostname: modbus-rtu-master-test
     network_mode: host
     read_only: true
-    restart: unless-stopped
+    # restart: unless-stopped
     ulimits:
       rtprio:
         soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -382,10 +382,10 @@ services:
     devices:
     - /dev:/dev
     privileged: true
-    # secrets:
-    # - ca_etcd
-    # - etcd_RTU_cert
-    # - etcd_RTU_key
+    secrets:
+    - ca_etcd
+    - etcd_RTU_cert
+    - etcd_RTU_key
     security_opt:
     - no-new-privileges
     healthcheck:
@@ -396,13 +396,79 @@ services:
       retries: 3
       start_period: 0s
 
+  kpi-tactic:
+    depends_on:
+      - ia_eisbase
+      - uwc_test_common
+    build:
+      context: $PWD/../uwc/kpi-tactic/
+      dockerfile: $PWD/../uwc/kpi-tactic/Dockerfile_UT
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+        BUILD_NUMBER: ${BUILD_NUMBER}
+    image: ${DOCKER_REGISTRY}kpi-tactic-test:${EIS_VERSION}
+    container_name: kpi-tactic-test
+    hostname: kpi-tactic-test
+    network_mode: host
+    # read_only: true
+    restart: unless-stopped
+    ulimits:
+      rtprio:
+        soft: "99" # these are the maximum values of priorites to be used inside the container application
+        hard: "99"
+    environment:
+      AppName: "KPIAPP"
+      ETCD_HOST: ${ETCD_HOST}
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${eis_no_proxy}
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+      MQTT_URL: "${MQTT_PROTOCOL}://127.0.0.1:11883"
+      KPIAPPConfigFile: "ControlLoopConfig.yml"
+      # Clients: "TCP,RTU"
+      CertType: "zmq"
+      BUILD_NUMBER: ${BUILD_NUMBER}
+      PROFILING_MODE: ${PROFILING_MODE}
+      WriteRequest_RT: "RT_KPIAPP_WrReq_RT"
+      WriteRequest: "KPIAPP_WrReq"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "10m"
+    user: ${EIS_UID}
+    volumes:
+    - "vol_uwc_socket:${SOCKET_DIR}:z"
+    - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+    - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+    - "${EIS_INSTALL_PATH}/container_logs/kpi-tactic:/opt/intel/app/logs"
+    - "$PWD/unit_test_reports/kpi-tactic:/reports/kpi-tactics"
+    secrets:
+      - ca_etcd
+      - etcd_KPIAPP_cert
+      - etcd_KPIAPP_key
+      - ca_broker
+      - client_cert
+      - client_key     
+    security_opt:
+      - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/sh","-c", "ps -C KPIAPP >/dev/null && echo Running || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
+
   # uwc-util-test:
   #   depends_on:
   #     - ia_eisbase
   #     - uwc_test_common
   #   build:
-  #     context: $PWD/../uwc_common/
-  #     dockerfile: $PWD/../uwc_common/Dockerfile_UT
+  #     context: $PWD/../uwc/uwc_common/
+  #     dockerfile: $PWD/../uwc/uwc_common/Dockerfile_UT
   #     args:
   #       EIS_VERSION: ${EIS_VERSION}
   #       EIS_UID: ${EIS_UID}
@@ -419,7 +485,7 @@ services:
   #   environment:
   #     AppName: "UWCUTIL"
   #     DEV_MODE: ${DEV_MODE}
-  #     no_proxy: ${no_proxy}
+  #     no_proxy: ${eis_no_proxy}
   #     PubTopics: "TCP_WrReq"
   #     SubTopics: "TCP/TCP_WrResp"
   #     TCP_WrReq_cfg: "zmq_ipc,/home/user/socket"
@@ -458,44 +524,48 @@ volumes:
       o: bind
       device: ${EIS_INSTALL_PATH}/sockets
 
-# secrets:
-#   ca_etcd:
-#     file: provision/Certificates/ca/ca_certificate.pem
-#   etcd_etcduser_cert:
-#     file: provision/Certificates/root/root_client_certificate.pem
-#   etcd_etcduser_key:
-#     file: provision/Certificates/root/root_client_key.pem
-#   etcd_EtcdUI_cert:
-#     file: provision/Certificates/EtcdUI/EtcdUI_client_certificate.pem
-#   etcd_EtcdUI_key:
-#     file: provision/Certificates/EtcdUI/EtcdUI_client_key.pem
-#   etcd_EISZmqBroker_cert:
-#     file: provision/Certificates/EISZmqBroker/EISZmqBroker_client_certificate.pem
-#   etcd_EISZmqBroker_key:
-#     file: provision/Certificates/EISZmqBroker/EISZmqBroker_client_key.pem
-#   ca_broker:
-#     file: provision/Certificates/ca/ca_certificate.pem
-#   broker_cert:
-#     file: provision/Certificates/mymqttcerts/mymqttcerts_server_certificate.pem
-#   broker_key:
-#     file: provision/Certificates/mymqttcerts/mymqttcerts_server_key.pem
-#   etcd_MQTT_Export_cert:
-#     file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
-#   etcd_MQTT_Export_key:
-#     file: provision/Certificates/MQTT_Export/MQTT_Export_client_key.pem
-#   client_cert:
-#     file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
-#   client_key:
-#     file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem
-#   etcd_root_cert:
-#     file: provision/Certificates/root/root_client_certificate.pem
-#   etcd_root_key:
-#     file: provision/Certificates/root/root_client_key.pem
-#   etcd_TCP_cert:
-#     file: provision/Certificates/TCP/TCP_client_certificate.pem
-#   etcd_TCP_key:
-#     file: provision/Certificates/TCP/TCP_client_key.pem
-#   etcd_RTU_cert:
-#     file: provision/Certificates/RTU/RTU_client_certificate.pem
-#   etcd_RTU_key:
-#     file: provision/Certificates/RTU/RTU_client_key.pem
+secrets:
+  ca_etcd:
+    file: provision/Certificates/ca/ca_certificate.pem
+  etcd_etcduser_cert:
+    file: provision/Certificates/root/root_client_certificate.pem
+  etcd_etcduser_key:
+    file: provision/Certificates/root/root_client_key.pem
+  etcd_EtcdUI_cert:
+    file: provision/Certificates/EtcdUI/EtcdUI_client_certificate.pem
+  etcd_EtcdUI_key:
+    file: provision/Certificates/EtcdUI/EtcdUI_client_key.pem
+  etcd_EISZmqBroker_cert:
+    file: provision/Certificates/EISZmqBroker/EISZmqBroker_client_certificate.pem
+  etcd_EISZmqBroker_key:
+    file: provision/Certificates/EISZmqBroker/EISZmqBroker_client_key.pem
+  ca_broker:
+    file: provision/Certificates/ca/ca_certificate.pem
+  broker_cert:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_server_certificate.pem
+  broker_key:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_server_key.pem
+  etcd_MQTT_Export_cert:
+    file: provision/Certificates/MQTT_Export/MQTT_Export_client_certificate.pem
+  etcd_MQTT_Export_key:
+    file: provision/Certificates/MQTT_Export/MQTT_Export_client_key.pem
+  client_cert:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
+  client_key:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem
+  etcd_root_cert:
+    file: provision/Certificates/root/root_client_certificate.pem
+  etcd_root_key:
+    file: provision/Certificates/root/root_client_key.pem
+  etcd_TCP_cert:
+    file: provision/Certificates/TCP/TCP_client_certificate.pem
+  etcd_TCP_key:
+    file: provision/Certificates/TCP/TCP_client_key.pem
+  etcd_RTU_cert:
+    file: provision/Certificates/RTU/RTU_client_certificate.pem
+  etcd_RTU_key:
+    file: provision/Certificates/RTU/RTU_client_key.pem
+  etcd_KPIAPP_cert:
+    file: provision/Certificates/KPIAPP/KPIAPP_client_certificate.pem
+  etcd_KPIAPP_key:
+    file: provision/Certificates/KPIAPP/KPIAPP_client_key.pem
