@@ -12,9 +12,9 @@
 #define CTOPICMAPPER_UT_H_
 
 #include <gtest/gtest.h>
-//#include "../../include/TopicMapper.hpp"
 #include "Common.hpp"
 
+#include "ConfigManager.hpp"
 
 class Common_ut : public ::testing::Test {
 

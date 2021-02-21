@@ -10,6 +10,7 @@ createTestDir()
 	mkdir -p unit_test_reports/mqtt-export
 	mkdir -p unit_test_reports/scada-rtu
     mkdir -p unit_test_reports/kpi-tactic
+	mkdir -p unit_test_reports/uwc-util
 	chown -R $SUDO_USER:$SUDO_USER unit_test_reports
 	chmod -R 777 unit_test_reports
 	cd "${eis_working_dir}"

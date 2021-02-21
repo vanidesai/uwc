@@ -259,20 +259,10 @@ TEST_F(ZmqHandler_ut, prepareContext_NULLArg_msgbus_ctx)
 	EXPECT_EQ(false, Res);
 }
 
-/**Test for prepareContext()**/
 TEST_F(ZmqHandler_ut, prepareContext_SubFails)
 {
 	void* msgbus_ctx;
 	string topicType = "sub";
-/*
-char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
-config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
-								CfgManager::Instance().getConfigClient(),
-								ppcTopics , 1, topicType.c_str());
-*/
-
-	// std::vector<std::string> vFullTopics;
-	// bool tempRet = zmq_handler::returnAllTopics("sub", vFullTopics);
 
 	SubscriberCfg* sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(0);
 
@@ -288,19 +278,11 @@ config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
 	EXPECT_TRUE(Res);
 }
 
-
 /**Test for prepareContext()**/
 TEST_F(ZmqHandler_ut, prepareContext_TopicEmpty)
 {
 	void* msgbus_ctx;
 	string topicType = "sub";
-
-	/*char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
-
-	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
-								CfgManager::Instance().getConfigClient(),
-								ppcTopics , 1, topicType.c_str());
-    */
 
    	SubscriberCfg* sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(0);
 
@@ -321,14 +303,6 @@ TEST_F(ZmqHandler_ut, prepareContext_NULLArg_config)
 {
 	void* msgbus_ctx;
 	string topicType = "sub";
-/*
-	char** ppcTopics = CfgManager::Instance().getEnvClient()->get_topics_from_env(topicType.c_str());
-
-	config_t* config = CfgManager::Instance().getEnvClient()->get_messagebus_config(
-								CfgManager::Instance().getConfigClient(),
-								ppcTopics , 1, topicType.c_str());
-
-*/
 
 	SubscriberCfg* sub_ctx = CfgManager::Instance().getEiiCfgMgr()->getSubscriberByIndex(0);
 
@@ -343,4 +317,3 @@ TEST_F(ZmqHandler_ut, prepareContext_NULLArg_config)
 
 	EXPECT_EQ(false, Res);
 }
-

@@ -368,15 +368,7 @@ int main(int argc, char* argv[])
 					return -1;
 				} 
 
-				auto len = vecTopics.size();
-				std::cout<<"%%%%%%%%%%PUBvecTopics length=%%%%%%%%%%%"<<len<<"\n";
-				std::cout<<"%%%%%%%%%%PUB vecTopics elements are as follows%%%%%%%%%%%\n";
-				for(auto i=0;i<len;++i) {
-					std::cout<<"\n%%%%%%%%PUB vecTopics[i]="<<vecTopics[i]<<"%%%%%%%\n";
-				}
-
 				for(auto eachTopic : vecTopics) {
-					std::cout<<"\n$$$$$$$$$$$$$$$In main: PUB eachTopic$$$$$$$$$$$$$$$$$$$$$"<<eachTopic<<std::endl;
 					PublishJsonHandler::instance().setTopicForOperation(eachTopic);
 				} 
 			}
@@ -401,16 +393,8 @@ int main(int argc, char* argv[])
 				if(tempRet == false) {
 					return -1;
 				} 
-				
-				auto len = vecTopics.size();
-				std::cout<<"%%%%%%%%%%SUBvecTopics length=%%%%%%%%%%%"<<len<<"\n";
-				std::cout<<"%%%%%%%%%%SUB vecTopics elements are as follows%%%%%%%%%%%\n";
-				for(auto i=0;i<len;++i) {
-					std::cout<<"\n%%%%%%%%SUB vecTopics[i]="<<vecTopics[i]<<"%%%%%%%\n";
-				}
 
 				for(auto eachTopic : vecTopics) {
-					std::cout<<"$$$$$$$$$$$$$$$In main: SUB eachTopic$$$$$$$$$$$$$$$$$$$$$"<<eachTopic<<std::endl;
 					PublishJsonHandler::instance().setTopicForOperation(eachTopic);
 				} 
 				//CcommonEnvManager::Instance().splitString(static_cast<std::string>(pcSubTopic),',');

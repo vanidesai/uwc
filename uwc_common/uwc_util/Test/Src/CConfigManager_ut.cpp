@@ -35,8 +35,9 @@ TEST_F(CConfigManager_ut, getInstance)
 	UWCDataToLib.m_isCommonDataInitialised = true;
 
 	CcommonEnvManager::Instance().ShareToLibUwcCmnData(UWCDataToLib);
-
+	std::cout<<"1\n";
 	CfgManager::Instance();
+	std::cout<<"2\n";
 	EXPECT_EQ(typeid(CfgManager), typeid(CfgManager::Instance()));
 }
 
@@ -50,7 +51,7 @@ TEST_F(CConfigManager_ut, IsClientCreated_CriticalDataInitialised)
 
 	CcommonEnvManager::Instance().ShareToLibUwcCmnData(UWCDataToLib);
 
-	EXPECT_FALSE(CfgManager::Instance().IsClientCreated());
+	EXPECT_TRUE(CfgManager::Instance().IsClientCreated());
 }
 
 

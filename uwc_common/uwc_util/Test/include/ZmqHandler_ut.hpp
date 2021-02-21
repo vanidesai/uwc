@@ -48,6 +48,8 @@ public:
 	 publisher_ctx_t *pub_ctx = NULL;
 	 uint16_t u16TransacID = 1;
 //	 cJSON *root = cJSON_Parse(msg.c_str());
+	virtual ~ZmqHandler_ut()
+	{ };
 
 };
 

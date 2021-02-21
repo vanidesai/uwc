@@ -413,7 +413,7 @@ services:
     hostname: kpi-tactic-test
     network_mode: host
     # read_only: true
-    restart: unless-stopped
+    # restart: unless-stopped
     ulimits:
       rtprio:
         soft: "99" # these are the maximum values of priorites to be used inside the container application
@@ -428,7 +428,6 @@ services:
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       MQTT_URL: "${MQTT_PROTOCOL}://127.0.0.1:11883"
       KPIAPPConfigFile: "ControlLoopConfig.yml"
-      # Clients: "TCP,RTU"
       CertType: "zmq"
       BUILD_NUMBER: ${BUILD_NUMBER}
       PROFILING_MODE: ${PROFILING_MODE}
@@ -452,7 +451,7 @@ services:
       - etcd_KPIAPP_key
       - ca_broker
       - client_cert
-      - client_key     
+      - client_key
     security_opt:
       - no-new-privileges
     healthcheck:
@@ -462,46 +461,46 @@ services:
       retries: 3
       start_period: 0s
 
-  # uwc-util-test:
-  #   depends_on:
-  #     - ia_eisbase
-  #     - uwc_test_common
-  #   build:
-  #     context: $PWD/../uwc/uwc_common/
-  #     dockerfile: $PWD/../uwc/uwc_common/Dockerfile_UT
-  #     args:
-  #       EIS_VERSION: ${EIS_VERSION}
-  #       EIS_UID: ${EIS_UID}
-  #       EIS_USER_NAME: ${EIS_USER_NAME}
-  #       ETCD_HOST: ${ETCD_HOST}
-  #       BUILD_NUMBER: ${BUILD_NUMBER}
-  #   image: ${DOCKER_REGISTRY}uwc-util-test:${EIS_VERSION}
-  #   container_name: uwc-util-test
-  #   hostname: uwc-util-test
-  #   ulimits:
-  #    rtprio:
-  #      soft: "99" # these are the maximum values of priorites to be used inside the container application
-  #      hard: "99"
-  #   environment:
-  #     AppName: "UWCUTIL"
-  #     DEV_MODE: ${DEV_MODE}
-  #     no_proxy: ${eis_no_proxy}
-  #     PubTopics: "TCP_WrReq"
-  #     SubTopics: "TCP/TCP_WrResp"
-  #     TCP_WrReq_cfg: "zmq_ipc,/home/user/socket"
-  #     TCP_WrResp_cfg: "zmq_ipc,/home/user/socket"
-  #   volumes:
-  #     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
-  #     - "vol_uwc_socket:${SOCKET_DIR}:z"
-  #     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-  #     - "$PWD/unit_test_reports/uwc-util:/reports/uwc-util"
-  #   secrets:
-  #     - ca_etcd
-  #     - etcd_TCP_cert
-  #     - etcd_TCP_key
-  #     - ca_broker
-  #     - client_cert
-  #     - client_key      
+  uwc-util-test:
+    depends_on:
+      - ia_eisbase
+      - uwc_test_common
+    build:
+      context: $PWD/../uwc/uwc_common/
+      dockerfile: $PWD/../uwc/uwc_common/Dockerfile_UT
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+        ETCD_HOST: ${ETCD_HOST}
+        BUILD_NUMBER: ${BUILD_NUMBER}
+    image: ${DOCKER_REGISTRY}uwc-util-test:${EIS_VERSION}
+    container_name: uwc-util-test
+    hostname: uwc-util-test
+    network_mode: host
+    # read_only: true
+    ulimits:
+     rtprio:
+       soft: "99" # these are the maximum values of priorites to be used inside the container application
+       hard: "99"
+    environment:
+      AppName: "UWCUTIL"
+      DEV_MODE: ${DEV_MODE}
+      ETCD_HOST: ${ETCD_HOST}
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
+      no_proxy: ${eis_no_proxy}
+      CertType: "zmq"
+    user: ${EIS_UID}  
+    volumes:
+      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+      - "vol_uwc_socket:${SOCKET_DIR}:z"
+      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+      - "$PWD/unit_test_reports/uwc-util:/reports/uwc-util"
+    secrets:
+      - ca_etcd
+      - etcd_UWCUTIL_cert
+      - etcd_UWCUTIL_key
 
 volumes:
   vol_eis_socket:
@@ -569,3 +568,7 @@ secrets:
     file: provision/Certificates/KPIAPP/KPIAPP_client_certificate.pem
   etcd_KPIAPP_key:
     file: provision/Certificates/KPIAPP/KPIAPP_client_key.pem
+  etcd_UWCUTIL_cert:
+    file: provision/Certificates/UWCUTIL/UWCUTIL_client_certificate.pem
+  etcd_UWCUTIL_key:
+    file: provision/Certificates/UWCUTIL/UWCUTIL_client_key.pem    

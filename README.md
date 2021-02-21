@@ -112,12 +112,28 @@ docker logs modbus-tcp-container > docker.log 2>&1
 cd <working-dir>/IEdgeInsights/build
 docker-compose down  - bring down all containers
 docker-compose up -d - bring up all containers in background
-
+```
 ## Notes
 *  If docker-compose.yml is modified then bring down the containers & then bring them up as mentioned above.
 *  If previous containers are running on deploy machine, then stop those containers using command for bringing down containers as mentioned above.
 *  Can use MQTT.FX or any other MQTT client to verify teh flow or all 6 operations for RT/Non-RT, read/write,polling operations
 ```
+
+## Unit Tests
+All the modules have unit tests enabled. In orer to run the unit tests, follow the below steps:
+```
+$cp <working-dir>/IEdgeInsights/uwc/docker-compose_UT.yml <working-dir>/IEdgeInsights/build/docker-compose.yml
+$cp <working-dir>/IEdgeInsights/uwc/eis_config_UT.json <working-dir>/IEdgeInsights/build/provision/config/eis_config.json
+$cd <working-dir>/IEdgeInsights/uwc
+$sudo sh pre_req.sh
+$sh ut_pre_req.sh
+$cd <working-dir>/IEdgeInsights/build/provision
+$sudo ./provision_eis.sh ../docker-compose.yml (Provisioning)
+$cd <working-dir>/IEdgeInsights/build
+$docker-compose up --build -d   (Build & run unit test containers)
+```
+Now check for the unit test reports for all services of UWC in "<working-dir>/IEdgeInsights/build/unit_test_reports/". 
+
 ## Troubleshooting
 ```
 Follow Method 2 from here https://www.thegeekdiary.com/how-to-configure-docker-to-use-proxy/ to set proxy for docker

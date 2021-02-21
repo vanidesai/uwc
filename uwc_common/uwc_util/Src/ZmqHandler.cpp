@@ -172,7 +172,6 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 		if(topicType == "pub") {
 			int numPublishers = CfgManager::Instance().getEiiCfgMgr()->getNumPublishers();
 			for(auto it =0; it<numPublishers; ++it) {
-				std::cout<<"\nTEMP CHECK\n";
 				pub_ctx = CfgManager::Instance().getEiiCfgMgr()->getPublisherByIndex(it);
 				pub_config = pub_ctx->getMsgBusConfig();
 
