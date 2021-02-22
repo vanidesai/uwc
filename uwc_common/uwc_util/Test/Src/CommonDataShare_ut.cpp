@@ -47,16 +47,6 @@ TEST_F(CommonDataShare_ut, getDevMode)
 	EXPECT_EQ(bDevMode, stCommonDataVal.m_devMode);
 }
 
-/**Test for getTopicList()**/
-TEST_F(CommonDataShare_ut, splitStringTopicList)
-{
-	std::string strTemp = "uwc-util,uwc-util-nw";
-	CcommonEnvManager::Instance().splitString(strTemp,',');
-
-	std::vector<std::string> vtTopicList;
-	vtTopicList = CcommonEnvManager::Instance().getTopicList();
-}
-
 /**Test for getTimeParams()**/
 TEST_F(CommonDataShare_ut, getTimeParam)
 {

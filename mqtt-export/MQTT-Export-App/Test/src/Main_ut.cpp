@@ -38,7 +38,6 @@ void TargetCaller_postMsgstoMQTT()
 {
 	g_shouldStop = true;
 	postMsgstoMQTT();
-
 	for (auto &th : g_vThreads)
 	{
 		th.detach();
@@ -54,11 +53,11 @@ void TargetCaller_postMsgstoMQTT()
 TEST_F(Main_ut, processMsgToSendOnEIS_ValidTopic)
 {
 	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
-			"{\"topic\": \"MQTT_Export_ReadRequest\"}",
+			"{\"topic\": \"MQTT_Export_RdReq\"}",
 			"{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}");
 
 	CMessageObject Temp(recvdMsg);
-	std::string Topic = "MQTT_Export_ReadRequest";
+	std::string Topic = "MQTT_Export_RdReq";
 	processMsgToSendOnEIS(Temp, Topic);
 
 }
@@ -107,13 +106,6 @@ TEST_F(Main_ut, processMsg_TopicNotPresentInZMQmsg)
 	bool RetVal = processMsg(msg, mqttPublisher);
 
 	EXPECT_EQ(false, RetVal);
-}
-
-TEST_F(Main_ut, postMsgstoMQTT)
-{
-	std::thread Thread_TargetCaller_postMsgstoMQTT( TargetCaller_postMsgstoMQTT );
-	std::this_thread::sleep_for(std::chrono::seconds(10));
-	Thread_TargetCaller_postMsgstoMQTT.join();
 }
 
 /**
@@ -180,6 +172,7 @@ TEST_F(Main_ut, set_thread_priority_for_eis_NonRTWrite)
  */
 TEST_F(Main_ut, postMsgsToEIS_RTRead)
 {
+	g_shouldStop = true;
 	postMsgsToEIS(QMgr::getRTRead());
 }
 
@@ -191,6 +184,7 @@ TEST_F(Main_ut, postMsgsToEIS_RTRead)
  */
 TEST_F(Main_ut, postMsgsToEIS_RTWrite)
 {
+	g_shouldStop = true;
 	postMsgsToEIS(QMgr::getRTWrite());
 }
 
@@ -202,6 +196,7 @@ TEST_F(Main_ut, postMsgsToEIS_RTWrite)
  */
 TEST_F(Main_ut, postMsgsToEIS_Read)
 {
+	g_shouldStop = true;
 	postMsgsToEIS(QMgr::getRead());
 }
 
@@ -213,5 +208,19 @@ TEST_F(Main_ut, postMsgsToEIS_Read)
  */
 TEST_F(Main_ut, postMsgsToEIS_Write)
 {
+	g_shouldStop = true;
 	postMsgsToEIS(QMgr::getWrite());
+}
+
+/**
+ * Test case to check if postMsgstoMQTT() works fine
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
+TEST_F(Main_ut, postMsgstoMQTT)
+{
+	std::thread Thread_TargetCaller_postMsgstoMQTT( TargetCaller_postMsgstoMQTT );
+	std::this_thread::sleep_for(std::chrono::seconds(10));
+	Thread_TargetCaller_postMsgstoMQTT.join();
 }

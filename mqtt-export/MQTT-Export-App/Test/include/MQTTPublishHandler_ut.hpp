@@ -26,7 +26,7 @@ protected:
 public:
 
 	std::string EmptyTopic = "";
-	std::string ValidTopic = "MQTT_Export_ReadRequest";
+	std::string ValidTopic = "MQTT_Export_RdReq";
 	std::string EmptyMsg = "";
 	std::string ValidMsg = "{\"wellhead\": \"PL0\",\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}";
 

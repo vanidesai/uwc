@@ -39,10 +39,10 @@ void ModbusOnDemandHandler_ut::TearDown()
 TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvServiceReq)
 {
 
-	stMbusApiPram.m_stOnDemandReqData.m_isByteSwap				= true;
+	stMbusApiPram.m_stOnDemandReqData.m_isByteSwap				= false;
 	stMbusApiPram.m_stOnDemandReqData.m_isRT					= true;
-	stMbusApiPram.m_stOnDemandReqData.m_isWordSwap				= true;
-	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_nsec	= 21132323;
+	stMbusApiPram.m_stOnDemandReqData.m_isWordSwap				= false;
+	 stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_nsec	= 21132323;
 	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_sec		= 1;
 	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq				= "455";
 	stMbusApiPram.m_stOnDemandReqData.m_strEisTime				= "2020-03-31 12:34:56";
@@ -68,7 +68,6 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvServiceReq)
 	{
 		EXPECT_EQ("", e.what());
 	}
-
 }
 
 /**
@@ -82,7 +81,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
 
 	stMbusApiPram.m_u16TxId = PublishJsonHandler::instance().getTxId();
 	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = "1234";
-	stMbusApiPram.m_stOnDemandReqData.m_strMetric =  "Flow";
+	stMbusApiPram.m_stOnDemandReqData.m_strMetric =  "D1";
 	stMbusApiPram.m_stOnDemandReqData.m_sValue = "0X00";
 	stMbusApiPram.m_stOnDemandReqData.m_strWellhead = "PL0";
 	stMbusApiPram.m_stOnDemandReqData.m_strVersion = "version";
@@ -321,9 +320,9 @@ TEST_F(ModbusOnDemandHandler_ut, validateInputJson_ValidJason)
 
 	try
 	{
-		bool Value = onDemandHandler::Instance().validateInputJson("/flowmeter/PL0/Flow/read",
+		bool Value = onDemandHandler::Instance().validateInputJson("/flowmeter/PL0/D1/read",
 				"PL0",
-				"Flow");
+				"D1");
 
 		EXPECT_EQ(true, Value);
 	}
@@ -346,9 +345,9 @@ TEST_F(ModbusOnDemandHandler_ut, validateInputJson_InValidJason)
 
 	try
 	{
-		bool Value = onDemandHandler::Instance().validateInputJson("/flowmeter/PL0/Flow/read",
+		bool Value = onDemandHandler::Instance().validateInputJson("/flowmeter/PL0/D1/read",
 				"Invalid",
-				"Flow");
+				"D1");
 
 		EXPECT_EQ(false, Value);
 	}
