@@ -11,6 +11,20 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  **********************************************************************************************************************
 ```
+
+# Contents:
+1. [Directory details](#directory-details)
+2. [Install generic pre-requisites](#install-generic-pre-requisites)
+3. [Install UWC specific pre-requisites](#install-UWC-specific-pre-requisites)
+4. [Provision EII and UWC services](#Provision-EII-and-UWC-services)
+5. [Build and Run all EII and UWC services](#build-and-run-all-eii-and-uwc-services)
+6. [Verify container status](#verify-container-status)
+7. [Apply configuration changes](#apply-configuration-changes)
+8. [Uninstallation script](#uninstallation-script)
+9. [Unit Tests](#unit-tests)
+10. [Debugging steps](#debugging-steps) 
+11. [Troubleshooting](#troubleshooting)
+
 ## Directory details
 The directory comprises of following:
 * modbus-master :
@@ -35,45 +49,41 @@ The directory comprises of following:
 * uwc_common:
   This directory contains common dockefiles for UWC
 
-## Install pre-requisites
-```
-1.Install python3.6 version and required packages
-$sudo apt-get install python3.6
-$sudo python3.6  -m  pip install jsonmerge
-$python3.6  -m  pip install  ruamel.yaml
-2.After having successfully repo-synched the uwc.xml recipe from eis-manifest repo
-Generate the consolidated docker-compose.yml & eis_config.json using the eis_builder utility from the eis-core repo. Can either use "build/uwc-pipeline-without-scada.yml" , "build/uwc-pipeline-with-scada.yml", "build/uwc-pipeline-with-kpi-no-scada.yml" with eis-builder based on the services needed for use case. Also, the recipe YML files can be edited as per the services needed.
-Steps for running this eis_builder utility can be obtained from "https://github.impcloud.net/uwc/eii-core#eis-pre-requisites".
-An example to use eis_builder utility is also shown as below. This generates consolidated docker-compose.yml & eis_config.json with the services mentioned in the "services recipe YML file" uwc-pipeline-with-kpi-no-scada.yml:
-$cd "<working-dir>"/IEdgeInsights/<build>
-$python3.6 eis_builder.py -f uwc-pipeline-with-kpi-no-scada.yml
+## Install generic pre-requisites
 
-3. Run "sudo sh pre_req.sh" from "<working-dir>/IEdgeInsights/uwc" directory. This creates necessary directories in /opt/intel/eis/ for log files storage & also copies UWC YAML configuration files. 
-4. cd to "<working-dir>/IEdgeInsights/build" & then open .env. 
-5. Update the key "DEV_MODE=true/false" based on the intended mode of running the services in either DEVELOPMENT (DEV_MODE=true) or PRODUCTION MODE (DEV_MODE=false).
-6. Update the key "MQTT_PROTOCOL=tcp/ssl" based on the intended mode of running the services in either DEVELOPMENT (MQTT_PROTOCOL=tcp) or PRODUCTION MODE (MQTT_PROTOCOL=ssl).
-7. Default is prod mode.
-8. NOTE: In prod mode, the "Certificates" directory in "<working-dir>/IEdgeInsights/build/provision" needs 'sudo su" to be accessed. i.e. to open Certificates folder do the following:
-  a. cd <working-dir>/IEdgeInsights/build/provision
-  b. sudo su
-  c. cd Certificates
-9. After accessing Certificates, enter "exit" command & terminal would return back to normal mode.
-10. IMPORTANT NOTE: EVERYTIME THE MODE IS SWITCHED (DEV<->PROD) BY MAKING CHANGES IN .ENV FILE AS ABOVE, MAKE SURE TO RE-RUN THE "eis_builder.py" utility as mentioned above, again, even if the recipe hasn't changed. This is needed to re-generate consolidated docker-compose.yml file in build directory as per dev/prod mode.
-```
+1. Follow the steps in the section `EII-Prerequisites-Installation` of `<working-directory>/IEdgeInsights/README.md`  to install all the pre-requisites.
 
-## Provision EIS & UWC services
-```
-Execute below command on terminal for provisioning EIS & UWC services.
-1. cd <working-dir>/IEdgeInsights/build/provision
-2. sudo ./provision_eis.sh ../docker-compose.yml
+  ```sh
+    $ <working-dir>/IEdgeInsights/build
+    $ sudo ./pre-requisites.sh --help
+  ```
+
+2. If the required UWC code base is not yet repo synched or (git repositories cloned), then kindly follow the repo or git steps from  `<working-directory>/IEdgeInsights/../.repo/manifests/README.md` to repo sync or git clone the codebase.
+
+## Install UWC specific pre-requisites
+1. All the below UWC specific scripts need to be run from the directory `IEdgeInsights\uwc`:
+  ```sh
+    $ cd <working-dir>/IEdgeInsights/uwc/
+    $ sudo ./01_uwc_pre_requisites.sh
+  ```
+
+  b. Runs the builder script enabling to choose the UWC recipe needed for the use case. Next it prompts the user to select `develeopment mode` or `production mode` & prepares to run in the selected mode. Finally does the provisioning based on the recipe & mode selected.
+    ```sh
+    $ cd <working-dir>/IEdgeInsights/uwc/
+    $ sudo ./02_provision_UWC.sh
+    ```
+## Provision EII and UWC services
+Runs the builder script enabling to choose the UWC recipe needed for the use case. Next it prompts the user to select `develeopment mode` or `production mode` & prepares the set up to run in the selected mode. Finally it does the provisioning of EIS & UWC services based on the recipe & mode selected. 
+```sh
+    $ cd <working-dir>/IEdgeInsights/uwc/
+    $ sudo ./02_provision_UWC.sh
 ```
 
-## Build and Run all UWC & EIS containers
-```
-Execute below command on terminal for container deployment.
-1. cd <working-dir>/IEdgeInsights/build/
-2. docker-compose up --build -d
-
+## Build and Run all EII and UWC services
+Builds all the micro-services of the recipe & runs them as containers in background (daemon process).
+```sh
+  $ cd <working-dir>/IEdgeInsights/uwc/
+  $ sudo ./03_Build_Run_UWC.sh 
 ```
 
 ## Verify container status
@@ -81,6 +91,27 @@ Execute below command on terminal for container deployment.
 Execute below command on terminal to verify container status.
 sudo docker ps
 ```
+
+## Apply configuration changes
+If any configuration changes are done to UWC YML files, then run this script which will bring down the containers & bring them up back. Note that the services are not built here.
+  ```sh
+  $ cd <working-dir>/IEdgeInsights/uwc/
+  $ 05_applyConfigChanges.sh
+  ```
+
+## Uninstallation script
+Used to uninstall & remove the UWC installation.
+  ```sh
+  $ cd <working-dir>/IEdgeInsights/uwc/
+  $ 04_uninstall_UWC.sh
+  ```
+## Unit Tests
+All the UWC modules have unit tests enabled in production mode. In order to run the unit tests, follow the below steps:
+```sh
+$ cd <working-dir>/IEdgeInsights/uwc/
+$ sudo ./06_UnitTestRun.sh "false"
+```
+Now check for the unit test reports for all services of UWC in "<working-dir>/IEdgeInsights/build/unit_test_reports/".
 
 ## Debugging steps
 ```
@@ -101,39 +132,19 @@ docker logs modbus-tcp-container > docker.log 2>&1
 1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL for dev mode & `https://localhost:7071/etcdkeeper/` for prod mode . (username - root , password- eis123)
 2. EIS Message Bus related interface configurations (including secrets) for all UWC & EII containers are stored in ia_etcd server, which can be accessed using EtcdUI as mentioned above.
 
-## Steps to apply new configuration (i.e. YML files or docker-compose.yml)
-  Once YML files/docker-compose.yml are changed/Modified in /opt/intel/eis/uwc_data directory then execute following command to apply new configurations,
- ```
-  1. cd <working-dir>/IEdgeInsights/build
-  2. docker-compose down && docker-compose up --build -d
-```
-## How to bring up/down UWC containers
-```
-cd <working-dir>/IEdgeInsights/build
-docker-compose down  - bring down all containers
-docker-compose up -d - bring up all containers in background
-```
 ## Notes
 *  If docker-compose.yml is modified then bring down the containers & then bring them up as mentioned above.
 *  If previous containers are running on deploy machine, then stop those containers using command for bringing down containers as mentioned above.
 *  Can use MQTT.FX or any other MQTT client to verify teh flow or all 6 operations for RT/Non-RT, read/write,polling operations
-```
-
-## Unit Tests
-All the modules have unit tests enabled. In orer to run the unit tests, follow the below steps:
-```
-$cp <working-dir>/IEdgeInsights/uwc/docker-compose_UT.yml <working-dir>/IEdgeInsights/build/docker-compose.yml
-$cp <working-dir>/IEdgeInsights/uwc/eis_config_UT.json <working-dir>/IEdgeInsights/build/provision/config/eis_config.json
-$cd <working-dir>/IEdgeInsights/uwc
-$sudo sh pre_req.sh
-$sh ut_pre_req.sh
-$cd <working-dir>/IEdgeInsights/build/provision
-$sudo ./provision_eis.sh ../docker-compose.yml (Provisioning)
-$cd <working-dir>/IEdgeInsights/build
-$docker-compose up --build -d   (Build & run unit test containers)
-```
-Now check for the unit test reports for all services of UWC in "<working-dir>/IEdgeInsights/build/unit_test_reports/". 
 
 ## Troubleshooting
 ```
-Follow Method 2 from here https://www.thegeekdiary.com/how-to-configure-docker-to-use-proxy/ to set proxy for docker
+1. Follow Method 2 from here https://www.thegeekdiary.com/how-to-configure-docker-to-use-proxy/ to set proxy for docker.
+2. In prod mode, the "Certificates" directory in "<working-dir>/IEdgeInsights/build/provision" needs 'sudo su" to be accessed. i.e. to open Certificates folder do the following:
+```sh
+  $ cd <working-dir>/IEdgeInsights/build/provision
+  $ sudo su
+  $ cd Certificates
+  # After accessing Certificates, enter "exit" command & terminal would return back to normal mode.
+  $ exit
+```
