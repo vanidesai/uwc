@@ -1515,6 +1515,9 @@ void* ServerSessTcpAndCbThread(void* threadArg)
 	stIPConnect.m_servAddr.sin_addr.s_addr = stTempIpAdd.s_un.s_addr;
 	stIPConnect.m_servAddr.sin_port = htons(pstLivSerSesslist.m_u16Port);
 	stIPConnect.m_servAddr.sin_family = AF_INET;
+    // This field gives index into an array of established connections/sessions.
+	// Keeping default value as -1 to indicate that connection is not yet established.
+	stIPConnect.m_iRcvConRef = -1;
 
 	// set thread priority
 	set_thread_sched_param();

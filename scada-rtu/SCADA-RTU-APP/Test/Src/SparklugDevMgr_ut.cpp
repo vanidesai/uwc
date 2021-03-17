@@ -61,4 +61,10 @@ TEST_F(SparkPlugDevMgr_ut, ExternamMqttMsg)
 	EXPECT_EQ(false, result);
 }
 
+TEST_F(SparkPlugDevMgr_ut, SetMsgPubStatus)
+{
+	bool result = CSparkPlugDevManager::getInstance().setMsgPublishedStatus(enDEVSTATUS_DOWN, "SparkPlug");
+	EXPECT_EQ(true, result);
+}
+
 

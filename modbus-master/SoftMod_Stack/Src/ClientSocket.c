@@ -926,7 +926,7 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
 	uint8_t recvBuff[TCP_MODBUS_ADU_LENGTH];
 	volatile int bytes = 0;
 	uint16_t crc;
-	uint8_t ServerReplyBuff[TCP_MODBUS_ADU_LENGTH];
+	uint8_t ServerReplyBuff[TCP_MODBUS_ADU_LENGTH] = {0};
 	int totalRead = 0;
 	uint16_t numToRead = 0;
 	int iBlockingReadResult = 0;
@@ -979,24 +979,29 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
 			sleep_micros(3700);
 		}*/
 
+		// Frame structure:
+		// Sample response - success
+		// Slave-ID (1 byte) + Function Code (1 byte) + Length (1 byte) + Data (Length bytes) + CRC (2 bytes)
+		// E.g. 0A 03 04 00 00 00 00 40 F3
+		// Here, 04 is length
+		// Sample response - error
+		// Slave-ID (1 byte) + Function Code (1 byte || 0x80) + Exception code (1 byte) + CRC (2 bytes)
+		// E.g. 0A 81 02 B0 53
+		
+		// Steps: 
+		// 1. Read 3 bytes
+		// 2. Check if 2nd byte has 0x80. If yes, it means it is exception packet. If no, it is data packet
+		// 3. For exception packet, read 2 more bytes for CRC
+		// 4. For data packet, read data based on length (3rd byte) + 2 bytes for CRC
+		
+		// 1. Read 3 bytes: slave id (1) + function code (1) + length or exception code (1)
+		numToRead = 3;
+
 		bytes = 0;
 		// Creating exception flag and setting it to false to check for to handle the msg with exception
 		bool expFlag = false;
-		if((READ_COIL_STATUS == (eModbusFuncCode_enum)(pstMBusRequesPacket->m_u8FunctionCode)) ||
-				(READ_INPUT_STATUS == (eModbusFuncCode_enum)(pstMBusRequesPacket->m_u8FunctionCode)))
-		{
-			// Identify number of bytes to be read from slave device for Read coil and read input function codes.
-			// When read request is for Coil and input quantity is unit. Header length is of 5.
-			numToRead = ((pstMBusRequesPacket->m_u16Quantity) + 5);
-		}
-		else
-		{
-			// Identify number of bytes to be read from slave device for WORD i.e. integer function codes.
-			// When read request is for Holding register and input register it is of WORD i.e. multiple of quantity.
-			// Header length is of 5.
-			numToRead = ((pstMBusRequesPacket->m_u16Quantity * 2) + 5);
-		}
 
+		int enStep = 1;
 		while(numToRead > 0){
 			iBlockingReadResult = checkforblockingread(rtuConnectionData.m_fd, a_lRespTimeout);
 			if(iBlockingReadResult > 0)
@@ -1008,16 +1013,25 @@ uint8_t Modbus_SendPacket(stMbusPacketVariables_t *pstMBusRequesPacket,
 				if(bytes == 0){
 					break;
 				}
-				// If bytes read are greater than packet exception code position in data packet
-				// & exception flag is false,
-				// then check the packet for any exception code,
-				// If exception is present then read only the remaining bytes of exception packet.
-				else if((bytes >= PKT_EXP_LEN) && (!expFlag))
+				
+				// Before changing the state from "reading header' to "reading data", ensure that header is read completely.
+				// This check is important to ensure errors when 3 bytes of header are not read in one go.
+				if((2 < totalRead) && (1 == enStep))
 				{
+					// check if it is exception packet
 					if((ServerReplyBuff[EXP_POS] & EXP_VAL) == EXP_VAL)
 					{
-						numToRead = PKT_HDR_LEN - bytes;
+						// Read CRC byets
+						numToRead = 2;
 						expFlag = true;
+						enStep = 2;
+					}
+					else
+					{
+						// This is data packet. Read length which is 3rd byte
+						// Set bytes to read + CRC bytes
+						numToRead = ServerReplyBuff[2] + 2;
+						enStep = 2;
 					}
 				}
 			}

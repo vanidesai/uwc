@@ -41,13 +41,10 @@ class CSparkPlugDevManager
 	/** default constructor*/
 	CSparkPlugDevManager()
 	{
-		;
 	}
-	;
 
-	metricMap_t parseVendorAppBirthDataMessage(std::string a_sPayLoad);
-	bool processMetric(CMetric &a_oMetric, cJSON *a_cjArrayElemMetric);
-	bool processDCMDMetric(CSparkPlugDev& a_SPDev, CMetric &a_oMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric);
+	metricMapIf_t parseVendorAppBirthDataMessage(std::string a_sPayLoad, bool a_bIsBirthMsg);
+	bool processDCMDMetric(CSparkPlugDev& a_SPDev, CIfMetric &a_oIfMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric);
 
 	uint64_t parseVendorAppDeathMessage(std::string& a_sPayLoad);
 
@@ -65,6 +62,7 @@ class CSparkPlugDevManager
 			std::string a_sSubDev, std::string a_sPayLoad,
 			std::vector<stRefForSparkPlugAction> &a_stRefActionVec);
 
+	std::shared_ptr<CIfMetric> metricFactoryMethod(cJSON *a_cjArrayElemMetric);
 
 public:
 	static CSparkPlugDevManager& getInstance();
@@ -78,12 +76,18 @@ public:
 	bool processExternalMQTTMsg(std::string a_sTopic, org_eclipse_tahu_protobuf_Payload& a_payload,
 			std::vector<stRefForSparkPlugAction> &a_stRefAction);
 
+	void parseVendorAppMericData(metricMapIf_t &a_oMetricMap, cJSON *a_cjRoot, const std::string &a_sKey,
+					bool a_bIsBirthMsg = false);
+
 	bool addRealDevices();
 
 	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, std::string a_sDevName, bool a_bIsNBIRTHProcess);
 	bool setMsgPublishedStatus(eDevStatus a_enStatus, std::string a_sDevName);
 
 	std::vector<std::string> getDeviceList();
+
+	std::shared_ptr<CIfMetric> metricFactoryMethod(const std::string &a_sName,
+										uint32_t a_uiDataType);
 
 	void print()
 	{

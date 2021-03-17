@@ -9,12 +9,14 @@
  ************************************************************************************/
 #include <string.h>
 #include "SparkPlugDevMgr.hpp"
+#include "SparkPlugUDTMgr.hpp"
 #include "SCADAHandler.hpp"
 
 /**
- * Splits topic name with delimeter '/'
+ * Splits topic name with given delimeter
  * @param a_sTopic :[in] topic to split
  * @param a_vsTopicParts :[out] stores all the split names in this vector
+ * @param a_delimeter :[in] delimiter to be used with splitting string
  * @return true/false based on true/false
  */
 bool CSparkPlugDevManager::getTopicParts(std::string a_sTopic,
@@ -57,7 +59,7 @@ bool CSparkPlugDevManager::processExternalMQTTMsg(std::string a_sTopic,
 		org_eclipse_tahu_protobuf_Payload& a_payload,
 		std::vector<stRefForSparkPlugAction> &a_stRefActionVec)
 {
-	metricMap_t oMetricMap;
+	metricMapIf_t oMetricMap;
 
 	try
 	{
@@ -103,33 +105,56 @@ bool CSparkPlugDevManager::processExternalMQTTMsg(std::string a_sTopic,
 
 		for (pb_size_t i = 0; i < a_payload.metrics_count; i++)
 		{
-			CMetric oMetric;
-			if(METRIC_DATA_TYPE_TEMPLATE == a_payload.metrics[i].datatype)
+			if(NULL == a_payload.metrics[i].name)
+			{
+				DO_LOG_DEBUG("Metric name is not present in DCMD message. Ignored.");
+				return false;
+			}
+			
+			if((false == itr->second.isVendorApp()) &&
+				(METRIC_DATA_TYPE_TEMPLATE == a_payload.metrics[i].datatype))
 			{
 				org_eclipse_tahu_protobuf_Payload_Template &udt_template = a_payload.metrics[i].value.template_value;
-				for(int iLoop = 0; iLoop < udt_template.metrics_count; iLoop++)
+				for(uint iLoop = 0; iLoop < udt_template.metrics_count; iLoop++)
 				{
-					if (false == processDCMDMetric(itr->second, oMetric, udt_template.metrics[iLoop]))
+					if(NULL == udt_template.metrics[iLoop].name)
+					{
+						DO_LOG_DEBUG("Metric name is not present in DCMD message. Ignored.");
+						return false;
+					}
+					std::shared_ptr<CIfMetric> ptrCIfMetric = metricFactoryMethod(udt_template.metrics[iLoop].name, udt_template.metrics[iLoop].datatype);
+					if(nullptr == ptrCIfMetric)
+					{
+						DO_LOG_ERROR("Unable to build metric. Not processing this message.");
+						return false;
+					}
+					if (false == processDCMDMetric(itr->second, *ptrCIfMetric, udt_template.metrics[iLoop]))
 					{
 						DO_LOG_DEBUG("Could not process metric");
 						return false;
 					}
 					else
 					{
-						oMetricMap.emplace(oMetric.getName(), oMetric);
+						oMetricMap.emplace(ptrCIfMetric->getName(), std::move(ptrCIfMetric));
 					}
 				}
 			}
 			else 
 			{
-				if (false == processDCMDMetric(itr->second, oMetric, a_payload.metrics[i]))
+				std::shared_ptr<CIfMetric> ptrCIfMetric = metricFactoryMethod(a_payload.metrics[i].name, a_payload.metrics[i].datatype);
+				if(nullptr == ptrCIfMetric)
+				{
+					DO_LOG_ERROR("Unable to build metric. Not processing this message.");
+					return false;
+				}
+				if (false == processDCMDMetric(itr->second, *ptrCIfMetric, a_payload.metrics[i]))
 				{
 					DO_LOG_DEBUG("Could not process metric");
 					return false;
 				}
 				else
 				{
-					oMetricMap.emplace(oMetric.getName(), oMetric);
+					oMetricMap.emplace(ptrCIfMetric->getName(), std::move(ptrCIfMetric));
 				}
 			}
 		}
@@ -168,6 +193,26 @@ bool CSparkPlugDevManager::processInternalMQTTMsg(std::string a_sTopic,
 			getTopicParts(a_sTopic, vsTopicParts, "/");
 			switch (vsTopicParts.size())
 			{
+			// Template defintion
+			// TemplateDef
+			case 1:
+			{
+				std::string sSubTopic{ vsTopicParts[0] };
+				std::transform(sSubTopic.begin(), sSubTopic.end(),
+						sSubTopic.begin(), ::tolower);
+
+				if (0 == sSubTopic.compare("templatedef"))
+				{
+					CSparkPlugUDTManager::getInstance().processTemplateDef(a_sPayLoad, a_stRefActionVec);
+				}
+				else
+				{
+					DO_LOG_ERROR("Ignoring the message. Incorrect topic: " + a_sTopic);
+					bRet = false;
+				}
+			}
+			break;
+
 			// DEATH message
 			// DEATH/{NAON_UWCP_ID}
 			case 2:
@@ -254,127 +299,33 @@ bool CSparkPlugDevManager::processInternalMQTTMsg(std::string a_sTopic,
 
 /**
  * Processes metric to parse its data-type and value; sets in CValueObj corresponding to the metric
+ * @param a_SPDev :[in] device to be used for checking for metric presence
  * @param a_oMetric :[in] metric to be parsed
- * @param a_cjArrayElemMetric :[in] cJSON array element containing details about the metric
+ * @param a_sparkplugMetric :[in] input Sparkplug DCMD metric
  * @return true/false based on success/failure
  */
-bool CSparkPlugDevManager::processMetric(CMetric &a_oMetric, cJSON *a_cjArrayElemMetric)
+bool CSparkPlugDevManager::processDCMDMetric(CSparkPlugDev& a_SPDev, CIfMetric &a_oMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric)
 {
-	do
-	{
 		try
 		{
-			if (a_cjArrayElemMetric == NULL)
-			{
-				DO_LOG_ERROR("Invalid payload: Name or datatype or value is missing.");
-				return false;
-			}
-
-			cJSON *cjName = cJSON_GetObjectItem(a_cjArrayElemMetric, "name");
-			if (cjName == NULL)
-			{
-				DO_LOG_ERROR("Invalid payload: Name is not found.");
-				return false;
-			}
-			char *strName = cjName->valuestring;
-			if (strName == NULL)
-			{
-				DO_LOG_ERROR("Invalid payload: Name is not found.");
-				return false;
-			}
-			a_oMetric.setName(strName);
-			a_oMetric.setSparkPlugName(strName);
-
-			//timestamp is optional parameter
-			uint64_t current_time = 0;
-			cJSON *cjTimestamp = cJSON_GetObjectItem(a_cjArrayElemMetric,"timestamp");
-			if(cjTimestamp == NULL)
-			{
-				current_time = get_current_timestamp();
-			}
-			else
-			{
-				current_time = cjTimestamp->valuedouble;
-			}
-
-			a_oMetric.setTimestamp(current_time);
-
-			cJSON *cjDataType = cJSON_GetObjectItem(a_cjArrayElemMetric, "dataType");
-			if (cjDataType == NULL)
-			{
-				DO_LOG_ERROR("Invalid payload: dataType is not found.");
-				return false;
-			}
-
-			if (cjDataType->valuestring == NULL)
-			{
-				DO_LOG_ERROR("Datatype is NULL. Cannot parse payload.");
-				return false;
-			}
-
-			std::string sDataType{ cjDataType->valuestring };
-
-			cJSON *cjValue = cJSON_GetObjectItem(a_cjArrayElemMetric, "value");
-			if (cjValue == NULL)
-			{
-				DO_LOG_ERROR("Invalid payload: value is not found.");
-				return false;
-			}
-
-			//map data-type with Sparkplug data-type
-			if (false == a_oMetric.setValObj(sDataType, cjValue))
-			{
-				DO_LOG_ERROR(std::string("Cannot parse value. Ignored the metric: ") + strName);
-				return false;
-			}
-		}
-		catch (std::exception &e)
-		{
-			DO_LOG_ERROR(std::string("Error:") + e.what());
-			return false;
-		}
-	} while (0);
-	return true;
-}
-
-/**
- * Processes metric to parse its data-type and value; sets in CValueObj corresponding to the metric
- * @param a_oMetric :[in] metric to be parsed
- * @param a_cjName :[in] name of metric
- * @param a_cjDatatype :[in] data-type of metric
- * @param a_cjValue :[in] metric value
- * @return true/false based on success/failure
- */
-bool CSparkPlugDevManager::processDCMDMetric(CSparkPlugDev& a_SPDev, CMetric &a_oMetric, org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric)
-{
-	try
-	{
-		if(a_sparkplugMetric.name == NULL)
-		{
-			return false;
-		}
 		//to check if given metric is a part of the device
 		if(false == a_SPDev.checkMetric(a_sparkplugMetric))
-		{
-			return false;
-		}
-
-		a_oMetric.setName(a_sparkplugMetric.name);
-
-		a_oMetric.setTimestamp(a_sparkplugMetric.timestamp);
+			{
+				return false;
+			}
 
 		//map data-type with Sparkplug data-type
 		if (false == a_oMetric.setValObj(a_sparkplugMetric))
-		{
+			{
 			DO_LOG_ERROR("Cannot parse value.");
-			return false;
-		}
+				return false;
+			}
 	}
 	catch (std::exception &e)
-	{
+			{
 		DO_LOG_ERROR(std::string("Error:") + e.what());
-		return false;
-	}
+				return false;
+			}
 	return true;
 }
 
@@ -389,13 +340,246 @@ CSparkPlugDevManager& CSparkPlugDevManager::getInstance()
 }
 
 /**
+ * Creates metric of correct type based on input
+ * @param a_sName :[in] metric name
+ * @param a_uiDataType :[in] datatype to be used for metric creation
+ * @return metric reference
+ */
+std::shared_ptr<CIfMetric> CSparkPlugDevManager::metricFactoryMethod(const std::string &a_sName,
+										uint32_t a_uiDataType)
+{
+	std::shared_ptr<CIfMetric>cIfMetric = nullptr;
+	do
+			{
+		try
+		{
+			// Metric type is not template i.e. metric is not UDT
+			if(METRIC_DATA_TYPE_TEMPLATE != a_uiDataType)
+			{
+				// Create a metric data object
+				cIfMetric = std::make_shared<CMetric>(a_sName, a_uiDataType);
+			}
+			else
+			{
+				// Create a UDT object
+				cIfMetric = std::make_shared<CUDT>(a_sName, a_uiDataType);
+			}
+		}
+		catch (std::exception &e)
+		{
+			DO_LOG_ERROR(std::string("Error:") + e.what());
+			return nullptr;
+		}
+	} while (0);
+	return cIfMetric;
+}
+
+/**
+ * Processes metric to parse its data-type and value; creates metric of correct type
+ * @param a_cjArrayElemMetric :[in] cJSON array element containing details about the metric
+ * @return metric reference
+ */
+std::shared_ptr<CIfMetric> CSparkPlugDevManager::metricFactoryMethod(cJSON *a_cjArrayElemMetric)
+{
+	std::shared_ptr<CIfMetric>cIfMetric = nullptr;
+	do
+	{
+		try
+		{
+			if (a_cjArrayElemMetric == NULL)
+			{
+				DO_LOG_ERROR("Invalid payload: Name or datatype or value is missing.");
+				return cIfMetric;
+			}
+
+			cJSON *cjDataType = cJSON_GetObjectItem(a_cjArrayElemMetric, "dataType");
+			if (cjDataType == NULL)
+			{
+				DO_LOG_ERROR("Invalid payload: dataType is not found.");
+				return cIfMetric;
+			}
+
+			if (cjDataType->valuestring == NULL)
+			{
+				DO_LOG_ERROR("Datatype is NULL. Cannot parse payload.");
+				return cIfMetric;
+			}
+
+			std::string sDataType{ cjDataType->valuestring };
+
+			std::transform(sDataType.begin(), sDataType.end(),
+					sDataType.begin(), ::tolower);
+
+			uint32_t uiDataType = 0;
+
+			// bool, uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, float, double, std::string
+			if ("boolean" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_BOOLEAN;
+			}
+			else if ("uint8" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_UINT8;
+			}
+			else if ("uint16" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_UINT16;
+			}
+			else if ("uint32" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_UINT32;
+			}
+			else if ("uint64" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_UINT64;
+			}
+			else if ("int8" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_INT8;
+			}
+			else if ("int16" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_INT16;
+			}
+			else if ("int32" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_INT32;
+			}
+			else if ("int64" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_INT64;
+			}
+			else if ("float" == sDataType)
+			{
+				uiDataType = METRIC_DATA_TYPE_FLOAT;
+		}
+			else if ("double" == sDataType)
+		{
+				uiDataType = METRIC_DATA_TYPE_DOUBLE;
+		}
+			else if ("string" == sDataType)
+	{
+				uiDataType = METRIC_DATA_TYPE_STRING;
+			}
+			else if ("udt" == sDataType)
+		{
+				uiDataType = METRIC_DATA_TYPE_TEMPLATE;
+		}
+			else
+		{
+				DO_LOG_ERROR("Invalid data type found. Mentioned type: " + sDataType);
+				return cIfMetric;
+		}
+
+			cJSON *cjName = cJSON_GetObjectItem(a_cjArrayElemMetric, "name");
+			if (cjName == NULL)
+			{
+				DO_LOG_ERROR("Invalid payload: Name is not found.");
+				return cIfMetric;
+			}
+			if (NULL == cjName->valuestring)
+		{
+				DO_LOG_ERROR("Invalid payload: Name is not found.");
+				return cIfMetric;
+		}
+
+			// Creat metric
+			cIfMetric = metricFactoryMethod(cjName->valuestring, uiDataType);
+	}
+	catch (std::exception &e)
+	{
+		DO_LOG_ERROR(std::string("Error:") + e.what());
+			return nullptr;
+	}
+	} while (0);
+	return cIfMetric;
+}
+
+/**
+ * Parses birth message of vendor app; stores metrics and corresponding values
+ * @param a_oMetricMap:[out] conatiner to store parsed metrics 
+ * @param a_cjRoot :[in] json payload containing metrics
+ * @param a_sKey :[in] json key to look for 
+ * @param a_bIsBirthMsg :[in] indicates that this is a birth message
+ * @return nothing
+ */
+void CSparkPlugDevManager::parseVendorAppMericData(metricMapIf_t &a_oMetricMap,
+										cJSON *a_cjRoot, const std::string &a_sKey,
+										bool a_bIsBirthMsg)
+{
+	do
+	{
+		try
+		{
+			if (NULL == a_cjRoot)
+			{
+				DO_LOG_ERROR("Json payload is not received");
+				break;
+			}
+
+			//start parsing the cjson payload
+			cJSON *cjMetrics = cJSON_GetObjectItem(a_cjRoot, a_sKey.c_str());
+			if (NULL == cjMetrics)
+			{
+				DO_LOG_ERROR(a_sKey + ": Key not found in input message");
+				break;
+			}
+			int iTotalMetrics = cJSON_GetArraySize(cjMetrics);
+			for (int iLoop = 0; iLoop < iTotalMetrics; ++iLoop)
+			{
+				cJSON *cjArrayElemMetric = cJSON_GetArrayItem(cjMetrics, iLoop);
+				if (NULL != cjArrayElemMetric)
+				{
+					std::shared_ptr<CIfMetric>cIfMetric = metricFactoryMethod(cjArrayElemMetric);
+					if(nullptr == cIfMetric)
+					{
+						DO_LOG_ERROR("Cannot create metric. Ignored.");
+					}
+					else 
+					{
+						if(false == cIfMetric->processMetric(cjArrayElemMetric))
+					{
+						DO_LOG_ERROR("Cannot parse metric. Ignored.");
+					}
+					else
+					{
+							bool bIsOK = true;
+							// If it is a birth messsage processing, validate the metric
+							// This is particularly applicable for UDTs
+							if(a_bIsBirthMsg)
+							{
+								// Now validate the metric
+								if(false == cIfMetric->validate())
+								{
+									DO_LOG_ERROR(cIfMetric->getName() + ": Metric validate failed. Ignored.");
+									bIsOK = false;
+								}
+							}
+							if(bIsOK)
+							{
+								a_oMetricMap.insert({cIfMetric->getName(), std::move(cIfMetric)});
+					}
+				}
+			}
+				}
+			}
+		} catch (const std::exception &e)
+		{
+			DO_LOG_ERROR(std::string("Error:") + e.what());
+		}
+	} while (0);
+}
+
+/**
  * Parses birth message of vendor app; stores metrics and corresponding values
  * @param a_sPayLoad :[iin] payload containing metrics
+ * @param a_bIsBirthMsg :[in] indicates that this is a birth message
  * @return map containing metric and corresponding values
  */
-metricMap_t CSparkPlugDevManager::parseVendorAppBirthDataMessage(std::string a_sPayLoad)
+metricMapIf_t CSparkPlugDevManager::parseVendorAppBirthDataMessage(
+							std::string a_sPayLoad, bool a_bIsBirthMsg)
 {
-	metricMap_t oMetricMap;
+	metricMapIf_t oMetricMap;
 	cJSON *cjRoot = NULL;
 	do
 	{
@@ -409,32 +593,7 @@ metricMap_t CSparkPlugDevManager::parseVendorAppBirthDataMessage(std::string a_s
 				break;
 			}
 
-			//start parsing the cjson payload
-			cJSON *cjMetrics = cJSON_GetObjectItem(cjRoot, "metrics");
-			if (NULL == cjMetrics)
-			{
-				DO_LOG_ERROR(
-						"No \"metrics\" key found in input message: "
-						+ a_sPayLoad);
-				break;
-			}
-			int iTotalMetrics = cJSON_GetArraySize(cjMetrics);
-			for (int iLoop = 0; iLoop < iTotalMetrics; ++iLoop)
-			{
-				cJSON *cjArrayElemMetric = cJSON_GetArrayItem(cjMetrics, iLoop);
-				if (NULL != cjArrayElemMetric)
-				{
-					CMetric oMetric;
-					if (false == processMetric(oMetric, cjArrayElemMetric))
-					{
-						DO_LOG_ERROR("Cannot parse metric. Ignored.");
-					}
-					else
-					{
-						oMetricMap.emplace(oMetric.getName(), oMetric);
-					}
-				}
-			}
+			parseVendorAppMericData(oMetricMap, cjRoot, "metrics", a_bIsBirthMsg);
 		} catch (const std::exception &e)
 		{
 			DO_LOG_ERROR(std::string("Error:") + e.what());
@@ -450,9 +609,9 @@ metricMap_t CSparkPlugDevManager::parseVendorAppBirthDataMessage(std::string a_s
 }
 
 /**
- * Parses birth message of vendor app; stores metrics and corresponding values
+ * Parses birth message of vendor app death message
  * @param a_sPayLoad :[iin] payload containing metrics
- * @return map containing metric and corresponding values
+ * @return timestamp for death message
  */
 uint64_t CSparkPlugDevManager::parseVendorAppDeathMessage(std::string& a_sPayLoad)
 {
@@ -493,13 +652,13 @@ uint64_t CSparkPlugDevManager::parseVendorAppDeathMessage(std::string& a_sPayLoa
 /**
  * Processes DEATH message from vendor app
  * @param a_sAppName :[in] vendor app name for which DEATH has received
+ * @param a_sPayLoad :[in] payload for DEATH message
  * @param a_stRefActionVec :[out] structure containing device information to be marked dead
  */
 void CSparkPlugDevManager::processDeathMsg(std::string a_sAppName,
 		std::string a_sPayLoad,
 		std::vector<stRefForSparkPlugAction> &a_stRefActionVec)
 {
-	metricMap_t mapChangedMetricsFromBirth;
 	do
 	{
 		try
@@ -525,7 +684,7 @@ void CSparkPlugDevManager::processDeathMsg(std::string a_sAppName,
 
 			uint64_t uiDeathTime = parseVendorAppDeathMessage(a_sPayLoad);
 
-			metricMap_t mapChangedMetrics;
+			metricMapIf_t mapChangedMetrics;
 			// mark all subdevices under this vendor app for DEATH
 			auto &mapDev = pVendorApp->getDevices();
 			for (auto &itr : mapDev)
@@ -562,7 +721,6 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 	// Case 4: There are no changes. 
 	// Case 5: Last published status was DDEATH. Then a next message should be DBIRTH
 
-	metricMap_t mapChangedMetricsFromBirth;
 	do
 	{
 		try
@@ -578,12 +736,11 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 				break;
 			}
 
-			std::string sDevName(
-					a_sAppName + SUBDEV_SEPARATOR_CHAR + a_sSubDev);
+			std::string sDevName(a_sAppName + SUBDEV_SEPARATOR_CHAR + a_sSubDev);
 			DO_LOG_INFO("Device name is: " + sDevName);
 
 			// Parse message
-			metricMap_t mapMetricsInMsg = parseVendorAppBirthDataMessage(a_sPayLoad);
+			metricMapIf_t mapMetricsInMsg = parseVendorAppBirthDataMessage(a_sPayLoad, true);
 
 			// Find the device in list
 			bool bIsNew = false;
@@ -596,8 +753,7 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 				{
 					bIsNew = true;
 					DO_LOG_INFO("New device found: " + sDevName);
-					CSparkPlugDev oDev
-					{ a_sSubDev, sDevName, true };
+					CSparkPlugDev oDev{ a_sSubDev, sDevName, true };
 					m_mapSparkPlugDev.emplace(sDevName, oDev);
 					itr = m_mapSparkPlugDev.find(sDevName);
 
@@ -607,7 +763,7 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 				return itr->second;
 					}();
 					bool bIsOnlyValChange = false;
-					mapChangedMetricsFromBirth = oDev.processNewBirthData(
+			metricMapIf_t mapChangedMetricsFromBirth = oDev.processNewBirthData(
 							mapMetricsInMsg, bIsOnlyValChange);
 
 					// Check if last published status was DDEATH
@@ -632,7 +788,7 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 							{
 								// Not a new device. First send a DDEATH message
 								// Changes have occurred. 1st publish a DDEATH message.
-								metricMap_t mapChangedMetrics;
+						metricMapIf_t mapChangedMetrics;
 								stRefForSparkPlugAction stDummyAction
 								{ std::ref(oDev), enMSG_DEATH, mapChangedMetrics };
 								a_stRefActionVec.push_back(stDummyAction);
@@ -742,7 +898,6 @@ void CSparkPlugDevManager::processDataMsg(std::string a_sAppName,
 		std::string a_sSubDev, std::string a_sPayLoad,
 		std::vector<stRefForSparkPlugAction> &a_stRefActionVec)
 {
-	metricMap_t mapChangedMetricsFromData;
 	do
 	{
 		try
@@ -775,21 +930,20 @@ void CSparkPlugDevManager::processDataMsg(std::string a_sAppName,
 					}();
 					if (false == bIsFound)
 					{
-						DO_LOG_ERROR(
-								sDevName
+				DO_LOG_ERROR(sDevName
 								+ ": Not found in dev-ist. Ignoring DATA message: "
 								+ a_sPayLoad);
 					}
 					else
 					{
 						// Parse message
-						metricMap_t mapMetricsInMsg = parseVendorAppBirthDataMessage(
-								a_sPayLoad);
+				metricMapIf_t mapMetricsInMsg = parseVendorAppBirthDataMessage(
+						a_sPayLoad, false);
 
 						if (mapMetricsInMsg.size() > 0)
 						{
 							auto &oDev = itr->second;
-							mapChangedMetricsFromData = oDev.processNewData(
+					metricMapIf_t mapChangedMetricsFromData = oDev.processNewData(
 									mapMetricsInMsg);
 
 							// Check if last published status was DDEATH
@@ -919,7 +1073,7 @@ std::vector<std::string> CSparkPlugDevManager::getDeviceList()
 /**
  * Sets the status of last published message for this device
  * @param a_enStatus :[in] Publish status for this device for last message
- * @param  a_sDevName:[in] device name for which birth message to be generated
+ * @param a_sDevName :[in] device name for which birth message to be generated
  * @return true/false depending on the success/failure
  */
 bool CSparkPlugDevManager::setMsgPublishedStatus(eDevStatus a_enStatus, std::string a_sDevName)

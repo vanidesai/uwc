@@ -80,14 +80,19 @@ class CIntMqttHandler : public CMQTTBaseHandler
 		return m_bIsInTimeoutState.load();
 	}
 
+#ifdef UNIT_TEST
+	friend class InternalMQTTSubscriber_ut;
+#endif
+
+
 public:
 	~CIntMqttHandler();/** destructor*/
 	static CIntMqttHandler& instance(); /**function to get single instance of this class*/
 	bool prepareCJSONMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
 	bool prepareCMDMsg(std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev,
-						metricMap_t& a_mapChangedMetrics);
+						metricMapIf_t& a_mapChangedMetrics);
 	bool prepareWriteMsg(std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev,
-							metricMap_t& a_mapChangedMetrics);
+							metricMapIf_t& a_mapChangedMetrics);
 };
 
 #endif

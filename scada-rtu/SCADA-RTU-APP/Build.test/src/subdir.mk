@@ -17,7 +17,8 @@ CPP_SRCS += \
 ../src/QueueMgr.cpp \
 ../src/SCADAHandler.cpp \
 ../src/SparkPlugDevMgr.cpp \
-../src/SparkPlugDevices.cpp 
+../src/SparkPlugDevices.cpp \
+../src/SparkPlugUDTMgr.cpp 
 
 OBJS += \
 ./src/Common.o \
@@ -27,7 +28,8 @@ OBJS += \
 ./src/QueueMgr.o \
 ./src/SCADAHandler.o \
 ./src/SparkPlugDevMgr.o \
-./src/SparkPlugDevices.o 
+./src/SparkPlugDevices.o \
+./src/SparkPlugUDTMgr.o 
 
 CPP_DEPS += \
 ./src/Common.d \
@@ -37,7 +39,8 @@ CPP_DEPS += \
 ./src/QueueMgr.d \
 ./src/SCADAHandler.d \
 ./src/SparkPlugDevMgr.d \
-./src/SparkPlugDevices.d 
+./src/SparkPlugDevices.d \
+./src/SparkPlugUDTMgr.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

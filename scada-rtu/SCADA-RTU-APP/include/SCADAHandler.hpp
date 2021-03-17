@@ -81,6 +81,8 @@ class CSCADAHandler : public CMQTTBaseHandler
 
 	bool addModbusTemplateDefToNbirth(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload);
 
+	bool publishNewUDTs();
+
 public:
 	/** Destructor*/
 	~CSCADAHandler();
@@ -98,6 +100,10 @@ public:
 
 	bool addModbusPropForBirth(org_eclipse_tahu_protobuf_Payload_Template &a_rUdt, 
 		const std::string &a_sProtocolVal);
+#ifdef UNIT_TEST
+	friend class SCADAHandler_ut;
+	friend class SparkPlugUDTMgr_ut;
+#endif
 };
 
 #endif

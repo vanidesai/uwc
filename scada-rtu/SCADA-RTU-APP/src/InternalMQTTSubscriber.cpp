@@ -94,6 +94,7 @@ void CIntMqttHandler::subscribeTopics()
 		m_MQTTClient.subscribe("DATA/#");
 		m_MQTTClient.subscribe("DEATH/#");
 		m_MQTTClient.subscribe("/+/+/+/update");
+		m_MQTTClient.subscribe("TemplateDef");
 
 		DO_LOG_DEBUG("Subscribed topics with internal broker");
 	}
@@ -373,7 +374,7 @@ int CIntMqttHandler::getAppSeqNo()
  * @return true/false based on success/failure
  */
 bool CIntMqttHandler::prepareWriteMsg(std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev,
-		metricMap_t& a_mapChangedMetrics)
+		metricMapIf_t& a_mapChangedMetrics)
 {
 	cJSON *root = NULL;
 	string strMsgTopic = "";
@@ -381,7 +382,7 @@ bool CIntMqttHandler::prepareWriteMsg(std::reference_wrapper<CSparkPlugDev>& a_r
 	try
 	{
 		//list of changed metrics for which to send CMD or write-on-demand CJSON request
-		metricMap_t m_metrics = a_mapChangedMetrics;
+		metricMapIf_t m_metrics = a_mapChangedMetrics;
 
 
 		for(auto& metric : m_metrics)
@@ -440,7 +441,7 @@ bool CIntMqttHandler::prepareWriteMsg(std::reference_wrapper<CSparkPlugDev>& a_r
  * @return true/false based on success/failure
  */
 bool CIntMqttHandler::prepareCMDMsg(std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev,
-		metricMap_t& a_mapChangedMetrics)
+		metricMapIf_t& a_mapChangedMetrics)
 {
 	cJSON *root = NULL, *metricArray = NULL;
 	string strMsgTopic = "";
@@ -466,10 +467,7 @@ bool CIntMqttHandler::prepareCMDMsg(std::reference_wrapper<CSparkPlugDev>& a_ref
 			return false;
 		}
 
-		//list of changed metrics for which to send CMD or write-on-demand CJSON request
-		metricMap_t m_metrics = a_mapChangedMetrics;
-
-		if (false == a_refSparkPlugDev.get().getCMDMsg(strMsgTopic, m_metrics, metricArray))
+		if (false == a_refSparkPlugDev.get().getCMDMsg(strMsgTopic, a_mapChangedMetrics, metricArray))
 		{
 			DO_LOG_ERROR("Failed to prepare CJSON message for internal MQTT");
 		}

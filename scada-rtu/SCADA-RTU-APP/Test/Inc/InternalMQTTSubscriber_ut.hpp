@@ -31,9 +31,14 @@ public:
 	std::vector<stRefForSparkPlugAction> stRefActionVec1;
 	std::reference_wrapper<CSparkPlugDev> *a_ref;
 		eMsgAction a_enAction = enMSG_NONE;
-		metricMap_t m_mapChangedMetrics;
+		metricMapIf_t m_mapChangedMetrics;
 
 	stRefForSparkPlugAction stDummyAction{*a_ref, a_enAction, m_mapChangedMetrics};
+
+	void _subscribeTopics()
+	{
+		CIntMqttHandler::instance().subscribeTopics();
+	}
 
 };
 

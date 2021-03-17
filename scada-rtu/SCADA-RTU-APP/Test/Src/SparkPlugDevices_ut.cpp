@@ -92,10 +92,10 @@ TEST_F(SparkPlugDevices_ut, processRealDeviceUpdateMsg_DeviceMapEmpty)
  */
 TEST_F(SparkPlugDevices_ut, processNewData_EmptyMetricList)
 {
-	metricMap_t a_MetricList;
+	metricMapIf_t a_MetricList;
 	CSparkPlugDev CSparkPlugDev_obj{"Dev01", "Dev_Name", false};
 
-	metricMap_t oMetricMap = CSparkPlugDev_obj.processNewData(a_MetricList);
+	metricMapIf_t oMetricMap = CSparkPlugDev_obj.processNewData(a_MetricList);
 
 }
 
@@ -119,16 +119,19 @@ TEST_F(SparkPlugDevices_ut, CMDmsg)
  * @param :[out] None
  * @return: bool
  */
+#if 0
+// Temporary Commented
 TEST_F(SparkPlugDevices_ut, WriteMsg)
 {
 	std::string topic = "/flowmeter/PL0/Flow/read";
 	cJSON *root = cJSON_CreateObject();
 	int appSeq = 123;
 	std::pair<const std::string,CMetric> *a_metric;
-	bool result = CSparkPlugDev_obj.getWriteMsg(topic, root, *a_metric, appSeq);
+	std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev = {};
+	bool result = a_refSparkPlugDev.get().getWriteMsg(topic, root, " ", *a_metric, appSeq);
 	EXPECT_EQ(false, result);
 }
-
+#endif
 /**
  * Test case to check checkMetric() function's behavior
  * @param :[in] None
@@ -153,6 +156,15 @@ TEST_F(SparkPlugDevices_ut, dDataMsg)
 	EXPECT_EQ(false, result);
 }
 
+TEST_F(SparkPlugDevices_ut, PrepDBorthMsg_NBIRTH_true)
+{
+	bool result = CSparkPlugDev_obj.prepareDBirthMessage(dbirth_payload, true);
+	EXPECT_EQ(true, result);
+}
 
-
+TEST_F(SparkPlugDevices_ut, PrepDBorthMsg_NBIRTH_false)
+{
+	bool result = CSparkPlugDev_obj.prepareDBirthMessage(dbirth_payload, false);
+	EXPECT_EQ(true, result);
+}
 

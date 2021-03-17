@@ -43,12 +43,15 @@ TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_EmptyVector)
  * @param :[out] None
  * @return None
  */
+#if 0
+//Temporary commented
 TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_dataIn_Vector)
 {
 	stRefActionVec1.push_back(stDummyAction);
 	bool result = CIntMqttHandler::instance().prepareCJSONMsg(stRefActionVec1);
 	EXPECT_EQ(false, result);
 }
+#endif
 
 /**
  * Test case to check if prepareWriteMsg() behaves as expected
@@ -58,8 +61,91 @@ TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_dataIn_Vector)
  */
 TEST_F(InternalMQTTSubscriber_ut, writeRequest)
 {
-	std::reference_wrapper<CSparkPlugDev>  *a_refSparkPlugDev;
-	metricMap_t m_mapChangedMetrics;
-	bool result = CIntMqttHandler::instance().prepareWriteMsg(*a_refSparkPlugDev, m_mapChangedMetrics);
+	std::string value = "2.0.0.2";
+	std::string a_Name = "Properties/Version";
+	uint32_t a_uiDataType = METRIC_DATA_TYPE_STRING;
+	//CValObj(uint32_t a_uiDataType, var_t a_objVal)
+	CValObj ocval(METRIC_DATA_TYPE_STRING, value);
+	uint64_t timestamp = 1486144502122;
+	//CMetric(std::string a_sName, const CValObj &a_objVal, const uint64_t a_timestamp)
+	std::shared_ptr<CIfMetric> ptrCIfMetric = std::make_shared<CMetric>(a_Name, ocval, timestamp);
+	metricMapIf_t mapChangedMetrics;
+	mapChangedMetrics.emplace(ptrCIfMetric->getName(), std::move(ptrCIfMetric));
+	std::string a_sSubDev = "RBOX510";
+	std::string a_sSparkPluName = "flowmeter-PL0";
+	bool a_bIsVendorApp = false;
+	CSparkPlugDev oDev(a_sSubDev, a_sSparkPluName, a_bIsVendorApp);
+	auto refDev = std::ref(oDev);
+	bool result = CIntMqttHandler::instance().prepareWriteMsg(refDev, mapChangedMetrics);
+	EXPECT_EQ(true, result);
 }
+
+
+/**
+ * Test case to check if prepareCMDMsg() behaves as expected
+ * @param :[in] None
+ * @param :[out] None
+ * @return: bool
+ */
+TEST_F(InternalMQTTSubscriber_ut, prepareCMDMsg)
+{
+	std::string a_Name = "Properties/Version";
+	uint32_t a_uiDataType = METRIC_DATA_TYPE_STRING;
+	std::shared_ptr<CIfMetric> ptrCIfMetric = std::make_shared<CMetric>(a_Name, a_uiDataType);
+	metricMapIf_t mapChangedMetrics;
+	mapChangedMetrics.emplace(ptrCIfMetric->getName(), std::move(ptrCIfMetric));
+
+	std::string a_sSubDev = "flowmeter";
+	std::string a_sSparkPluName = "spBv-Test";
+	bool a_bIsVendorApp = true;
+
+	CSparkPlugDev oDev(a_sSubDev, a_sSparkPluName, a_bIsVendorApp);
+	auto refDev = std::ref(oDev);
+	bool result = CIntMqttHandler::instance().prepareCMDMsg(refDev, m_mapChangedMetrics);
+	EXPECT_EQ(true, result);
+}
+
+/*
+ * Test Case to check if prepareCJSONMsg
+ *
+ */
+TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg)
+{
+
+	std::string value = "2.0.0.2";
+	std::string a_Name = "Properties/Version";
+	uint32_t a_uiDataType = METRIC_DATA_TYPE_STRING;
+	CValObj ocval(a_uiDataType, value);
+	uint64_t timestamp = 1486144502122;
+	std::shared_ptr<CIfMetric> ptrCIfMetric = std::make_shared<CMetric>(a_Name, ocval, timestamp);
+	metricMapIf_t mapChangedMetrics;
+	mapChangedMetrics.emplace(ptrCIfMetric->getName(), std::move(ptrCIfMetric));
+	std::string a_sSubDev = "flowmeter";
+	std::string a_sSparkPluName = "spBv-Test";
+	bool a_bIsVendorApp = true;
+	CSparkPlugDev oDev(a_sSubDev, a_sSparkPluName, a_bIsVendorApp);
+	auto refDev = std::ref(oDev);
+	stRefForSparkPlugAction stRefVec(refDev, enMSG_BIRTH, mapChangedMetrics);
+	std::vector<stRefForSparkPlugAction> v1;
+	v1.push_back(stRefVec);
+	bool result = CIntMqttHandler::instance().prepareCJSONMsg(v1);
+	EXPECT_EQ(true, result);
+}
+
+
+TEST_F(InternalMQTTSubscriber_ut, subscribeTopics)
+{
+	_subscribeTopics();
+}
+
+
+
+
+
+
+
+
+
+
+
 

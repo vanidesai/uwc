@@ -173,11 +173,11 @@ CCommon::~CCommon()
 {
 }
 
-
 /**
- * Splits topic name with delimeter '/'
+ * Splits topic name with given delimeter 
  * @param a_sTopic :[in] topic to split
  * @param a_vsTopicParts :[out] stores all the split names in this vector
+ * @param a_delimeter :[in] delimiter to be used for splitting string 
  * @return true/false based on true/false
  */
 bool CCommon::getTopicParts(std::string a_sTopic,

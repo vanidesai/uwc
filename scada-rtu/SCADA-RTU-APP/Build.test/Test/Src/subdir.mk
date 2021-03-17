@@ -16,6 +16,7 @@ CPP_SRCS += \
 ../Test/Src/Metric_ut.cpp \
 ../Test/Src/SCADAHandler_ut.cpp \
 ../Test/Src/SparkPlugDevices_ut.cpp \
+../Test/Src/SparkPlugUDTMgr_ut.cpp \
 ../Test/Src/SparklugDevMgr_ut.cpp 
 
 OBJS += \
@@ -25,6 +26,7 @@ OBJS += \
 ./Test/Src/Metric_ut.o \
 ./Test/Src/SCADAHandler_ut.o \
 ./Test/Src/SparkPlugDevices_ut.o \
+./Test/Src/SparkPlugUDTMgr_ut.o \
 ./Test/Src/SparklugDevMgr_ut.o 
 
 CPP_DEPS += \
@@ -34,6 +36,7 @@ CPP_DEPS += \
 ./Test/Src/Metric_ut.d \
 ./Test/Src/SCADAHandler_ut.d \
 ./Test/Src/SparkPlugDevices_ut.d \
+./Test/Src/SparkPlugUDTMgr_ut.d \
 ./Test/Src/SparklugDevMgr_ut.d 
 
 

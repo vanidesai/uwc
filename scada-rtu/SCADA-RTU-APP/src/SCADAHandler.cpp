@@ -11,6 +11,7 @@
 #include <thread>
 #include "SCADAHandler.hpp"
 #include "InternalMQTTSubscriber.hpp"
+#include "SparkPlugUDTMgr.hpp"
 
 extern std::atomic<bool> g_shouldStop;
 
@@ -116,6 +117,8 @@ void CSCADAHandler::handleSCADAConnectionSuccessThread()
 
 				// Publish the NBIRTH
 				publish_node_birth();
+				
+				sleep(2);
 
 				// Publish the DBIRTH for all devices
 				publishAllDevBirths(true);
@@ -227,7 +230,6 @@ void CSCADAHandler::handleIntMQTTConnEstablishThread()
 }
 
 /**
- *
  * Signals that internal MQTT connection is lost
  * @return none
  */
@@ -237,7 +239,6 @@ void CSCADAHandler::signalIntMQTTConnLostThread()
 }
 
 /**
- *
  * Signals that internal MQTT connection is established
  * @return none
  */
@@ -247,7 +248,6 @@ void CSCADAHandler::signalIntMQTTConnEstablishThread()
 }
 
 /**
- *
  * Initializes payload to 0
  * @param a_payload :[in] SparkPlug payload to reset
  * @return none
@@ -262,7 +262,6 @@ void CSCADAHandler::defaultPayload(org_eclipse_tahu_protobuf_Payload& a_payload)
 }
 
 /**
- *
  * Publish message on MQTT broker for MQTT-Export
  * @param a_ddata_payload :[in] spark plug message to publish
  * @param a_topic :[in] topic on which to publish message
@@ -367,13 +366,14 @@ void CSCADAHandler::prepareNodeDeathMsg(bool a_bPublishMsg)
 		}
 		size_t message_length = encode_payload(binary_buffer, buffer_length, &ndeath_payload);
 
-		// Publish the DDATA on the appropriate topic
-		mqtt::message_ptr pubmsg = mqtt::make_message(CCommon::getInstance().getDeathTopic(), (void*)binary_buffer, message_length, m_QOS, false);
-
+		mqtt::will_options willOpts(CCommon::getInstance().getDeathTopic(), (void*)binary_buffer, message_length, m_QOS, false);
 		//connect options for async m_subscriber
-		m_MQTTClient.setWillMsg(pubmsg);
+		m_MQTTClient.setWillMsg(willOpts);
 		if(true == a_bPublishMsg)
 		{
+			// Publish the DDATA on the appropriate topic
+			mqtt::message_ptr pubmsg = mqtt::make_message(CCommon::getInstance().getDeathTopic(), (void*)binary_buffer, message_length, m_QOS, false);
+
 			m_MQTTClient.publishMsg(pubmsg);
 		}
 
@@ -514,7 +514,9 @@ void CSCADAHandler::publish_node_birth()
 		add_simple_metric(&nbirth_payload, "bdSeq", false, 0, METRIC_DATA_TYPE_UINT64, false, false,
 				&m_uiBDSeq, sizeof(m_uiBDSeq));
 		
+		// Add UDT definition
 		addModbusTemplateDefToNbirth(nbirth_payload);
+		CSparkPlugUDTManager::getInstance().addUDTDefsToNbirth(nbirth_payload);
 
 		std::cout << "Publishing nbirth message ..." << std::endl;
 		publishSparkplugMsg(nbirth_payload, CCommon::getInstance().getNBirthTopic(), true);
@@ -615,7 +617,6 @@ bool CSCADAHandler::publishMsgDDATA(const stRefForSparkPlugAction& a_stRefAction
 {
 	//prepare and publish one sparkplug msg for this device
 	org_eclipse_tahu_protobuf_Payload sparkplug_payload;
-	//get_next_payload(&sparkplug_payload);
 	defaultPayload(sparkplug_payload);
 	try
 	{
@@ -697,6 +698,37 @@ bool CSCADAHandler::publishMsgDDEATH(const stRefForSparkPlugAction& a_stRefActio
 }
 
 /**
+ * Handles process to publish new UDTs
+ * @param none
+ * @return true/false based on success/failure
+ */
+bool CSCADAHandler::publishNewUDTs()
+{
+	try
+	{
+		if(false == getInitStatus())
+		{
+			DO_LOG_ERROR("Node init is not done. SparkPlug message publish is not done");
+			return false;
+		}
+		// New UDTs can be published as a part of NBIRTH message.
+		// Steps:
+		// 1. Publish NDEATH
+		// 2. Initiate NBIRTH process
+
+		prepareNodeDeathMsg(true);
+		setInitStatus(false);
+		connected("Dummy start");
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_ERROR(ex.what());
+		return false;
+	}
+	return true;
+}
+
+/**
  * Prepare a MQTT message with sparkplug format for devices mentioned in a_stRefActionVec
  * @param a_stRefActionVec :[in] devices and respective data-points which need to be
  * published on External MQTT broker
@@ -725,6 +757,9 @@ bool CSCADAHandler::prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_
 				break;
 			case enMSG_DATA:
 				publishMsgDDATA(itr);
+				break;
+			case enMSG_UDTDEF_TO_SCADA:
+				publishNewUDTs();
 				break;
 			default:
 				DO_LOG_ERROR("Invalid message type received");
@@ -827,7 +862,16 @@ bool CSCADAHandler::addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric &a_
 	try
 	{
 		a_rMetric = org_eclipse_tahu_protobuf_Payload_Metric_init_default;
-		init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, a_sValue.c_str(), a_sValue.length());
+		if(true == a_sValue.empty())
+		{
+			DO_LOG_DEBUG("The value is empty. Set to 0");
+			std::string temp = "0";
+			init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, temp.c_str(), temp.length());
+		}
+		else
+		{
+			init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, a_sValue.c_str(), a_sValue.length());
+		}
 		
 		if(a_bIsBirth)
 		{
@@ -883,8 +927,8 @@ bool CSCADAHandler::addModbusPropForBirth(org_eclipse_tahu_protobuf_Payload_Temp
 }
 
 /**
- * Prepare device birth messages to be published on SCADA system
- * @param a_rTahuPayload :[out] reference of spark plug message payload in which to store birth messages
+ * Prepare template definitions to be published on SCADA system
+ * @param a_rTahuPayload :[out] reference of spark plug message payload 
  * @return true/false depending on the success/failure
  */
 bool CSCADAHandler::addModbusTemplateDefToNbirth(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload)

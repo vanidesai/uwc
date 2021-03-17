@@ -19,7 +19,7 @@
  * @param a_bIsOnlyValChange: [out] a flag indicates whether changes in BIRTH message are only changes in value which result in DDATA message rather than a DBIRTH message 
  * @return structured map of metrics
  */
-metricMap_t CSparkPlugDev::processNewBirthData(metricMap_t a_MetricList, bool &a_bIsOnlyValChange)
+metricMapIf_t CSparkPlugDev::processNewBirthData(metricMapIf_t &a_MetricList, bool &a_bIsOnlyValChange)
 {
 	// There could be following cases:
 	// Case 1: All are new metrics => This results in a DBIRTH message
@@ -27,9 +27,9 @@ metricMap_t CSparkPlugDev::processNewBirthData(metricMap_t a_MetricList, bool &a
 	// Case 3: Only values of few metrics are changed. There are no other changes => This results in a DDATA message
 	// Case 4: There are no changes. 
 	
-	metricMap_t oMetricMap;
+	metricMapIf_t oMetricMap;
 	// This is a special case: In BIRTH message when we just recceive a change in 
-	metricMap_t oMetricMapData;
+	metricMapIf_t oMetricMapData;
 	// Default value: false: This means output is a BIRTH message
 	a_bIsOnlyValChange = false;
 	do
@@ -39,6 +39,11 @@ metricMap_t CSparkPlugDev::processNewBirthData(metricMap_t a_MetricList, bool &a
 			std::lock_guard<std::mutex> lck(m_mutexMetricList);
 			for (auto &itrInputMetric : a_MetricList)
 			{
+				if(nullptr == itrInputMetric.second)
+				{
+					DO_LOG_ERROR(itrInputMetric.first + ": Metric data is not built.");
+					continue;
+				}
 				auto itrMyMetric = m_mapMetrics.find(itrInputMetric.first);
 				if (m_mapMetrics.end() == itrMyMetric)
 				{
@@ -49,18 +54,21 @@ metricMap_t CSparkPlugDev::processNewBirthData(metricMap_t a_MetricList, bool &a
 				}
 				else
 				{
+					if(nullptr == itrMyMetric->second)
+					{
+						DO_LOG_ERROR(itrMyMetric->first + ": Metric data is not found.");
+						continue;
+					}
 					// Compare data type
-					switch (itrInputMetric.second.getValue().compareValue(
-							itrMyMetric->second.getValue()))
+					switch ((itrMyMetric->second)->compareValue(*(itrInputMetric.second)))
 					{
 					case SAMEVALUE_OR_DTATYPE:
 						// No action
 						break;
 
 					case VALUES_DIFFERENT:
-						// TODO: Should we assign value here ?
-						itrMyMetric->second.getValue().assignValue(
-								itrInputMetric.second.getValue());
+						// Assign new value 
+						(itrMyMetric->second)->assignNewValue(*(itrInputMetric.second));
 						// Add data to a separate metric map for maintaining data
 						oMetricMapData.emplace(itrInputMetric.first,
 								itrInputMetric.second);
@@ -68,9 +76,7 @@ metricMap_t CSparkPlugDev::processNewBirthData(metricMap_t a_MetricList, bool &a
 
 					case DATATYPE_DIFFERENT:
 						// Datatype is different
-						itrMyMetric->second.getValue().assignNewDataTypeValue(
-								itrInputMetric.second.getValue().getDataType(),
-								itrInputMetric.second.getValue());
+						itrMyMetric->second = itrInputMetric.second;
 						// Add data to a separate metric map for maintaining changes in BIRTH
 						oMetricMap.emplace(itrInputMetric.first,
 								itrInputMetric.second);
@@ -97,7 +103,7 @@ metricMap_t CSparkPlugDev::processNewBirthData(metricMap_t a_MetricList, bool &a
 		a_bIsOnlyValChange = true;
 		return oMetricMapData;
 	}
-	// No chnages occurred for BIRTH or DATA
+	// No changes occurred for BIRTH or DATA
 	a_bIsOnlyValChange = false;
 	return oMetricMap;
 }
@@ -107,9 +113,9 @@ metricMap_t CSparkPlugDev::processNewBirthData(metricMap_t a_MetricList, bool &a
  * @param a_MetricList :[in] list of metrics present in a message payload received on internal MQTT broker
  * @return structured map of metrics
  */
-metricMap_t CSparkPlugDev::processNewData(metricMap_t a_MetricList)
+metricMapIf_t CSparkPlugDev::processNewData(metricMapIf_t &a_MetricList)
 {
-	metricMap_t oMetricMap;
+	metricMapIf_t oMetricMap;
 	do
 	{
 		try
@@ -117,29 +123,34 @@ metricMap_t CSparkPlugDev::processNewData(metricMap_t a_MetricList)
 			std::lock_guard<std::mutex> lck(m_mutexMetricList);
 			for (auto &itrInputMetric : a_MetricList)
 			{
+				if(nullptr == itrInputMetric.second)
+				{
+					DO_LOG_ERROR(itrInputMetric.first + ": Metric data is not built.");
+					continue;
+				}
 				auto itrMyMetric = m_mapMetrics.find(itrInputMetric.first);
 				if (m_mapMetrics.end() == itrMyMetric)
 				{
-					DO_LOG_ERROR(
-							itrInputMetric.first
-									+ ": Metric not found in device: "
-									+ m_sSparkPlugName
-									+ ". Ignoring this metric data");
+					DO_LOG_ERROR(itrInputMetric.first + ": Metric not found in device: "
+							+ m_sSparkPlugName	+ ". Ignoring this metric data");
 				}
 				else
 				{
+					if(nullptr == itrMyMetric->second)
+					{
+						DO_LOG_ERROR(itrMyMetric->first + ": Metric data is not found.");
+						continue;
+					}
 					// Compare data type
-					switch (itrInputMetric.second.getValue().compareValue(
-							itrMyMetric->second.getValue()))
+					switch ((itrMyMetric->second)->compareValue(*(itrInputMetric.second)))
 					{
 					case SAMEVALUE_OR_DTATYPE:
 						// No action
 						break;
 
 					case VALUES_DIFFERENT:
-						// TODO: Should we assign value here ?
-						itrMyMetric->second.getValue().assignValue(
-								itrInputMetric.second.getValue());
+						// Assign value here
+						(itrMyMetric->second)->assignNewValue(*(itrInputMetric.second));
 						oMetricMap.emplace(itrInputMetric.first,
 								itrInputMetric.second);
 						break;
@@ -151,13 +162,10 @@ metricMap_t CSparkPlugDev::processNewData(metricMap_t a_MetricList)
 										+ ": Metric data-types differ in device: "
 										+ m_sSparkPlugName
 										+ ". Expected datatype:"
-										+ std::to_string(
-												itrMyMetric->second.getValue().getDataType())
+								+ std::to_string((itrMyMetric->second)->getDataType())
 										+ ", Received datatype:"
-										+ std::to_string(
-												itrInputMetric.second.getValue().getDataType())
-										+ ". Ignoring this data")
-						;
+								+ std::to_string((itrInputMetric.second)->getDataType())
+								+ ". Ignoring this data");
 						break;
 					}
 				}
@@ -174,6 +182,7 @@ metricMap_t CSparkPlugDev::processNewData(metricMap_t a_MetricList)
 /**
  * Add metric to SprakPlugDev for Modbus device
  * @param a_rUniqueDataPoint :[in] reference of unique data point
+ * @return none
  */
 void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDataPoint)
 {
@@ -186,8 +195,15 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
 			if (m_mapMetrics.end() == itrMyMetric)
 			{
 				// Add a metric if not already present
-				CMetric oMetric{a_rUniqueDataPoint};
-				m_mapMetrics.emplace(oMetric.getSparkPlugName(), oMetric);
+				std::shared_ptr<CIfMetric> ptrIfMetric = std::make_shared<CMetric>(a_rUniqueDataPoint);
+				if(nullptr == ptrIfMetric)
+				{
+					DO_LOG_ERROR(a_rUniqueDataPoint.getID() + ": Unable to create shared metric.");
+				}
+				else
+				{
+					m_mapMetrics.emplace(ptrIfMetric->getSparkPlugName(), ptrIfMetric);
+				}
 			}
 			else
 			{
@@ -210,7 +226,7 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
  * @return true/false depending on the success/failure
  */
 bool CSparkPlugDev::prepareModbusMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, 
-		const metricMap_t &a_mapMetrics, bool a_bIsBirth)
+		const metricMapIf_t &a_mapMetrics, bool a_bIsBirth)
 {
 	try
 	{
@@ -244,12 +260,15 @@ bool CSparkPlugDev::prepareModbusMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 		{
 			for(auto &itr: a_mapMetrics)
 			{
-				if(true != const_cast<CMetric&>(itr.second).addModbusMetric(udt_template.metrics[iLoop], a_bIsBirth))
+				if(itr.second)
 				{
-					DO_LOG_ERROR(itr.second.getSparkPlugName() + ":Could not add metric to device. Trying to add other metrics.");
+					if(true !=  (itr.second)->addModbusMetric(udt_template.metrics[iLoop], a_bIsBirth))
+					{
+						DO_LOG_ERROR((itr.second)->getSparkPlugName() + ":Could not add metric to device. Trying to add other metrics.");
 				}
-				udt_template.metrics[iLoop].timestamp = itr.second.getTimestamp();
+					udt_template.metrics[iLoop].timestamp = (itr.second)->getTimestamp();
 				udt_template.metrics[iLoop].has_timestamp = true;
+				}
 				++iLoop;
 			}
 		}
@@ -331,13 +350,17 @@ bool CSparkPlugDev::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 		{
 			for(auto &itr: m_mapMetrics)
 			{
-				uint64_t current_time = itr.second.getTimestamp();
+				if(nullptr == itr.second)
+				{
+					continue;
+				}
+				uint64_t current_time = (itr.second)->getTimestamp();
 
 				// org_eclipse_tahu_protobuf_Payload_Metric : Fields
 				// char *name: NULL, 
 				// bool has_alias: false, uint64_t alias: 0
 				// bool has_timestamp: true, uint64_t timestamp: current_time
-				// bool has_datatype: true, uint32_t datatype: itr.second.getValue().getDataType()
+				// bool has_datatype: true, uint32_t datatype: itr.second.getDataType()
 				// bool has_is_historical: false, bool is_historical: 0
 				// bool has_is_transient: false, bool is_transient: 0
 				// bool has_is_null: true, bool is_null: false
@@ -345,17 +368,17 @@ bool CSparkPlugDev::prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rT
 				// bool has_properties: false, org_eclipse_tahu_protobuf_Payload_PropertySet properties: default
 				// pb_size_t which_value: 0, value: {0}
 				org_eclipse_tahu_protobuf_Payload_Metric metric = {NULL, false, 0, true, current_time , true,
-						itr.second.getValue().getDataType(), false, 0, false, 0, false, true, false,
+						(itr.second)->getDataType(), false, 0, false, 0, false, true, false,
 						org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
 						false, org_eclipse_tahu_protobuf_Payload_PropertySet_init_default, 0, {0}};
 
-				if(true == itr.second.addMetricForBirth(metric))
+				if(true == (itr.second)->addMetricForBirth(metric))
 				{
 					add_metric_to_payload(&a_rTahuPayload, &metric);
 				}
 				else
 				{
-					DO_LOG_ERROR(itr.second.getSparkPlugName() + ":Could not add metric to device. Trying to add other metrics.");
+					DO_LOG_ERROR((itr.second)->getSparkPlugName() + ":Could not add metric to device. Trying to add other metrics.");
 				}
 			}
 		}
@@ -605,7 +628,14 @@ bool CSparkPlugDev::processRealDeviceUpdateMsg(const std::string a_sPayLoad, std
 						+ m_sSparkPlugName + ". Ignoring this metric data");
 			return false;
 		}
-		CMetric &refMyMetric = itrMyMetric->second;
+		CMetric *pOtherMetric = dynamic_cast<CMetric*>(itrMyMetric->second.get());
+		if(nullptr == pOtherMetric)
+		{
+			DO_LOG_ERROR(sMetric + ": Metric types do not match! : "
+						+ m_sSparkPlugName + ". Ignoring this metric data");
+			return false;
+		}
+		CMetric &refMyMetric = *pOtherMetric;
 
 		// All validations are done
 		// Now, action can be determined based on values in this message and 
@@ -629,7 +659,7 @@ bool CSparkPlugDev::processRealDeviceUpdateMsg(const std::string a_sPayLoad, std
 		// Lambda to read a parameter from JSON
 		auto addToActionVector = [&](eMsgAction a_eMsgAction) -> bool
 		{
-			metricMap_t mapChangedMetricsFromUpdate;
+			metricMapIf_t mapChangedMetricsFromUpdate;
 			if((enMSG_DATA == a_eMsgAction) || (enMSG_BIRTH == a_eMsgAction))
 			{
 				refMyMetric.setValue(oValObj);
@@ -637,7 +667,7 @@ bool CSparkPlugDev::processRealDeviceUpdateMsg(const std::string a_sPayLoad, std
 
 				if(enMSG_DATA == a_eMsgAction)
 				{
-					mapChangedMetricsFromUpdate.emplace(refMyMetric.getSparkPlugName(), refMyMetric);
+					mapChangedMetricsFromUpdate.emplace((itrMyMetric->second)->getSparkPlugName(), (itrMyMetric->second));
 				}
 			}
 			
@@ -736,10 +766,18 @@ bool CSparkPlugDev::processRealDeviceUpdateMsg(const std::string a_sPayLoad, std
  * @param a_appSeqNo :[in] app seq number to be used
  * @return true/false based on success/failure
  */
-bool CSparkPlugDev::getWriteMsg(std::string& a_sTopic, cJSON *a_root, std::pair<const std::string,CMetric>& a_metric, const int& a_appSeqNo)
+bool CSparkPlugDev::getWriteMsg(std::string& a_sTopic, cJSON *a_root,
+		std::pair<const std::string, std::shared_ptr<CIfMetric>> &a_metric,
+		const int& a_appSeqNo)
 {
 	try
 	{
+		if(nullptr == a_metric.second)
+		{
+			DO_LOG_ERROR("Metric data is not available.");
+			return false;
+		}
+
 		std::string pubTopic = "";
 		std::string pubMsg = "";
 
@@ -764,17 +802,17 @@ bool CSparkPlugDev::getWriteMsg(std::string& a_sTopic, cJSON *a_root, std::pair<
 		a_sTopic = "/" + strDevice + "/" + strSite + "/" + strMetricName + "/write";
 
 		{
-			string a_strDataPoint = a_metric.second.getName().c_str();
+			string a_strDataPoint = (a_metric.second)->getName().c_str();
 
 			cJSON_AddItemToObject(a_root, "wellhead", cJSON_CreateString(vParsedTopic[1].c_str()));
-			cJSON_AddItemToObject(a_root, "command", cJSON_CreateString(a_metric.second.getName().c_str()));
+			cJSON_AddItemToObject(a_root, "command", cJSON_CreateString((a_metric.second)->getName().c_str()));
 
-			if(false == a_metric.second.getValue().assignToCJSON(a_root))
+			if(false == (a_metric.second)->assignToCJSON(a_root))
 			{
 				return false;
 			}
 
-			time_t t = a_metric.second.getTimestamp() / 1000;
+			time_t t = (a_metric.second)->getTimestamp() / 1000;
 
 			char cTimestamp[100];
 			auto ptrTime = std::localtime(&t);
@@ -791,7 +829,7 @@ bool CSparkPlugDev::getWriteMsg(std::string& a_sTopic, cJSON *a_root, std::pair<
 				}
 			}
 
-			cJSON_AddItemToObject(a_root, "usec", cJSON_CreateString(std::to_string(a_metric.second.getTimestamp()).c_str()));
+			cJSON_AddItemToObject(a_root, "usec", cJSON_CreateString(std::to_string((a_metric.second)->getTimestamp()).c_str()));
 
 			cJSON_AddItemToObject(a_root, "version", cJSON_CreateString(CCommon::getInstance().getVersion().c_str()));
 			std::string sAppSeq{"SCADA_RTU_" + std::to_string(a_appSeqNo)};
@@ -813,10 +851,9 @@ bool CSparkPlugDev::getWriteMsg(std::string& a_sTopic, cJSON *a_root, std::pair<
  * @param a_metrics :[in] changed metrics for which to publish CMD message
  * @return true/false based on success/failure
  */
-bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMap_t& m_metrics, cJSON *metricArray)
+bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMapIf_t& a_metrics, cJSON *metricArray)
 {
 	bool bRet = false;
-
 	try
 	{
 		vector<string> vParsedTopic = { };
@@ -839,24 +876,29 @@ bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMap_t& m_metrics, cJSON *m
 		a_sTopic = "CMD/" + device + "/" + siteName;
 
 		//these shall be part of a single sparkplug msg
-		for (auto &itrMetric : m_metrics)
+		for (auto &itrMetric : a_metrics)
 		{
+			if(nullptr == itrMetric.second)
+			{
+				DO_LOG_ERROR(itrMetric.first + ": Metric data not found.");
+				continue;
+			}
 			cJSON *cjMetric = cJSON_CreateObject();
-			if(cjMetric == NULL )
+			if(cjMetric == NULL)
 			{
 				DO_LOG_ERROR("Error while creating CJSON message");
 				return false;
 			}
 
-			cJSON_AddItemToObject(cjMetric, "name", cJSON_CreateString(itrMetric.second.getName().c_str()));
+			cJSON_AddItemToObject(cjMetric, "name", cJSON_CreateString((itrMetric.second)->getName().c_str()));
 
-			if(false == itrMetric.second.getValue().assignToCJSON(cjMetric))
+			if(false == (itrMetric.second)->assignToCJSON(cjMetric))
 			{
 				DO_LOG_ERROR("Failed to assign value to CJSON");
 				return false;
 			}
 
-			cJSON_AddItemToObject(cjMetric, "timestamp", cJSON_CreateNumber(itrMetric.second.getTimestamp()));
+			cJSON_AddItemToObject(cjMetric, "timestamp", cJSON_CreateNumber((itrMetric.second)->getTimestamp()));
 
 		    cJSON_AddItemToArray(metricArray, cjMetric);
 
@@ -868,7 +910,6 @@ bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMap_t& m_metrics, cJSON *m
 		DO_LOG_FATAL(ex.what());
 		bRet = false;
 	}
-
 	return bRet;
 }
 
@@ -878,7 +919,7 @@ bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMap_t& m_metrics, cJSON *m
  * @param a_mapChangedMetrics :[in] changed metrics for which ddata message to be created
  * @return true/false based on success/failure
  */
-bool CSparkPlugDev::prepareDdataMsg(org_eclipse_tahu_protobuf_Payload &a_payload, const metricMap_t &a_mapChangedMetrics)
+bool CSparkPlugDev::prepareDdataMsg(org_eclipse_tahu_protobuf_Payload &a_payload, const metricMapIf_t &a_mapChangedMetrics)
 {
 	bool bRet = false;
 
@@ -894,19 +935,24 @@ bool CSparkPlugDev::prepareDdataMsg(org_eclipse_tahu_protobuf_Payload &a_payload
 		{
 			for(auto &itrMetric: a_mapChangedMetrics)
 			{
-				uint64_t timestamp = itrMetric.second.getTimestamp();
-				string strMetricName = itrMetric.second.getName();
+				if(nullptr == itrMetric.second)
+				{
+					DO_LOG_ERROR(itrMetric.first + ": Metric data not found.");
+					continue;
+				}
+				uint64_t timestamp = (itrMetric.second)->getTimestamp();
+				string strMetricName = (itrMetric.second)->getName();
 
 				org_eclipse_tahu_protobuf_Payload_Metric metric =
 					{ NULL, false, 0, true, timestamp, true,
-					(const_cast<CMetric&>(itrMetric.second)).getValue().getDataType(), false, 0, false, 0, false,
+					(itrMetric.second)->getDataType(), false, 0, false, 0, false,
 					true, false, org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
 					false,	org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
 					0, { 0 } };
 
-				if(false == (const_cast<CMetric&>(itrMetric.second)).addMetricNameValue(metric))
+				if(false == (itrMetric.second)->addMetricNameValue(metric))
 				{
-					DO_LOG_ERROR(itrMetric.second.getName() + ":Failed to add metric name and value");
+					DO_LOG_ERROR((itrMetric.second)->getName() + ":Failed to add metric name and value");
 				}
 				else
 				{

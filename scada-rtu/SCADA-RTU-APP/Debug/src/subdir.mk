@@ -17,6 +17,7 @@ CPP_SRCS += \
 ../src/QueueMgr.cpp \
 ../src/SCADAHandler.cpp \
 ../src/SparkPlugDevMgr.cpp \
+../src/SparkPlugUDTMgr.cpp \
 ../src/SparkPlugDevices.cpp 
 
 OBJS += \
@@ -27,6 +28,7 @@ OBJS += \
 ./src/QueueMgr.o \
 ./src/SCADAHandler.o \
 ./src/SparkPlugDevMgr.o \
+./src/SparkPlugUDTMgr.o \
 ./src/SparkPlugDevices.o 
 
 CPP_DEPS += \
@@ -37,6 +39,7 @@ CPP_DEPS += \
 ./src/QueueMgr.d \
 ./src/SCADAHandler.d \
 ./src/SparkPlugDevMgr.d \
+./src/SparkPlugUDTMgr.d \
 ./src/SparkPlugDevices.d 
 
 

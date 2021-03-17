@@ -14,6 +14,7 @@
 #define MQTTPUBSUBCLIENT_HPP_
 
 #include "mqtt/async_client.h"
+#include "mqtt/will_options.h"
 #include <mutex>
 
 /** class is for action failure or success related to mqtt*/
@@ -79,9 +80,9 @@ public:
 
 	bool publishMsg(mqtt::message_ptr &a_pubMsg);
 
-	bool setWillMsg(mqtt::message_ptr &a_willMsg)
+	bool setWillMsg(const mqtt::will_options & will)
 	{
-		m_ConOptions.set_will_message(a_willMsg);
+		m_ConOptions.set_will(will);
 
 		return true;
 	}

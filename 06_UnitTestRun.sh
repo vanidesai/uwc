@@ -15,7 +15,7 @@ GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
 NC=$(tput sgr0)
 
-eis_build_dir="$Current_Dir/../build"
+eii_build_dir="$Current_Dir/../build"
 
 # trap ctrl-c and call ctrl_c()
 trap ctrl_c INT
@@ -35,7 +35,7 @@ set_dev_mode()
 {
    if [ "$1" == "true" ]; then
 	   echo "${INFO}Setting dev mode to true ${NC}"    
-	   sed -i 's/DEV_MODE=false/DEV_MODE=true/g' $eis_build_dir/.env
+	   sed -i 's/DEV_MODE=false/DEV_MODE=true/g' $eii_build_dir/.env
 	   if [ "$?" -ne "0" ]; then
 			echo "${RED}Failed to set dev mode."
 			echo "${GREEN}Kinldy set DEV_MODE to false manualy in .env file and then re--run this script"
@@ -45,7 +45,7 @@ set_dev_mode()
 	   fi
 	else
 		echo "${INFO}Setting dev mode to false ${NC}"    
-		sed -i 's/DEV_MODE=true/DEV_MODE=false/g' $eis_build_dir/.env
+		sed -i 's/DEV_MODE=true/DEV_MODE=false/g' $eii_build_dir/.env
 		if [ "$?" -ne "0" ]; then
 			echo "${RED}Failed to set dev mode."
 			echo "${GREEN}Kinldy set DEV_MODE to false manualy in .env file and then re--run this script"
@@ -69,7 +69,7 @@ set_dev_mode()
 #-----------------------------------------------------------------
 generate_unit_test_report()
 {
-    cd "${eis_build_dir}"
+    cd "${eii_build_dir}"
     docker-compose up --build -d
     if [ "$?" -eq "0" ];then
 	echo "*****************************************************************"
@@ -84,7 +84,7 @@ generate_unit_test_report()
 
 create_test_dir()
 {
-	cd "${eis_build_dir}"
+	cd "${eii_build_dir}"
 	rm -rf unit_test_reports
 	mkdir -p unit_test_reports/modbus-tcp-master
 	mkdir -p unit_test_reports/modbus-rtu-master
@@ -94,29 +94,29 @@ create_test_dir()
 	mkdir -p unit_test_reports/uwc-util
 	chown -R $SUDO_USER:$SUDO_USER unit_test_reports
 	chmod -R 777 unit_test_reports
-	cd "${eis_build_dir}"
+	cd "${eii_build_dir}"
 }
 
 function cleanup()
 {
 	cd $Current_Dir
-	chown -R $SUDO_USER:$SUDO_USER ${eis_build_dir}/unit_test_reports
+	chown -R $SUDO_USER:$SUDO_USER ${eii_build_dir}/unit_test_reports
 	docker stop $(docker ps -a -q)
 }
 
-eis_provision()
+eii_provision()
 {
-    if [ -d "${eis_build_dir}/provision/" ];then
-        cp -f ${eis_build_dir}/../uwc/docker-compose_UT.yml ${eis_build_dir}/docker-compose.yml
-        cp -f ${eis_build_dir}/../uwc/eis_config_UT.json ${eis_build_dir}/provision/config/eis_config.json
-        cd "${eis_build_dir}/provision/"
+    if [ -d "${eii_build_dir}/provision/" ];then
+        cp -f ${eii_build_dir}/../uwc/docker-compose_UT.yml ${eii_build_dir}/docker-compose.yml
+        cp -f ${eii_build_dir}/../uwc/eii_config_UT.json ${eii_build_dir}/provision/config/eii_config.json
+        cd "${eii_build_dir}/provision/"
     else
-        echo "${RED}ERROR: ${eis_build_dir}/provision/ is not present.${NC}"
+        echo "${RED}ERROR: ${eii_build_dir}/provision/ is not present.${NC}"
         exit 1 # terminate and indicate error
     fi
 
     docker stop $(docker ps -a -q)
-    ./provision_eis.sh ../docker-compose.yml
+    ./provision_eii.sh ../docker-compose.yml
     check_for_errors "$?" "Provisioning is failed. Please check logs" \
                     "${GREEN}Provisioning is done successfully.${NC}"
     echo "${GREEN}>>>>>${NC}"
@@ -130,7 +130,7 @@ docker_verify
 docker_compose_verify
 create_test_dir
 set_dev_mode "false"
-eis_provision
+eii_provision
 generate_unit_test_report
 
 echo "Generating code coverage report..."

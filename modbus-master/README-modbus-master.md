@@ -105,7 +105,7 @@ Notes : Above instructions are specified to build the sources in "Release" mode.
 1. Deploy ia_etcd container with dev mode using following steps. 
 	1. Run `preReq.sh` script as explained in the main uwc/README.md.
 	2. Add `network_mode: host` option in two containers present in IEdgeInsights\build\provision\dep\docker-compose-provision.yml file.
-	3. Run th eprovisioning command script to deploy ia_etcd container as explainedin main uwc/README/md.
+	3. Run the eprovisioning command script to deploy ia_etcd container as explainedin main uwc/README/md.
 2. Go to `Sourcecode\modbus-master\Modbus-App\Release` directory and open bash terminal.
 3. Set EIS specific environment variables using below command.
 	`source <Complete Path of .env file present inside IEdgeInsights/build directory>`

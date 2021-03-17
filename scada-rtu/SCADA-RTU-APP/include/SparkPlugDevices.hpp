@@ -36,7 +36,6 @@ extern "C"
 class CSparkPlugDev;
 class CVendorApp;
 
-using metricMap_t = std::map<std::string, CMetric>; /** map with key as string and value as CMetric*/
 using devSparkplugMap_t = std::map<std::string, CSparkPlugDev>; /** map with key as string and value as CSparkPlugDev*/
 using var_dev_ref_t = std::variant<std::monostate, std::reference_wrapper<const network_info::CUniqueDataDevice>>; /**Type alias for metric value*/
 
@@ -54,7 +53,7 @@ class CSparkPlugDev
 	std::string m_sSubDev;/** subscriber device*/
 	std::string m_sSparkPlugName;/**spark plug name*/
 	bool m_bIsVendorApp;/** vendor app or not(true or false)*/
-	metricMap_t m_mapMetrics;/** reference for metricMap_t*/
+	metricMapIf_t m_mapMetrics; /** reference for metricMapIf_t*/
 	std::atomic<eDevStatus> m_enLastStatetPublishedToSCADA;/** last state published to scada*/
 	std::atomic<eDevStatus> m_enLastKnownStateFromDev; /** last state known from device*/
 	uint64_t m_deathTimestamp; /** value for death timestamp*/
@@ -73,7 +72,7 @@ class CSparkPlugDev
 		bool &a_bIsGood, bool &a_bIsDeathCode);
 
 	bool prepareModbusMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, 
-		const metricMap_t &a_mapMetrics, bool a_bIsBirth);
+		const metricMapIf_t &a_mapMetrics, bool a_bIsBirth);
 public:
 	/** constructor*/
 	CSparkPlugDev(std::string a_sSubDev, std::string a_sSparkPluName,
@@ -84,7 +83,6 @@ public:
 			m_enLastKnownStateFromDev{enDEVSTATUS_NONE},
 			m_deathTimestamp {0}, m_mutexMetricList{}
 	{
-		;
 	}
 	
 	CSparkPlugDev(const network_info::CUniqueDataDevice &a_rUniqueDev, std::string a_sSparkPlugName) :
@@ -95,7 +93,6 @@ public:
 			m_enLastKnownStateFromDev{enDEVSTATUS_NONE},
 			m_deathTimestamp {0}, m_rDirectDevRef {a_rUniqueDev}, m_mutexMetricList{}
 	{
-		;
 	}
 
 	CSparkPlugDev(const CSparkPlugDev &a_refObj) :
@@ -106,7 +103,6 @@ public:
 			m_deathTimestamp {0}, 
 			m_rDirectDevRef{a_refObj.m_rDirectDevRef}, m_mutexMetricList{}
 	{
-		;
 	}
 
 	void addMetric(const network_info::CUniqueDataPoint &a_rUniqueDataPoint);
@@ -128,14 +124,12 @@ public:
 	{
 		return m_sSubDev;
 	}
-	;
 
 	/**function to get spark plug name*/
 	std::string getSparkPlugName()
 	{
 		return m_sSparkPlugName;
 	}
-	;
 
 	/**function to check metric*/
 	bool checkMetric(org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric)
@@ -150,9 +144,14 @@ public:
 				auto itr = m_mapMetrics.find(sName);
 				if(m_mapMetrics.end() != itr)
 				{
+					if(nullptr == itr->second)
+					{
+						DO_LOG_ERROR("Metric data not found: " + sName);
+						return false;
+					}
 					// metric name is found
 					// Check if datatypes match
-					switch(itr->second.getValue().getDataType())
+					switch((itr->second)->getDataType())
 					{
 					case METRIC_DATA_TYPE_INT8:
 					case METRIC_DATA_TYPE_INT16:
@@ -162,7 +161,8 @@ public:
 					case METRIC_DATA_TYPE_FLOAT:
 					case METRIC_DATA_TYPE_DOUBLE:
 					case METRIC_DATA_TYPE_STRING:
-						if(itr->second.getValue().getDataType() == a_sparkplugMetric.datatype)
+					case METRIC_DATA_TYPE_TEMPLATE:
+						if((itr->second)->getDataType() == a_sparkplugMetric.datatype)
 						{
 							flag = true;
 						}
@@ -212,16 +212,14 @@ public:
 	{
 		m_sSparkPlugName = a_sVal;
 	}
-	;
 
 	/** to set vendor app reference */
 	void setVendorAppRef(CVendorApp &a_refVendorApp)
 	{
 	}
-	;
 
-	metricMap_t processNewData(metricMap_t a_MetricList);
-	metricMap_t processNewBirthData(metricMap_t a_MetricList, bool &a_bIsOnlyValChange);
+	metricMapIf_t processNewData(metricMapIf_t &a_MetricList);
+	metricMapIf_t processNewBirthData(metricMapIf_t &a_MetricList, bool &a_bIsOnlyValChange);
 	
 	/**To set published status */
 	void setPublishedStatus(eDevStatus a_enStatus)
@@ -252,7 +250,7 @@ public:
 	{
 		return m_bIsVendorApp;
 	}
-	;
+	
 	bool prepareDBirthMessage(org_eclipse_tahu_protobuf_Payload& a_rTahuPayload, bool a_bIsNBIRTHProcess);
 	bool processRealDeviceUpdateMsg(const std::string a_sPayLoad, std::vector<stRefForSparkPlugAction> &a_stRefActionVec);
 
@@ -265,10 +263,10 @@ public:
 		}*/
 	}
 
-	bool getWriteMsg(std::string& a_sTopic, cJSON *a_root, std::pair<const std::string,CMetric>& a_metric, const int& a_appSeqNo);
-	bool getCMDMsg(std::string& a_sTopic, metricMap_t& m_metrics, cJSON *metricArray);
+	bool getWriteMsg(std::string& a_sTopic, cJSON *a_root, std::pair<const std::string, std::shared_ptr<CIfMetric>>& a_metric, const int& a_appSeqNo);
+	bool getCMDMsg(std::string& a_sTopic, metricMapIf_t& m_metrics, cJSON *metricArray);
 
-	bool prepareDdataMsg(org_eclipse_tahu_protobuf_Payload &a_payload, const metricMap_t &a_mapChangedMetrics);
+	bool prepareDdataMsg(org_eclipse_tahu_protobuf_Payload &a_payload, const metricMapIf_t &a_mapChangedMetrics);
 };
 
 
@@ -287,13 +285,11 @@ public:
 	CVendorApp(std::string a_sName) :
 			m_sName(a_sName), m_bIsDead{ false }, m_mutexDevList{}
 	{
-		;
 	}
 	CVendorApp(const CVendorApp &a_refObj) :
 			m_sName(a_refObj.m_sName), m_bIsDead{a_refObj.m_bIsDead},
 			m_mapDevList{a_refObj.m_mapDevList}, m_mutexDevList{}
 	{
-		;
 	}
 
 	/** Function to add device*/
@@ -316,21 +312,18 @@ public:
 		std::lock_guard<std::mutex> lck(m_mutexDevList);
 		return m_mapDevList;
 	}
-	;
 
 	/** Function to set death status*/
 	void setDeathStatus(bool a_bIsDead)
 	{
 		m_bIsDead = a_bIsDead;
 	}
-	;
 
 	/**Function to check dead or not*/
 	bool isDead()
 	{
 		return m_bIsDead;
 	}
-	;
 };
 
 
@@ -355,7 +348,6 @@ public:
 		auto &oVendorApp = m_mapVendorApps.at(a_sVendorApp);
 		oVendorApp.addDevice(a_oDev);
 	}
-	;
 
 	/** function to get vendor app*/
 	CVendorApp* getVendorApp(std::string a_sVendorApp)
@@ -374,25 +366,27 @@ public:
 /** Enumerator specifying msg action*/
 enum eMsgAction
 {
-	enMSG_NONE, enMSG_BIRTH, enMSG_DEATH, enMSG_DATA, enMSG_DCMD_CMD, enMSG_DCMD_WRITE
+	enMSG_NONE, enMSG_BIRTH, enMSG_DEATH, enMSG_DATA, enMSG_DCMD_CMD, enMSG_DCMD_WRITE, 
+	enMSG_UDTDEF_TO_SCADA
 };
 
-/** Structure maintaing reference for sparkplug actions*/
+/** Structure maintaining reference for sparkplug actions*/
 struct stRefForSparkPlugAction
 {
 	std::reference_wrapper<CSparkPlugDev> m_refSparkPlugDev; /** wrapper for sparkplug device*/
-	eMsgAction m_enAction; /** reference for enum eMsgAction*/
-	metricMap_t m_mapChangedMetrics; /** reference for metricMap_t*/
+	eMsgAction m_enAction; /** Action to be taken*/
+	metricMapIf_t m_mapChangedMetrics; /** metrics to be used for taking action*/
 
 	stRefForSparkPlugAction(std::reference_wrapper<CSparkPlugDev> a_ref,
-			eMsgAction a_enAction, metricMap_t a_mapMetrics) :
-			m_refSparkPlugDev
-			{ a_ref }, m_enAction
-			{ a_enAction }, m_mapChangedMetrics
-			{ a_mapMetrics }
+			eMsgAction a_enAction, metricMapIf_t a_mapMetrics) :
+			m_refSparkPlugDev{a_ref}, m_enAction{a_enAction}
+			, m_mapChangedMetrics{a_mapMetrics}
 	{
-		;
 	}
-	;
+
+	~stRefForSparkPlugAction()
+	{
+		m_mapChangedMetrics.clear();
+	}
 };
 #endif

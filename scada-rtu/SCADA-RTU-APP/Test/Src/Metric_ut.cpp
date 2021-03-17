@@ -376,4 +376,439 @@ TEST_F(Metric_ut, Add_MetricFor_Birth)
 }
 
 
+/**
+ * Test case to check addMetricForBirth() behavior
+ * @return :bool
+ * bool CUDT::assignToCJSON(cJSON *a_cjMetric)
+ *
+ **/
+TEST_F(Metric_ut, assignToCJSON)
+{
+	_assignToCJSON();
+}
+
+
+
+/**
+ * Test case to check setValObj for CUDT
+ * @return :bool
+ *
+ **/
+TEST_F(Metric_ut, setValObjCUDT)
+{
+
+
+	org_eclipse_tahu_protobuf_Payload_Metric a_metric = { "TEST", false, 0, true, get_current_timestamp(), true,
+			METRIC_DATA_TYPE_TEMPLATE, false, 0, false, 0, false,
+												true, false,
+									org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+												false,
+														org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+												0,
+												{ 0 } };
+
+
+	org_eclipse_tahu_protobuf_Payload_Metric tmpMetric = { "TEST", false, 0, true, get_current_timestamp(), true,
+				METRIC_DATA_TYPE_TEMPLATE, false, 0, false, 0, false,
+													true, false,
+										org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+													false,
+    org_eclipse_tahu_protobuf_Payload_PropertySet_init_default, 0, {0}};
+
+	std::string name{"test"};
+	std::string version{"1.0"};
+	a_metric.value.template_value.version = const_cast<char*>(version.c_str());
+	a_metric.value.template_value.metrics_count = 1;
+	a_metric.value.template_value.metrics = &tmpMetric;
+	uint32_t dtype = METRIC_DATA_TYPE_STRING;
+	std::string objVal= "xyz";
+	std::string a_version = "1.0";
+	bool a_bIsDefinition = false;
+	CValObj obj;
+	obj.initTestData(dtype, objVal);
+	std::string a_sName = "Properties/Version";
+	const uint64_t a_timestamp = 1486144502122;
+	std::string a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric = std::make_shared<CMetric>(a_sName, obj, a_timestamp);
+	metricMapIf_t mapMetrics;
+	mapMetrics.emplace(a_sName, pCMetric);
+	CUDT oUDT(a_sName, dtype, false, a_version);
+	oUDT.initTestData(mapMetrics, mapMetrics, a_sUDTDefName, a_version, a_bIsDefinition);
+	cJSON *cjRoot = NULL;
+	try
+		{
+		   cjRoot = cJSON_CreateObject();
+			if (NULL == cjRoot)
+			{
+				DO_LOG_ERROR(
+							"Message received from MQTT could not be parsed in json format");
+			}
+
+		 }
+	 catch (const std::exception &e)
+		{
+				DO_LOG_ERROR(std::string("Error:") + e.what());
+		}
+
+	 oUDT.setValObj(a_metric);
+}
+
+
+/**
+ * Test case to check addMetricNameValue
+ * @return : bool
+ *
+ **/
+TEST_F(Metric_ut, addMetricNameValue)
+{
+	    org_eclipse_tahu_protobuf_Payload_Metric a_metric = { "test", false, 0, true, get_current_timestamp(), true,
+				METRIC_DATA_TYPE_TEMPLATE, false, 0, false, 0, false,
+													true, false,
+										org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+													false,
+															org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+													0,
+													{ 0 } };
+
+		org_eclipse_tahu_protobuf_Payload_Metric tmpMetric = { "test", false, 0, true, get_current_timestamp(), true,
+					METRIC_DATA_TYPE_TEMPLATE, false, 0, false, 0, false,
+														true, false,
+											org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+														false,
+																org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+														0,
+														{ 0 } };
+
+		std::string version{"1.0"};
+		a_metric.value.template_value.version = const_cast<char*>(version.c_str());
+		a_metric.value.template_value.metrics_count = 1;
+		a_metric.value.template_value.metrics = &tmpMetric;
+		uint32_t dtype = METRIC_DATA_TYPE_STRING;
+		std::string objVal= "xyz";
+		std::string a_version = "1.0";
+		bool a_bIsDefinition = false;
+		CValObj obj;
+		obj.initTestData(dtype, objVal);
+		std::string a_sName = "Properties/Version";
+		const uint64_t a_timestamp = 1486144502122;
+		std::string a_sUDTDefName ="UDT";
+		std::shared_ptr<CIfMetric> pCMetric = std::make_shared<CMetric>(a_sName, obj, a_timestamp);
+		metricMapIf_t mapMetrics;
+		mapMetrics.emplace(a_sName, pCMetric);
+		CUDT oUDT(a_sName, dtype, false, a_version);
+		oUDT.initTestData(mapMetrics, mapMetrics, a_sUDTDefName, a_version, a_bIsDefinition);
+		bool res = oUDT.addMetricNameValue(a_metric);
+		EXPECT_EQ(true, res);
+}
+
+/**
+ * Test case to compareValue
+ * @return : bool
+ *
+ **/
+TEST_F(Metric_ut, compareValue)
+{
+	uint32_t dtype = METRIC_DATA_TYPE_STRING;
+	std::string objVal1= "xyz";
+	std::string a_version = "1.0";
+	bool a_bIsDefinition = false;
+	CValObj obj1;
+	obj1.initTestData(dtype, objVal1);
+	std::string a_sName = "Properties/Version";
+	const uint64_t a_timestamp = 1486144502122;
+	std::string a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric1 = std::make_shared<CMetric>(a_sName, obj1, a_timestamp);
+	metricMapIf_t mapMetrics1;
+	mapMetrics1.emplace(a_sName, pCMetric1);
+	CUDT oUDT1(a_sName, dtype, false, a_version);
+	oUDT1.initTestData(mapMetrics1, mapMetrics1, a_sUDTDefName, a_version, a_bIsDefinition);
+
+	dtype = METRIC_DATA_TYPE_FLOAT;
+	float objVal2= 45.23;
+	std::string a_version2 = "1.0";
+	a_bIsDefinition = true;
+	CValObj obj;
+	obj.initTestData(dtype, objVal2);
+	a_sName = "Properties/Version";
+	const uint64_t a_timestamp1 = 1486144502122;
+	a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric2 = std::make_shared<CMetric>(a_sName, obj, a_timestamp1);
+	metricMapIf_t mapMetrics2;
+	mapMetrics2.emplace(a_sName, pCMetric2);
+	CUDT oUDT2(a_sName, dtype, false, a_version);
+	oUDT2.initTestData(mapMetrics2, mapMetrics2, a_sUDTDefName, a_version2, a_bIsDefinition);
+	uint8_t res = oUDT1.compareValue(oUDT2);
+	EXPECT_EQ(0, res);
+
+}
+
+/**
+ * Test case to check assignNewValue
+ * @return : bool
+ *
+ **/
+TEST_F(Metric_ut, assignNewValue)
+{
+	uint32_t dtype = METRIC_DATA_TYPE_STRING;
+	std::string objVal1= "xyz";
+	std::string a_version = "1.0";
+	bool a_bIsDefinition = false;
+	CValObj obj1;
+	obj1.initTestData(dtype, objVal1);
+	std::string a_sName = "Properties/Version";
+	const uint64_t a_timestamp = 1486144502122;
+	std::string a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric1 = std::make_shared<CMetric>(a_sName, obj1, a_timestamp);
+	metricMapIf_t mapMetrics1;
+	mapMetrics1.emplace(a_sName, pCMetric1);
+	CUDT oUDT1(a_sName, dtype, false, a_version);
+	oUDT1.initTestData(mapMetrics1, mapMetrics1, a_sUDTDefName, a_version, a_bIsDefinition);
+
+	dtype = METRIC_DATA_TYPE_STRING;
+	objVal1= "abc";
+	std::string a_version2 = "1.0";
+	a_bIsDefinition = true;
+	CValObj obj;
+	obj.initTestData(dtype, objVal1);
+	a_sName = "Properties/Version";
+	const uint64_t a_timestamp1 = 1486144502122;
+	a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric2 = std::make_shared<CMetric>(a_sName, obj, a_timestamp1);
+	metricMapIf_t mapMetrics2;
+	mapMetrics2.emplace(a_sName, pCMetric2);
+	CUDT oUDT2(a_sName, dtype, false, a_version);
+	oUDT2.initTestData(mapMetrics2, mapMetrics2, a_sUDTDefName, a_version2, a_bIsDefinition);
+	uint8_t res = oUDT1.assignNewValue(oUDT2);
+	EXPECT_EQ(0, res);
+}
+
+
+/**
+ * Test case to addMetricForBirth
+ * @return : bool
+ **/
+TEST_F(Metric_ut, addMetricForBirth)
+{
+	org_eclipse_tahu_protobuf_Payload_Metric a_metric;
+	uint32_t dtype = METRIC_DATA_TYPE_STRING;
+	std::string objVal1= "xyz";
+	std::string a_version = "1.0";
+	bool a_bIsDefinition = false;
+	CValObj obj1;
+	obj1.initTestData(dtype, objVal1);
+	std::string a_sName = "Properties/Version";
+	const uint64_t a_timestamp = 1486144502122;
+	std::string a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric1 = std::make_shared<CMetric>(a_sName, obj1, a_timestamp);
+	metricMapIf_t mapMetrics1;
+	mapMetrics1.emplace(a_sName, pCMetric1);
+	CUDT oUDT1(a_sName, dtype, false, a_version);
+	oUDT1.initTestData(mapMetrics1, mapMetrics1, a_sUDTDefName, a_version, a_bIsDefinition);
+    oUDT1.addMetricForBirth(a_metric);
+}
+
+
+/**
+ * Test case to compareMetrics
+ * @return : bool
+ * bool CUDT::compareMetrics(const std::shared_ptr<CIfMetric> &a_pUDT)
+ **/
+TEST_F(Metric_ut, compareMetrics)
+{
+	uint32_t dtype = METRIC_DATA_TYPE_STRING;
+	std::string objVal1= "xyz";
+	std::string a_version = "1.0";
+	bool a_bIsDefinition = true;
+	CValObj obj1;
+	obj1.initTestData(dtype, objVal1);
+	std::string a_sName = "Properties/Version";
+	const uint64_t a_timestamp = 1486144502122;
+	std::string a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric1 = std::make_shared<CMetric>(a_sName, obj1, a_timestamp);
+	metricMapIf_t mapMetrics1;
+	mapMetrics1.emplace(a_sName, pCMetric1);
+	CUDT oUDT1(a_sName, dtype, false, a_version);
+	oUDT1.initTestData(mapMetrics1, mapMetrics1, a_sUDTDefName, a_version, a_bIsDefinition);
+
+	dtype = METRIC_DATA_TYPE_STRING;
+	objVal1= "abc";
+	std::string a_version2 = "1.0";
+	a_bIsDefinition = true;
+	bool a_bIsDefinition_1 = true;
+	CValObj obj;
+	obj.initTestData(dtype, objVal1);
+	a_sName = "Properties/Version";
+	const uint64_t a_timestamp1 = 1486144502122;
+	a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric2 = std::make_shared<CMetric>(a_sName, obj, a_timestamp1);
+	metricMapIf_t mapMetrics2;
+	mapMetrics2.emplace(a_sName, pCMetric2);
+	std::shared_ptr<CIfMetric> pUDT= std::make_shared<CUDT>(a_sName, dtype, false, a_version);
+	pUDT->initTestData(mapMetrics2, mapMetrics2, a_sUDTDefName, a_version2, a_bIsDefinition_1);
+	uint8_t res = oUDT1.compareMetrics(pUDT);
+	EXPECT_EQ(0, res);
+
+}
+
+
+
+/**
+ * Test case to validate
+ * @return : bool
+ * bool CUDT::validate
+ **/
+TEST_F(Metric_ut, validate)
+{
+	uint32_t dtype = METRIC_DATA_TYPE_STRING;
+	std::string objVal1= "xyz";
+	std::string a_version = "1.0";
+	bool a_bIsDefinition = false;
+	CValObj obj1;
+	obj1.initTestData(dtype, objVal1);
+	std::string a_sName = "Properties/Version";
+	const uint64_t a_timestamp = 1486144502122;
+	std::string a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric1 = std::make_shared<CMetric>(a_sName, obj1, a_timestamp);
+	metricMapIf_t mapMetrics1;
+	mapMetrics1.emplace(a_sName, pCMetric1);
+	CUDT oUDT1(a_sName, dtype, false, a_version);
+	dtype = METRIC_DATA_TYPE_STRING;
+	objVal1= "abc";
+	std::string a_version2 = "1.0";
+	a_bIsDefinition = false;
+	bool a_bIsDefinition_1 = false;
+	CValObj obj;
+	obj.initTestData(dtype, objVal1);
+	a_sName = "Properties/Version";
+	const uint64_t a_timestamp1 = 1486144502122;
+	a_sUDTDefName ="UDT";
+	std::shared_ptr<CIfMetric> pCMetric2 = std::make_shared<CMetric>(a_sName, obj, a_timestamp1);
+	metricMapIf_t mapMetrics2;
+	mapMetrics2.emplace(a_sName, pCMetric2);
+	std::shared_ptr<CUDT> pUDT= std::make_shared<CUDT>(a_sName, dtype, false, a_version);
+	pUDT->initTestData(mapMetrics2, mapMetrics2, a_sUDTDefName, a_version2, a_bIsDefinition_1);
+	oUDT1.initTestData(mapMetrics1, mapMetrics1, a_sUDTDefName, a_version, a_bIsDefinition);
+	oUDT1.initTestRef(pUDT);
+	bool res = oUDT1.validate();
+	EXPECT_EQ(true, res);
+}
+
+
+/**
+ * Test case to validate
+ * @return : bool
+ * bool CUDT::validate
+ **/
+TEST_F(Metric_ut, setValObjTestDataType)
+{
+	org_eclipse_tahu_protobuf_Payload_Metric a_metric = { "test", false, 0, true, get_current_timestamp(), true,
+					METRIC_DATA_TYPE_STRING, false, 0, false, 0, false,
+														true, false,
+											org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+														false,
+																org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+														0,
+														{ 0 } };
+
+	org_eclipse_tahu_protobuf_Payload_Metric tmpMetric = { "test", false, 0, true, get_current_timestamp(), true,
+						METRIC_DATA_TYPE_STRING, false, 0, false, 0, false,
+															true, false,
+												org_eclipse_tahu_protobuf_Payload_MetaData_init_default,
+															false,
+																	org_eclipse_tahu_protobuf_Payload_PropertySet_init_default,
+															0,
+															{ 0 } };
+
+	std::string version{"1.0"};
+	a_metric.value.template_value.version = const_cast<char*>(version.c_str());
+	a_metric.value.template_value.metrics_count = 1;
+	a_metric.value.template_value.metrics = &tmpMetric;
+	_setValObjTestDataType(a_metric);
+
+}
+
+/*
+ * Test Case to validate assignToSparkPlug
+ * @return
+ */
+
+TEST_F(Metric_ut, assignToSparkPlugTemplateParameter)
+{
+	org_eclipse_tahu_protobuf_Payload_Template_Parameter a_param;
+	_assignToSparkPlug(a_param);
+}
+
+
+/*
+ * Test Case to CUDT::readUDTRefData
+ * @return: bool
+ */
+TEST_F(Metric_ut, readUDTRefData)
+{
+	cJSON *cjudt = cJSON_CreateObject();
+
+	if (NULL == cjudt)
+	{
+		DO_LOG_ERROR("Failed to create Json Object");
+		return;
+	}
+
+	std::string name = "custom_udt";
+	std::string version = "1.0";
+	cJSON_AddItemToObject(cjudt, "name", cJSON_CreateString(name.c_str()));
+	cJSON_AddItemToObject(cjudt, "version", cJSON_CreateString(version.c_str()));
+
+	cJSON *cjroot = cJSON_CreateObject();
+	if (NULL == cjroot)
+	{
+		return;
+	}
+
+	cJSON_AddItemToObject(cjroot, "udt_ref", cjudt);
+
+	_readUDTRefData(cjroot);
+}
+
+/*
+ * Test Case to test CUDT::processMetric
+ * return :
+ */
+
+TEST_F(Metric_ut, processMetric)
+{
+
+	cJSON *cjudt = cJSON_CreateObject();
+	if (NULL == cjudt)
+	{
+		DO_LOG_ERROR("CJSON Object create failed");
+		return;
+	}
+	std::string name = "Properties/Version";
+	std::string datatype = "String";
+	std::string value = "2.0.0.1";
+	uint64_t timestamp = 1486144502122;
+	cJSON_AddItemToObject(cjudt, "name", cJSON_CreateString(name.c_str()));
+	cJSON_AddItemToObject(cjudt, "datatype", cJSON_CreateString(datatype.c_str()));
+	cJSON_AddItemToObject(cjudt, "value", cJSON_CreateString(value.c_str()));
+	cJSON_AddItemToObject(cjudt, "number", cJSON_CreateNumber(timestamp));
+	uint32_t dtype = METRIC_DATA_TYPE_STRING;
+	std::string a_sName = "Properties/Version";
+	std::string a_version = "1.0";
+	CUDT oUDT(a_sName, dtype, false, a_version);
+	oUDT.processMetric(cjudt);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
