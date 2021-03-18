@@ -68,8 +68,6 @@ services:
       timeout: 30s
       retries: 3
       start_period: 0s
-    ports:
-      - 0.0.0.0:11883:11883 
 
 secrets:
   ca_broker:

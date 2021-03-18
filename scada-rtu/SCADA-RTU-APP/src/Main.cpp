@@ -42,7 +42,7 @@ void processExternalMqttMsgs(CQueueHandler& a_qMgr)
 		{
 			std::vector<stRefForSparkPlugAction> stRefActionVec;
 
-			CSCADAHandler::instance().processDCMDMsg(recvdMsg, stRefActionVec);
+			CSCADAHandler::instance().processExtMsg(recvdMsg, stRefActionVec);
 
 			//prepare a sparkplug message only if there are values in map
 			if(! stRefActionVec.empty())

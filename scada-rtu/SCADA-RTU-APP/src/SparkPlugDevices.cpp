@@ -8,6 +8,7 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 #include <string.h>
+#include <chrono>
 #include "SparkPlugDevices.hpp"
 #include "SCADAHandler.hpp"
 
@@ -478,15 +479,21 @@ bool CSparkPlugDev::parseRealDeviceUpdateMsg(const std::string &a_sPayLoad,
 		}
 		else
 		{
-			char *end = NULL;
-			a_usec = strtoul(sTemp.c_str(), &end, 10);
+			//char *end = NULL;
+			//a_usec = strtoul(sTemp.c_str(), &end, 10);
+			std::chrono::microseconds dur_micro(std::stoul(sTemp));
+			std::chrono::milliseconds dur_milli = std::chrono::duration_cast<std::chrono::milliseconds>(dur_micro);
+			a_usec = dur_milli.count();
 		}
 
 		//lastGoodUsec is optional parameter
 		if(true == readFieldFromJSON(sTemp, "lastGoodUsec", pjRoot))
 		{
-			char *end = NULL;
-			a_lastGoodUsec = strtoul(sTemp.c_str(), &end, 10);
+			//char *end = NULL;
+			//a_lastGoodUsec = strtoul(sTemp.c_str(), &end, 10);
+			std::chrono::microseconds dur_micro(std::stoul(sTemp));
+			std::chrono::milliseconds dur_milli = std::chrono::duration_cast<std::chrono::milliseconds>(dur_micro);
+			a_lastGoodUsec = dur_milli.count();
 		}
 
 		//error_code is optional parameter

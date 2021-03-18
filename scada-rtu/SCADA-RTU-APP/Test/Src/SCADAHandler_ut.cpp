@@ -44,59 +44,7 @@ void PostSem_semIntMQTTConnLost()
 	CSCADAHandler::instance().signalIntMQTTConnLostThread();
 }
 
-/***************************************************************/
 
-/**
- * Test case to check prepareSparkPlugMsg() with Death message
- * @param :[in] None
- * @param :[out] None
- * @return None
- */
-//TEST_F(SCADAHandler_ut, prepareSparkPlugMsg_DeathMsg)
-//{
-//	std::vector<stRefForSparkPlugAction> stRefActionVec;
-//
-//	CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
-//					"Data/A/B",
-//					"{\"metrics\": [{\"name\":\"UtData01\", \"dataType\":\"boolean\", \"value\": true}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
-//					stRefActionVec);
-//
-//	bool Bool_Res_Local = true;
-//	std::thread TestHelper( PostSem_semIntMQTTConnLost );
-//	std::thread TestTarget( TargetFunctionCaller, stRefActionVec, std::ref(Bool_Res_Local) );
-//
-//	TestTarget.join();
-//	TestHelper.join();
-//
-//	//EXPECT_EQ( true, Bool_Res_Local );
-//	EXPECT_EQ( false, Bool_Res_Local );
-//}
-
-/**
- * Test case to check prepareSparkPlugMsg() with Data message
- * @param :[in] None
- * @param :[out] None
- * @return None
- */
-//TEST_F(SCADAHandler_ut, prepareSparkPlugMsg_DataMsg)
-//{
-//	std::vector<stRefForSparkPlugAction> stRefActionVec;
-//
-//	CSparkPlugDevManager::getInstance().processInternalMQTTMsg(
-//					"Data/A/B",
-//					"{\"metrics\": [{\"name\":\"UtData02\", \"dataType\":\"boolean\", \"value\": true}],\"command\": \"D1\",\"value\": \"0x00\",\"timestamp\": \"2019-09-20 12:34:56\",\"usec\": \"1571887474111145\",\"version\": \"2.0\",\"app_seq\": \"1234\",\"realtime\":\"1\"}",
-//					stRefActionVec);
-//
-//	bool Bool_Res_Local = true;
-//	std::thread TestHelper( PostSem_semIntMQTTConnLost );
-//	std::thread TestTarget( TargetFunctionCaller, stRefActionVec, std::ref(Bool_Res_Local) );
-//
-//	TestTarget.join();
-//	TestHelper.join();
-//
-//	//EXPECT_EQ( true, Bool_Res_Local );
-//	EXPECT_EQ( false, Bool_Res_Local );
-//}
 
 TEST_F(SCADAHandler_ut, AddModbusMetric_true)
 {
@@ -230,14 +178,11 @@ TEST_F(SCADAHandler_ut, publishMsgDDEATH)
 	std::string value = "2.0.0.2";
 	std::string a_Name = "Properties/Version";
 	uint32_t a_uiDataType = METRIC_DATA_TYPE_STRING;
-	//CValObj(uint32_t a_uiDataType, var_t a_objVal)
 	CValObj ocval(a_uiDataType, value);
 	uint64_t timestamp = 1486144502122;
-
 	std::shared_ptr<CIfMetric> ptrCIfMetric = std::make_shared<CMetric>(a_Name, ocval, timestamp);
 	metricMapIf_t mapChangedMetrics;
 	mapChangedMetrics.emplace(ptrCIfMetric->getName(), std::move(ptrCIfMetric));
-
 	std::string a_sSubDev = "flowmeter";
 	std::string a_sSparkPluName = "spBv-Test";
 	bool a_bIsVendorApp = true;
@@ -276,7 +221,6 @@ TEST_F(SCADAHandler_ut, publishMsgDDATA)
 	std::string value = "2.0.0.2";
 	std::string a_Name = "Properties/Version";
 	uint32_t a_uiDataType = METRIC_DATA_TYPE_STRING;
-	//CValObj(uint32_t a_uiDataType, var_t a_objVal)
 	CValObj ocval(a_uiDataType, value);
 	uint64_t timestamp = 1486144502122;
 	std::shared_ptr<CIfMetric> ptrCIfMetric = std::make_shared<CMetric>(a_Name, ocval, timestamp);

@@ -46,15 +46,6 @@ TEST_F(SparkPlugUDTMgr_ut, UDT_PresentNonEmptyMap)
 }
 
 
-//TEST_F(SparkPlugUDTMgr_ut, AddUDTdefsTonbirth)
-//{
-//	bool result = CSparkPlugUDTManager::getInstance().addUDTDefsToNbirth(nbirth_payload);
-//	EXPECT_EQ(1, result);
-//}
-
-/* */
-
-
 TEST_F(SparkPlugUDTMgr_ut, ProcessTempDefValidPayload)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
@@ -115,15 +106,12 @@ TEST_F(SparkPlugUDTMgr_ut, addUDTDefsToNbirthValidPayload)
 }
 
 
-
-
 TEST_F(SparkPlugUDTMgr_ut, ProcessTempDefTemplateNameInValid)
 {
 	std::vector<stRefForSparkPlugAction> stRefActionVec;
 	std::string PayLoad =  "{\"udt_name\": \"custom%udt\", \"version\": \"1.0\", \"metrics\": [{ \"name\": \"M1\", \"dataType\": \"String\", \"value\": \"\"}, {   \"name\": \"RTU_Time\", \"dataType\": \"Int32\", \"value\": 0 } ],  \"parameters\": [ {  \"name\": \"P1\", \"dataType\": \"String\",   \"value\": \"\"  }, { \"name\": \"P2\", \"dataType\": \"Int32\", \"value\": 0  } ]}";
 	CSparkPlugUDTManager::getInstance().processTemplateDef(PayLoad ,stRefActionVec);
 }
-
 
 
 

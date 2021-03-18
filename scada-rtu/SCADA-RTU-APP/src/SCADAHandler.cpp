@@ -117,8 +117,6 @@ void CSCADAHandler::handleSCADAConnectionSuccessThread()
 
 				// Publish the NBIRTH
 				publish_node_birth();
-				
-				sleep(2);
 
 				// Publish the DBIRTH for all devices
 				publishAllDevBirths(true);
@@ -315,7 +313,8 @@ bool CSCADAHandler::publishSparkplugMsg(org_eclipse_tahu_protobuf_Payload& a_pay
 		// Publish the DDATA on the appropriate topic
 		mqtt::message_ptr pubmsg = mqtt::make_message(a_topic, (void*)binary_buffer, message_length, m_QOS, false);
 
-		m_MQTTClient.publishMsg(pubmsg);
+		// SCADA master expects messages to be in order. Publish messages in order. Hence, Wait for completion.
+		m_MQTTClient.publishMsg(pubmsg, true);
 		payload_sequence = next_payload_sequence;
 
 		// Free the memory
@@ -371,10 +370,10 @@ void CSCADAHandler::prepareNodeDeathMsg(bool a_bPublishMsg)
 		m_MQTTClient.setWillMsg(willOpts);
 		if(true == a_bPublishMsg)
 		{
-			// Publish the DDATA on the appropriate topic
-			mqtt::message_ptr pubmsg = mqtt::make_message(CCommon::getInstance().getDeathTopic(), (void*)binary_buffer, message_length, m_QOS, false);
+		// Publish the DDATA on the appropriate topic
+		mqtt::message_ptr pubmsg = mqtt::make_message(CCommon::getInstance().getDeathTopic(), (void*)binary_buffer, message_length, m_QOS, false);
 
-			m_MQTTClient.publishMsg(pubmsg);
+			m_MQTTClient.publishMsg(pubmsg, true);
 		}
 
 		if(binary_buffer != NULL)
@@ -514,6 +513,10 @@ void CSCADAHandler::publish_node_birth()
 		add_simple_metric(&nbirth_payload, "bdSeq", false, 0, METRIC_DATA_TYPE_UINT64, false, false,
 				&m_uiBDSeq, sizeof(m_uiBDSeq));
 		
+		bool bRebirth = false;
+		add_simple_metric(&nbirth_payload, "Node Control/Rebirth", false, 0, METRIC_DATA_TYPE_BOOLEAN, false, false,
+				&bRebirth, sizeof(bRebirth));
+		
 		// Add UDT definition
 		addModbusTemplateDefToNbirth(nbirth_payload);
 		CSparkPlugUDTManager::getInstance().addUDTDefsToNbirth(nbirth_payload);
@@ -539,7 +542,8 @@ void CSCADAHandler::subscribeTopics()
 {
 	try
 	{
-		m_MQTTClient.subscribe("+/+/DCMD/+/+");
+		m_MQTTClient.subscribe(CCommon::getInstance().getNCmdTopic());
+		m_MQTTClient.subscribe(CCommon::getInstance().getDCmdTopic() + "/+");
 
 		DO_LOG_DEBUG("Subscribed with topics from SCADA master");
 	}
@@ -812,7 +816,7 @@ bool CSCADAHandler::publishMsgDDEATH(const std::string &a_sDevName)
 }
 
 /**
- * Process message received from external MQTT broker
+ * Process DCMD message received from external MQTT broker
  * @param a_msg :[in] mqtt message to be processed
  * @return none
  */
@@ -847,6 +851,95 @@ bool CSCADAHandler::processDCMDMsg(CMessageObject a_msg, std::vector<stRefForSpa
 }
 
 /**
+ * Process NCMD message received from external MQTT broker
+ * @param a_msg :[in] mqtt message to be processed
+ * @return none
+ */
+bool CSCADAHandler::processNCMDMsg(CMessageObject a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec)
+{
+	org_eclipse_tahu_protobuf_Payload ncmd_payload = org_eclipse_tahu_protobuf_Payload_init_zero;
+	bool bRet = false;
+
+	try
+	{
+		int msgLen = a_msg.getMqttMsg()->get_payload().length();
+
+		if(decode_payload(&ncmd_payload, (uint8_t* )a_msg.getMqttMsg()->get_payload().data(), msgLen) >= 0)
+		{
+			for (pb_size_t i = 0; i < ncmd_payload.metrics_count; i++)
+			{
+				if(NULL == ncmd_payload.metrics[i].name)
+				{
+					DO_LOG_DEBUG("Metric name is not present in DCMD message. Ignored.");
+					return false;
+				}
+
+				std::string sName{ncmd_payload.metrics[i].name};
+				// Check if metric type is boolean and metric is "Node Control/Rebirth"
+				if((METRIC_DATA_TYPE_BOOLEAN == ncmd_payload.metrics[i].datatype) &&
+					(sName == "Node Control/Rebirth"))
+				{
+					auto bVal = (bool)ncmd_payload.metrics[i].value.boolean_value;
+					if(bVal)
+					{
+						// Initiate NDEATH and NBIRTH
+						publishNewUDTs();
+						bRet = true;
+					}
+				}
+			}
+		}
+		else
+		{
+			DO_LOG_ERROR("Failed to decode the sparkplug payload");
+		}
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		bRet = false;
+	}
+	free_payload(&ncmd_payload);
+	return bRet;
+}
+
+/**
+ * Process message received from external MQTT broker
+ * @param a_msg :[in] mqtt message to be processed
+ * @return none
+ */
+bool CSCADAHandler::processExtMsg(CMessageObject a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec)
+{
+	bool bRet = false;
+
+	try
+	{
+		if(a_msg.getTopic() == CCommon::getInstance().getNCmdTopic())
+		{
+			// This is NCMD message
+			bRet = processNCMDMsg(a_msg, a_stRefActionVec);
+		}
+		else if(std::string::npos != a_msg.getTopic().find(CCommon::getInstance().getDCmdTopic()))
+		{
+			// This is DCMD message
+			bRet = processDCMDMsg(a_msg, a_stRefActionVec);
+		}
+		else
+		{
+			// Unknown message
+			DO_LOG_ERROR(a_msg.getTopic() + ": Unknown message received from external MQTT broker");
+			bRet = false;
+		}
+	}
+	catch(std::exception &ex)
+	{
+		DO_LOG_FATAL(ex.what());
+		bRet = false;
+	}
+	return bRet;
+}
+
+/**
  * Prepares a sparkplug formatted metric for Modbus device
  * @param a_rMetric :[out] sparkplug metric
  * @param a_sName :[in] sparkplug metric name
@@ -857,40 +950,43 @@ bool CSCADAHandler::processDCMDMsg(CMessageObject a_msg, std::vector<stRefForSpa
  * @return true/false
  */
 bool CSCADAHandler::addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric &a_rMetric, const std::string &a_sName, 
-		const std::string a_sValue, bool a_bIsBirth, uint32_t a_uiPollInterval, bool a_bIsRealTime)
+        const std::string a_sValue, bool a_bIsBirth, uint32_t a_uiPollInterval, bool a_bIsRealTime)
 {
-	try
-	{
-		a_rMetric = org_eclipse_tahu_protobuf_Payload_Metric_init_default;
-		if(true == a_sValue.empty())
-		{
-			DO_LOG_DEBUG("The value is empty. Set to 0");
-			std::string temp = "0";
-			init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, temp.c_str(), temp.length());
-		}
-		else
-		{
-			init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, a_sValue.c_str(), a_sValue.length());
-		}
-		
-		if(a_bIsBirth)
-		{
-			org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
-			add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, &a_uiPollInterval, sizeof(a_uiPollInterval));
-			add_property_to_set(&prop, "Realtime", PROPERTY_DATA_TYPE_BOOLEAN, &a_bIsRealTime, sizeof(a_bIsRealTime));
+    try
+    {
+        a_rMetric = org_eclipse_tahu_protobuf_Payload_Metric_init_default;
 
-			add_propertyset_to_metric(&a_rMetric, &prop);
-		}
-	}
-	catch(std::exception &ex)
-	{
-		DO_LOG_FATAL(ex.what());
-		return false;
-	}
 	
-	return true;
-}
+        if(true == a_sValue.empty())
+        {
+            DO_LOG_DEBUG("The value is empty. Set to \0");
+            std::string temp = "\0";
+            init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, temp.c_str(), temp.length());
+        }
+        else
+        {
+        init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, a_sValue.c_str(), a_sValue.length());
+        }
+        
+        if(a_bIsBirth)
+        {
+            org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
+            add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, &a_uiPollInterval, sizeof(a_uiPollInterval));
+            add_property_to_set(&prop, "Realtime", PROPERTY_DATA_TYPE_BOOLEAN, &a_bIsRealTime, sizeof(a_bIsRealTime));
 
+ 
+
+            add_propertyset_to_metric(&a_rMetric, &prop);
+        }
+    }
+    catch(std::exception &ex)
+    {
+        DO_LOG_FATAL(ex.what());
+        return false;
+    }
+    
+    return true;
+}
 /**
  * Prepares a sparkplug formatted metric for Modbus device
  * @param a_rUdt :[out] sparkplug template UDT

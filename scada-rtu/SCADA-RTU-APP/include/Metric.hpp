@@ -471,7 +471,7 @@ public:
 				if(pOtherMetric)
 				{
 					if(SAMEVALUE_OR_DTATYPE == m_objVal.compareDataType(pOtherMetric->m_objVal))
-					{
+	{
 						return true;
 					}
 				}

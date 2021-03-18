@@ -97,6 +97,9 @@ public:
 			itr.second.print();
 		}*/
 	}
+#ifdef UNIT_TEST
+	friend class Metric_ut;
+#endif
 };
 
 #endif

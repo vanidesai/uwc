@@ -114,25 +114,6 @@ TEST_F(SparkPlugDevices_ut, CMDmsg)
 }
 
 /**
- * Test case to check getWriteMsg() function's behavior
- * @param :[in] None
- * @param :[out] None
- * @return: bool
- */
-#if 0
-// Temporary Commented
-TEST_F(SparkPlugDevices_ut, WriteMsg)
-{
-	std::string topic = "/flowmeter/PL0/Flow/read";
-	cJSON *root = cJSON_CreateObject();
-	int appSeq = 123;
-	std::pair<const std::string,CMetric> *a_metric;
-	std::reference_wrapper<CSparkPlugDev>& a_refSparkPlugDev = {};
-	bool result = a_refSparkPlugDev.get().getWriteMsg(topic, root, " ", *a_metric, appSeq);
-	EXPECT_EQ(false, result);
-}
-#endif
-/**
  * Test case to check checkMetric() function's behavior
  * @param :[in] None
  * @param :[out] None

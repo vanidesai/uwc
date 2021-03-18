@@ -195,8 +195,6 @@ services:
       timeout: 30s
       retries: 3
       start_period: 0s
-    ports:
-    - 0.0.0.0:11883:11883
 
   mqtt-export-test:
     depends_on:
@@ -396,6 +394,71 @@ services:
       retries: 3
       start_period: 0s
 
+  scada-rtu-test:
+    depends_on:
+      - ia_eisbase
+      - uwc_test_common
+    build:
+      context: $PWD/../uwc/scada-rtu/
+      dockerfile: $PWD/../uwc/scada-rtu/Dockerfile_UT
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+        BUILD_NUMBER: ${BUILD_NUMBER}
+    image: ${DOCKER_REGISTRY}scada-rtu:${EIS_VERSION}
+    container_name: scada-rtu-test
+    hostname: scada-rtu-test
+    network_mode: host
+    restart: unless-stopped
+    ulimits:
+     rtprio:
+       soft: "99" # these are the maximum values of priorites to be used inside the container application
+       hard: "99"
+    environment:
+      AppName: "SCADA-RTU"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${eis_no_proxy}
+      ETCD_HOST: ${ETCD_HOST}
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+      DEVICES_GROUP_LIST_FILE_NAME: "Devices_group_list.yml"
+      INTERNAL_MQTT_URL: "${MQTT_PROTOCOL}://127.0.0.1:11883"
+      NETWORK_TYPE: "ALL"
+      TOPIC_SEPARATOR: '-'
+      CertType: "zmq"
+      BUILD_NUMBER: ${BUILD_NUMBER}
+      PROFILING_MODE: ${PROFILING_MODE}
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "3"
+            max-size: "10m"
+    volumes:
+      - "$PWD/unit_test_reports/scada-rtu:/reports/scada-rtu"
+      - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+      - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+      - "${EIS_INSTALL_PATH}/container_logs/scada-rtu:/opt/intel/app/logs"
+    secrets:
+      - ca_etcd
+      - etcd_SCADA-RTU_cert
+      - etcd_SCADA-RTU_key
+      - ca_broker
+      - client_cert
+      - client_key
+      - scadahost_ca_cert
+      - scadahost_client_cert
+      - scadahost_client_key
+    security_opt:
+      - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/sh","-c", "ps -C SCADARTU >/dev/null && echo Running || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
+
   kpi-tactic:
     depends_on:
       - ia_eisbase
@@ -564,6 +627,10 @@ secrets:
     file: provision/Certificates/RTU/RTU_client_certificate.pem
   etcd_RTU_key:
     file: provision/Certificates/RTU/RTU_client_key.pem
+  etcd_SCADA-RTU_cert:
+    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_certificate.pem
+  etcd_SCADA-RTU_key:
+    file: provision/Certificates/SCADA-RTU/SCADA-RTU_client_key.pem
   etcd_KPIAPP_cert:
     file: provision/Certificates/KPIAPP/KPIAPP_client_certificate.pem
   etcd_KPIAPP_key:
@@ -572,3 +639,9 @@ secrets:
     file: provision/Certificates/UWCUTIL/UWCUTIL_client_certificate.pem
   etcd_UWCUTIL_key:
     file: provision/Certificates/UWCUTIL/UWCUTIL_client_key.pem    
+  scadahost_ca_cert:
+    file: provision/Certificates/ca/ca_certificate.pem
+  scadahost_client_cert:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
+  scadahost_client_key:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem

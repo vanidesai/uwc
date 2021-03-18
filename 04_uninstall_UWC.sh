@@ -19,9 +19,9 @@ INFO='\033[0;34m'
 
 DOCKER_REPO="deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 DOCKER_GPG_KEY="0EBFCD88"
-EII_USER_NAME=eiiuser
-EII_UID=5319
-EII_INSTALL_PATH=/opt/intel/eii
+EIS_USER_NAME=eisuser
+EIS_UID=5319
+EIS_INSTALL_PATH=/opt/intel/eis
 
 source uwc_common_lib.sh
 
@@ -76,9 +76,9 @@ function removeUWCConfig
 {
     #Delete UWC config
     echo -e "${INFO}---------------------------------------Removing UWC config-----------------------${NC}"
-    del_file /opt/intel/eii/uwc_data
-    del_file /opt/intel/eii/uwc_data/common_config
-    del_file /opt/intel/eii/container_logs
+    del_file /opt/intel/eis/uwc_data
+    del_file /opt/intel/eis/uwc_data/common_config
+    del_file /opt/intel/eis/container_logs
     echo -e "${SUCCESS}-------------------------------Removed all UWC config------------------------------------${NC}"
     
     #RESET THE PROXY SETTING 

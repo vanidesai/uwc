@@ -167,16 +167,21 @@ void CMQTTPubSubClient::subscribe(const std::string &a_sTopic)
 /**
  * This function publishes a message on MQTT broker
  * @param a_pubMsg :[in] pointer to message to be published
+ * @param a_bIsWaitForCompletion :[in] waits for completion
  * @return true/false status based on success/failure 
  */
-bool CMQTTPubSubClient::publishMsg(mqtt::message_ptr &a_pubMsg)
+bool CMQTTPubSubClient::publishMsg(mqtt::message_ptr &a_pubMsg, bool a_bIsWaitForCompletion)
 {
 	try
 	{
 		if(true == m_Client.is_connected())
 		{
 			a_pubMsg->set_qos(m_iQOS);
-			m_Client.publish(a_pubMsg, nullptr, m_Listener);
+			auto pubtoken = m_Client.publish(a_pubMsg, nullptr, m_Listener);
+			if(a_bIsWaitForCompletion)
+			{
+				pubtoken->wait();
+			}
 		}
 	}
 	catch (const std::exception &e)

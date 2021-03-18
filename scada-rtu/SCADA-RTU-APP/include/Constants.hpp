@@ -19,7 +19,8 @@
 #define DBIRTH "DBIRTH"
 #define DDATA "DDATA"
 #define DDEATH "DDEATH"
-#define DDATA "DDATA"
+#define DCMD "DCMD"
+#define NCMD "NCMD"
 
 
 #endif

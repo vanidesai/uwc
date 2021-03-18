@@ -78,7 +78,7 @@ public:
 		std::string a_sClientPvtKeySecret, std::string a_sClientCertSecret, 
 		std::string a_sListener = "Subscription");
 
-	bool publishMsg(mqtt::message_ptr &a_pubMsg);
+	bool publishMsg(mqtt::message_ptr &a_pubMsg, bool a_bIsWaitForCompletion = false);
 
 	bool setWillMsg(const mqtt::will_options & will)
 	{

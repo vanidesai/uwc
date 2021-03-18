@@ -53,7 +53,7 @@ For compiling scada-rtu container sources on machine without container, followin
 1. Install make and cmake
 2. Install wget by using command "sudo apt-get install wget".
 3. Install Git by using command "sudo apt install git"
-4. Install all the EIS libraries on host from `EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\common\libs` directory. (Refer EIS README files to do the same)
+4. Install all the EIS libraries on host by running the shell script -- `sudo -E ./eis_libs_installer.sh`. Refer the README.md from  `IEdgeInsights\common\README.md` for details.
 5. Install log4cpp (version - 1.1.3, link - https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz) library under /usr/local/ directory.
 6. Install yaml-cpp (branch - yaml-cpp-0.6.3, version - 0.6.3, link - https://github.com/jbeder/yaml-cpp.git) libraries on host under /usr/local/ directory.
 7. Install paho-cpp (branch develop https://github.com/eclipse/paho.mqtt.c.git) libraries on host under /usr/local/ directory.
@@ -70,14 +70,14 @@ Notes : Above instructions are specified to build the sources in "Release" mode.
 
 # Steps to run scada-rtu executable on machine
 1. Deploy ia_etcd container with dev mode using following steps. 
-	1. Run `01_pre-requisites.sh --deployMode=IPC_DEV script
-	2. Add `network_mode: host` option in two containers present in EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\docker_setup\provision\dep\docker-compose-provision.yml file.
-	3. Run `02_provisionEIS.sh` script to deploy ia_etcd container
+	1. Run `01_uwc_pre_requisites.sh` script as explained in the main uwc/README.md.
+	2. Add `network_mode: host` option in two containers present in IEdgeInsights\build\provision\dep\docker-compose-provision.yml file.
+	3. Run the provisioning command script to deploy ia_etcd container as explainedin main uwc/README.md.
 2. Go to `Sourcecode\scada-rtu\SCADA-RTU-APP\Release` directory and open bash terminal.
 3. Set EIS specific environment variables using below command.
-	`source <Complete Path of .env file present inside EdgeInsightsSoftware-v2.2-PV/IEdgeInsights/docker_setup directory>`
-	For example `source /home/user/SVN/Intel_UWC/trunk/Technical/Others/externals/EIS/EdgeInsightsSoftware-v2.2-PV/IEdgeInsights/docker_setup/.env`
-4. Export all other environment variables required for scada-rtu container. Refer environment section from scada-rtu service present inside docker-compose.yml file (E.g. `export AppName="SCADA-RTU"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal) 
+	`source <Complete Path of .env file present inside IEdgeInsights/build directory>`
+	For example `source /home/intel/uwc-releases/IEdgeInsights/build/.env`
+4. Export all other environment variables required for scada-rtu container. Refer environment section from scada-rtu service present inside docker-compose.yml file of scada-rtu service (E.g. `export AppName="SCADA-RTU"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal) 
 5. After successful compilation, run the application binary with following command,
 	`./SCADARTU`
 	
@@ -89,17 +89,13 @@ Kindly Refer UWC user guide for container deployments
 	1. Install latest version of "gcovr" tool for coverage report generation by using command "pip install gcovr".
 	2. Install gtest (wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz) libraries on host under /usr/local/ directory.
 	3. All other Pre-requisites to be installed mentioned in section # Pre-requisites Installation
-2. Follow same steps mentioned in section # Steps to compile scada-rtu , step 1 to step 4, but in "Build.test" directory of `Sourcecode\scada-rtu\SCADA-RTU-APP` instead of "Release" directory.
+2. Follow same steps mentioned in section # Steps to compile scada-rtu , step 1 to step 3, but in "Build.test" directory of `Sourcecode\scada-rtu\SCADA-RTU-APP` instead of "Release" directory.
 3. Run unit test cases
-	1. Deploy ia_etcd container with dev mode using following steps. 
-		1. Run `01_pre-requisites.sh --isTLS=no  --brokerAddr="mqtt_test_container" --brokerPort="11883" --qos=1 --deployMode=IPC_DEV` script
-		2. Add `network_mode: host` option in two containers present in EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\docker_setup\provision\dep\docker-compose-provision.yml file.
-		3. Run `02_provisionEIS.sh` script to deploy ia_etcd container
-	2. Go to `Sourcecode\scada-rtu\SCADA-RTU-APP\Build.test` directory and open bash terminal.
-	3. Follow steps 3 and 4 of `Steps to run scada-rtu executable on machine` section
-	4. After successful compilation, run the application binary with following command,
+	1. Go to `Sourcecode\scada-rtu\SCADA-RTU-APP\Build.test` directory and open bash terminal.
+	2. Export all environment variables required for scada-rtu-test container. Refer environment section from scada-rtu-test service present inside docker-compose_unit_test.yml file (E.g. `export AppName="SCADA-RTU"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal) 
+	3. After successful compilation, run the application binary with following command,
 	`./SCADA-RTU-TEST > SCADARTU_status.log`
-	5. After successful execution of step 4, unit test log file `SCADARTU_status.log` must be generated in the same folder that is Build.test
+	4. After successful execution of step 4, unit test log file `SCADARTU_status.log` must be generated in the same folder that is Build.test
 4. Generate unit test coverage report
 	1. Go to `Sourcecode\scada-rtu\SCADA-RTU-APP\Build.test` directory and		 open bash terminal.
 	2. Run the command,
@@ -108,4 +104,4 @@ Kindly Refer UWC user guide for container deployments
 5. Run unit test cases inside container
 	1. Kindly follow the steps mentioned in section `## Steps to run unit test cases` of file `README.md` in Sourcecode directory.
 
-Notes : When unit test is executed locally(not inside container), two test cases fail and coverage is 10% less. This is because cert files paths which are mentioned in constructor of class CSCADAHandler in SCADAHandler.cpp are un-traceable.
+Notes : When unit test is executed locally (not inside container), two test cases fail and coverage is 10% less. This is because cert files paths which are mentioned in constructor of class CSCADAHandler in SCADAHandler.cpp are un-traceable.

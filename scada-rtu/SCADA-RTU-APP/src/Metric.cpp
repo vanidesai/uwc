@@ -1082,8 +1082,11 @@ bool CUDT::processMetric(cJSON *a_cjArrayElemMetric)
 			// Read parameter from value data
 			CSparkPlugDevManager::getInstance().parseVendorAppMericData(m_mapParams, cjValue, "parameters");
 
+			if(false == m_bIsDefinition)
+			{
 			// Read udt reference data
-			readUDTRefData(cjValue);
+				return readUDTRefData(cjValue);
+			}
 		}
 		catch (std::exception &e)
 		{

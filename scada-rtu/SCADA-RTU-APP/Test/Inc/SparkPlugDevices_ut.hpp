@@ -82,6 +82,7 @@ public:
 		org_eclipse_tahu_protobuf_Payload dbirth_payload = { true, get_current_timestamp(), 0, &a_metric,
 				true, 0, NULL, NULL, NULL};
 
+		//metricMap_t m_metrics;
 		metricMapIf_t m_metrics;
 
 		CSparkPlugDev CSparkPlugDev_obj{a_sSubDev, a_sSparkPlugName, a_bIsVendorApp};

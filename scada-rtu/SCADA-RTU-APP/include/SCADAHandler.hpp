@@ -91,6 +91,8 @@ public:
 	bool pushMsgInQ(mqtt::const_message_ptr msg);
 	bool prepareSparkPlugMsg(std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
 	bool processDCMDMsg(CMessageObject a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
+	bool processNCMDMsg(CMessageObject a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
+	bool processExtMsg(CMessageObject a_msg, std::vector<stRefForSparkPlugAction>& a_stRefActionVec);
 
 	void signalIntMQTTConnLostThread();
 	void signalIntMQTTConnEstablishThread();

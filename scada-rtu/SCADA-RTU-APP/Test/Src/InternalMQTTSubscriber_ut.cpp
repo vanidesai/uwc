@@ -38,22 +38,6 @@ TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_EmptyVector)
 }
 
 /**
- * Test case to check if prepareCJSONMsg() behaves as expected
- * @param :[in] None
- * @param :[out] None
- * @return None
- */
-#if 0
-//Temporary commented
-TEST_F(InternalMQTTSubscriber_ut, prepareCJSONMsg_dataIn_Vector)
-{
-	stRefActionVec1.push_back(stDummyAction);
-	bool result = CIntMqttHandler::instance().prepareCJSONMsg(stRefActionVec1);
-	EXPECT_EQ(false, result);
-}
-#endif
-
-/**
  * Test case to check if prepareWriteMsg() behaves as expected
  * @param :[in] None
  * @param :[out] None

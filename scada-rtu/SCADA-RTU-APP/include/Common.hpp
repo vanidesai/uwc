@@ -174,6 +174,26 @@ public:
 	}
 
 	/**
+	 * Return topic in sparkplug format to receive as device cmd
+	 * from SCADA
+	 * @return dcmd topic in string
+	 */
+	std::string getDCmdTopic()
+	{
+		return getSparkPlugTopic(DCMD);
+	}
+
+	/**
+	 * Return topic in sparkplug format to receive as node cmd
+	 * from SCADA
+	 * @return ncmd topic in string
+	 */
+	std::string getNCmdTopic()
+	{
+		return getSparkPlugTopic(NCMD);
+	}
+
+	/**
 	 * Get group name of scada-rtu
 	 * @return group name of scada-rtu in string
 	 */
