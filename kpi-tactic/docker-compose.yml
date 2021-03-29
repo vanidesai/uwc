@@ -38,8 +38,6 @@ services:
       container_name: kpi-tactic-app
       hostname: kpi-tactic
       network_mode: host
-      # read_only: true
-      restart: unless-stopped
       ulimits:
        rtprio:
          soft: "99" # these are the maximum values of priorites to be used inside the container application
