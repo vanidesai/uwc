@@ -1,0 +1,47 @@
+Timestamp fields:
+	tsPollingTime
+	pollReqRcvdInStack
+	pollReqSentByStack
+	pollRespRcvdByStack
+	pollRespPostedByStack
+	pollRespPostedToEIS
+	pollDataRcvdInExport
+	pollDataPostedToMQTT
+	pollDataRcvdInApp
+
+	wrReqCreation
+	wrReqRcvdInExport
+	wrReqPublishOnEIS
+	wrReqRcvdByModbus
+	wrReqRcvdInStack
+	wrReqSentByStack
+	wrRespRcvdByStack
+	wrRespPostedByStack
+	wrRespPostedToEIS
+	wrRespRcvdInExport
+	wrRespPostedToMQTT
+	wrRespRcvdInApp
+----------------------
+
+Times to calculate:
+
+	TotalCtrlLoopTime: wrRespRcvdInApp - tsPollingTime
+	TotalPollTime: pollDataRcvdInApp - tsPollingTime
+	TotalWrTime: wrRespRcvdInApp - pollDataRcvdInApp
+	WrReqInitTime: wrReqCreation - pollDataRcvdInApp
+	TotalWrReqProcessTime: wrReqSentByStack - wrReqCreation
+	TotalWrRespProcessTime: wrRespRcvdInApp - wrRespRcvdByStack
+	PollReqModbusTime: pollReqSentByStack - tsPollingTime
+	PollDeviceTime: pollRespRcvdByStack - pollReqSentByStack
+	PollRespModbusTime: pollRespPostedToEIS - pollRespRcvdByStack
+	WrReqModbusTime: wrReqSentByStack - wrReqRcvdByModbus
+	WrDeviceTime: wrRespRcvdByStack - wrReqSentByStack
+	WrRespModbusTime: wrRespPostedToEIS - wrRespRcvdByStack
+	PollDataTransitTime: pollDataRcvdInApp - pollRespPostedToEIS
+	WrReqDataTransitTime: wrReqRcvdByModbus - wrReqCreation
+	WrRespDataTransitTime: wrRespRcvdInApp - wrRespPostedToEIS
+
+
+
+
+

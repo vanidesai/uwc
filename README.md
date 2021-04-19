@@ -30,15 +30,15 @@ The directory comprises of following:
 * modbus-master :
   This directory contains the modbus TCP1 and RTU1 containers sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for modbus TCP & RTU services.
   For detail, please refer to `README-modbus-master.md` file of modbus-master folder
-* mqtt-export :
-  This directory contains the mqtt-export container sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for mqtt-export service. 
-  For detail, please refer to `README-mqtt-export.md` file of mqtt-export folder
+* mqtt-bridge :
+  This directory contains the mqtt-bridge container sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for mqtt-bridge service. 
+  For detail, please refer to `README-mqtt-bridge.md` file of mqtt-bridge folder
 * MQTT:
   This directory contains the mqtt container sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for MQTT internal broker service.
   For detail, please refer to `README-MQTT.md` file of MQTT folder
-* scada-rtu:
-  This directory contains the scada-rtu sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for SCADA-RTU service.
-  For detail, please refer to `README_SCADA_RTU.md` file of scada-rtu folder
+* sparkplug-bridge:
+  This directory contains the sparkplug-bridge sources and docker file for building the container. It also has the ingredient docker-compose.yml & config.json for SPARKPLUG-BRIDGE service.
+  For detail, please refer to `README_sparkplug_bridge.md` file of sparkplug-bridge folder
 * uwc-common:
   This directory contains sources for uwc common library container & Dockerfile to install all the dependencies and libraries needed by all the containers. For detail, please refer to `README-UWC_Common.md` file of uwc_common folder
 * kpi-tactic:
@@ -55,34 +55,35 @@ The directory comprises of following:
 
   ```sh
     $ <working-dir>/IEdgeInsights/build
-    $ sudo ./pre-requisites.sh --help
+    $ sudo ./pre_requisites.sh --help
   ```
 
 2. If the required UWC code base is not yet repo synched or (git repositories cloned), then kindly follow the repo or git steps from  `<working-directory>/IEdgeInsights/../.repo/manifests/README.md` to repo sync or git clone the codebase.
 
 ## Install UWC specific pre-requisites
-1. All the below UWC specific scripts need to be run from the directory `IEdgeInsights\uwc`:
+All the below UWC specific scripts need to be run from the directory `IEdgeInsights\uwc`:
   ```sh
-    $ cd <working-dir>/IEdgeInsights/uwc/
+    $ cd <working-dir>/IEdgeInsights/uwc/build_scripts
     $ sudo ./01_uwc_pre_requisites.sh
   ```
 
-  b. Runs the builder script enabling to choose the UWC recipe needed for the use case. Next it prompts the user to select `develeopment mode` or `production mode` & prepares to run in the selected mode. Finally does the provisioning based on the recipe & mode selected.
-    ```sh
-    $ cd <working-dir>/IEdgeInsights/uwc/
-    $ sudo ./02_provision_UWC.sh
-    ```
 ## Provision EII and UWC services
 Runs the builder script enabling to choose the UWC recipe needed for the use case. Next it prompts the user to select `develeopment mode` or `production mode` & prepares the set up to run in the selected mode. Finally it does the provisioning of EIS & UWC services based on the recipe & mode selected. 
 ```sh
-    $ cd <working-dir>/IEdgeInsights/uwc/
+    $ cd <working-dir>/IEdgeInsights/uwc/build_scripts
     $ sudo ./02_provision_UWC.sh
+```
+Note: Above example will execute the script in interactive mode. 
+The script will run in non-interactive mode when the command line arguments are provided. The help option describes all command line arguments.
+```sh
+    $ cd <working-dir>/IEdgeInsights/uwc/build_scripts
+    $ sudo ./02_provision_UWC.sh --help
 ```
 
 ## Build and Run all EII and UWC services
 Builds all the micro-services of the recipe & runs them as containers in background (daemon process).
 ```sh
-  $ cd <working-dir>/IEdgeInsights/uwc/
+  $ cd <working-dir>/IEdgeInsights/uwc/build_scripts
   $ sudo ./03_Build_Run_UWC.sh 
 ```
 
@@ -95,20 +96,20 @@ sudo docker ps
 ## Apply configuration changes
 If any configuration changes are done to UWC YML files, then run this script which will bring down the containers & bring them up back. Note that the services are not built here.
   ```sh
-  $ cd <working-dir>/IEdgeInsights/uwc/
+  $ cd <working-dir>/IEdgeInsights/uwc/build_scripts
   $ 05_applyConfigChanges.sh
   ```
 
 ## Uninstallation script
 Used to uninstall & remove the UWC installation.
   ```sh
-  $ cd <working-dir>/IEdgeInsights/uwc/
+  $ cd <working-dir>/IEdgeInsights/uwc/build_scripts
   $ 04_uninstall_UWC.sh
   ```
 ## Unit Tests
 All the UWC modules have unit tests enabled in production mode. In order to run the unit tests, follow the below steps:
 ```sh
-$ cd <working-dir>/IEdgeInsights/uwc/
+$ cd <working-dir>/IEdgeInsights/uwc/build_scripts
 $ sudo ./06_UnitTestRun.sh "false"
 ```
 Now check for the unit test reports for all services of UWC in "<working-dir>/IEdgeInsights/build/unit_test_reports/".

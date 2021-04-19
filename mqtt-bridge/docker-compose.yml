@@ -1,0 +1,109 @@
+# Copyright (c) 2020 Intel Corporation.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+version: '3.6'
+
+services:
+  ## Define MQTT-Bridge service
+  mqtt-bridge:
+    depends_on:
+    - ia_eisbase
+    - uwc_common
+    build:
+      context: $PWD/../uwc/mqtt-bridge/
+      dockerfile: $PWD/../uwc/mqtt-bridge/Dockerfile
+      args:
+        EIS_VERSION: ${EIS_VERSION}
+        EIS_UID: ${EIS_UID}
+        EIS_USER_NAME: ${EIS_USER_NAME}
+    image: ${DOCKER_REGISTRY}mqtt-bridge:${EIS_VERSION}
+    container_name: mqtt-bridge
+    hostname: mqtt-bridge
+    network_mode: host
+    restart: unless-stopped
+    ulimits:
+      rtprio:
+        soft: "99" # these are the maximum values of priorites to be used inside the container application
+        hard: "99"
+    environment:
+      AppName: "MQTT_Bridge"
+      DEV_MODE: ${DEV_MODE}
+      no_proxy: ${eis_no_proxy}
+      ETCD_HOST: ${ETCD_HOST}
+      ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
+      ETCD_PREFIX: ${ETCD_PREFIX}
+      Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
+      ZMQ_RECV_HWM: "1000"
+      MQTT_URL_FOR_EXPORT: "${MQTT_PROTOCOL}://127.0.0.1:11883"
+      ReadRequest: MQTT_Export_RdReq
+      WriteRequest: MQTT_Export_WrReq
+      ReadRequest_RT: RT_MQTT_Export_RdReq_RT
+      WriteRequest_RT: RT_MQTT_Export_WrReq_RT
+      CertType: "zmq"
+      PROFILING_MODE: ${PROFILING_MODE}
+      # general topics
+      mqtt_SubReadTopic: "/+/+/+/read"
+      mqtt_SubWriteTopic: "/+/+/+/write"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "10m"
+    user: ${EIS_UID}
+    # userns_mode: host
+    volumes:
+    - "vol_uwc_socket:${SOCKET_DIR}"
+    - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
+    - "${EIS_INSTALL_PATH}/container_logs/mqtt-bridge:/opt/intel/app/logs"
+    secrets:
+    - ca_etcd
+    - etcd_MQTT_Bridge_cert
+    - etcd_MQTT_Bridge_key
+    - ca_broker
+    - client_cert
+    - client_key
+    security_opt:
+      - no-new-privileges
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/sh","-c", "ps -C MQTT_Bridge >/dev/null && echo Running || echo Not running; exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 0s
+
+volumes:      
+  vol_uwc_socket:
+    driver: local
+    driver_opts:
+      type: local
+      o: bind
+      device: ${EIS_INSTALL_PATH}/sockets
+
+secrets:
+  etcd_MQTT_Bridge_cert:
+    file: provision/Certificates/MQTT_Bridge/MQTT_Bridge_client_certificate.pem
+  etcd_MQTT_Bridge_key:
+    file: provision/Certificates/MQTT_Bridge/MQTT_Bridge_client_key.pem
+  ca_broker:
+    file: provision/Certificates/ca/ca_certificate.pem
+  client_cert:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
+  client_key:
+    file: provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem

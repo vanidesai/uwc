@@ -189,8 +189,8 @@
     },
     "/MQTT/config": {},
     "/MQTT/interfaces": {},
-    "/MQTT_Export/config": {},
-    "/MQTT_Export/interfaces": {
+    "/MQTT_Bridge/config": {},
+    "/MQTT_Bridge/interfaces": {
         "Publishers": [
             {
                 "AllowedClients": [
@@ -597,6 +597,8 @@
             }
         ]
     },
+    "/SPARKPLUG-BRIDGE/config": {},
+    "/SPARKPLUG-BRIDGE/interfaces": {},
     "/TCP/config": {},
     "/TCP/interfaces": {
         "Publishers": [
