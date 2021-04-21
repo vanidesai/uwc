@@ -452,24 +452,24 @@ std::shared_ptr<CIfMetric> CSparkPlugDevManager::metricFactoryMethod(cJSON *a_cj
 			else if ("float" == sDataType)
 			{
 				uiDataType = METRIC_DATA_TYPE_FLOAT;
-		}
+			}
 			else if ("double" == sDataType)
-		{
+			{
 				uiDataType = METRIC_DATA_TYPE_DOUBLE;
-		}
+			}
 			else if ("string" == sDataType)
-	{
+			{	
 				uiDataType = METRIC_DATA_TYPE_STRING;
 			}
 			else if ("udt" == sDataType)
-		{
+			{
 				uiDataType = METRIC_DATA_TYPE_TEMPLATE;
-		}
+			}
 			else
-		{
+			{
 				DO_LOG_ERROR("Invalid data type found. Mentioned type: " + sDataType);
 				return cIfMetric;
-		}
+			}
 
 			cJSON *cjName = cJSON_GetObjectItem(a_cjArrayElemMetric, "name");
 			if (cjName == NULL)
@@ -478,13 +478,19 @@ std::shared_ptr<CIfMetric> CSparkPlugDevManager::metricFactoryMethod(cJSON *a_cj
 				return cIfMetric;
 			}
 			if (NULL == cjName->valuestring)
-		{
+			{
 				DO_LOG_ERROR("Invalid payload: Name is not found.");
 				return cIfMetric;
-		}
+			}
+			std::string s_tempName {cjName->valuestring};
+			if (s_tempName.empty())
+			{
+				DO_LOG_ERROR("Name is empty.");
+				return cIfMetric;
+			}
 
 			// Creat metric
-			cIfMetric = metricFactoryMethod(cjName->valuestring, uiDataType);
+			cIfMetric = metricFactoryMethod(s_tempName, uiDataType);
 	}
 	catch (std::exception &e)
 	{
@@ -741,6 +747,12 @@ void CSparkPlugDevManager::processBirthMsg(std::string a_sAppName,
 
 			// Parse message
 			metricMapIf_t mapMetricsInMsg = parseVendorAppBirthDataMessage(a_sPayLoad, true);
+
+			if (0 == mapMetricsInMsg.size())
+			{
+				DO_LOG_ERROR("Metric List is empty");
+				break;
+			}
 
 			// Find the device in list
 			bool bIsNew = false;

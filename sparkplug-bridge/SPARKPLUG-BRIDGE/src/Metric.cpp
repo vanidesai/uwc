@@ -1021,6 +1021,12 @@ bool CUDT::compareMetrics(const std::shared_ptr<CIfMetric> &a_pUDT)
 			}
 
 			// Compare parameters
+			if(false == compareMetricMaps(m_mapParams, pOtherMetric->m_mapParams))
+			{
+				DO_LOG_DEBUG("map Params do not match");
+				return false;
+			}
+
 		}
 		catch (std::exception &e)
 		{
