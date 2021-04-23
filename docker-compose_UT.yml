@@ -240,7 +240,7 @@ services:
       options:
         max-file: "3"
         max-size: "10m"
-    user: ${EIS_UID}
+    # user: ${EIS_UID}
     # userns_mode: host
     volumes:
     - "vol_uwc_socket:${SOCKET_DIR}:z"
@@ -279,7 +279,7 @@ services:
     container_name: modbus-tcp-master-test
     hostname: modbus-tcp-master-test
     network_mode: host
-    read_only: true
+    # read_only: true
     # restart: unless-stopped
     ulimits:
       rtprio:
@@ -311,7 +311,7 @@ services:
     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
     - "${EIS_INSTALL_PATH}/container_logs/modbus-tcp-master:/opt/intel/app/logs"
     - "$PWD/unit_test_reports/modbus-tcp-master:/reports/modbus-tcp-master"
-    user: ${EIS_UID}
+    # user: ${EIS_UID}
     # userns_mode: host
     secrets:
     - ca_etcd
@@ -342,7 +342,7 @@ services:
     container_name: modbus-rtu-master-test
     hostname: modbus-rtu-master-test
     network_mode: host
-    read_only: true
+    # read_only: true
     # restart: unless-stopped
     ulimits:
       rtprio:
@@ -375,7 +375,7 @@ services:
     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
     - "${EIS_INSTALL_PATH}/container_logs/modbus-rtu-master:/opt/intel/app/logs"
     - "$PWD/unit_test_reports/modbus-rtu-master:/reports/modbus-rtu-master"
-    user: ${EIS_UID}
+    # user: ${EIS_UID}
     # userns_mode: host
     devices:
     - /dev:/dev
@@ -501,7 +501,7 @@ services:
       options:
         max-file: "3"
         max-size: "10m"
-    user: ${EIS_UID}
+    # user: ${EIS_UID}
     volumes:
     - "vol_uwc_socket:${SOCKET_DIR}:z"
     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
@@ -554,7 +554,7 @@ services:
       ETCD_PREFIX: ${ETCD_PREFIX}
       no_proxy: ${eis_no_proxy}
       CertType: "zmq"
-    user: ${EIS_UID}  
+    # user: ${EIS_UID}  
     volumes:
       - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
       - "vol_uwc_socket:${SOCKET_DIR}:z"
