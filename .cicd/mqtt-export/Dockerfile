@@ -10,26 +10,26 @@
 
 ARG EIS_VERSION
 FROM uwc_common:$EIS_VERSION as uwc_common
-LABEL description="MQTT Export Application"
+LABEL description="MQTT Bridge Application"
 
-# Build MQTT-Export application
-FROM ia_common:$EIS_VERSION as mqtt-export
+# Build MQTT-Bridge application
+FROM ia_common:$EIS_VERSION as mqtt-bridge
 WORKDIR /
 
 # copy required dependencies
-COPY MQTT-Export-App /MQTT-Export-App/. 
+COPY MQTT-Bridge /MQTT-Bridge/. 
 COPY --from=uwc_common /usr/yaml/include/yaml-cpp /usr/local/include/yaml-cpp
 COPY --from=uwc_common /usr/yaml/lib/* /usr/local/lib/
-COPY --from=uwc_common /usr/paho-cpp/lib/lib* /MQTT-Export-App/lib/
-COPY --from=uwc_common /usr/lib/libpaho* /MQTT-Export-App/lib/
+COPY --from=uwc_common /usr/paho-cpp/lib/lib* /MQTT-Bridge/lib/
+COPY --from=uwc_common /usr/lib/libpaho* /MQTT-Bridge/lib/
 COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
-COPY --from=uwc_common /usr/include/MQTT* /MQTT-Export-App/include/
-COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
-COPY --from=uwc_common /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
-COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /MQTT-Export-App/lib/
-COPY --from=uwc_common /uwc_util/include/* /MQTT-Export-App/include/
+COPY --from=uwc_common /usr/include/MQTT* /MQTT-Bridge/include/
+COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /MQTT-Bridge/include/log4cpp
+COPY --from=uwc_common /EIS/log4cpp/build/lib/* /MQTT-Bridge/lib/
+COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /MQTT-Bridge/lib/
+COPY --from=uwc_common /uwc_util/include/* /MQTT-Bridge/include/
 
 
 RUN mkdir kw10 ; \
@@ -59,23 +59,21 @@ RUN mv .klocwork ~
 RUN ls -la ~/.klocwork
 
 # build sources
-RUN cd /MQTT-Export-App/Release \
-    &&	export LD_LIBRARY_PATH='/MQTT-Export-App/lib:/usr/local/lib' \
+RUN cd /MQTT-Bridge/Release \
+    &&	export LD_LIBRARY_PATH='/MQTT-Bridge/lib:/usr/local/lib' \
     &&  export INCLUDE_DIR='/bin' \
     &&	/kw10/bin/kwinject make clean all -s
 
+
 ARG BUILD_NUMBER
-RUN cd /MQTT-Export-App/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
+RUN cd /MQTT-Bridge/Release; /kw10/bin/kwdeploy sync --url  https://klocwork-jf6.devtools.intel.com:8100 ; \
        /kw10/bin/kwbuildproject --verbose --license-host  klocwork03p.elic.intel.com  --license-port 7500 --host klocwork-jf6.devtools.intel.com --port 8100 --ssl --project UWC --tables-directory "tables_UWC" --incremental kwinject.out ;\
-       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC --name UWC_MQTT_Export_$BUILD_NUMBER;
-       
-# Build mqtt export container service
-FROM ia_common:$EIS_VERSION as mqtt-export-service
+       /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC --name UWC_MQTT_Bridge_$BUILD_NUMBER;
+	   
+# Build mqtt bridge container service
+FROM ia_common:$EIS_VERSION as mqtt-bridge-service
 
 WORKDIR /
-
-
-
 # creating base directories
 ENV APP_WORK_DIR /opt/intel/app/
 RUN mkdir -p /opt/intel/app \
@@ -86,14 +84,14 @@ RUN mkdir -p /opt/intel/app \
 WORKDIR ${APP_WORK_DIR}
 
 # copy required dependencies
-COPY --from=mqtt-export /MQTT-Export-App/Release/MQTT_Export ${APP_WORK_DIR}
+COPY --from=mqtt-bridge /MQTT-Bridge/Release/MQTT_Bridge ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/lib/libpaho* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
-COPY --from=mqtt-export /MQTT-Export-App/Config/log4cpp.properties /opt/intel/config
+COPY --from=mqtt-bridge /MQTT-Bridge/Config/log4cpp.properties /opt/intel/config
 COPY --from=uwc_common /uwc_util/Release/libuwc-common.so ${APP_WORK_DIR}
 
 # set permissions to working dir for eisuser
@@ -105,4 +103,4 @@ RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
 ENV LD_LIBRARY_PATH ${APP_WORK_DIR}:/usr/local/lib
 
 # Run the container
-CMD ./MQTT_Export
+CMD ./MQTT_Bridge
