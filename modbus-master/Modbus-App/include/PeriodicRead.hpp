@@ -29,6 +29,15 @@
 #include "ConfigManager.hpp"
 #include "API.h"
 
+const std::string INT = "int";
+const std::string UINT = "uint";
+const std::string FLOAT = "float";
+const std::string DOUBLE = "double";
+const std::string BOOL = "boolean";
+const std::string STRING = "string";
+
+
+
 /**node for response Q*/
 struct stStackResponse
 {
@@ -96,6 +105,7 @@ public:
 	void initRespHandlerThreads();
 	bool postDummyBADResponse(CRefDataForPolling& a_objReqData, const stException_t m_stException, struct timespec *a_pstRefPollTime);
 	bool postLastResponseForCutoff(CRefDataForPolling& a_objReqData);
+	msg_envelope_elem_body_t* setScaledValue(std::string a_sValue, std::string a_sDataType,double dScaleFactor, int a_iWidth);
 };
 
 

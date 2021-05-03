@@ -33,6 +33,11 @@ extern "C"
 #include "cjson/cJSON.h"
 }
 
+#define WIDTH_ONE		1
+#define WIDTH_TWO		2
+#define WIDTH_FOUR		4
+#define WIDTH_EIGHT 		8
+
 class CSparkPlugDev;
 class CVendorApp;
 
@@ -65,6 +70,9 @@ class CSparkPlugDev
 	bool parseRealDeviceUpdateMsg(const std::string &a_sPayLoad, 
 		std::string &a_sMetric, std::string &a_sValue, std::string &a_sStatus,
 		uint64_t &a_usec, uint64_t &a_lastGoodUsec, uint32_t &a_error_code);
+
+	bool parseScaledValueRealDevices(const std::string &a_sPayLoad, std::string &a_sMetric,
+			 CValObj &a_rValobj);
 
 	bool validateRealDeviceUpdateData(
 		const std::string &a_sValue, std::string a_sStatus,

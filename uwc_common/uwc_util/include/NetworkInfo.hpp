@@ -56,6 +56,7 @@ namespace network_info
 		bool m_bIsByteSwap; /** byte swap or not(true or false)*/
 		bool m_bIsWordSwap; /** word swap or not(true or false)*/
 		std::string m_sDataType; /** data type*/
+		double m_dScaleFactor;
 	};
 
 	/** structure for polling data information*/

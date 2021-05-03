@@ -44,6 +44,7 @@ struct stOnDemandRequest
 	std::string m_strVersion; /** version number **/
 	std::string m_strTopic; /** Topic name **/
 	std::string m_sValue; /** data value **/
+	std::string m_sScaledValue; /** ScaledValue **/
 	std::string m_sUsec; /** Seconds number **/
 	std::string m_sTimestamp; /** TimeStamp value **/
 	bool m_isByteSwap; /** ByteSwap(true or false)**/
@@ -52,6 +53,10 @@ struct stOnDemandRequest
 	struct timespec m_obtReqRcvdTS; /** Timestamp showing when a request is received **/
 	std::string m_strMqttTime; /** value of mqtt time **/
 	std::string m_strEisTime; /** value of eis time **/
+	std::string m_sDataType; /** data type*/
+	double m_dscaleFactor;
+	int m_iWidth;
+
 };
 
 /** This structure defines generic parameters for modbus common API **/
@@ -187,6 +192,46 @@ bool updateReqData(unsigned short, MbusAPI_t&);
 void removeReqData(unsigned short);
 
 long getReqPriority(const globalConfig::COperation a_Ops);
+
+//Convert hex string to unsigned short int
+unsigned short int  hexBytesToUShortInt(std::string str);
+
+//Convert hex string to short int
+short int hexBytesToShortInt(std::string str);
+
+//Convert hex string to int
+int hexBytesToInt(std::string str);
+
+//Convert hex string to unsigned  int
+unsigned int hexBytesToUnsignedInt(std::string str);
+
+//Convert hex string to unsigned long int
+long int hexBytesToLongInt(std::string str);
+
+//Convert hex string to unsigned long int
+unsigned long int hexBytesToUnsignedLongInt(std::string str);
+
+//Convert hex string to long long int
+long long int hexBytesToLongLongInt(std::string str);
+
+//Convert hex string to unsigned long long int
+unsigned long long int hexBytesToUnsignedLongLongInt(std::string str);
+
+//Convert hex string to unsigned short int
+float hexBytesToFloat(std::string str);
+
+//Convert hex string to double
+double hexBytesToDouble(std::string str);
+
+//Convert hex string to long double
+long double hexBytesToLongDouble(std::string str);
+
+//Convert hex string bool
+bool hexBytesToBool(std::string str);
+
+//Convert hex string to string
+std::string hexBytesToString(std::string str);
+
 }
 
 #endif /* INCLUDE_INC_COMMON_HPP_ */

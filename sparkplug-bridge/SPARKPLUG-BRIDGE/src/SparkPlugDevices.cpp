@@ -193,18 +193,171 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
 		{
 			std::lock_guard<std::mutex> lck(m_mutexMetricList);
 			auto itrMyMetric = m_mapMetrics.find(a_rUniqueDataPoint.getID());
+			/** Enumerator specifying datatype of datapoints in yml files*/
+			enum eYMlDataType
+			{
+				enBOOLEAN = 0, enUINT, enINT, enFLOAT, enDOUBLE, enSTRING, enUNKNOWN
+			};
+			
 			if (m_mapMetrics.end() == itrMyMetric)
 			{
-				// Add a metric if not already present
+				/** data type of datapoint specified in yml files*/
+				std::string ymlDataType =  a_rUniqueDataPoint.getDataPoint().getAddress().m_sDataType;
+				std::transform(ymlDataType.begin(), ymlDataType.end(), ymlDataType.begin(), ::tolower);
+
+				auto getDataType = [](std::string a_sDataType) -> eYMlDataType
+				{
+				    if (! a_sDataType.compare("boolean"))
+				    {
+				        return enBOOLEAN;
+				    }
+				    else if (! a_sDataType.compare("uint"))
+				    {
+				        return enUINT;
+				    }
+				    else if (! a_sDataType.compare("int"))
+				    {
+				        return enINT;
+				    }
+				    else if (! a_sDataType.compare("float"))
+				    {
+				        return enFLOAT;
+				    }
+				    else if (! a_sDataType.compare("double"))
+				    {
+				        return enDOUBLE;
+				    }
+				    else if (! a_sDataType.compare("string"))
+					{
+						return enSTRING;
+					}
+				    else
+				    {
+				     return enUNKNOWN;
+				    }
+				};
+
+				eYMlDataType oYMlDataType = getDataType(ymlDataType);
+
+
+				if (enUNKNOWN == oYMlDataType)
+				{
+					DO_LOG_ERROR("Invalid Yml Data Type. Ignored");
+					return;
+				}
+
+				/** width value*/
+				int ymlWidth = a_rUniqueDataPoint.getDataPoint().getAddress().m_iWidth;
+				int metricDataType = METRIC_DATA_TYPE_UNKNOWN;
+				int defaultIntVal = 0;
+				float defaultFloatVal = 0.0;
+				double defaultDoubleVal = 0.0;
+				std::string defaultStringVal =  "";
 				std::shared_ptr<CIfMetric> ptrIfMetric = std::make_shared<CMetric>(a_rUniqueDataPoint);
 				if(nullptr == ptrIfMetric)
 				{
 					DO_LOG_ERROR(a_rUniqueDataPoint.getID() + ": Unable to create shared metric.");
+					return;
 				}
-				else
+
+				switch(ymlWidth)
 				{
-					m_mapMetrics.emplace(ptrIfMetric->getSparkPlugName(), ptrIfMetric);
-				}
+					case WIDTH_ONE:
+
+						if (enINT == oYMlDataType)
+						{							 
+							metricDataType = METRIC_DATA_TYPE_INT16;
+							CValObj objVal(metricDataType, (int16_t)defaultIntVal);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);								 				 
+						}
+						else if (enUINT == oYMlDataType)
+						{
+							metricDataType = METRIC_DATA_TYPE_UINT16;
+							CValObj objVal(metricDataType, (uint16_t)defaultIntVal);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
+						}
+						else if (enSTRING == oYMlDataType)
+						{
+							metricDataType = METRIC_DATA_TYPE_STRING;
+							CValObj objVal(metricDataType, defaultStringVal);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
+						}
+						else if (enBOOLEAN == oYMlDataType)
+						{
+							metricDataType = METRIC_DATA_TYPE_BOOLEAN;
+							CValObj objVal(metricDataType, true);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
+						}
+						else
+						{
+							DO_LOG_ERROR("Invalid datatype for width 1. Ignored " + ymlDataType);
+							return;
+						}
+							 
+						break;
+
+					case WIDTH_TWO:
+
+						if (enINT == oYMlDataType)
+						{
+							metricDataType = METRIC_DATA_TYPE_INT32;
+							CValObj objVal(metricDataType, (int32_t)defaultIntVal);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);								 
+						}
+						else if (enUINT == oYMlDataType)
+						{
+							metricDataType = METRIC_DATA_TYPE_UINT32;
+							CValObj objVal(metricDataType, (uint32_t)defaultIntVal);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
+						}
+						else if (enFLOAT == oYMlDataType)
+						{
+							metricDataType = METRIC_DATA_TYPE_FLOAT;
+							CValObj objVal(metricDataType, (float)defaultFloatVal);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
+						}
+						else
+						{
+							DO_LOG_ERROR("Invalid datatype for width 2. Ignored " + ymlDataType);
+							return;
+						}
+						break;
+
+					case WIDTH_FOUR:
+
+						if (enINT == oYMlDataType)
+						{
+							metricDataType = METRIC_DATA_TYPE_INT64;
+							CValObj objVal(metricDataType, (int64_t)defaultIntVal);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
+						}
+						else if (enUINT == oYMlDataType)
+						{
+							metricDataType = METRIC_DATA_TYPE_UINT64;
+							CValObj objVal(metricDataType, (uint64_t)defaultIntVal);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
+						}
+						else if (enDOUBLE == oYMlDataType)
+						{
+							metricDataType = METRIC_DATA_TYPE_DOUBLE;
+							CValObj objVal(metricDataType, (double)defaultDoubleVal);
+							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
+						}						
+						else
+						{
+							DO_LOG_ERROR("Invalid datatype for width 4. Ignored " + ymlDataType);
+							return;
+						}
+
+						break;					
+
+					default:
+						DO_LOG_ERROR("Unknown width. Ignored");
+						break;
+
+				};				
+
+				m_mapMetrics.emplace(ptrIfMetric->getSparkPlugName(), ptrIfMetric);
 			}
 			else
 			{
@@ -525,6 +678,155 @@ bool CSparkPlugDev::parseRealDeviceUpdateMsg(const std::string &a_sPayLoad,
 }
 
 /**
+ * Parse Scaled value field from JSON
+ * @param a_sPayLoad :[in]  payload containing metrics
+ * @param a_sMetric  :[in]  std::string &a_sMetric
+ * @param a_rValobj  :[out] CValObj &a_rValobj
+ * @return true or false based on success
+ */
+bool CSparkPlugDev::parseScaledValueRealDevices(const std::string &a_sPayLoad, std::string &a_sMetric, CValObj &a_rValobj)
+{
+	cJSON *pjRoot = NULL;
+	//getDatatype of the datapoint
+	pjRoot = cJSON_Parse(a_sPayLoad.c_str());
+	if (NULL == pjRoot)
+	{
+		DO_LOG_ERROR("Message received from MQTT could not be parsed in json format");
+		return false;
+	}
+
+	auto iter = m_mapMetrics.find(a_sMetric);
+	uint32_t tempYmlDataType = METRIC_DATA_TYPE_UNKNOWN;
+
+	if (m_mapMetrics.end() != iter)
+	{
+		if(nullptr == (iter->second))
+		{
+			DO_LOG_ERROR("Null value in Metric Data: " + a_sMetric);
+			return false;
+		}
+		tempYmlDataType = (iter->second)->getValue().getDataType();
+	}
+	else
+	{
+		DO_LOG_ERROR("Metric Not found : " + a_sMetric);
+		return false;
+	}
+
+	//readScaledValueFieldFromJSON
+	cJSON *cjValue = cJSON_GetObjectItem(pjRoot, "scaledValue");
+	if (NULL == cjValue)
+	{
+		DO_LOG_ERROR("scaledValue field not found in input json");
+		return false;
+	}
+
+	if ((METRIC_DATA_TYPE_BOOLEAN == tempYmlDataType) && (1 == cJSON_IsBool(cjValue)))
+	{
+		if (cJSON_IsTrue(cjValue))
+		{
+			CValObj oValtemp(METRIC_DATA_TYPE_BOOLEAN, true);
+			a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_BOOLEAN, oValtemp);
+		}
+		else
+		{
+			CValObj oValtemp(METRIC_DATA_TYPE_BOOLEAN, false);
+			a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_BOOLEAN, oValtemp);
+		}
+		return true;
+	}
+	else if (tempYmlDataType == METRIC_DATA_TYPE_UINT16 && (1 == cJSON_IsNumber(cjValue)))
+	{
+		if (cjValue->valuedouble < 0.0) {
+			DO_LOG_ERROR("Negative value received for unsigned datatype uint16");
+			return false;
+		}		
+		CValObj oValtemp(METRIC_DATA_TYPE_UINT16, (uint16_t)cjValue->valuedouble);
+		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_UINT16, oValtemp);
+		return true;
+	}
+	else if (tempYmlDataType == METRIC_DATA_TYPE_UINT32 && (1 == cJSON_IsNumber(cjValue)))
+	{
+		if (cjValue->valuedouble < 0.0) {
+			DO_LOG_ERROR("Negative value received for unsigned datatype uint32");
+			return false;
+		}
+		CValObj oValtemp(METRIC_DATA_TYPE_UINT32, (uint32_t)cjValue->valuedouble);
+		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_UINT32, oValtemp);
+		return true;
+	}
+	else if (tempYmlDataType == METRIC_DATA_TYPE_UINT64 && (1 == cJSON_IsNumber(cjValue)))
+	{
+		if (cjValue->valuedouble < 0.0) {
+			DO_LOG_ERROR("Negative value received for unsigned datatype uint64");
+			return false;
+		}
+		CValObj oValtemp(METRIC_DATA_TYPE_UINT64, (uint64_t)cjValue->valuedouble);
+		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_UINT64, oValtemp);
+		return true;
+	}
+	else if (tempYmlDataType == METRIC_DATA_TYPE_INT16 && (1 == cJSON_IsNumber(cjValue)))
+	{
+		CValObj oValtemp(METRIC_DATA_TYPE_INT16, (int16_t)cjValue->valuedouble);
+		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_INT16, oValtemp);
+		return true;
+	}
+	else if (tempYmlDataType == METRIC_DATA_TYPE_INT32 && (1 == cJSON_IsNumber(cjValue)))
+	{
+		CValObj oValtemp(METRIC_DATA_TYPE_INT32, (int32_t)cjValue->valuedouble);
+		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_INT32, oValtemp);
+		return true;
+	}
+	else if (tempYmlDataType == METRIC_DATA_TYPE_INT64 && (1 == cJSON_IsNumber(cjValue)))
+	{
+		int64_t i64 = static_cast<std::int64_t>(cjValue->valuedouble);
+		// Handle corner scenario of max value
+		if((i64 < 0) && (cjValue->valuedouble > 0.0))
+		{
+			i64 = std::numeric_limits<int64_t>::max();
+		}
+		CValObj oValtemp(METRIC_DATA_TYPE_INT64, (int64_t)i64);
+		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_INT64, oValtemp);
+		return true;
+	}
+	else if (tempYmlDataType == METRIC_DATA_TYPE_STRING && (1 == cJSON_IsString(cjValue)))
+	{
+		char *val = cJSON_GetStringValue(cjValue);
+		if (NULL == val) {
+			DO_LOG_ERROR("Cannot get String value from Json payload");
+			return false;
+		}
+		std::string sTemp(val);
+		CValObj oValtemp(METRIC_DATA_TYPE_STRING, sTemp);
+		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_STRING, oValtemp);
+		return true;
+	}
+	else if (tempYmlDataType == METRIC_DATA_TYPE_FLOAT && (1 == cJSON_IsNumber(cjValue)))
+	{
+		float fval = static_cast<float>(cjValue->valuedouble);
+		CValObj oValtemp(METRIC_DATA_TYPE_FLOAT, fval);
+		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_FLOAT, oValtemp);
+		return true;
+	}
+	else if (tempYmlDataType == METRIC_DATA_TYPE_DOUBLE && (1 == cJSON_IsNumber(cjValue)))
+	{
+		double dval = static_cast<double>(cjValue->valuedouble);
+		CValObj oValtemp(METRIC_DATA_TYPE_DOUBLE, dval);
+		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_DOUBLE, oValtemp);
+		return true;
+	}
+	else
+	{
+		DO_LOG_ERROR(
+				"Invalid data type or mismatch found. Mentioned type in Yml file : "
+						+ std::to_string(tempYmlDataType) + ", Value datatype :"
+						+ std::to_string(cjValue->type));
+		return false;
+	}
+	return false;
+}
+
+/**
  * Validates data parsed from update message of a real device
  * @param a_sValue :[in] value of "value" key
  * @param a_sStatus :[in] value of "status" key
@@ -615,6 +917,7 @@ bool CSparkPlugDev::processRealDeviceUpdateMsg(const std::string a_sPayLoad, std
 		std::string sMetric{""}, sValue{""}, sStatus{""};
 		uint64_t usec{0}, lastGoodUsec{0};
 		uint32_t error_code{0};
+		CValObj oValObj;
 		bool bRet = parseRealDeviceUpdateMsg(a_sPayLoad, 
 			sMetric, sValue, sStatus, usec, lastGoodUsec, error_code);
 		if(false == bRet)
@@ -652,11 +955,17 @@ bool CSparkPlugDev::processRealDeviceUpdateMsg(const std::string a_sPayLoad, std
 			return false;
 		}
 		CMetric &refMyMetric = *pOtherMetric;
+		if ( false == parseScaledValueRealDevices(a_sPayLoad, sMetric, oValObj))
+		{
+			DO_LOG_ERROR("Error in parseScaledValueRealDevices. ");
+			return false;
+		}
 
 		// All validations are done
 		// Now, action can be determined based on values in this message and 
 		// last known status informed to SCADA Master
-		CValObj oValObj{sValue};
+		//CValObj oValObj{sValue};
+		//CValObj oValObj{(int16_t)ReadValFromJson};
 
 		// Scenarios: last status to SCADA = DEVICE UP
 		//		1. Now Good status and 
@@ -786,6 +1095,7 @@ bool CSparkPlugDev::getWriteMsg(std::string& a_sTopic, cJSON *a_root,
 		std::pair<const std::string, std::shared_ptr<CIfMetric>> &a_metric,
 		const int& a_appSeqNo)
 {
+	bool isRealDevice = true;
 	try
 	{
 		if(nullptr == a_metric.second)
@@ -823,7 +1133,7 @@ bool CSparkPlugDev::getWriteMsg(std::string& a_sTopic, cJSON *a_root,
 			cJSON_AddItemToObject(a_root, "wellhead", cJSON_CreateString(vParsedTopic[1].c_str()));
 			cJSON_AddItemToObject(a_root, "command", cJSON_CreateString((a_metric.second)->getName().c_str()));
 
-			if(false == (a_metric.second)->assignToCJSON(a_root))
+			if(false == (a_metric.second)->assignToCJSON(a_root, isRealDevice))
 			{
 				return false;
 			}
@@ -870,6 +1180,7 @@ bool CSparkPlugDev::getWriteMsg(std::string& a_sTopic, cJSON *a_root,
 bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMapIf_t& a_metrics, cJSON *metricArray)
 {
 	bool bRet = false;
+	bool isRealDevice = false;
 	try
 	{
 		vector<string> vParsedTopic = { };
@@ -908,7 +1219,7 @@ bool CSparkPlugDev::getCMDMsg(string& a_sTopic, metricMapIf_t& a_metrics, cJSON 
 
 			cJSON_AddItemToObject(cjMetric, "name", cJSON_CreateString((itrMetric.second)->getName().c_str()));
 
-			if(false == (itrMetric.second)->assignToCJSON(cjMetric))
+			if(false == (itrMetric.second)->assignToCJSON(cjMetric, isRealDevice))
 			{
 				DO_LOG_ERROR("Failed to assign value to CJSON");
 				return false;

@@ -424,6 +424,11 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 			a_stMbusApiPram.m_stOnDemandReqData.m_isByteSwap = obj.getAddress().m_bIsByteSwap;
 			a_stMbusApiPram.m_stOnDemandReqData.m_isWordSwap = obj.getAddress().m_bIsWordSwap;
 
+			a_stMbusApiPram.m_stOnDemandReqData.m_sDataType = obj.getAddress().m_sDataType;
+			a_stMbusApiPram.m_stOnDemandReqData.m_dscaleFactor = obj.getAddress().m_dScaleFactor;
+
+			a_stMbusApiPram.m_stOnDemandReqData.m_iWidth = obj.getAddress().m_iWidth;
+
 			a_stMbusApiPram.m_u16StartAddr = (uint16_t)obj.getAddress().m_iAddress;
 			a_stMbusApiPram.m_u16Quantity = (uint16_t)obj.getAddress().m_iWidth;
 
@@ -782,6 +787,7 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg,
 	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = getMsgElement(msg, "app_seq");
 	stMbusApiPram.m_stOnDemandReqData.m_strMetric = getMsgElement(msg, "command");
 	stMbusApiPram.m_stOnDemandReqData.m_sValue = getMsgElement(msg, "value");
+	stMbusApiPram.m_stOnDemandReqData.m_sScaledValue = getMsgElement(msg, "scaledValue");
 	stMbusApiPram.m_stOnDemandReqData.m_strWellhead = getMsgElement(msg, "wellhead");
 	stMbusApiPram.m_stOnDemandReqData.m_strVersion = getMsgElement(msg, "version");
 	stMbusApiPram.m_stOnDemandReqData.m_strTopic = getMsgElement(msg, "sourcetopic");

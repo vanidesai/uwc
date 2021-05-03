@@ -950,30 +950,158 @@ bool CSCADAHandler::processExtMsg(CMessageObject a_msg, std::vector<stRefForSpar
  * @return true/false
  */
 bool CSCADAHandler::addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric &a_rMetric, const std::string &a_sName, 
-        const std::string a_sValue, bool a_bIsBirth, uint32_t a_uiPollInterval, bool a_bIsRealTime)
+        CValObj &a_oValObj, bool a_bIsBirth, uint32_t a_uiPollInterval, bool a_bIsRealTime, double a_dScale)
 {
     try
     {
         a_rMetric = org_eclipse_tahu_protobuf_Payload_Metric_init_default;
+        uint32_t datatype = a_oValObj.getDataType();
+        var_t objVal = a_oValObj.getValue();
+        int ret = 0;
 
-	
-        if(true == a_sValue.empty())
-        {
-            DO_LOG_DEBUG("The value is empty. Set to \0");
-            std::string temp = "\0";
-            init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, temp.c_str(), temp.length());
-        }
-        else
-        {
-        init_metric(&a_rMetric, a_sName.c_str(), false, 0, METRIC_DATA_TYPE_STRING, false, false, a_sValue.c_str(), a_sValue.length());
-        }
+        switch(datatype)
+        	{
+        		case METRIC_DATA_TYPE_BOOLEAN:
+        		{	
+        			bool scaledValBool = std::get<bool>(objVal);
+        			ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+        					0, METRIC_DATA_TYPE_BOOLEAN, false, false, (bool *)&scaledValBool, sizeof(bool));
+        			if (ret < 0){
+        				DO_LOG_ERROR("Init Metric Failure for datatype boolean");
+        				return false;
+        			}
+        			break;
+        		}
+        		case METRIC_DATA_TYPE_INT16:
+        		{
+        			int16_t scaledValInt16 = std::get<int16_t>(objVal);
+        			ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+        					0, METRIC_DATA_TYPE_INT16, false, false, (int16_t *)&scaledValInt16, sizeof(int16_t));
+        			if (ret < 0){
+        				DO_LOG_ERROR("Init Metric Failure for datatype int16_t");
+        				return false;
+        			}
+        			break;
+        		}
+        		case METRIC_DATA_TYPE_INT32:
+        		{
+        			int32_t scaledValInt32 = std::get<int32_t>(objVal);
+        			ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+        					0, METRIC_DATA_TYPE_INT32, false, false, (int32_t *)&scaledValInt32, sizeof(int32_t));
+        			if (ret < 0){
+        				DO_LOG_ERROR("Init Metric Failure for datatype int32_t");
+        				return false;
+        			}
+
+        			break;
+        		}
+
+        		case METRIC_DATA_TYPE_INT64:
+        		{
+        			int64_t scaledValInt64 = std::get<int64_t>(objVal);
+					ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+							0, METRIC_DATA_TYPE_INT64, false, false, (int64_t *)&scaledValInt64, sizeof(int64_t));
+					if (ret < 0){
+						DO_LOG_ERROR("Init Metric Failure for datatype int64_t");
+						return false;
+					}
+        			break;
+        		}
+
+        		case METRIC_DATA_TYPE_UINT16:
+        		{
+        			uint16_t scaledValUInt16 = std::get<uint16_t>(objVal);
+					ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+							0, METRIC_DATA_TYPE_UINT16, false, false, (uint16_t *)&scaledValUInt16, sizeof(uint16_t));
+					if (ret < 0){
+						DO_LOG_ERROR("Init Metric Failure for datatype uint16_t");
+						return false;
+					}
+        			break;
+        		}
+
+        		case METRIC_DATA_TYPE_UINT32:
+        		{
+        			uint32_t scaledValUInt32 = std::get<uint32_t>(objVal);
+					ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+							0, METRIC_DATA_TYPE_UINT32, false, false, (uint32_t *)&scaledValUInt32, sizeof(uint32_t));
+					if (ret < 0){
+						DO_LOG_ERROR("Init Metric Failure for datatype uint32_t");
+						return false;
+					}
+
+        			break;
+        		}
+
+        		case METRIC_DATA_TYPE_UINT64:
+        		{
+        			uint64_t scaledValUInt64 = std::get<uint64_t>(objVal);
+					ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+							0, METRIC_DATA_TYPE_UINT64, false, false, (uint64_t *)&scaledValUInt64, sizeof(uint64_t));
+					if (ret < 0){
+						DO_LOG_ERROR("Init Metric Failure for datatype uint64_t");
+						return false;
+					}
+
+        			break;
+        		}
+
+        		case METRIC_DATA_TYPE_FLOAT:
+        		{
+        			float scaledValFloat = std::get<float>(objVal);
+					ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+							0, METRIC_DATA_TYPE_FLOAT, false, false, (float *)&scaledValFloat, sizeof(float));
+					if (ret < 0){
+						DO_LOG_ERROR("Init Metric Failure for datatype float");
+						return false;
+					}
+
+        			break;
+        		}
+        		case METRIC_DATA_TYPE_DOUBLE:
+        		{
+
+        			double scaledValDouble = std::get<double>(objVal);
+					ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+							0, METRIC_DATA_TYPE_DOUBLE, false, false, (double *)&scaledValDouble, sizeof(double));
+					if (ret < 0){
+						DO_LOG_ERROR("Init Metric Failure for datatype double");
+						return false;
+					}
+        			break;
+        		}
+
+        		case METRIC_DATA_TYPE_STRING:
+        		{
+        			std::string scaledValStr = std::get<std::string>(objVal);
+					if (true == scaledValStr.empty())
+					{
+						DO_LOG_ERROR("Scaled Value is empty string");
+						scaledValStr = "\0";
+					}
+					ret = init_metric(&a_rMetric, a_sName.c_str(), false,
+							0, METRIC_DATA_TYPE_STRING, false, false, scaledValStr.c_str(), scaledValStr.length());
+					if (ret < 0){
+						DO_LOG_ERROR("Init Metric Failure for datatype double");
+						return false;
+					}
+        			break;
+        		}
+        		default:
+
+        			DO_LOG_ERROR("Init Metric Failure.");
+        			return false;
+        	};
+
+       
         
         if(a_bIsBirth)
         {
             org_eclipse_tahu_protobuf_Payload_PropertySet prop = org_eclipse_tahu_protobuf_Payload_PropertySet_init_default;
             add_property_to_set(&prop, "Pollinterval", PROPERTY_DATA_TYPE_UINT32, &a_uiPollInterval, sizeof(a_uiPollInterval));
             add_property_to_set(&prop, "Realtime", PROPERTY_DATA_TYPE_BOOLEAN, &a_bIsRealTime, sizeof(a_bIsRealTime));
-
+            // Added a new property Scale after reading from yml file
+            add_property_to_set(&prop, "Scale", METRIC_DATA_TYPE_DOUBLE, &a_dScale, sizeof(a_dScale));
  
 
             add_propertyset_to_metric(&a_rMetric, &prop);
@@ -1042,12 +1170,14 @@ bool CSCADAHandler::addModbusTemplateDefToNbirth(org_eclipse_tahu_protobuf_Paylo
 			udt_template.has_is_definition = true;
 			udt_template.is_definition = true;
 			int iLoop = 0;
+			std::string tempStr = "";
 
 			if(udt_template.metrics != NULL)
 			{
 				for(auto &itrPoint: itr.second.getDataPoints())
 				{
-					if(true != addModbusMetric(udt_template.metrics[iLoop], itrPoint.getID(), "", true, 0, false))
+					CValObj otempValObj(tempStr);
+					if(true != addModbusMetric(udt_template.metrics[iLoop], itrPoint.getID(), otempValObj, true, 0, false, itrPoint.getAddress().m_dScaleFactor))
 					{
 						DO_LOG_ERROR(itrPoint.getID() + ":Could not add metric to template definition.");
 					}

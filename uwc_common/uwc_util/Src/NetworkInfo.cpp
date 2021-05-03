@@ -817,7 +817,7 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 	{
 		a_oCDataPoint.m_stAddress.m_bIsByteSwap =  false;
 		a_oCDataPoint.m_stAddress.m_bIsWordSwap =  false;
-
+		a_oCDataPoint.m_stAddress.m_dScaleFactor = globalConfig::CGlobalConfig::getInstance().getDefaultScaleFactor();
 		a_oCDataPoint.m_sId = a_oData["id"].as<std::string>();
 		a_oCDataPoint.m_stAddress.m_eType = getPointType(a_oData["attributes"]["type"].as<std::string>());
 		a_oCDataPoint.m_stAddress.m_iAddress = a_oData["attributes"]["addr"].as<std::int32_t>();
@@ -867,6 +867,29 @@ void network_info::CDataPoint::build(const YAML::Node& a_oData, CDataPoint &a_oC
 				std::cout << "WordSwap value is incorrect. Set to default with exception :: "<< e.what();
 			}
 		}
+		if (a_oData["attributes"]["scalefactor"])
+		{
+			try
+			{
+				if(a_oData["attributes"]["scalefactor"].as<int>() == 0)
+				{
+					DO_LOG_WARN("scale Factor value  0 is not allowed . Set to default." );
+					std::cout << "scale Factor value  0 is not allowed . Set to default.";
+					a_oCDataPoint.m_stAddress.m_dScaleFactor = globalConfig::CGlobalConfig::getInstance().getDefaultScaleFactor();
+				}
+				else
+				{
+					a_oCDataPoint.m_stAddress.m_dScaleFactor =  a_oData["attributes"]["scalefactor"].as<int>();
+				}
+			}
+			catch(YAML::Exception &e)
+			{
+				a_oCDataPoint.m_stAddress.m_dScaleFactor = globalConfig::CGlobalConfig::getInstance().getDefaultScaleFactor();
+				DO_LOG_WARN(" scale factor is not present. Set to default." + std::string(e.what()));
+				std::cout << "scale factor is not present. Set to default. :: " << e.what();
+			}
+		}
+		std::cout<<"Scale Value"<<a_oCDataPoint.m_stAddress.m_dScaleFactor;
 	}
 	catch(YAML::Exception &e)
 	{

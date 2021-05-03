@@ -98,7 +98,7 @@ public:
 	void signalIntMQTTConnEstablishThread();
 
 	bool addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric &a_rMetric, const std::string &a_sName, 
-		const std::string a_sValue, bool a_bIsBirth, uint32_t a_uiPollInterval, bool a_bIsRealTime);
+		CValObj &a_oValObj, bool a_bIsBirth, uint32_t a_uiPollInterval, bool a_bIsRealTime, double a_iScale);
 
 	bool addModbusPropForBirth(org_eclipse_tahu_protobuf_Payload_Template &a_rUdt, 
 		const std::string &a_sProtocolVal);

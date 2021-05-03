@@ -93,7 +93,7 @@ namespace globalConfig
 #define DEFAULT_QOS 0
 #define DEFAULT_GRP_ID "UWC Nodes"
 #define DEFAULT_NODE_NAME "SCADA RTU"
-
+const double DEFAULT_SCALE_FACTOR = 1.0;
 /**
  * Enum of operation types and hierarchy
  */
@@ -309,9 +309,13 @@ class CGlobalConfig
 	COperationInfo m_OpOnDemandReadConfig;
 	COperationInfo m_OpOnDemandWriteConfig;
 	CSparkplugData m_SparkPlugInfo;
+	double m_dDefaultScale;
 
 	// Private constructor so that no objects can be created.
-	CGlobalConfig(){};
+	CGlobalConfig()
+	{
+		m_dDefaultScale = DEFAULT_SCALE_FACTOR;
+	}
 	CGlobalConfig(const CGlobalConfig & obj)=delete;
 	CGlobalConfig& operator=(CGlobalConfig const&)=delete;
 
@@ -357,6 +361,31 @@ public:
 	{
 		return m_SparkPlugInfo;
 	}
+
+	/**
+	 * Return configuration of DefaultScale
+	 * @return DefaultScale from Global Config file
+	 */
+	double getDefaultScaleFactor()
+	{
+		return m_dDefaultScale;
+	}
+
+	/**
+	 *  Set configuration of DefaultScale
+	 *  @param defaultScale Set DefaultScale from Global Config file
+	 */
+	void setDefaultScaleFactor(double defaultScale)
+	{
+	  m_dDefaultScale = defaultScale;
+	}
+
+	/** Populate DefaultScale value
+	 *
+	 * @param : a_baseNode [in] : YAML node to read from
+	 * @return: Nothing
+	 */
+	void buildDefaultScaleFactor(const YAML::Node& a_baseNode);
 };
 
 /**

@@ -156,7 +156,7 @@ public:
 	bool assignToSparkPlug(org_eclipse_tahu_protobuf_Payload_Template_Parameter &a_param) const;
 
 	/*Function to add value data to a CJSON object */
-	bool assignToCJSON(cJSON *a_cjMetric) const;
+	bool assignToCJSON(cJSON *a_cjMetric, const std::string &a_sKeyName) const;
 
 	/** function to print*/
 	void print() const 
@@ -219,6 +219,9 @@ using metricMapIf_t = std::map<std::string, std::shared_ptr<CIfMetric>>; /** map
 /** Base class to manage Sparkplug metrics */
 class CIfMetric
 {
+private:
+	CValObj m_objValue; 
+
 protected:
 	uint64_t m_timestamp; /** Time stamp value*/
 	uint32_t m_uiDataType = METRIC_DATA_TYPE_UNKNOWN;
@@ -295,6 +298,12 @@ public:
 		m_uiDataType = a_uiDataType;
 	}
 
+	/** function to get CValObj object*/
+	virtual CValObj& getValue()
+	{		
+		return m_objValue;
+	}
+
 	/** function to compare metric value*/
 	virtual uint8_t compareValue(CIfMetric &a_obj) const = 0;
 
@@ -324,7 +333,8 @@ public:
 	virtual bool addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetric, bool a_bIsBirth) = 0;
 
 	/** function to create CJSON object for this metric */
-	virtual bool assignToCJSON(cJSON *a_cjMetric) = 0;
+	// change the prototype here
+	virtual bool assignToCJSON(cJSON *a_cjMetric, bool a_bIsRealDevice) = 0;
 
 	/** function to compare one metric with this metric */
 	virtual bool compareMetrics(const std::shared_ptr<CIfMetric> &a_pUDT)
@@ -438,10 +448,14 @@ public:
 		return m_objVal.setValObj(a_sparkplugMetric);
 	}
 
-	/** function to create CJSON object for this metric */
-	bool assignToCJSON(cJSON *a_cjMetric) override
+	/** function to create CJSON object for this metric with a flag to indicate a real device */
+	bool assignToCJSON(cJSON *a_cjMetric, bool a_bIsRealDevice) override
 	{
-		return m_objVal.assignToCJSON(a_cjMetric);
+		if (a_bIsRealDevice)
+		{
+			return m_objVal.assignToCJSON(a_cjMetric, "scaledValue");
+		}
+		return m_objVal.assignToCJSON(a_cjMetric, "value");
 	}
 
 	/** function to add metric name, value to Sparkplug object for this metric */
@@ -561,7 +575,7 @@ class CUDT: public CIfMetric
 	{ return true; }
 	
 	/** Function to store metric data in CJSON object */
-	virtual bool assignToCJSON(cJSON *a_cjMetric) override;
+	virtual bool assignToCJSON(cJSON *a_cjMetric, bool a_bIsRealDevice) override;
 
 	/** Function to compare 2 metrics */
 	virtual bool compareMetrics(const std::shared_ptr<CIfMetric> &a_pUDT) override;

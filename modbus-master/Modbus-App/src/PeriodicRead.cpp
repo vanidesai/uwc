@@ -22,7 +22,7 @@
 #include <unistd.h>
 #include <time.h>
 #include "CommonDataShare.hpp"
-
+#include <stdlib.h>
 /// flag to check thread stop condition
 std::atomic<bool> g_stopThread;
 
@@ -96,6 +96,10 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 	bool bIsByteSwap = false;
 	bool bIsWordSwap = false;
 	msg_envelope_t *msg = NULL;
+	std::string aDataType;
+	double aScaleFactor;
+	int aWidth;
+
 	try
 	{
 		MbusAPI_t stMbusApiPram = {};
@@ -133,12 +137,20 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 			bIsWordSwap = a_objReqData->getDataPoint().getDataPoint().getAddress().m_bIsWordSwap;
 
 			// Point data type
-			string aDataType = a_objReqData->getDataPoint().getDataPoint().getAddress().m_sDataType;
+			aDataType = a_objReqData->getDataPoint().getDataPoint().getAddress().m_sDataType;
+
 			if(!aDataType.empty())
 			{
 				msg_envelope_elem_body_t* ptDataType = msgbus_msg_envelope_new_string(aDataType.c_str());
 				msgbus_msg_envelope_put(msg, "datatype", ptDataType);
 			}
+
+			// Point Scale Factor
+			aScaleFactor = a_objReqData->getDataPoint().getDataPoint().getAddress().m_dScaleFactor;
+
+			aWidth = a_objReqData->getDataPoint().getDataPoint().getAddress().m_iWidth;
+
+		    std::cout<<"Scale Value" <<aScaleFactor<<std::endl;
 		}
 		else
 		{
@@ -173,6 +185,16 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 
 			bIsByteSwap = stMbusApiPram.m_stOnDemandReqData.m_isByteSwap;
 			bIsWordSwap = stMbusApiPram.m_stOnDemandReqData.m_isWordSwap;
+
+			// Point data type
+			aDataType = stMbusApiPram.m_stOnDemandReqData.m_sDataType;
+
+			// Point Scale Factor
+			aScaleFactor = stMbusApiPram.m_stOnDemandReqData.m_dscaleFactor;
+
+			aWidth = stMbusApiPram.m_stOnDemandReqData.m_iWidth;
+
+			std::cout<<"Scale Value" <<aScaleFactor<<std::endl;
 		}
 
 		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
@@ -209,6 +231,15 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 				if(0 != vt.size())
 				{
 					a_sValue = common_Handler::swapConversion(vt, bIsByteSwap, bIsWordSwap);
+
+
+					std::cout<<"a_sValue" <<a_sValue<<std::endl;
+
+					msg_envelope_elem_body_t* ptScaleValue = setScaledValue(a_sValue,aDataType,aScaleFactor,aWidth);
+					msgbus_msg_envelope_put(msg, "scaledValue", ptScaleValue);
+
+					std::cout <<"aDataType"<<aDataType<<std::endl;
+
 					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(a_sValue.c_str());
 					msgbus_msg_envelope_put(msg, "value", ptValue);
 					msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
@@ -232,6 +263,9 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 						msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(objLastResp.m_sValue.c_str());
 						msgbus_msg_envelope_put(msg, "value", ptValue);
 
+						msg_envelope_elem_body_t* ptScaleValue = setScaledValue(a_sValue,aDataType,aScaleFactor,aWidth);
+						msgbus_msg_envelope_put(msg, "scaledValue", ptScaleValue);
+
 						msg_envelope_elem_body_t* ptLastUsec = msgbus_msg_envelope_new_string(objLastResp.m_sLastUsec.c_str());
 						msgbus_msg_envelope_put(msg, "lastGoodUsec", ptLastUsec);
 					}
@@ -247,8 +281,8 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 			{
 				msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Bad");
 				int iErrCode = a_stResp.m_stException.m_u8ExcStatus * ERORR_MULTIPLIER + a_stResp.m_stException.m_u8ExcCode;
-									msg_envelope_elem_body_t* ptErrorDetails =
-											msgbus_msg_envelope_new_string(std::to_string(iErrCode).c_str());
+				msg_envelope_elem_body_t* ptErrorDetails =
+						msgbus_msg_envelope_new_string(std::to_string(iErrCode).c_str());
 				msgbus_msg_envelope_put(msg, "status", ptStatus);
 				msgbus_msg_envelope_put(msg, "error_code", ptErrorDetails);
 
@@ -259,6 +293,9 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 							(const_cast<CRefDataForPolling*>(a_objReqData))->getLastGoodResponse();
 					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(objLastResp.m_sValue.c_str());
 					msgbus_msg_envelope_put(msg, "value", ptValue);
+
+					msg_envelope_elem_body_t* ptScaleValue = setScaledValue(a_sValue,aDataType,aScaleFactor,aWidth);
+					msgbus_msg_envelope_put(msg, "scaledValue", ptScaleValue);
 
 					msg_envelope_elem_body_t* ptLastUsec = msgbus_msg_envelope_new_string(objLastResp.m_sLastUsec.c_str());
 					msgbus_msg_envelope_put(msg, "lastGoodUsec", ptLastUsec);
@@ -304,9 +341,9 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 		msg_envelope_elem_body_t* ptTimeStamp = msgbus_msg_envelope_new_string(sTimestamp.c_str());
 		msgbus_msg_envelope_put(msg, "timestamp", ptTimeStamp);
 	}
-    catch(const std::exception& e)
+	catch(const std::exception& e)
 	{
-    	DO_LOG_FATAL(e.what());
+		DO_LOG_FATAL(e.what());
 		bRetValue = false;
 	}
 
@@ -1056,6 +1093,119 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 		DO_LOG_FATAL("Unable to initiate instance");
 		DO_LOG_FATAL(e.what());
 		std::cout << "\nException CPeriodicReponseProcessor ::" << __func__ << ": Unable to initiate instance: " << e.what();
+	}
+}
+/**
+ * Set data structures for new polling request for this point
+ * @param a_uTxID	:[in] TxID of new polling request for this point
+ * @param a_tsPoll	:[in] Timestamp of new polling request for this point
+ * @return 	nothing
+ */
+msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string a_sValue, std::string a_sDataType,double dScaleFactor, int a_iWidth)
+{
+	// Set following for new request being sent
+
+	std::cout<<"a_sValue" <<a_sValue<<std::endl;
+
+	std::cout <<"aDataType"<<a_sDataType<<std::endl;
+
+	std::cout <<"dScaleFactor"<<dScaleFactor<<std::endl;
+
+	std::cout <<"a_iWidth"<<a_iWidth<<std::endl;
+
+	if(a_sDataType == INT && a_iWidth == 1)
+	{
+		short int convertedValue = common_Handler::hexBytesToShortInt(a_sValue);
+		int iScaleValue = convertedValue * dScaleFactor;
+		//< TODO: Max. value and Min. validation for iScaleValue
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
+		std::cout<<"Converted Value: and scale value"<< convertedValue <<"\t"<<iScaleValue;
+		return ptScaleValue;
+	}
+	else if(a_sDataType == INT && a_iWidth == 2)
+	{
+		int convertedValue = common_Handler::hexBytesToInt(a_sValue);
+		int iScaleValue = convertedValue * dScaleFactor;
+		//< TODO: Max. value and Min. validation for iScaleValue
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
+		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		return ptScaleValue;
+	}
+	else if(a_sDataType == INT && a_iWidth == 4 )
+	{
+		long long int convertedValue = common_Handler::hexBytesToLongLongInt(a_sValue);
+		long long int iScaleValue = convertedValue * dScaleFactor;
+		//< TODO: Max. value and Min. validation for iScaleValue
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
+		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		return ptScaleValue;
+	}
+	else if(a_sDataType == UINT && a_iWidth == 1)
+	{
+		unsigned short int convertedValue = common_Handler::hexBytesToUShortInt(a_sValue);
+		unsigned short int iScaleValue = convertedValue * dScaleFactor;
+		//< TODO: Max. value and Min. validation for iScaleValue
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
+		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		return ptScaleValue;
+	}
+	else if(a_sDataType == UINT && a_iWidth == 2)
+	{
+		unsigned int convertedValue = common_Handler::hexBytesToUnsignedInt(a_sValue);
+		unsigned int iScaleValue = convertedValue * dScaleFactor;
+		//< TODO: Max. value and Min. validation for iScaleValue
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
+		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		return ptScaleValue;
+	}
+	else if(a_sDataType == UINT && a_iWidth == 4)
+	{
+		unsigned long long int convertedValue = common_Handler::hexBytesToUnsignedLongLongInt(a_sValue);
+		unsigned long long int iScaleValue = convertedValue * dScaleFactor;
+		//< TODO: Max. value and Min. validation for iScaleValue
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
+		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		return ptScaleValue;
+	}
+	else if(a_sDataType == FLOAT && a_iWidth == 2)
+	{
+		float convertedValue = common_Handler::hexBytesToFloat(a_sValue);
+		float fScaleValue = convertedValue * dScaleFactor;
+		//< TODO: Max. value and Min. validation for fScaleValue
+		std::cout<<"Converted Value float:"<< convertedValue<<"\t"<<fScaleValue;
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_floating(fScaleValue);
+		return ptScaleValue;
+	}
+	else if(a_sDataType == DOUBLE && a_iWidth == 4)
+	{
+		double convertedValue = common_Handler::hexBytesToDouble(a_sValue);
+		double dScaleValue = convertedValue*dScaleFactor;
+		//< TODO: Max. value and Min. validation for dScaleValue
+		std::cout<<"Converted Value double :"<< convertedValue<<"\t"<<dScaleValue;
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_floating(dScaleValue);
+		return ptScaleValue;
+	}
+	else if(a_sDataType == BOOL && a_iWidth == 1)
+	{
+		bool bScaledValue = common_Handler::hexBytesToBool(a_sValue);
+		//bool aScaleValue = convertedValue*aScale;
+		std::cout<<"Converted Value bool:"<< bScaledValue;
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_bool(bScaledValue);
+		return ptScaleValue;
+	}
+	else if(a_sDataType == STRING)
+	{
+		std::string sScaledValue = a_sValue;
+		std::cout<<"Converted Value raw:"<< sScaledValue<<"\t"<<sScaledValue;
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_string(sScaledValue.c_str());
+		return ptScaleValue;
+	}
+	else
+	{
+		std::string sScaledValue = "Empty Data";
+		std::cout<<"Converted Value raw:"<< sScaledValue<<"\t"<<sScaledValue;
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_string(sScaledValue.c_str());
+		return ptScaleValue;
 	}
 }
 
@@ -2372,3 +2522,5 @@ void CRefDataForPolling::setDataForNewReq(uint16_t a_uTxID, struct timespec& a_t
 	m_stRetryTs = {0};
 	m_iReqRetriedCnt = 0;
 }
+
+

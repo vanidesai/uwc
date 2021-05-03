@@ -210,9 +210,10 @@ bool CValObj::assignToSparkPlug(org_eclipse_tahu_protobuf_Payload_Template_Param
 /**
  * Assign values to sparkplug metric data-structure according to the sparkplug specification
  * @param a_metric :[out] metric in which to assign value in sparkplug format
+ * @param a_sKeyname : [in] For real devices keyname is 'scaledValue' and for apps it is only 'value' 
  * @return true/false based on success/failure
  */
-bool CValObj::assignToCJSON(cJSON *a_cjMetric) const
+bool CValObj::assignToCJSON(cJSON *a_cjMetric, const std::string &a_sKeyName) const
 {
 	do
 	{
@@ -226,11 +227,11 @@ bool CValObj::assignToCJSON(cJSON *a_cjMetric) const
 				bool val = std::get<bool>(m_objVal);
 				if(val == true)
 				{
-					cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateTrue());
+					cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateTrue());
 				}
 				else
 				{
-					cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateFalse());
+					cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateFalse());
 				}
 			}
 			break;
@@ -239,35 +240,35 @@ bool CValObj::assignToCJSON(cJSON *a_cjMetric) const
 		{
 			cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("UInt8"));
 			uint8_t val = std::get<uint8_t>(m_objVal);
-			cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+			cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 		}
 			break;
 		case METRIC_DATA_TYPE_UINT16:
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("UInt16"));
 				uint16_t val = std::get<uint16_t>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 			}
 			break;
 		case METRIC_DATA_TYPE_INT8:
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Int8"));
 				int8_t val = std::get<int8_t>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 			}
 			break;
 		case METRIC_DATA_TYPE_INT16:
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Int16"));
 				int16_t val = std::get<int16_t>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 			}
 			break;
 		case METRIC_DATA_TYPE_INT32:
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Int32"));
 				int32_t val = std::get<int32_t>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 			}
 			break;
 
@@ -275,21 +276,21 @@ bool CValObj::assignToCJSON(cJSON *a_cjMetric) const
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("UInt32"));
 				uint32_t val = std::get<uint32_t>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 			}
 			break;
 		case METRIC_DATA_TYPE_UINT64:
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("UInt64"));
 				uint64_t val = std::get<uint64_t>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 			}
 			break;
 		case METRIC_DATA_TYPE_INT64:
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Int64"));
 				int64_t val = std::get<int64_t>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 			}
 			break;
 
@@ -297,7 +298,7 @@ bool CValObj::assignToCJSON(cJSON *a_cjMetric) const
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Float"));
 				float val = std::get<float>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 			}
 			break;
 
@@ -305,7 +306,7 @@ bool CValObj::assignToCJSON(cJSON *a_cjMetric) const
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("Double"));
 				double val = std::get<double>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateNumber(val));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateNumber(val));
 			}
 			break;
 
@@ -313,7 +314,7 @@ bool CValObj::assignToCJSON(cJSON *a_cjMetric) const
 			{
 				cJSON_AddItemToObject(a_cjMetric, "dataType", cJSON_CreateString("String"));
 				string val = std::get<std::string>(m_objVal);
-				cJSON_AddItemToObject(a_cjMetric, "value", cJSON_CreateString(val.c_str()));
+				cJSON_AddItemToObject(a_cjMetric, a_sKeyName.c_str(), cJSON_CreateString(val.c_str()));
 			}
 			break;
 
@@ -650,9 +651,10 @@ bool CMetric::addMetricForBirth(org_eclipse_tahu_protobuf_Payload_Metric& a_rMet
 			{
 				auto &orUniqueDataPoint = std::get<std::reference_wrapper<const network_info::CUniqueDataPoint>>(m_rDirectProp);
 				
-				CSCADAHandler::instance().addModbusMetric(a_rMetric, m_sSparkPlugName, (std::get<std::string>(m_objVal.getValue())),
+				CSCADAHandler::instance().addModbusMetric(a_rMetric, m_sSparkPlugName, m_objVal,
 					true, orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_uiPollFreq,
-					orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_bIsRealTime);
+					orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_bIsRealTime,
+					orUniqueDataPoint.get().getDataPoint().getAddress().m_dScaleFactor);
 			}
 			else
 			{
@@ -687,9 +689,9 @@ bool CMetric::addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric& a_rMetri
 		{
 			auto &orUniqueDataPoint = std::get<std::reference_wrapper<const network_info::CUniqueDataPoint>>(m_rDirectProp);
 			
-			CSCADAHandler::instance().addModbusMetric(a_rMetric, m_sSparkPlugName, (std::get<std::string>(m_objVal.getValue())),
+			CSCADAHandler::instance().addModbusMetric(a_rMetric, m_sSparkPlugName, m_objVal,
 				a_bIsBirth, orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_uiPollFreq,
-				orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_bIsRealTime);
+				orUniqueDataPoint.get().getDataPoint().getPollingConfig().m_bIsRealTime, orUniqueDataPoint.get().getDataPoint().getAddress().m_dScaleFactor);
 		}
 	}
 	catch(std::exception &ex)
@@ -1402,7 +1404,7 @@ bool CUDT::setValObj(org_eclipse_tahu_protobuf_Payload_Metric& a_sparkplugMetric
  * @param a_sparkplugMetric :[in] Sparkplug metric type
  * @return true/false depending on the success/failure
  */
-bool CUDT::assignToCJSON(cJSON *a_cjMetric)
+bool CUDT::assignToCJSON(cJSON *a_cjMetric, bool a_bIsRealDevice)
 {
 	if(NULL != a_cjMetric)
 	{
@@ -1429,7 +1431,8 @@ bool CUDT::assignToCJSON(cJSON *a_cjMetric)
 					DO_LOG_ERROR("Error while creating CJSON message");
 					return false;
 				}
-				if(false == itr.second->assignToCJSON(cjNestedMetric))
+				// pass udt flag is false pass the same value as argument b_isRealDevice
+				if(false == itr.second->assignToCJSON(cjNestedMetric, a_bIsRealDevice))
 				{
 					cJSON_Delete(cjNestedMetric);
 					cJSON_Delete(pJSONArray);

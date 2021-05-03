@@ -457,6 +457,37 @@ void globalConfig::CSparkplugData::buildSparkPlugInfo(const YAML::Node& a_baseNo
 
 }
 
+/** Populate DefaultScale value
+ *
+ * @param : a_baseNode [in] : YAML node to read from
+ * @return: Nothing
+ */
+void globalConfig::CGlobalConfig::buildDefaultScaleFactor(const YAML::Node& a_baseNode)
+{
+	for (auto it : a_baseNode)
+	{
+		if(it.first.as<std::string>() == "Global" && it.second.IsMap())
+		{
+			try
+			{
+				if(it.second["default_scale_factor"])
+				{
+					double defaultScale = it.second["default_scale_factor"].as<double>();
+					std::cout<<"default scale Factor"<<defaultScale<<std::endl;
+					globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(defaultScale);
+					continue;
+				}
+			}
+			catch(std::exception &e)
+			{
+				globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(DEFAULT_SCALE_FACTOR);
+				DO_LOG_WARN("DefaultScaleFactor value is not present. Set to default value." + std::string(e.what()));
+				std::cout << "DefaultScaleFactor is incorrect. Set to default with exception :: "<< e.what();
+			}
+		}
+	}
+
+}
 /** Read global configurations from YAML file (Global_Config.yml)
  *  global configuration is available in common_config dir from docker volume
  *
@@ -480,6 +511,7 @@ bool globalConfig::loadGlobalConfigurations()
 	try
 	{
 		YAML::Node config = YAML::LoadFile(GLOBAL_CONFIG_FILE_PATH);
+                globalConfig::CGlobalConfig::getInstance().buildDefaultScaleFactor(config);
 		for (auto it : config)
 		{
 			if(it.first.as<std::string>() == "Global")
