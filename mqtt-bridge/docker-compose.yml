@@ -37,6 +37,7 @@ services:
     container_name: mqtt-bridge
     hostname: mqtt-bridge
     network_mode: host
+    read_only: true
     restart: unless-stopped
     ulimits:
       rtprio:

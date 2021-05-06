@@ -38,6 +38,7 @@ services:
     container_name: sparkplug-bridge
     hostname: sparkplug-bridge
     network_mode: host
+    read_only: true
     restart: unless-stopped
     ulimits:
      rtprio:
