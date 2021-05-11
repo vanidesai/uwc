@@ -133,7 +133,8 @@ enum eDataType
 	DT_INTEGER,     //!< DT_INTEGER
 	DT_UNSIGNED_INT,//!< DT_UNSIGNED_INT
 	DT_STRING,      //!< DT_STRING
-	DT_MAP          //!< DT_MAP
+	DT_MAP,         //!< DT_MAP
+	DT_DOUBLE       //!< DT_DOUBLE
 };
 
 /**

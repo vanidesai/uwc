@@ -149,8 +149,6 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 			aScaleFactor = a_objReqData->getDataPoint().getDataPoint().getAddress().m_dScaleFactor;
 
 			aWidth = a_objReqData->getDataPoint().getDataPoint().getAddress().m_iWidth;
-
-		    std::cout<<"Scale Value" <<aScaleFactor<<std::endl;
 		}
 		else
 		{
@@ -194,7 +192,6 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 
 			aWidth = stMbusApiPram.m_stOnDemandReqData.m_iWidth;
 
-			std::cout<<"Scale Value" <<aScaleFactor<<std::endl;
 		}
 
 		msg_envelope_elem_body_t* ptVersion = msgbus_msg_envelope_new_string("2.0");
@@ -232,9 +229,6 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 				{
 					a_sValue = common_Handler::swapConversion(vt, bIsByteSwap, bIsWordSwap);
 
-
-					std::cout<<"a_sValue" <<a_sValue<<std::endl;
-
 					msg_envelope_elem_body_t* ptScaleValue = setScaledValue(a_sValue,aDataType,aScaleFactor,aWidth);
 					msgbus_msg_envelope_put(msg, "scaledValue", ptScaleValue);
 
@@ -263,7 +257,7 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 						msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(objLastResp.m_sValue.c_str());
 						msgbus_msg_envelope_put(msg, "value", ptValue);
 
-						msg_envelope_elem_body_t* ptScaleValue = setScaledValue(a_sValue,aDataType,aScaleFactor,aWidth);
+						msg_envelope_elem_body_t* ptScaleValue = setScaledValue(objLastResp.m_sValue,aDataType,aScaleFactor,aWidth);
 						msgbus_msg_envelope_put(msg, "scaledValue", ptScaleValue);
 
 						msg_envelope_elem_body_t* ptLastUsec = msgbus_msg_envelope_new_string(objLastResp.m_sLastUsec.c_str());
@@ -1104,22 +1098,13 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string a_sValue, std::string a_sDataType,double dScaleFactor, int a_iWidth)
 {
 	// Set following for new request being sent
-
-	std::cout<<"a_sValue" <<a_sValue<<std::endl;
-
-	std::cout <<"aDataType"<<a_sDataType<<std::endl;
-
-	std::cout <<"dScaleFactor"<<dScaleFactor<<std::endl;
-
-	std::cout <<"a_iWidth"<<a_iWidth<<std::endl;
-
 	if(a_sDataType == INT && a_iWidth == 1)
 	{
 		short int convertedValue = common_Handler::hexBytesToShortInt(a_sValue);
 		int iScaleValue = convertedValue * dScaleFactor;
 		//< TODO: Max. value and Min. validation for iScaleValue
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		std::cout<<"Converted Value: and scale value"<< convertedValue <<"\t"<<iScaleValue;
+		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
 		return ptScaleValue;
 	}
 	else if(a_sDataType == INT && a_iWidth == 2)
@@ -1128,7 +1113,7 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 		int iScaleValue = convertedValue * dScaleFactor;
 		//< TODO: Max. value and Min. validation for iScaleValue
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
 		return ptScaleValue;
 	}
 	else if(a_sDataType == INT && a_iWidth == 4 )
@@ -1137,7 +1122,7 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 		long long int iScaleValue = convertedValue * dScaleFactor;
 		//< TODO: Max. value and Min. validation for iScaleValue
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
 		return ptScaleValue;
 	}
 	else if(a_sDataType == UINT && a_iWidth == 1)
@@ -1146,7 +1131,7 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 		unsigned short int iScaleValue = convertedValue * dScaleFactor;
 		//< TODO: Max. value and Min. validation for iScaleValue
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
 		return ptScaleValue;
 	}
 	else if(a_sDataType == UINT && a_iWidth == 2)
@@ -1155,7 +1140,7 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 		unsigned int iScaleValue = convertedValue * dScaleFactor;
 		//< TODO: Max. value and Min. validation for iScaleValue
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
 		return ptScaleValue;
 	}
 	else if(a_sDataType == UINT && a_iWidth == 4)
@@ -1164,7 +1149,7 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 		unsigned long long int iScaleValue = convertedValue * dScaleFactor;
 		//< TODO: Max. value and Min. validation for iScaleValue
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		std::cout<<"Converted Value:"<< convertedValue<<"\t"<<iScaleValue;
+		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
 		return ptScaleValue;
 	}
 	else if(a_sDataType == FLOAT && a_iWidth == 2)
@@ -1172,7 +1157,7 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 		float convertedValue = common_Handler::hexBytesToFloat(a_sValue);
 		float fScaleValue = convertedValue * dScaleFactor;
 		//< TODO: Max. value and Min. validation for fScaleValue
-		std::cout<<"Converted Value float:"<< convertedValue<<"\t"<<fScaleValue;
+		DO_LOG_INFO("scaled value: "+std::to_string(fScaleValue));
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_floating(fScaleValue);
 		return ptScaleValue;
 	}
@@ -1181,29 +1166,28 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 		double convertedValue = common_Handler::hexBytesToDouble(a_sValue);
 		double dScaleValue = convertedValue*dScaleFactor;
 		//< TODO: Max. value and Min. validation for dScaleValue
-		std::cout<<"Converted Value double :"<< convertedValue<<"\t"<<dScaleValue;
+		DO_LOG_INFO("scaled value: "+std::to_string(dScaleValue));
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_floating(dScaleValue);
 		return ptScaleValue;
 	}
 	else if(a_sDataType == BOOL && a_iWidth == 1)
 	{
 		bool bScaledValue = common_Handler::hexBytesToBool(a_sValue);
-		//bool aScaleValue = convertedValue*aScale;
-		std::cout<<"Converted Value bool:"<< bScaledValue;
+		DO_LOG_INFO("scaled value: "+std::to_string(bScaledValue));
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_bool(bScaledValue);
 		return ptScaleValue;
 	}
 	else if(a_sDataType == STRING)
 	{
 		std::string sScaledValue = a_sValue;
-		std::cout<<"Converted Value raw:"<< sScaledValue<<"\t"<<sScaledValue;
+		DO_LOG_INFO("Converted Value raw:: "+sScaledValue);
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_string(sScaledValue.c_str());
 		return ptScaleValue;
 	}
 	else
 	{
 		std::string sScaledValue = "Empty Data";
-		std::cout<<"Converted Value raw:"<< sScaledValue<<"\t"<<sScaledValue;
+		DO_LOG_INFO("Converted Value raw:: "+sScaledValue);
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_string(sScaledValue.c_str());
 		return ptScaleValue;
 	}

@@ -60,7 +60,8 @@
 
 # If MAC of given interface is not found, then “00” is used.
 # If configuration parameter or section is missing for any of the sub-operation, then default values mentioned above will be used.
-#
+# default_scale_factor. 
+#  It defines scale factor default value. Default value is always 1.0
 
 Global:
     Operations:
@@ -97,3 +98,4 @@ Global:
         - SparkPlug_Operation:
             group_id: "UWC nodes"
             edge_node_id: "RBOX510"
+    default_scale_factor: 1.0

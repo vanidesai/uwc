@@ -269,6 +269,10 @@ int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 				a_BaseNode[a_sKey].as<std::map<std::string,std::string>>();
 			}
 			break;
+			case DT_DOUBLE:
+			{
+				a_BaseNode[a_sKey].as<double>();
+			}
 			default:
 			{
 				DO_LOG_ERROR("Invalid data type::" + std::to_string(a_eDataType));
@@ -464,27 +468,15 @@ void globalConfig::CSparkplugData::buildSparkPlugInfo(const YAML::Node& a_baseNo
  */
 void globalConfig::CGlobalConfig::buildDefaultScaleFactor(const YAML::Node& a_baseNode)
 {
-	for (auto it : a_baseNode)
+	if (validateParam(a_baseNode, "default_scale_factor", DT_DOUBLE) != 0)
 	{
-		if(it.first.as<std::string>() == "Global" && it.second.IsMap())
-		{
-			try
-			{
-				if(it.second["default_scale_factor"])
-				{
-					double defaultScale = it.second["default_scale_factor"].as<double>();
-					std::cout<<"default scale Factor"<<defaultScale<<std::endl;
-					globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(defaultScale);
-					continue;
-				}
-			}
-			catch(std::exception &e)
-			{
-				globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(DEFAULT_SCALE_FACTOR);
-				DO_LOG_WARN("DefaultScaleFactor value is not present. Set to default value." + std::string(e.what()));
-				std::cout << "DefaultScaleFactor is incorrect. Set to default with exception :: "<< e.what();
-			}
-		}
+		globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(DEFAULT_SCALE_FACTOR);
+	}
+	else
+	{
+		double defaultScale = a_baseNode["default_scale_factor"].as<double>();
+		DO_LOG_INFO("default scale Factor: " +std::to_string(defaultScale));
+		globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(defaultScale);
 	}
 
 }
@@ -511,12 +503,13 @@ bool globalConfig::loadGlobalConfigurations()
 	try
 	{
 		YAML::Node config = YAML::LoadFile(GLOBAL_CONFIG_FILE_PATH);
-                globalConfig::CGlobalConfig::getInstance().buildDefaultScaleFactor(config);
+                
 		for (auto it : config)
 		{
 			if(it.first.as<std::string>() == "Global")
 			{
 				YAML::Node ops = it.second;
+				globalConfig::CGlobalConfig::getInstance().buildDefaultScaleFactor(ops);
 				YAML::Node listOps = ops["Operations"];
 				for (auto key : listOps)
 				{

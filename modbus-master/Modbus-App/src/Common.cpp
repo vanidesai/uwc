@@ -262,14 +262,25 @@ long common_Handler::getReqPriority(const globalConfig::COperation a_Ops)
  */
 float common_Handler::hexBytesToFloat(std::string str)
 {
-	std::cout<<"common_Handler::hexBytesToFloat" <<std::endl;
-	float ffloatData;
-	//char *ed;
-	unsigned long long lData = stoull(str, NULL, 16);
-	std::cout<<"common_Handler::hexBytesToFloat data" << lData << std::endl;
-	ffloatData= *reinterpret_cast<float*>(&lData);
-	std::cout<<"common_Handler::hexBytesToFloat Fdata" << ffloatData << std::endl;
 
+	float ffloatData = 0;
+        try
+	{
+	  unsigned long long lData = stoull(str, NULL, 16);
+	  ffloatData= *reinterpret_cast<float*>(&lData);
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return ffloatData;
 }
 
@@ -280,8 +291,23 @@ float common_Handler::hexBytesToFloat(std::string str)
  */
 unsigned short int common_Handler::hexBytesToUShortInt(std::string str)
 {
-	unsigned short int iUShortIntData;
-	iUShortIntData = static_cast<unsigned short int>(stoi(str, 0, 16));
+	unsigned short int iUShortIntData = 0;
+	try
+	{
+	  iUShortIntData = static_cast<unsigned short int>(stoi(str, 0, 16));
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return iUShortIntData;
 }
 
@@ -292,8 +318,23 @@ unsigned short int common_Handler::hexBytesToUShortInt(std::string str)
  */
 short int common_Handler::hexBytesToShortInt(std::string str)
 {
-	short int  iShortIntData;
-	iShortIntData = static_cast<short int>(stoi(str, nullptr, 16));
+	short int  iShortIntData = 0;
+	try
+	{
+	  iShortIntData = static_cast<short int>(stoi(str, nullptr, 16));
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return iShortIntData;
 }
 
@@ -304,9 +345,24 @@ short int common_Handler::hexBytesToShortInt(std::string str)
  */
 bool common_Handler::hexBytesToBool(std::string str)
 {
-	bool bData  = static_cast<bool>(stoi(str, nullptr, 16));
-	return bData;
-	std::cout<<"Invalid hex bytes";
+	bool bData = 0;
+	try
+	{
+	  bData  = static_cast<bool>(stoi(str, nullptr, 16));
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
+	return bData;	
 }
 
 /**
@@ -324,10 +380,23 @@ std::string common_Handler::hexBytesToString(std::string str)
 
 		// change it into base 16 and
 		// typecast as the character
-		char ch = stoul(part, nullptr, 16);
-
-		// add this char to final ASCII std::string
-		sData += ch;
+		try
+		{
+		  char ch = stoul(part, nullptr, 16);
+		  sData += ch;
+		}
+	        catch(const std::out_of_range& oor)
+	        {
+	          DO_LOG_FATAL(oor.what());
+	        } 
+	        catch(const std::invalid_argument& ia)
+	        {
+                  DO_LOG_FATAL(ia.what());
+	        }
+	        catch(const std::exception& e)
+	        {
+	          DO_LOG_FATAL(LOGDETAILS(e.what()));
+	        }		
 	}
 	return sData;
 }
@@ -339,8 +408,23 @@ std::string common_Handler::hexBytesToString(std::string str)
  */
 int common_Handler::hexBytesToInt(std::string str)
 {
-	int iData;
-	iData = static_cast<int>(stoi(str, nullptr, 16));
+	int iData = 0;
+	try
+	{
+	  iData = static_cast<int>(stoi(str, nullptr, 16));
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return iData;
 }
 
@@ -351,8 +435,23 @@ int common_Handler::hexBytesToInt(std::string str)
  */
 unsigned int common_Handler::hexBytesToUnsignedInt(std::string str)
 {
-	unsigned int iUIntData;
-	iUIntData = static_cast<unsigned int>(stoi(str, nullptr, 16));
+	unsigned int iUIntData = 0;
+	try
+	{
+	  iUIntData = static_cast<unsigned int>(stoul(str, nullptr, 16));
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return iUIntData;
 }
 
@@ -363,8 +462,23 @@ unsigned int common_Handler::hexBytesToUnsignedInt(std::string str)
  */
 long int common_Handler::hexBytesToLongInt(std::string str)
 {
-	long int iLIntData;
-	iLIntData = static_cast<long int>(stoul(str, nullptr, 16));
+	long int iLIntData = 0;
+	try
+	{
+	  iLIntData = static_cast<long int>(stol(str, nullptr, 16));
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}	
 	return iLIntData;
 }
 
@@ -375,8 +489,23 @@ long int common_Handler::hexBytesToLongInt(std::string str)
  */
 unsigned long int common_Handler::hexBytesToUnsignedLongInt(std::string str)
 {
-	unsigned long int iULIntData;
-	iULIntData = static_cast<unsigned long int>(stoul(str, nullptr, 16));
+	unsigned long int iULIntData = 0;
+	try
+	{
+	  iULIntData = static_cast<unsigned long int>(stoul(str, nullptr, 16));
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return iULIntData;
 }
 
@@ -387,10 +516,24 @@ unsigned long int common_Handler::hexBytesToUnsignedLongInt(std::string str)
  */
 long long int common_Handler::hexBytesToLongLongInt(std::string str)
 {
-	long long int iLLIntData;
-	iLLIntData = static_cast<long long int>(stoull(str, nullptr, 16));
+	long long int iLLIntData = 0;
+	try
+	{
+	  iLLIntData = static_cast<long long int>(stoull(str, nullptr, 16));
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return iLLIntData;
-
 }
 
 /**
@@ -400,8 +543,23 @@ long long int common_Handler::hexBytesToLongLongInt(std::string str)
  */
 unsigned long long int common_Handler::hexBytesToUnsignedLongLongInt(std::string str)
 {
-	unsigned long long int iULLIntData;
-	iULLIntData = static_cast<unsigned long long int>(stoull(str, nullptr, 16));
+	unsigned long long int iULLIntData = 0;
+        try
+	{
+	  iULLIntData = static_cast<unsigned long long int>(stoull(str, nullptr, 16));
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return iULLIntData;
 }
 
@@ -412,12 +570,24 @@ unsigned long long int common_Handler::hexBytesToUnsignedLongLongInt(std::string
  */
 double common_Handler::hexBytesToDouble(std::string str)
 {
-	double dData;
-	std::cout<<"common_Handler::hexBytesTodouble" <<std::endl;
-	unsigned long long lData = stoull(str, NULL, 16);
-	std::cout<<"common_Handler::hexBytesTodoubledta" << lData <<std::endl;
-	dData= *reinterpret_cast<double*>(&lData);
-	std::cout<<"common_Handler::hexBytesTodoubledta casting" << dData <<std::endl;
+	double dData = 0;
+	try
+	{
+	  unsigned long long lData = stoull(str, NULL, 16);
+	  dData= *reinterpret_cast<double*>(&lData);
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return dData;
 }
 
@@ -428,9 +598,23 @@ double common_Handler::hexBytesToDouble(std::string str)
  */
 long double common_Handler::hexBytesToLongDouble(std::string str)
 {
-	long double dLDoubleData;
-	unsigned long long lData = stoull(str, NULL, 16);
-	dLDoubleData= *reinterpret_cast<long double*>(&lData);
+	long double dLDoubleData = 0;
+	try
+	{
+	  unsigned long long lData = stoull(str, NULL, 16);
+	  dLDoubleData= *reinterpret_cast<long double*>(&lData);
+	}
+	catch(const std::out_of_range& oor)
+	{
+	  DO_LOG_FATAL(oor.what());
+	}
+	catch(const std::invalid_argument& ia)
+	{
+          DO_LOG_FATAL(ia.what());
+	}
+	catch(const std::exception& e)
+	{
+	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+	}
 	return dLDoubleData;
-
 }
