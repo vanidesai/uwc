@@ -47,7 +47,8 @@ function harden()
 	docker ps -q --filter "name=kpi-tactic-app" | grep -q . && docker container update --pids-limit=100 --restart=on-failure:5 --cpu-shares 512 -m 1G --memory-swap -1 kpi-tactic-app
 }
 
-export DOCKER_CONTENT_TRUST=0
+export DOCKER_CONTENT_TRUST=1
+export DOCKER_BUILDKIT=1
 check_root_user
 apply_config_changes
 harden

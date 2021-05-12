@@ -151,7 +151,8 @@ ENDOFFILE
 }
 
 
-export DOCKER_CONTENT_TRUST=0
+export DOCKER_CONTENT_TRUST=1
+export DOCKER_BUILDKIT=1
 check_root_user
 check_internet_connection
 docker_verify

@@ -83,7 +83,8 @@ function main()
     echo "${GREEN}Total Elapsed time is : $(( ${ELAPSEDTIME} / 60 )) minutes ${NC}"
 }
 
-export DOCKER_CONTENT_TRUST=0
+export DOCKER_CONTENT_TRUST=1
+export DOCKER_BUILDKIT=1
 main
 
 cd "${Current_Dir}"
