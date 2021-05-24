@@ -231,9 +231,6 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 
 					msg_envelope_elem_body_t* ptScaleValue = setScaledValue(a_sValue,aDataType,aScaleFactor,aWidth);
 					msgbus_msg_envelope_put(msg, "scaledValue", ptScaleValue);
-
-					std::cout <<"aDataType"<<aDataType<<std::endl;
-
 					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(a_sValue.c_str());
 					msgbus_msg_envelope_put(msg, "value", ptValue);
 					msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");

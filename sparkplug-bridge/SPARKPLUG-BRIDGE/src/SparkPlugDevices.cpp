@@ -193,12 +193,7 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
 		{
 			std::lock_guard<std::mutex> lck(m_mutexMetricList);
 			auto itrMyMetric = m_mapMetrics.find(a_rUniqueDataPoint.getID());
-			/** Enumerator specifying datatype of datapoints in yml files*/
-			enum eYMlDataType
-			{
-				enBOOLEAN = 0, enUINT, enINT, enFLOAT, enDOUBLE, enSTRING, enUNKNOWN
-			};
-			
+
 			if (m_mapMetrics.end() == itrMyMetric)
 			{
 				/** data type of datapoint specified in yml files*/
@@ -678,7 +673,9 @@ bool CSparkPlugDev::parseRealDeviceUpdateMsg(const std::string &a_sPayLoad,
 }
 
 /**
- * Parse Scaled value field from JSON
+ * parseScaledValueRealDevices function will first parse scaled value field from JSON payload and compare the datatype of the scaledValue 
+ * before assigning it to CValObj instance. This datatype and scaled value that is stored in CValObj instance is 
+ * later used when metric parameters of tahu payload is initialized. Therafter, tahu payload is published to external mqtt.
  * @param a_sPayLoad :[in]  payload containing metrics
  * @param a_sMetric  :[in]  std::string &a_sMetric
  * @param a_rValobj  :[out] CValObj &a_rValobj

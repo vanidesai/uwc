@@ -50,6 +50,11 @@ enum eDevStatus
 	enDEVSTATUS_NONE, enDEVSTATUS_UP, enDEVSTATUS_DOWN
 };
 
+enum eYMlDataType
+{
+	enBOOLEAN = 0, enUINT, enINT, enFLOAT, enDOUBLE, enSTRING, enUNKNOWN
+};
+
 struct stRefForSparkPlugAction;
 
 /** class holding spark plug device information*/
