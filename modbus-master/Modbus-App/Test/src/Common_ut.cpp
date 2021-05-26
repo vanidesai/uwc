@@ -71,9 +71,122 @@ TEST_F(Common_ut, swapConversion_VecSize5)
 	Vec.push_back(12);
 	Vec.push_back(13);
 	Vec.push_back(14);
-
 	std::string TestStr = common_Handler::swapConversion(Vec, false, false);
-
 	EXPECT_STREQ("0x0B0A0D0C0E", TestStr.c_str());
 }
+
+TEST_F(Common_ut, HextoFloat_correct)
+{
+	std::string Value = "1234";
+	float convertedVal = 6.53005e-42;
+	float convertedValue = common_Handler::hexBytesToFloat(Value);
+	EXPECT_EQ(convertedVal, convertedValue);
+}
+
+TEST_F(Common_ut, HextoFloat_EMpty)
+{
+	std::string Value = "";
+	float convertedValue = common_Handler::hexBytesToFloat(Value);
+	EXPECT_EQ(0, convertedValue);
+}
+
+TEST_F(Common_ut, HextoUShortInt)
+{
+	std::string Value = "12";
+	unsigned short int covertedVal = 18;
+	unsigned short int convertedValue = common_Handler::hexBytesToUShortInt(Value);
+	EXPECT_EQ(covertedVal, convertedValue);
+}
+
+TEST_F(Common_ut, HextoUShortInt_empty)
+{
+	std::string Value = "";
+	unsigned short int convertedValue = common_Handler::hexBytesToUShortInt(Value);
+	EXPECT_EQ(0, convertedValue);
+}
+
+TEST_F(Common_ut, HextoShortInt_correct)
+{
+	std::string Value = "-255";
+	unsigned short int convertedValue = common_Handler::hexBytesToShortInt(Value);
+	std::cout<<"**********************"<<std::endl;
+	std::cout<<convertedValue<<std::endl;
+	std::cout<<"**********************"<<std::endl;
+}
+
+TEST_F(Common_ut, HextoShortInt_empty)
+{
+	std::string Value = "";
+	unsigned short int convertedValue = common_Handler::hexBytesToShortInt(Value);
+	std::cout<<"**********************"<<std::endl;
+	std::cout<<convertedValue<<std::endl;
+	std::cout<<"**********************"<<std::endl;
+}
+
+TEST_F(Common_ut, HextoBool_correct)
+{
+	std::string value = "0xff00";
+	bool convertedValue = common_Handler::hexBytesToBool(value);
+	std::cout<<"****************"<<std::endl;
+	std::cout<<convertedValue<<std::endl;
+	std::cout<<"****************"<<std::endl;
+}
+
+TEST_F(Common_ut, HextoBool_empty)
+{
+	std::string value = "";
+	bool convertedValue = common_Handler::hexBytesToBool(value);
+	std::cout<<"****************"<<std::endl;
+	std::cout<<convertedValue<<std::endl;
+	std::cout<<"****************"<<std::endl;
+}
+
+TEST_F(Common_ut, HextoString_correct)
+{
+	std::string value = "0x00A";
+	std::string convertedValue = common_Handler::hexBytesToString(value);
+	std::cout<<"****************"<<std::endl;
+	std::cout<<convertedValue<<std::endl;
+	std::cout<<"****************"<<std::endl;
+}
+
+TEST_F(Common_ut, HextoString_empty)
+{
+	std::string value = "";
+	std::string convertedValue = common_Handler::hexBytesToString(value);
+	std::cout<<"****************"<<std::endl;
+	std::cout<<convertedValue<<std::endl;
+	std::cout<<"****************"<<std::endl;
+}
+
+TEST_F(Common_ut, HxToInt_correct)
+{
+	std::string value = "0xffff";
+	int convertedValue = common_Handler::hexBytesToInt(value);
+	EXPECT_EQ(65535, convertedValue);
+}
+
+TEST_F(Common_ut, HxToInt_empty)
+{
+	std::string value = "";
+	int convertedValue = common_Handler::hexBytesToInt(value);
+	EXPECT_EQ(0, convertedValue);
+}
+
+TEST_F(Common_ut, HextoUnsignedInt_correct)
+{
+	std::string value = "0x00ff";
+	unsigned int convertedValue = common_Handler::hexBytesToUnsignedInt(value);
+	EXPECT_EQ(255, convertedValue);
+}
+
+TEST_F(Common_ut, HextoUnsignedInt_empty)
+{
+	std::string value = "";
+	unsigned int convertedValue = common_Handler::hexBytesToUnsignedInt(value);
+	EXPECT_EQ(0, convertedValue);
+}
+
+
+
 

@@ -186,9 +186,10 @@ TEST_F(Metric_ut, assignToSparkPlug_METRIC_DATA_TYPE_STRING)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_BOOLEAN)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{true};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_BOOLEAN, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(true, result);
 
 }
@@ -201,9 +202,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_BOOLEAN)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT8)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{1};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_UINT8, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 
 }
@@ -216,9 +218,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT8)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT16)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{123};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_UINT16, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 
 }
@@ -231,9 +234,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT16)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT8)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{8};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_INT8, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 
 }
@@ -246,9 +250,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT8)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT16)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{166};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_INT16, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 
 }
@@ -261,9 +266,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT16)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT32)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{3233};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_INT32, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(true, result);
 
 }
@@ -276,9 +282,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT32)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT32)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{3233};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_UINT32, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 
 }
@@ -291,9 +298,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT32)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT64)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{344};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_UINT64, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 
 }
@@ -306,9 +314,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_UINT64)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT64)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{54443};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_INT64, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 }
 
@@ -320,9 +329,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_INT64)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_FLOAT)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{5.4443};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_FLOAT, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 }
 
@@ -334,9 +344,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_FLOAT)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_DOUBLE)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{54443};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_DOUBLE, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 }
 
@@ -348,9 +359,10 @@ TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_DOUBLE)
 TEST_F(Metric_ut, assignTo_json_METRIC_DATA_TYPE_STRING)
 {
 	cJSON *root =  cJSON_CreateObject();
+        const std::string &a_sKeyName = "";
 	var_t a_objVal{"54443"};
 	CValObj CValObj_obj{METRIC_DATA_TYPE_STRING, a_objVal};
-	bool result = CValObj_obj.assignToCJSON(root);
+	bool result = CValObj_obj.assignToCJSON(root, a_sKeyName);
     EXPECT_EQ(false, result);
 }
 

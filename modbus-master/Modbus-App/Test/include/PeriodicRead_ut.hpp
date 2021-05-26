@@ -96,6 +96,8 @@ public:
 	stMbusAppCallbackParams_t MbusAppCallbackParams;
 	stMbusAppCallbackParams_t *pstMbusAppCallbackParams = &MbusAppCallbackParams;
 	stMbusAppCallbackParams_t *stMbusAppCallbackParams = NULL;
+	std::vector<uint8_t> Vec;
+
 
 	struct timespec tsPoll = {0};
 

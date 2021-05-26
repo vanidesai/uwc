@@ -296,10 +296,7 @@ TEST_F(PeriodicRead_ut, checkTimer_NotPolling)
 
 	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj, 100};
 
-
 	CTimeRecord CTimeRecord_obj{600, CRefDataForPolling_obj};
-
-
 
 	CTimeMapper::instance().addToPollingTracker(600, CTimeRecord_obj, false);
 	CTimeMapper::instance().checkTimer(600, 600, tsPoll);
@@ -314,18 +311,70 @@ TEST_F(PeriodicRead_ut, checkTimer_NotPolling)
  */
 TEST_F(PeriodicRead_ut, checkTimer_IsPolling)
 {
-
 	struct timespec tsPoll = {0};
 	clock_gettime(CLOCK_REALTIME, &tsPoll);
 
 	CRefDataForPolling CRefDataForPolling_obj{CUniqueDataPoint_obj, 100};
-
-
 	CTimeRecord CTimeRecord_obj{600, CRefDataForPolling_obj};
-
-
 
 	CTimeMapper::instance().addToPollingTracker(600, CTimeRecord_obj, true);
 	CTimeMapper::instance().checkTimer(600, 600, tsPoll);
-
 }
+
+TEST_F(PeriodicRead_ut, ScaleValue)
+{
+	std::string Value = "0x1234";
+	std::string dataType = "Int16";
+	stOnDemandRequest reqData ;
+	int width = reqData.m_iWidth =0;
+	double ScaleFactor = 20;
+	msg_envelope_elem_body_t* ptScaleValue = CPeriodicReponseProcessor::Instance().setScaledValue(Value, dataType, ScaleFactor, width);
+    EXPECT_EQ(0x7fdd94002230, ptScaleValue);
+}
+
+
+TEST_F(PeriodicRead_ut, ScaleValueInt_1)
+{
+	stOnDemandRequest reqData;
+			stOnDemandRequest onDemandReqData ;
+			MbusAPI_t stMbusApiPram = {};
+
+			uint16_t u16TxID = 52;
+			reqData.m_isByteSwap = true;
+			reqData.m_isWordSwap = false;
+			reqData.m_obtReqRcvdTS.tv_nsec = 21132323;
+			reqData.m_obtReqRcvdTS.tv_sec = 1;
+			reqData.m_strAppSeq = "455";
+			reqData.m_strMetric = "Test";
+			reqData.m_strTopic = "kzdjfhdszh";
+			reqData.m_sValue = "1234";
+			reqData.m_ScaledValue = "";
+			reqData.m_sUsec = "2";
+			reqData.m_sTimestamp = "17-05-2021";
+			reqData.m_isRT = true;
+			reqData.m_sDataType = "enINT";
+			reqData.m_iWidth = 1;
+			reqData.m_strVersion = "2.1";
+			reqData.m_strWellhead = "test";
+			uint16_t uTxID = 20;
+	/*std::string Value = "0x1234";
+	std::string dataType = "enINT";
+	stOnDemandRequest reqData ;
+	int width = reqData.m_iWidth =1;*/
+
+			Vec.push_back(10);
+				Vec.push_back(11);
+				Vec.push_back(12);
+
+				std::string a_sValue = common_Handler::swapConversion(Vec, false, false);
+				std::string aDataType = stMbusApiPram.m_stOnDemandReqData.m_sDataType;
+
+			int aWidth = stMbusApiPram.m_stOnDemandReqData.m_iWidth;
+	double ScaleFactor = 20;
+	msg_envelope_elem_body_t* ptScaleValue = CPeriodicReponseProcessor::Instance().setScaledValue(a_sValue, aDataType, ScaleFactor, aWidth);
+    EXPECT_EQ(0x7fdd94002230, ptScaleValue);
+}
+
+
+
+

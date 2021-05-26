@@ -13,6 +13,7 @@
 
 #include "SCADAHandler.hpp"
 #include "InternalMQTTSubscriber.hpp"
+#include "Metric.hpp"
 
 #ifdef UNIT_TEST
 #include <gtest/gtest.h>

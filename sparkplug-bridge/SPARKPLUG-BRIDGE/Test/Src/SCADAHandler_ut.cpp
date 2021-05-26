@@ -51,7 +51,11 @@ TEST_F(SCADAHandler_ut, AddModbusMetric_true)
 	std::string SparkPlugname = "A";
 	std::string SparkPlugValue = "";
 	uint32_t a_uiPollInterval = 250;
-	bool Result = CSCADAHandler::instance().addModbusMetric(a_metric, SparkPlugname, SparkPlugValue, true, a_uiPollInterval, true);
+        double ScaleFactor = 255;
+        std::string value = "2.0";
+	uint32_t a_uiDataType = METRIC_DATA_TYPE_STRING;
+	CValObj ocval(a_uiDataType, value);
+	bool Result = CSCADAHandler::instance().addModbusMetric(a_metric, SparkPlugname, ocval, true, a_uiPollInterval, true, ScaleFactor);
 	EXPECT_EQ(true, Result);
 }
 
@@ -285,5 +289,17 @@ TEST_F(SCADAHandler_ut, publishNewUDTs)
 	_publishNewUDTs();
 }
 
+TEST_F(SCADAHandler_ut, AddModbusMetric)
+{
+	std::string s_Name = "A";
+	uint32_t a_uiDataType = METRIC_DATA_TYPE_BOOLEAN;
+	var_t a_objVal{25};
+	bool a_bIsBirth = true;
+	uint32_t a_uiPollInterval = 100;
+	bool a_bIsRealTime = true;
+	double a_dScale = 20;
+	CValObj obj{a_uiDataType, 20};
+	bool result = CSCADAHandler::instance().addModbusMetric(a_metric, s_Name, obj, a_bIsBirth, a_uiPollInterval, a_bIsRealTime, a_dScale);
+}
 
 

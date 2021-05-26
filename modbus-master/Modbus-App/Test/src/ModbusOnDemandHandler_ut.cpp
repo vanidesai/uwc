@@ -571,3 +571,42 @@ TEST_F(ModbusOnDemandHandler_ut, processMsg_MsgEnvNULL)
 
 	EXPECT_EQ(RetVal, false);
 }
+
+TEST_F(ModbusOnDemandHandler_ut, ScaledValuToHex)
+{
+	std::string DataType = "string";
+	int width = 1;
+	double scaleFactor = 10;
+	var_hex ScaledValue = 1000;
+	std::string HexValue = "100";
+	bool result = onDemandHandler::Instance().reverseScaledValueToHex(DataType, width, scaleFactor, ScaledValue, HexValue);
+	EXPECT_EQ(true, result);
+}
+
+TEST_F(ModbusOnDemandHandler_ut, ScaledValuToHex_boolean)
+{
+	std::string DataType = "boolean";
+	int width = 1;
+	double scaleFactor = 10;
+	var_hex ScaledValue = true;
+	std::string HexValue = "100";
+	bool result = onDemandHandler::Instance().reverseScaledValueToHex(DataType, width, scaleFactor, ScaledValue, HexValue);
+	EXPECT_EQ(true, result);
+}
+
+TEST_F(ModbusOnDemandHandler_ut, ScaledValuToHex_uint)
+{
+	std::string DataType = "uint";
+	int width = 1;
+	double scaleFactor = 10;
+	var_hex ScaledValue = 1;
+	std::string HexValue = "100";
+	bool result = onDemandHandler::Instance().reverseScaledValueToHex(DataType, width, scaleFactor, ScaledValue, HexValue);
+	EXPECT_EQ(false, result);
+	
+}
+
+
+
+
+
