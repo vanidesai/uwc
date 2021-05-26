@@ -234,7 +234,6 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
 
 				eYMlDataType oYMlDataType = getDataType(ymlDataType);
 
-
 				if (enUNKNOWN == oYMlDataType)
 				{
 					DO_LOG_ERROR("Invalid Yml Data Type. Ignored");
@@ -248,13 +247,21 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
 				float defaultFloatVal = 0.0;
 				double defaultDoubleVal = 0.0;
 				std::string defaultStringVal =  "";
-				std::shared_ptr<CIfMetric> ptrIfMetric = std::make_shared<CMetric>(a_rUniqueDataPoint);
+				std::shared_ptr<CIfMetric> ptrIfMetric = std::make_shared<CMetric>(a_rUniqueDataPoint);			
 				if(nullptr == ptrIfMetric)
 				{
 					DO_LOG_ERROR(a_rUniqueDataPoint.getID() + ": Unable to create shared metric.");
 					return;
 				}
-
+				
+				if (enSTRING == oYMlDataType)
+				{
+					metricDataType = METRIC_DATA_TYPE_STRING;
+					CValObj objVal(metricDataType, defaultStringVal);
+					ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);					
+				}
+				else 
+				{
 				switch(ymlWidth)
 				{
 					case WIDTH_ONE:
@@ -269,12 +276,6 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
 						{
 							metricDataType = METRIC_DATA_TYPE_UINT16;
 							CValObj objVal(metricDataType, (uint16_t)defaultIntVal);
-							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
-						}
-						else if (enSTRING == oYMlDataType)
-						{
-							metricDataType = METRIC_DATA_TYPE_STRING;
-							CValObj objVal(metricDataType, defaultStringVal);
 							ptrIfMetric->getValue().assignNewDataTypeValue(metricDataType, objVal);
 						}
 						else if (enBOOLEAN == oYMlDataType)
@@ -351,8 +352,8 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
 						break;
 
 				};				
-
-				m_mapMetrics.emplace(ptrIfMetric->getSparkPlugName(), ptrIfMetric);
+             }	
+				m_mapMetrics.emplace(ptrIfMetric->getSparkPlugName(), ptrIfMetric);				
 			}
 			else
 			{

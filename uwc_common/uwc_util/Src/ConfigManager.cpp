@@ -273,6 +273,7 @@ int globalConfig::validateParam(const YAML::Node& a_BaseNode,
 			{
 				a_BaseNode[a_sKey].as<double>();
 			}
+			break;
 			default:
 			{
 				DO_LOG_ERROR("Invalid data type::" + std::to_string(a_eDataType));
@@ -471,12 +472,21 @@ void globalConfig::CGlobalConfig::buildDefaultScaleFactor(const YAML::Node& a_ba
 	if (validateParam(a_baseNode, "default_scale_factor", DT_DOUBLE) != 0)
 	{
 		globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(DEFAULT_SCALE_FACTOR);
+		DO_LOG_ERROR("default scale factor parameter is not present, so hardcoded to 1.0");
 	}
 	else
 	{
 		double defaultScale = a_baseNode["default_scale_factor"].as<double>();
-		DO_LOG_INFO("default scale Factor: " +std::to_string(defaultScale));
-		globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(defaultScale);
+		if (0 == defaultScale)
+		{
+			globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(DEFAULT_SCALE_FACTOR);
+			DO_LOG_ERROR("In globalConfig yml default_scale_factor set to 0, so hardcoded to 1.0");
+		}
+		else 
+		{			
+			globalConfig::CGlobalConfig::getInstance().setDefaultScaleFactor(defaultScale);
+			DO_LOG_ERROR("In globalConfig yml default_scale_factor is " + std::to_string(defaultScale));
+		}
 	}
 
 }

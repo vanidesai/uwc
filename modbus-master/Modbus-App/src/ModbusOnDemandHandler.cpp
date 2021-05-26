@@ -9,21 +9,19 @@
  ************************************************************************************/
 
 #include "Logger.hpp"
-
 #include "YamlUtil.hpp"
 #include <thread>
 #include <mutex>
 #include <functional>
-
 #include "NetworkInfo.hpp"
 #include "ConfigManager.hpp"
-
 #include <sys/msg.h>
 #include <fstream>
 #include <cstdlib>
 #include <stdio.h>
 #include "eis/utils/json_config.h"
 #include "ModbusOnDemandHandler.hpp"
+#include <string>
 
 /// stop thread flag
 extern std::atomic<bool> g_stopThread;
@@ -128,8 +126,7 @@ eMbusAppErrorCode onDemandHandler::onDemandInfoHandler(MbusAPI_t *a_pstMbusApiPr
 		const string a_sTopic,
 		void *vpCallback,
 		bool a_IsWriteReq)
-{
-
+{	
 	eMbusAppErrorCode eFunRetType = APP_SUCCESS;
 	unsigned char  m_u8FunCode;
 
@@ -144,7 +141,7 @@ eMbusAppErrorCode onDemandHandler::onDemandInfoHandler(MbusAPI_t *a_pstMbusApiPr
 	{
 		/// Transaction ID
 		a_pstMbusApiPram->m_u16TxId = PublishJsonHandler::instance().getTxId();
-
+		 
 		/// Function called to parse request JSON and fill structure
 		eFunRetType = jsonParserForOnDemandRequest(*a_pstMbusApiPram,
 				m_u8FunCode,
@@ -323,6 +320,241 @@ bool onDemandHandler::validateInputJson(std::string stSourcetopic, std::string s
 	return retValue;
 }
 
+
+/**
+ * Function to reverseScaledValue to Hex String
+ * @param a_sDataType		:[in] Datatype of datapoint specified in yml file
+ * @param a_iWidth		 	:[in] Width of the datatype as specfied in yml file
+ * @param a_dScaleFactor    :[in] Scale Factor as specified in yml file
+ * @param a_ScaledValue     :[in] Scaled Value received from EIS
+ * @param a_HexValue		:[out] HexValue to be sent to modbus-stack
+ * @return true/false depending on the success and failure of the function
+ */
+bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWidth,
+		double a_dscaleFactor, var_hex a_ScaledValue, std::string &a_HexValue)
+{
+	std::transform(a_sDataType.begin(), a_sDataType.end(), a_sDataType.begin(), ::tolower);
+	eYMlDataType enDtype = common_Handler::getDataType(a_sDataType);
+	bool ret = true;
+	reverseScaledData oreverseScaledData;
+	int64_t variantVal;
+
+	if (enSTRING == enDtype)
+	{		
+		std::string val;
+		if (true  == std::holds_alternative<std::string>(a_ScaledValue))
+		{
+			val = std::get<std::string>(a_ScaledValue);		
+		}		 
+		a_HexValue = val;
+		return ret;
+	}
+
+	switch (a_iWidth)
+	{
+		case WIDTH_ONE:
+		{
+			if (enBOOLEAN == enDtype)
+			{
+				bool val = true;
+				if(true == std::holds_alternative<bool>(a_ScaledValue))
+				{
+					val = std::get<bool>(a_ScaledValue);					
+					if (true == val)
+					{
+						a_HexValue = "0x01";
+					}
+					else
+					{
+						a_HexValue = "0x00";
+					}				
+				}
+				else
+				{
+					ret = false;
+					return ret;
+				}
+				return ret;
+			}
+			else if (enUINT == enDtype)
+			{
+				uint16_t val = 0;
+				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
+				{ 
+					variantVal = std::get<int64_t>(a_ScaledValue);
+					val = (uint16_t)variantVal;										
+					uint16_t originalVal = val / a_dscaleFactor;				 
+					oreverseScaledData.u16 = originalVal;
+					a_HexValue = convertToHexString(oreverseScaledData.u16, WIDTH_ONE);					
+				}
+				else
+				{
+					ret = false;
+					return ret;
+				}
+				return ret;
+			}
+			else if(enINT == enDtype)
+			{				
+				int16_t val = 0;
+				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
+				{ 
+					variantVal = std::get<int64_t>(a_ScaledValue);					
+					val=(int16_t)variantVal;				 
+					int16_t originalVal = val / a_dscaleFactor;				 
+					oreverseScaledData.i16 = originalVal;
+					a_HexValue = convertToHexString(oreverseScaledData.u16, WIDTH_ONE);					
+			    }
+			    else
+				{
+					ret = false;
+					return ret;
+				}
+				return ret;
+			}			
+			else
+			{   
+			    // Unknown datatype  
+				ret = false;
+				return ret;
+			}
+			break;
+		}
+		case WIDTH_TWO:
+		{
+			if (enUINT == enDtype)
+			{				
+				uint32_t val = 0;
+				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
+				{				
+					variantVal = std::get<int64_t>(a_ScaledValue);
+					val = (uint32_t)variantVal;									 
+					unsigned long int originalVal = val / a_dscaleFactor;				
+					oreverseScaledData.u32 = originalVal;
+					a_HexValue = convertToHexString(oreverseScaledData.u32, WIDTH_TWO);					
+			    }
+			    else
+				{
+					ret = false;
+					return ret;
+				}
+				return ret;
+			}
+			else if(enINT == enDtype)
+			{				
+				int32_t val = 0;
+				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
+				{
+					variantVal = std::get<int64_t>(a_ScaledValue);
+					val = (int32_t)variantVal;					
+					int32_t originalVal = val / a_dscaleFactor;					
+					oreverseScaledData.i32 = originalVal;
+					a_HexValue = convertToHexString(oreverseScaledData.u32, WIDTH_TWO);					
+			    }
+			    else
+				{
+					ret = false;
+					return ret;
+				}
+				return ret;
+			}
+			else if (enFLOAT == enDtype)
+			{
+				float val = 0;
+				double valDbl = 0;
+				int64_t i64;
+				if (true == std::holds_alternative<double>(a_ScaledValue))
+				{ 
+					valDbl = std::get<double>(a_ScaledValue);
+					val = (float)valDbl;					 
+				}
+				else if (true == std::holds_alternative<int64_t>(a_ScaledValue)) 
+				{					 
+					i64 = std::get<int64_t>(a_ScaledValue);
+					val = (float)i64;					 
+				}
+				else
+				{
+					ret = false;
+					return ret;
+				}
+				float originalVal = val / a_dscaleFactor;				
+				std::stringstream stream;
+				oreverseScaledData.f = originalVal;
+				a_HexValue = convertToHexString(oreverseScaledData.u32, WIDTH_TWO);				
+				return ret;
+			}
+			break;
+		}
+		case WIDTH_FOUR:
+		{
+			if (enUINT == enDtype)
+			{
+				uint64_t val = 0;
+				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
+				{
+					variantVal = std::get<int64_t>(a_ScaledValue);					
+					val = (uint64_t)variantVal;
+					uint64_t originalVal = val / a_dscaleFactor;
+					oreverseScaledData.u64 = originalVal;
+					a_HexValue = convertToHexString(oreverseScaledData.u64, WIDTH_FOUR);
+			    }
+			    else
+				{
+					ret = false;
+					return ret;
+				}
+				return ret;
+			}
+			else if(enINT == enDtype)
+			{
+				int64_t val = 0;
+				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
+				{
+					val = std::get<int64_t>(a_ScaledValue);
+					int64_t originalVal = val / a_dscaleFactor;
+					oreverseScaledData.i64 = originalVal;
+					a_HexValue = convertToHexString(oreverseScaledData.u64, WIDTH_FOUR);
+			    }
+			    else
+				{
+					ret = false;
+					return ret;
+				}
+				return ret;
+			}
+			else if (enDOUBLE == enDtype)
+			{
+				double val = 0.0;
+				int64_t i64;				 
+				if (true == std::holds_alternative<double>(a_ScaledValue))
+				{
+					val = std::get<double>(a_ScaledValue);					 
+				}
+				else if (true == std::holds_alternative<int64_t>(a_ScaledValue))
+				{					 
+					i64 = std::get<int64_t>(a_ScaledValue);
+					val = (double)i64;					 
+				}
+				else
+				{
+					ret = false;
+					return ret;
+				}				
+				double originalVal = val / a_dscaleFactor;							
+				oreverseScaledData.d = originalVal;
+				a_HexValue = convertToHexString(oreverseScaledData.u64, WIDTH_FOUR);			
+				return ret;
+			}
+			break;
+		}
+	}
+	// Invalid here as no match for datatype and width
+	ret = false;
+	return ret;
+}
+
+
 /**
  * Function to parse request JSON and fill the structure.
  * @param stMbusApiPram		:[out] modbus API param structure to fill from received msg
@@ -341,6 +573,7 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 	network_info::CDataPoint obj;
 	string strSourceTopic, strValue;
 	bool isValidJson = false;
+	bool isScaledValue = false;
 	try
 	{
 		/// Comparing sourcetopic for read/write request.
@@ -357,7 +590,7 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_sUsec.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_sTimestamp.empty())
 		{
-			isValidJson = true;
+			isValidJson = true;		
 
 			if(true == a_IsWriteReq)
 			{
@@ -365,14 +598,11 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 				{
 					strValue = a_stMbusApiPram.m_stOnDemandReqData.m_sValue;
 				}
-				else
-				{
-					DO_LOG_ERROR(" Invalid input json parameter for write request");
-					eFunRetType = APP_ERROR_INVALID_INPUT_JSON;
-					isValidJson = false;
-				}
+				else 
+				{					 
+					isScaledValue = true;				 
+			    }				 
 			}
-
 			if(isValidJson)
 			{
 				isValidJson = validateInputJson(strSourceTopic,
@@ -434,6 +664,22 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 
 			network_info::eEndPointType eType = obj.getAddress().m_eType;
 
+			// Convert back the scaledValue to Hex depending on datatype, width, scalefactor of the specific datapoints
+
+			if (isScaledValue)
+			{
+				if (false == reverseScaledValueToHex(a_stMbusApiPram.m_stOnDemandReqData.m_sDataType,
+												a_stMbusApiPram.m_stOnDemandReqData.m_iWidth,
+												a_stMbusApiPram.m_stOnDemandReqData.m_dscaleFactor,
+												a_stMbusApiPram.m_stOnDemandReqData.m_ScaledValue,
+												strValue))
+				 
+					{
+						DO_LOG_ERROR("Error in reverse conversion of ScaledValue to Hex");
+						return APP_ERROR_INVALID_INPUT_JSON;
+					}			
+ 
+			}
 			/// to find function code of received requestS
 			switch(eType)
 			{
@@ -653,7 +899,6 @@ bool onDemandHandler::getOperation(string topic, globalConfig::COperation& opera
  */
 void onDemandHandler::createOnDemandListener()
 {
-	DO_LOG_DEBUG("Start");
 	bool bIsRT = false;
 	void *vpCallback = NULL;
 	int iRetry = 0;
@@ -680,7 +925,7 @@ void onDemandHandler::createOnDemandListener()
 			// continue iterating next topic
 			continue;
 		}
-
+	 
 		// create separate thread per topic mentioned in SubTopics section in docker-compose.yml file
 		std::thread(&onDemandHandler::subscribeDeviceListener, this, *it, ops,
 				bIsRT, vpCallback, iRetry,
@@ -744,6 +989,88 @@ string onDemandHandler::getMsgElement(msg_envelope_t *a_Msg,
 
 
 /**
+ * Function to get value from zmq message based on given key
+ * @param msg	:	[in] actual message received from ZMQ
+ * @param a_sKey:	[in] key to find
+ * @param [var_hex] : [in] on Success assign actual value which can be any of variant data types
+ * return 			: On failure - return empty string
+ */
+bool onDemandHandler::getScaledValueElement(msg_envelope_t *a_Msg,
+		string a_sKey, var_hex &a_ScaledValue)
+{		 
+		msg_envelope_elem_body_t* data = NULL;
+
+		// check for NULL
+		if(NULL == a_Msg)
+		{
+			DO_LOG_ERROR("NULL msg received from ZMQ");
+			return false;
+		}
+
+		// get the value
+		msgbus_ret_t msgRet = msgbus_msg_envelope_get(a_Msg, a_sKey.c_str(), &data);
+
+		if(msgRet != MSG_SUCCESS)
+		{
+			DO_LOG_ERROR(a_sKey + " key not present in message: ");
+		}
+		else
+		{
+			if(MSG_ENV_DT_INT == data->type)
+			{
+
+#ifdef INSTRUMENTATION_LOG
+DO_LOG_DEBUG(a_sKey + ":" + std::to_string(data->body.integer));
+#endif				 
+				a_ScaledValue = data->body.integer;
+				return true;
+			}
+			else if(MSG_ENV_DT_FLOATING == data->type)
+			{
+
+#ifdef INSTRUMENTATION_LOG
+DO_LOG_DEBUG(a_sKey + ":" + std::to_string(data->body.floating));
+#endif			 
+				a_ScaledValue = data->body.floating;
+				return true;
+			}
+			else if(MSG_ENV_DT_STRING == data->type)
+			{
+
+#ifdef INSTRUMENTATION_LOG
+DO_LOG_DEBUG(a_sKey + ":" + std::string(data->body.string));
+#endif			
+				a_ScaledValue = std::string(data->body.string);
+				return true;
+			}
+			else if (MSG_ENV_DT_BOOLEAN == data->type)
+			{
+
+#ifdef INSTRUMENTATION_LOG
+DO_LOG_DEBUG(a_sKey + ":" + std::to_string(data->body.boolean));
+#endif
+			 
+				a_ScaledValue = data->body.boolean;
+				return true;
+			}
+			else if (MSG_ENV_DT_NONE == data->type)
+			{
+
+#ifdef INSTRUMENTATION_LOG
+DO_LOG_DEBUG(a_sKey + ":" +  "DT_NONE");
+#endif
+				 
+				return false;
+			}
+			else
+			{				 
+				return false;
+			}
+		}
+		return false;
+}
+
+/**
  * generic function to process message received from ZMQ.
  * @param msg			:[in] actual message received from zmq
  * @param topic			:[in] topic for zmq listening
@@ -762,11 +1089,11 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg,
 		const int a_iRetry,
 		const long a_lPriority,
 		const bool a_bIsWriteReq)
-{
-
+{	
 	MbusAPI_t stMbusApiPram = {};
 	timespec_get(&stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS, TIME_UTC);
 	bool bRet = false;
+	std::string retScaledVal="";
 
 	if(NULL == msg || NULL == vpCallback)
 	{
@@ -787,7 +1114,14 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg,
 	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = getMsgElement(msg, "app_seq");
 	stMbusApiPram.m_stOnDemandReqData.m_strMetric = getMsgElement(msg, "command");
 	stMbusApiPram.m_stOnDemandReqData.m_sValue = getMsgElement(msg, "value");
-	stMbusApiPram.m_stOnDemandReqData.m_sScaledValue = getMsgElement(msg, "scaledValue");
+	if (stMbusApiPram.m_stOnDemandReqData.m_sValue.empty())
+	{		
+		if (false == getScaledValueElement(msg, "scaledValue", stMbusApiPram.m_stOnDemandReqData.m_ScaledValue))
+		{
+			DO_LOG_ERROR("Invalid scaledValue received from message envelope of mqtt-bridge");
+			return false;
+		}		 
+	}	 
 	stMbusApiPram.m_stOnDemandReqData.m_strWellhead = getMsgElement(msg, "wellhead");
 	stMbusApiPram.m_stOnDemandReqData.m_strVersion = getMsgElement(msg, "version");
 	stMbusApiPram.m_stOnDemandReqData.m_strTopic = getMsgElement(msg, "sourcetopic");
@@ -800,7 +1134,7 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg,
 	// fill retry and priority used for further processing
 	stMbusApiPram.m_nRetry = a_iRetry;
 	stMbusApiPram.m_lPriority = a_lPriority;
-
+	
 	onDemandInfoHandler(&stMbusApiPram, stTopic, vpCallback, a_bIsWriteReq);
 
 	if(msg != NULL)
@@ -858,7 +1192,7 @@ void onDemandHandler::subscribeDeviceListener(const std::string stTopic,
 				DO_LOG_ERROR("Failed to receive message errno ::" + std::to_string(ret));
 				continue;
 			}
-			/// process messages
+			// process messages
 			processMsg(msg, stTopic, a_bIsRT, vpCallback, a_iRetry, a_lPriority, a_bIsWriteReq);
 		}
 	}
@@ -866,4 +1200,30 @@ void onDemandHandler::subscribeDeviceListener(const std::string stTopic,
 	{
 		DO_LOG_FATAL(e.what());
 	}
+}
+
+/**
+* Function to convert decimal to its corresponding hexadecimal format 
+* @param num  :[in] input decimal number which is required to be converted to hexadecimal
+* @param width :[in] input width. Width will be used for padding with 0's
+* @return string
+*/
+std::string onDemandHandler::convertToHexString(uint64_t num, uint8_t width)
+{
+   std::string hexVal {""};
+   std::string output {"0x"};
+   char zero = '0';
+   while(num != 0)
+   {
+	int temp = 0;
+	temp = num & 15;
+	hexVal.insert(0, &hexDigits[temp], 1);
+	num = num/16;
+   }
+  // padded with 0's so as to set fill depending on the width of the input number
+  while(hexVal.length() < width * 4)
+  {
+  	hexVal.insert(0, &zero, 1);
+  } 
+   return "0x" + hexVal;
 }

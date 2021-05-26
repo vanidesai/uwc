@@ -29,14 +29,6 @@
 #include "ConfigManager.hpp"
 #include "API.h"
 
-const std::string INT = "int";
-const std::string UINT = "uint";
-const std::string FLOAT = "float";
-const std::string DOUBLE = "double";
-const std::string BOOL = "boolean";
-const std::string STRING = "string";
-
-
 
 /**node for response Q*/
 struct stStackResponse

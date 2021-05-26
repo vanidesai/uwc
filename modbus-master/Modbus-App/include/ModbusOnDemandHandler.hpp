@@ -22,6 +22,21 @@
 #include "cjson/cJSON.h"
 #include "PeriodicReadFeature.hpp"
 
+const std::string hexDigits {"0123456789ABCDEF"};
+
+typedef union
+{
+	int16_t i16;
+	uint16_t u16;
+	int32_t i32;
+	uint32_t u32;
+	uint64_t u64;
+	int64_t i64;
+	float f;
+	double d;
+}reverseScaledData;
+
+
 /**onDemandHandler class includes the On-demand functionality
  * On demand Handler class to start processing of on-demand requests
 */
@@ -85,6 +100,15 @@ public:
 			bool isWrite);
 
 	bool compareString(const std::string stBaseString, const std::string strToCompare);
+
+	bool getScaledValueElement(msg_envelope_t *a_Msg,
+			string a_sKey, var_hex &aScaledValue);
+
+	bool reverseScaledValueToHex(std::string a_sDataType, int a_iWidth,
+			double a_dscaleFactor, var_hex a_ScaledValue, std::string &a_HexValue);
+
+	//convert decimal to hexadecimal
+	std::string convertToHexString(uint64_t num, uint8_t width);
 };
 
 

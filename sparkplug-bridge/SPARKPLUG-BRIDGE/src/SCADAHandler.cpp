@@ -920,7 +920,7 @@ bool CSCADAHandler::processExtMsg(CMessageObject a_msg, std::vector<stRefForSpar
 			bRet = processNCMDMsg(a_msg, a_stRefActionVec);
 		}
 		else if(std::string::npos != a_msg.getTopic().find(CCommon::getInstance().getDCmdTopic()))
-		{
+		{			
 			// This is DCMD message
 			bRet = processDCMDMsg(a_msg, a_stRefActionVec);
 		}
@@ -1075,8 +1075,7 @@ bool CSCADAHandler::addModbusMetric(org_eclipse_tahu_protobuf_Payload_Metric &a_
         		{
         			std::string scaledValStr = std::get<std::string>(objVal);
 					if (true == scaledValStr.empty())
-					{
-						DO_LOG_ERROR("Scaled Value is empty string");
+					{						
 						scaledValStr = "\0";
 					}
 					ret = init_metric(&a_rMetric, a_sName.c_str(), false,

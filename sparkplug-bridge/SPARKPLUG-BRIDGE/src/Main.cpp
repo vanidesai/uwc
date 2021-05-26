@@ -34,19 +34,19 @@ std::atomic<bool> g_shouldStop(false);
  * @return none
  */
 void processExternalMqttMsgs(CQueueHandler& a_qMgr)
-{
+{	
 	while (false == g_shouldStop.load())
 	{
 		CMessageObject recvdMsg{};
 		if(true == a_qMgr.isMsgArrived(recvdMsg))
-		{
+		{			
 			std::vector<stRefForSparkPlugAction> stRefActionVec;
 
 			CSCADAHandler::instance().processExtMsg(recvdMsg, stRefActionVec);
 
 			//prepare a sparkplug message only if there are values in map
 			if(! stRefActionVec.empty())
-			{
+			{				
 				CIntMqttHandler::instance().prepareCJSONMsg(stRefActionVec);
 			}
 		}

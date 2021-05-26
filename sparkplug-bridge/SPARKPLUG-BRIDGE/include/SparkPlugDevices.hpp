@@ -163,8 +163,8 @@ public:
 						return false;
 					}
 					// metric name is found
-					// Check if datatypes match
-					switch((itr->second)->getDataType())
+					// Check if datatypes match				
+					switch(((itr->second)->getValue()).getDataType())
 					{
 					case METRIC_DATA_TYPE_INT8:
 					case METRIC_DATA_TYPE_INT16:
@@ -175,7 +175,7 @@ public:
 					case METRIC_DATA_TYPE_DOUBLE:
 					case METRIC_DATA_TYPE_STRING:
 					case METRIC_DATA_TYPE_TEMPLATE:
-						if((itr->second)->getDataType() == a_sparkplugMetric.datatype)
+						if(((itr->second)->getValue()).getDataType() == a_sparkplugMetric.datatype)
 						{
 							flag = true;
 						}

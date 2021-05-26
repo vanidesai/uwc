@@ -138,6 +138,7 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 
 			// Point data type
 			aDataType = a_objReqData->getDataPoint().getDataPoint().getAddress().m_sDataType;
+			std::transform(aDataType.begin(), aDataType.end(), aDataType.begin(), ::tolower);
 
 			if(!aDataType.empty())
 			{
@@ -186,6 +187,7 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 
 			// Point data type
 			aDataType = stMbusApiPram.m_stOnDemandReqData.m_sDataType;
+			std::transform(aDataType.begin(), aDataType.end(), aDataType.begin(), ::tolower);
 
 			// Point Scale Factor
 			aScaleFactor = stMbusApiPram.m_stOnDemandReqData.m_dscaleFactor;
@@ -228,9 +230,10 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 				if(0 != vt.size())
 				{
 					a_sValue = common_Handler::swapConversion(vt, bIsByteSwap, bIsWordSwap);
+									
+					msg_envelope_elem_body_t* ptScaleValue = setScaledValue(a_sValue, aDataType, aScaleFactor, aWidth);
+					msgbus_msg_envelope_put(msg, "scaledValue", ptScaleValue);					
 
-					msg_envelope_elem_body_t* ptScaleValue = setScaledValue(a_sValue,aDataType,aScaleFactor,aWidth);
-					msgbus_msg_envelope_put(msg, "scaledValue", ptScaleValue);
 					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(a_sValue.c_str());
 					msgbus_msg_envelope_put(msg, "value", ptValue);
 					msg_envelope_elem_body_t* ptStatus = msgbus_msg_envelope_new_string("Good");
@@ -285,7 +288,7 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 					msg_envelope_elem_body_t* ptValue = msgbus_msg_envelope_new_string(objLastResp.m_sValue.c_str());
 					msgbus_msg_envelope_put(msg, "value", ptValue);
 
-					msg_envelope_elem_body_t* ptScaleValue = setScaledValue(a_sValue,aDataType,aScaleFactor,aWidth);
+					msg_envelope_elem_body_t* ptScaleValue = setScaledValue(objLastResp.m_sValue, aDataType, aScaleFactor, aWidth);
 					msgbus_msg_envelope_put(msg, "scaledValue", ptScaleValue);
 
 					msg_envelope_elem_body_t* ptLastUsec = msgbus_msg_envelope_new_string(objLastResp.m_sLastUsec.c_str());
@@ -1087,104 +1090,231 @@ void CPeriodicReponseProcessor::initRespHandlerThreads()
 	}
 }
 /**
- * Set data structures for new polling request for this point
- * @param a_uTxID	:[in] TxID of new polling request for this point
- * @param a_tsPoll	:[in] Timestamp of new polling request for this point
- * @return 	nothing
+ * setScaledValue: This function scales up original value received from modbus device for the datapoint. Original Value is 
+ * received in string datatype. This function first converts hex string value into a datatype which is set in datapoints.yml.
+ * Therafter, it scales up converted value based on scale factor.
+ * @param  a_sValue	    :[in] Original Value in Hex string format
+ * @param  a_sDataType	:[in] Datatype of the datapoint as specfied in datapoint.yml
+ * @param  dScaleFactor :[in] Scale factor to be used in scaling up the original value.
+ * @param  a_iWidth     :[in] Width of the datapoint as specfied in datapoint.yml
+ * @return 	 msg_envelope_elem_body_t pointer that envelopes the scaled value to be sent on EIS
  */
-msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string a_sValue, std::string a_sDataType,double dScaleFactor, int a_iWidth)
+msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string a_sValue, std::string a_sDataType, double dScaleFactor, int a_iWidth)
 {
-	// Set following for new request being sent
-	if(a_sDataType == INT && a_iWidth == 1)
+	// get enumerated datatype for datapoint
+	eYMlDataType oYMlDataType = common_Handler::getDataType(a_sDataType);
+
+	// Check if datatype is int and its width is 1 (2 bytes). It represents int16_t.
+	if(oYMlDataType == enINT && a_iWidth == WIDTH_ONE)
 	{
+		// Convert original hex string value into short int(int16)
 		short int convertedValue = common_Handler::hexBytesToShortInt(a_sValue);
+		// Scales up converted value by multiplying with scale factor.		
 		int iScaleValue = convertedValue * dScaleFactor;
-		//< TODO: Max. value and Min. validation for iScaleValue
+		// checks scaledValue is less than min value of int16	
+		if (iScaleValue < std::numeric_limits<short>::min())
+		{
+			// Set iScaleValue to MIN
+			iScaleValue = std::numeric_limits<short>::min();
+		}
+		// checks scaledValue is greater than max value of int16	
+		else if (iScaleValue > std::numeric_limits<short>::max())
+		{
+			// Set iScaleValue to MAX
+			iScaleValue = std::numeric_limits<short>::max();
+		}
+
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
 		return ptScaleValue;
 	}
-	else if(a_sDataType == INT && a_iWidth == 2)
-	{
+	// Check if datatype is int and its width is 2 (4 bytes). It represents int32_t.
+	else if(oYMlDataType == enINT && a_iWidth == WIDTH_TWO)
+	{   
+		// Convert original hex string value into int(int32)
 		int convertedValue = common_Handler::hexBytesToInt(a_sValue);
-		int iScaleValue = convertedValue * dScaleFactor;
-		//< TODO: Max. value and Min. validation for iScaleValue
-		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
-		return ptScaleValue;
-	}
-	else if(a_sDataType == INT && a_iWidth == 4 )
-	{
-		long long int convertedValue = common_Handler::hexBytesToLongLongInt(a_sValue);
+		// Scales up converted value by multiplying with scale factor.	
 		long long int iScaleValue = convertedValue * dScaleFactor;
-		//< TODO: Max. value and Min. validation for iScaleValue
+		// checks scaledValue is less than min value of int32	
+		if (iScaleValue < std::numeric_limits<int>::min())
+		{
+			// Set iScaleValue to MIN
+			iScaleValue = std::numeric_limits<int>::min();
+		}
+		// checks scaledValue is greater than max value of int32
+		else if (iScaleValue > std::numeric_limits<int>::max())
+		{
+			// Set iScaleValue to MAX
+			iScaleValue = std::numeric_limits<int>::max();
+		}
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
+
 		return ptScaleValue;
 	}
-	else if(a_sDataType == UINT && a_iWidth == 1)
+	// Check if datatype is int and its width is 4 (8 bytes). It represents int64_t.
+	else if(oYMlDataType == enINT && a_iWidth == WIDTH_FOUR)
 	{
+		// Convert original hex string value into int(int64)
+		long long int convertedValue = common_Handler::hexBytesToLongLongInt(a_sValue);
+		// Scales up converted value by multiplying with scale factor.	
+		long long int iScaleValue = convertedValue * dScaleFactor;	
+		// checks scaledValue is less than min value of int64	
+		if (iScaleValue < std::numeric_limits<long long int>::min())
+		{
+			// Set iScaleValue to MIN
+			iScaleValue = std::numeric_limits<long long int>::min();
+		}
+		// checks scaledValue is greater than max value of int64
+		else if (iScaleValue > std::numeric_limits<long long int>::max())
+		{
+			// Set iScaleValue to MAX
+			iScaleValue = std::numeric_limits<long long int>::max();
+		}
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
+
+		return ptScaleValue;
+	}
+	// Check if datatype is unsigned int and its width is 1 (2 bytes). It represents uint16_t.
+	else if(oYMlDataType == enUINT && a_iWidth == WIDTH_ONE)
+	{
+		// Convert original hex string value into uint(uint16)
 		unsigned short int convertedValue = common_Handler::hexBytesToUShortInt(a_sValue);
-		unsigned short int iScaleValue = convertedValue * dScaleFactor;
-		//< TODO: Max. value and Min. validation for iScaleValue
+		// Scales up converted value by multiplying with scale factor.
+		unsigned int iScaleValue = convertedValue * dScaleFactor;	
+		// checks scaledValue is less than min value of uint16_t		
+	    if (iScaleValue < std::numeric_limits<unsigned short>::min())
+		{
+			// Set iScaleValue to MIN
+			iScaleValue = std::numeric_limits<unsigned short>::min();
+		}
+		// checks scaledValue is greater than max value of uint16_t
+		else if (iScaleValue > std::numeric_limits<unsigned short>::max())
+		{
+			// Set iScaleValue to MAX
+			iScaleValue = std::numeric_limits<unsigned short>::max();
+		}
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
+
 		return ptScaleValue;
 	}
-	else if(a_sDataType == UINT && a_iWidth == 2)
+	// Check if datatype is uint and its width is 2 (4 bytes). It represents uint32_t.
+	else if(oYMlDataType == enUINT && a_iWidth == WIDTH_TWO)
 	{
+		// Convert original hex string value into uint(uint32)
 		unsigned int convertedValue = common_Handler::hexBytesToUnsignedInt(a_sValue);
-		unsigned int iScaleValue = convertedValue * dScaleFactor;
-		//< TODO: Max. value and Min. validation for iScaleValue
-		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
-		return ptScaleValue;
-	}
-	else if(a_sDataType == UINT && a_iWidth == 4)
-	{
-		unsigned long long int convertedValue = common_Handler::hexBytesToUnsignedLongLongInt(a_sValue);
+		// When converted value is 4294967295 (Max Value can receive 0xFFFFFFFF) and Scale Factor is 100.
+		// Scale value becomes 429496729500. To accommodate this scale value, data type is used as
+		// unsigned long long int.
 		unsigned long long int iScaleValue = convertedValue * dScaleFactor;
-		//< TODO: Max. value and Min. validation for iScaleValue
+		// checks scaledValue is less than min value of uint32_t		
+	    if (iScaleValue < std::numeric_limits<unsigned int>::min())
+		{
+			// Set iScaleValue to MIN
+			iScaleValue = std::numeric_limits<unsigned int>::min();
+		}
+		// checks scaledValue is greater than max value of uint32_t
+		else if (iScaleValue > std::numeric_limits<unsigned int>::max())
+		{
+			// Set iScaleValue to MAX
+			iScaleValue = std::numeric_limits<unsigned int>::max();
+		}
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
-		DO_LOG_INFO("scaled value: "+std::to_string(iScaleValue));
+
 		return ptScaleValue;
 	}
-	else if(a_sDataType == FLOAT && a_iWidth == 2)
+	// Check if datatype is uint and its width is 4 (8 bytes). It represents uint64_t.
+	else if(oYMlDataType == enUINT && a_iWidth == WIDTH_FOUR)
 	{
+		// Convert original hex string value into uint(uint64)
+		unsigned long long int convertedValue = common_Handler::hexBytesToUnsignedLongLongInt(a_sValue);
+		unsigned long long int iScaleValue = 0;
+		//< Below expression type cast (unsigned long long int) is required as dScaleFactor is having
+		//< 8 byte width and having exponent and mantisa, which truncates when convertedValue is
+		//< near to maximum value. Result of this type cast truncates decimal value of dScaleFactor
+		//< for unsigned long long int data type
+		iScaleValue = (convertedValue * dScaleFactor);
+		// checks scaledValue is less than min value of uint64_t	
+		if (iScaleValue < std::numeric_limits<unsigned long long>::min())
+		{
+			// Set iScaleValue to MIN
+			iScaleValue = std::numeric_limits<unsigned long long>::min();
+		}
+		// checks scaledValue is greater than max value of uint64_t
+		else if (iScaleValue > std::numeric_limits<unsigned long long>::max())
+		{
+			// Set iScaleValue to MAX
+			iScaleValue = std::numeric_limits<unsigned long long>::max();
+		}
+		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_integer(iScaleValue);
+
+		return ptScaleValue;
+	}
+	// Check if datatype is float and its width is 2 (4 bytes). It represents float.
+	else if(oYMlDataType == enFLOAT && a_iWidth == WIDTH_TWO)
+	{
+		// Convert original hex string value into float
 		float convertedValue = common_Handler::hexBytesToFloat(a_sValue);
-		float fScaleValue = convertedValue * dScaleFactor;
-		//< TODO: Max. value and Min. validation for fScaleValue
-		DO_LOG_INFO("scaled value: "+std::to_string(fScaleValue));
+		// Scales up converted value by multiplying with scale factor.				
+		long double fScaleValue = convertedValue * dScaleFactor;
+		// checks scaledValue is less than min value of float				
+		if (fScaleValue < std::numeric_limits<float>::lowest())
+		{
+			// Set iScaleValue to MIN
+			fScaleValue = std::numeric_limits<float>::lowest();		
+		}
+		// checks scaledValue is greater than max value of float
+		else if (fScaleValue > std::numeric_limits<float>::max())
+		{
+			// Set iScaleValue to MAX
+			fScaleValue = std::numeric_limits<float>::max();		
+		}
+		// Truncating fScaleValue to 2 decimal places
+		fScaleValue = (long long int)(100 * fScaleValue)/100.0;		
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_floating(fScaleValue);
 		return ptScaleValue;
 	}
-	else if(a_sDataType == DOUBLE && a_iWidth == 4)
+	// Check if datatype is double and its width is 4 (8 bytes). It represents double.
+	else if(oYMlDataType == enDOUBLE && a_iWidth == WIDTH_FOUR)
 	{
-		double convertedValue = common_Handler::hexBytesToDouble(a_sValue);
-		double dScaleValue = convertedValue*dScaleFactor;
-		//< TODO: Max. value and Min. validation for dScaleValue
-		DO_LOG_INFO("scaled value: "+std::to_string(dScaleValue));
+		// Convert original hex string value into double
+		double convertedValue = common_Handler::hexBytesToDouble(a_sValue);	
+		// Scales up converted value by multiplying with scale factor.			
+		long double dScaleValue = convertedValue * dScaleFactor;	
+		// checks scaledValue is less than min value of double		
+		if (dScaleValue < std::numeric_limits<double>::lowest())
+		{
+			// Set iScaleValue to MIN
+			dScaleValue = std::numeric_limits<double>::lowest();			
+		}
+		// checks scaledValue is greater than max value of double
+		else if (dScaleValue > std::numeric_limits<double>::max())
+		{
+			// Set iScaleValue to MAX
+			dScaleValue = std::numeric_limits<double>::max();			
+		}
+		// Truncating dScaleValue to 2 decimal places
+		dScaleValue =  (long long int)(100 * dScaleValue)/100.0;
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_floating(dScaleValue);
 		return ptScaleValue;
 	}
-	else if(a_sDataType == BOOL && a_iWidth == 1)
+	// Check if datatype is boolean and its width is 1 (2 bytes). It represents boolean.
+	else if(oYMlDataType == enBOOLEAN && a_iWidth == WIDTH_ONE)
 	{
-		bool bScaledValue = common_Handler::hexBytesToBool(a_sValue);
-		DO_LOG_INFO("scaled value: "+std::to_string(bScaledValue));
+		// Convert original hex string value into bool
+		bool bScaledValue = common_Handler::hexBytesToBool(a_sValue);	
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_bool(bScaledValue);
 		return ptScaleValue;
 	}
-	else if(a_sDataType == STRING)
+	// Check if datatype is string.
+	else if(oYMlDataType == enSTRING)
 	{
-		std::string sScaledValue = a_sValue;
-		DO_LOG_INFO("Converted Value raw:: "+sScaledValue);
+		std::string sScaledValue = a_sValue;		
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_string(sScaledValue.c_str());
 		return ptScaleValue;
 	}
+	// Invalid datatype received.
 	else
 	{
 		std::string sScaledValue = "Empty Data";
-		DO_LOG_INFO("Converted Value raw:: "+sScaledValue);
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_string(sScaledValue.c_str());
 		return ptScaleValue;
 	}

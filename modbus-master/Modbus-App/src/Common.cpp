@@ -11,7 +11,6 @@
 #include "Common.hpp"
 #include <sstream>
 #include <chrono>
-
 #include "Logger.hpp"
 #include <mutex>
 
@@ -214,60 +213,61 @@ long common_Handler::getReqPriority(const globalConfig::COperation a_Ops)
 	// get the request priority based on operation priority
 	switch (a_Ops.getOperationPriority())
 	{
-	case 1:
-	{
-		iReqPriority = 6000;
-	}
-	break;
-	case 2:
-	{
-		iReqPriority = 5000;
-	}
-	break;
-	case 3:
-	{
-		iReqPriority = 4000;
-	}
-	break;
-	case 4:
-	{
-		iReqPriority = 3000;
-	}
-	break;
-	case 5:
-	{
-		iReqPriority = 2000;
-	}
-	break;
-	case 6:
-	{
-		iReqPriority = 1000;
-	}
-	break;
-	default:
-	{
-		DO_LOG_ERROR("Invalid operation priority received..setting it to 6000 default");
-		iReqPriority = 6000;
-	}
-	break;
+		case 1:
+		{
+			iReqPriority = 6000;
+		}
+		break;
+		case 2:
+		{
+			iReqPriority = 5000;
+		}
+		break;
+		case 3:
+		{
+			iReqPriority = 4000;
+		}
+		break;
+		case 4:
+		{
+			iReqPriority = 3000;
+		}
+		break;
+		case 5:
+		{
+			iReqPriority = 2000;
+		}
+		break;
+		case 6:
+		{
+			iReqPriority = 1000;
+		}
+		break;
+		default:
+		{
+			DO_LOG_ERROR("Invalid operation priority received..setting it to 6000 default");
+			iReqPriority = 6000;
+		}
+		break;
 	}
 
 	return iReqPriority;
 }
 
 /**
- * Hex byte to float conversion
- * @param str		:Hex strng
- * @return float: hex string conversion value
+ * This Function converts hex string to float.
+ * @param str: [in] Hex string
+ * @return float: [out] converted float value from hex string.
  */
 float common_Handler::hexBytesToFloat(std::string str)
 {
-
 	float ffloatData = 0;
-        try
+	try
 	{
-	  unsigned long long lData = stoull(str, NULL, 16);
-	  ffloatData= *reinterpret_cast<float*>(&lData);
+		long long int lData = stoull(str, NULL, 16);
+		hexStrToFlt ohexStrToFlt;
+		ohexStrToFlt.hexValue = lData;		
+		ffloatData = ohexStrToFlt.actualFltVal;
 	}
 	catch(const std::out_of_range& oor)
 	{
@@ -275,7 +275,7 @@ float common_Handler::hexBytesToFloat(std::string str)
 	}
 	catch(const std::invalid_argument& ia)
 	{
-          DO_LOG_FATAL(ia.what());
+      DO_LOG_FATAL(ia.what());
 	}
 	catch(const std::exception& e)
 	{
@@ -285,9 +285,9 @@ float common_Handler::hexBytesToFloat(std::string str)
 }
 
 /**
- * Hex byte to unsigned short int conversion
- * @param str		:Hex strng
- * @return UShortInt: hex string conversion value
+ * This function converts hex bytes to unsigned short int. 
+ * @param str				  :[in] Hex strng
+ * @return unsigned short int :[out]converted unsigned short int from hex string
  */
 unsigned short int common_Handler::hexBytesToUShortInt(std::string str)
 {
@@ -302,7 +302,7 @@ unsigned short int common_Handler::hexBytesToUShortInt(std::string str)
 	}
 	catch(const std::invalid_argument& ia)
 	{
-          DO_LOG_FATAL(ia.what());
+      DO_LOG_FATAL(ia.what());
 	}
 	catch(const std::exception& e)
 	{
@@ -312,9 +312,9 @@ unsigned short int common_Handler::hexBytesToUShortInt(std::string str)
 }
 
 /**
- * Hex byte to int conversion
- * @param str		:Hex strng
- * @return shortInt: hex string conversion value
+ * This function converts hex bytes to short int. 
+ * @param str		  :[in] Hex string
+ * @return short int  :[out]converted short int from hex string
  */
 short int common_Handler::hexBytesToShortInt(std::string str)
 {
@@ -329,7 +329,7 @@ short int common_Handler::hexBytesToShortInt(std::string str)
 	}
 	catch(const std::invalid_argument& ia)
 	{
-          DO_LOG_FATAL(ia.what());
+      DO_LOG_FATAL(ia.what());
 	}
 	catch(const std::exception& e)
 	{
@@ -339,9 +339,9 @@ short int common_Handler::hexBytesToShortInt(std::string str)
 }
 
 /**
- * Hex byte to bool conversion
- * @param str		:Hex strng
- * @return bool: hex string conversion value
+ * This function converts hex bytes to boolean. 
+ * @param str		  :[in] Hex string
+ * @return boolean    :[out]converted boolean from hex string
  */
 bool common_Handler::hexBytesToBool(std::string str)
 {
@@ -356,7 +356,7 @@ bool common_Handler::hexBytesToBool(std::string str)
 	}
 	catch(const std::invalid_argument& ia)
 	{
-          DO_LOG_FATAL(ia.what());
+      DO_LOG_FATAL(ia.what());
 	}
 	catch(const std::exception& e)
 	{
@@ -366,9 +366,9 @@ bool common_Handler::hexBytesToBool(std::string str)
 }
 
 /**
- * Hex byte to std::string conversion
- * @param str		:Hex strng
- * @return string: hex string conversion value
+ * This function converts hex bytes to string. 
+ * @param str		  :[in] Hex string
+ * @return string     :[out]converted string from hex string
  */
 std::string common_Handler::hexBytesToString(std::string str)
 {
@@ -385,33 +385,33 @@ std::string common_Handler::hexBytesToString(std::string str)
 		  char ch = stoul(part, nullptr, 16);
 		  sData += ch;
 		}
-	        catch(const std::out_of_range& oor)
-	        {
-	          DO_LOG_FATAL(oor.what());
-	        } 
-	        catch(const std::invalid_argument& ia)
-	        {
-                  DO_LOG_FATAL(ia.what());
-	        }
-	        catch(const std::exception& e)
-	        {
-	          DO_LOG_FATAL(LOGDETAILS(e.what()));
-	        }		
+        catch(const std::out_of_range& oor)
+        {
+          DO_LOG_FATAL(oor.what());
+        } 
+        catch(const std::invalid_argument& ia)
+        {
+          DO_LOG_FATAL(ia.what());
+        }
+        catch(const std::exception& e)
+        {
+          DO_LOG_FATAL(LOGDETAILS(e.what()));
+        }		
 	}
 	return sData;
 }
 
 /**
- * Hex byte to int conversion
- * @param str		:Hex strng
- * @return intData: hex string conversion value
+ * This function converts hex bytes to int. 
+ * @param str		  :[in] Hex string
+ * @return int        :[out]converted int from hex string
  */
 int common_Handler::hexBytesToInt(std::string str)
 {
 	int iData = 0;
 	try
 	{
-	  iData = static_cast<int>(stoi(str, nullptr, 16));
+	  iData = static_cast<long int>(stoll(str, nullptr, 16));
 	}
 	catch(const std::out_of_range& oor)
 	{
@@ -419,7 +419,7 @@ int common_Handler::hexBytesToInt(std::string str)
 	}
 	catch(const std::invalid_argument& ia)
 	{
-          DO_LOG_FATAL(ia.what());
+      DO_LOG_FATAL(ia.what());
 	}
 	catch(const std::exception& e)
 	{
@@ -429,9 +429,9 @@ int common_Handler::hexBytesToInt(std::string str)
 }
 
 /**
- * Hex byte to unsigned int conversion
- * @param str		:Hex strng
- * @return unsigned int: hex string conversion value
+ * This function converts hex bytes to unsigned int. 
+ * @param str		  		:[in] Hex string
+ * @return unsigned int     :[out]converted unsigned int from hex string
  */
 unsigned int common_Handler::hexBytesToUnsignedInt(std::string str)
 {
@@ -456,9 +456,9 @@ unsigned int common_Handler::hexBytesToUnsignedInt(std::string str)
 }
 
 /**
- * Hex byte to long int conversion
- * @param str		:Hex strng
- * @return long int: hex string conversion value
+ * This function converts hex bytes to long int. 
+ * @param str		  		:[in] Hex string
+ * @return long int         :[out]converted long int from hex string
  */
 long int common_Handler::hexBytesToLongInt(std::string str)
 {
@@ -473,7 +473,7 @@ long int common_Handler::hexBytesToLongInt(std::string str)
 	}
 	catch(const std::invalid_argument& ia)
 	{
-          DO_LOG_FATAL(ia.what());
+      DO_LOG_FATAL(ia.what());
 	}
 	catch(const std::exception& e)
 	{
@@ -483,9 +483,9 @@ long int common_Handler::hexBytesToLongInt(std::string str)
 }
 
 /**
- * Hex byte to unsigned long int conversion
- * @param str		:Hex strng
- * @return unsigned long int: hex string conversion value
+ * This function converts hex bytes to unsigned long int. 
+ * @param str		  		   :[in] Hex string
+ * @return unsigned long int   :[out] Converted unsigned long int from hex string
  */
 unsigned long int common_Handler::hexBytesToUnsignedLongInt(std::string str)
 {
@@ -500,7 +500,7 @@ unsigned long int common_Handler::hexBytesToUnsignedLongInt(std::string str)
 	}
 	catch(const std::invalid_argument& ia)
 	{
-          DO_LOG_FATAL(ia.what());
+      DO_LOG_FATAL(ia.what());
 	}
 	catch(const std::exception& e)
 	{
@@ -510,9 +510,9 @@ unsigned long int common_Handler::hexBytesToUnsignedLongInt(std::string str)
 }
 
 /**
- * Hex byte to long long int conversion
- * @param str		:Hex strng
- * @return long long int: hex string conversion value
+ * This function converts hex bytes to long long int. 
+ * @param str		      :[in] Hex string
+ * @return long long int  :[out] Converted long long int from hex string
  */
 long long int common_Handler::hexBytesToLongLongInt(std::string str)
 {
@@ -527,7 +527,7 @@ long long int common_Handler::hexBytesToLongLongInt(std::string str)
 	}
 	catch(const std::invalid_argument& ia)
 	{
-          DO_LOG_FATAL(ia.what());
+      DO_LOG_FATAL(ia.what());
 	}
 	catch(const std::exception& e)
 	{
@@ -537,14 +537,14 @@ long long int common_Handler::hexBytesToLongLongInt(std::string str)
 }
 
 /**
- * Hex byte to unsigned long long int conversion
- * @param str		:Hex strng
- * @return unsigned long long int: hex string conversion value
+ * This function converts hex bytes to unsigned long long int. 
+ * @param str		               :[in] Hex string
+ * @return unsigned long long int  :[out] Converted unsigned long long int from hex string
  */
 unsigned long long int common_Handler::hexBytesToUnsignedLongLongInt(std::string str)
 {
 	unsigned long long int iULLIntData = 0;
-        try
+    try
 	{
 	  iULLIntData = static_cast<unsigned long long int>(stoull(str, nullptr, 16));
 	}
@@ -554,7 +554,7 @@ unsigned long long int common_Handler::hexBytesToUnsignedLongLongInt(std::string
 	}
 	catch(const std::invalid_argument& ia)
 	{
-          DO_LOG_FATAL(ia.what());
+      DO_LOG_FATAL(ia.what());
 	}
 	catch(const std::exception& e)
 	{
@@ -564,17 +564,19 @@ unsigned long long int common_Handler::hexBytesToUnsignedLongLongInt(std::string
 }
 
 /**
- * Hex byte to double conversion
- * @param str		:Hex strng
- * @return double: hex string conversion value
+ * This function converts hex bytes to double.
+ * @param str		  :[in] Hex string
+ * @return double     :[out] Converted double from hex string
  */
 double common_Handler::hexBytesToDouble(std::string str)
 {
 	double dData = 0;
 	try
-	{
-	  unsigned long long lData = stoull(str, NULL, 16);
-	  dData= *reinterpret_cast<double*>(&lData);
+	{    
+	    unsigned long long int lData = stoull(str, NULL, 16); 	    
+		hexStrToDbl ohexStrToDbl;
+		ohexStrToDbl.hexValue = lData;		
+	    dData = ohexStrToDbl.actualDblVal;	  
 	}
 	catch(const std::out_of_range& oor)
 	{
@@ -592,29 +594,40 @@ double common_Handler::hexBytesToDouble(std::string str)
 }
 
 /**
- * Hex byte to long double conversion
- * @param str		:Hex strng
- * @return long double: hex string conversion value
+ * This function gets the enumerated datatype
+ * @param a_sDataType	:[in]  Datatype received from datapoints.yml
+ * @return 	enum datatype.
  */
-long double common_Handler::hexBytesToLongDouble(std::string str)
+eYMlDataType common_Handler::getDataType(std::string a_sDataType)
 {
-	long double dLDoubleData = 0;
-	try
+	if (! a_sDataType.compare("boolean"))
 	{
-	  unsigned long long lData = stoull(str, NULL, 16);
-	  dLDoubleData= *reinterpret_cast<long double*>(&lData);
+		return enBOOLEAN;
 	}
-	catch(const std::out_of_range& oor)
+	else if (! a_sDataType.compare("uint"))
 	{
-	  DO_LOG_FATAL(oor.what());
+		return enUINT;
 	}
-	catch(const std::invalid_argument& ia)
+	else if (! a_sDataType.compare("int"))
 	{
-          DO_LOG_FATAL(ia.what());
+		return enINT;
 	}
-	catch(const std::exception& e)
+	else if (! a_sDataType.compare("float"))
 	{
-	  DO_LOG_FATAL(LOGDETAILS(e.what()));
+		return enFLOAT;
 	}
-	return dLDoubleData;
+	else if (! a_sDataType.compare("double"))
+	{
+		return enDOUBLE;
+	}
+	else if (! a_sDataType.compare("string"))
+	{
+		return enSTRING;
+	}
+	else
+	{
+		return enUNKNOWN;
+	}
+
 }
+

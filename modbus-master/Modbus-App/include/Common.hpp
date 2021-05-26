@@ -17,6 +17,7 @@
 #include "ConfigManager.hpp"
 #include <string>
 #include <iostream>
+#include <variant>
 #include "EnvironmentVarHandler.hpp"
 #include <vector>
 #ifdef __cplusplus
@@ -25,6 +26,7 @@ extern "C" {
 }
 #endif
 #include <map>
+#include <inttypes.h>
 
 #ifdef __linux
 
@@ -34,6 +36,12 @@ extern "C" {
 
 #define MODBUS_SINGLE_REGISTER_LENGTH (2)
 
+#define WIDTH_ONE 	1
+#define WIDTH_TWO 	2
+#define WIDTH_FOUR 	4
+
+using namespace std;
+using var_hex = std::variant<std::monostate, bool, uint16_t, uint32_t, uint64_t, int16_t, int32_t, int64_t, float, double, std::string>;
 
 /** This structure defines the parameters for On Demand Request **/
 struct stOnDemandRequest
@@ -44,7 +52,7 @@ struct stOnDemandRequest
 	std::string m_strVersion; /** version number **/
 	std::string m_strTopic; /** Topic name **/
 	std::string m_sValue; /** data value **/
-	std::string m_sScaledValue; /** ScaledValue **/
+	var_hex 	m_ScaledValue; /** ScaledValue **/
 	std::string m_sUsec; /** Seconds number **/
 	std::string m_sTimestamp; /** TimeStamp value **/
 	bool m_isByteSwap; /** ByteSwap(true or false)**/
@@ -166,6 +174,31 @@ enum eMbusCallbackType
 	MBUS_CALLBACK_ONDEMAND_WRITE_RT,
 };
 
+/** Enumerator specifying datatype of datapoints in yml files*/
+enum eYMlDataType
+{
+	enBOOLEAN = 0,
+	enUINT,
+	enINT,
+	enFLOAT,
+	enDOUBLE,
+	enSTRING,
+	enUNKNOWN
+};
+/* Union of unsigned long long int and float */
+typedef union
+{
+	unsigned long long int hexValue;
+	float             actualFltVal;
+} hexStrToFlt;
+
+/* Union of unsigned long long int and double */
+typedef union
+{
+	unsigned long long int hexValue;
+	double             actualDblVal;
+} hexStrToDbl;
+
 /** function to call Modbus stack APIs */
 uint8_t Modbus_Stack_API_Call(unsigned char u8FunCode,
 								MbusAPI_t *pstMbusApiPram,void* vpCallBackFun);
@@ -232,6 +265,8 @@ bool hexBytesToBool(std::string str);
 //Convert hex string to string
 std::string hexBytesToString(std::string str);
 
+// getDataType
+eYMlDataType getDataType(std::string a_sDataType);
 }
 
 #endif /* INCLUDE_INC_COMMON_HPP_ */

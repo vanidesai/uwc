@@ -274,8 +274,31 @@ bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 		while (device)
 		{
 			if(cJSON_IsString(device))
-			{
+			{        
 				addField(device->string, device->valuestring);
+			}
+			else if (cJSON_IsBool(device))
+			{
+				bool val = false;
+				// Add bool in msg envelope
+				if (cJSON_IsTrue(device))
+				{
+					val = true;
+				}
+				msg_envelope_elem_body_t *value = msgbus_msg_envelope_new_bool(val);
+				if (NULL != msg && NULL != value)
+				{
+					msgbus_msg_envelope_put(msg, device->string, value);					
+				}
+			}
+			else if (cJSON_IsNumber(device))
+			{
+				// Add number in msg envelope
+				msg_envelope_elem_body_t *value = msgbus_msg_envelope_new_floating(device->valuedouble);
+				if (NULL != msg && NULL != value)
+				{
+					msgbus_msg_envelope_put(msg, device->string, value);
+				}
 			}
 			else
 			{
