@@ -1,0 +1,30 @@
+{
+    "config": {},
+    "interfaces": {
+        "Subscribers": [
+            {
+                "Name": "frontend",
+                "Type": "zmq_ipc",
+                "EndPoint": {
+                    "SocketDir": "/EIS/sockets",
+                    "SocketFile": "frontend-socket"
+                },
+                "Topics": ["*"],
+                "PublisherAppName": "*",
+                "AllowedClients": ["*"]
+            }
+        ],
+        "Publishers": [
+            {
+                "Name": "backend",
+                "Type": "zmq_ipc",
+                "EndPoint": {
+                    "SocketDir": "/EIS/sockets",
+                    "SocketFile": "backend-socket"
+                },
+                "Topics": ["*"],
+                "AllowedClients": ["*"]
+            }
+        ]
+    }
+}
