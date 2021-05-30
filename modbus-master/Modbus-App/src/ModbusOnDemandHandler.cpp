@@ -19,7 +19,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <stdio.h>
-#include "eis/utils/json_config.h"
+#include "eii/utils/json_config.h"
 #include "ModbusOnDemandHandler.hpp"
 #include <string>
 #include <fenv.h>
@@ -107,7 +107,7 @@ void onDemandHandler::createErrorResponse(eMbusAppErrorCode errorCode,
 		strResponseTopic = PublishJsonHandler::instance().getSReadResponseTopic();
 	}
 
-	/// handle response function to send response on EIS.
+	/// handle response function to send response on EII.
 	CPeriodicReponseProcessor::Instance().handleResponse(&objCallback,
 															operationType,
 															strResponseTopic,
@@ -675,7 +675,7 @@ eMbusAppErrorCode onDemandHandler::jsonParserForOnDemandRequest(MbusAPI_t& a_stM
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strVersion.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strTopic.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strMqttTime.empty()
-				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strEisTime.empty()
+				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strEiiTime.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_strAppSeq.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_sUsec.empty()
 				&& !a_stMbusApiPram.m_stOnDemandReqData.m_sTimestamp.empty())
@@ -1221,7 +1221,7 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg,
 	stMbusApiPram.m_stOnDemandReqData.m_sTimestamp = getMsgElement(msg, "timestamp");
 	stMbusApiPram.m_stOnDemandReqData.m_sUsec = getMsgElement(msg, "usec");
 	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = getMsgElement(msg, "tsMsgRcvdFromMQTT");
-	stMbusApiPram.m_stOnDemandReqData.m_strEisTime = getMsgElement(msg, "tsMsgPublishOnEIS");
+	stMbusApiPram.m_stOnDemandReqData.m_strEiiTime = getMsgElement(msg, "tsMsgPublishOnEII");
 	stMbusApiPram.m_stOnDemandReqData.m_isRT = a_bIsRT;
 
 	// fill retry and priority used for further processing

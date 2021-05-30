@@ -18,7 +18,7 @@
 #include <queue>
 #include <semaphore.h>
 #include <mutex>
-#include "eis/msgbus/msgbus.h"
+#include "eii/msgbus/msgbus.h"
 #include "cjson/cJSON.h"
 #include "PeriodicReadFeature.hpp"
 

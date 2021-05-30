@@ -60,7 +60,7 @@ struct stOnDemandRequest
 	bool m_isRT; /** Real Time(true or false) **/
 	struct timespec m_obtReqRcvdTS; /** Timestamp showing when a request is received **/
 	std::string m_strMqttTime; /** value of mqtt time **/
-	std::string m_strEisTime; /** value of eis time **/
+	std::string m_strEiiTime; /** value of eii time **/
 	std::string m_sDataType; /** data type*/
 	double m_dscaleFactor;
 	int m_iWidth;

@@ -16,7 +16,7 @@ MAGENTA=$(tput setaf 5)
 NC=$(tput sgr0)
 resume_insights="${HOME}/.resume_process"
 
-eis_build_dir="$Current_Dir/../../build"
+eii_build_dir="$Current_Dir/../../build"
 source uwc_common_lib.sh
 
 #------------------------------------------------------------------
@@ -31,7 +31,7 @@ source uwc_common_lib.sh
 #-----------------------------------------------------------------
 build_run_UWC()
 {
-    cd "${eis_build_dir}"
+    cd "${eii_build_dir}"
     docker-compose up --build -d
     if [ "$?" -eq "0" ];then
 	echo "*****************************************************************"
@@ -46,7 +46,7 @@ build_run_UWC()
 
 verify_container()
 {
-    cd "${eis_build_dir}"
+    cd "${eii_build_dir}"
     echo "*****************************************************************"
     echo "${GREEN}Below is the containers deployed status.${NC}"
     echo "*****************************************************************"

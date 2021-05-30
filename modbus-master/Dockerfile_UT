@@ -8,12 +8,12 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 #*********************************************************************************
 
-ARG EIS_VERSION
-FROM uwc_test_common:$EIS_VERSION as uwc_test_common
+ARG EII_VERSION
+FROM uwc_test_common:$EII_VERSION as uwc_test_common
 LABEL description="Modbus TCP Master Unit Testing container"
 
 # Build Modbus Stack
-FROM ia_common:$EIS_VERSION as modbus-lib
+FROM ia_common:$EII_VERSION as modbus-lib
 WORKDIR /
 
 COPY SoftMod_Stack /SoftMod_Stack/.
@@ -22,7 +22,7 @@ RUN cd Release \
     && make clean all -s
 
 # Build Modbus application
-FROM ia_common:$EIS_VERSION as modbus-app
+FROM ia_common:$EII_VERSION as modbus-app
 
 WORKDIR /
 RUN mkdir -p reports/modbus-tcp-master
@@ -33,10 +33,10 @@ COPY --from=uwc_test_common /usr/yaml /bin/yaml-cpp/.
 COPY Modbus-App /Modbus-App/. 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
 COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
-COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/googletest/include/gtest /usr/local/include/gtest
-COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
-COPY --from=uwc_test_common /EIS/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
-COPY --from=uwc_test_common /EIS/log4cpp/build/lib/* /Modbus-App/lib/
+COPY --from=uwc_test_common /EII/googletest-release-1.8.0/googletest/include/gtest /usr/local/include/gtest
+COPY --from=uwc_test_common /EII/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
+COPY --from=uwc_test_common /EII/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
+COPY --from=uwc_test_common /EII/log4cpp/build/lib/* /Modbus-App/lib/
 COPY --from=uwc_test_common /usr/yaml/include/yaml-cpp /Modbus-App/include/
 COPY --from=uwc_test_common /usr/yaml/lib* /Modbus-App/lib/
 COPY --from=uwc_test_common /uwc_util/Release/libuwc-common.so /Modbus-App/lib/

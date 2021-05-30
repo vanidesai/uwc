@@ -24,17 +24,17 @@ services:
   ## Define MQTT-Export service
   sparkplug-bridge:
     depends_on:
-      - ia_eisbase
+      - ia_eiibase
       - uwc_common
     build:
       context: $PWD/../uwc/sparkplug-bridge/
       dockerfile: $PWD/../uwc/sparkplug-bridge/Dockerfile
       args:
-        EIS_VERSION: ${EIS_VERSION}
-        EIS_UID: ${EIS_UID}
-        EIS_USER_NAME: ${EIS_USER_NAME}
+        EII_VERSION: ${EII_VERSION}
+        EII_UID: ${EII_UID}
+        EII_USER_NAME: ${EII_USER_NAME}
         BUILD_NUMBER: ${BUILD_NUMBER}
-    image: ${DOCKER_REGISTRY}sparkplug-bridge:${EIS_VERSION}
+    image: ${DOCKER_REGISTRY}sparkplug-bridge:${EII_VERSION}
     container_name: sparkplug-bridge
     hostname: sparkplug-bridge
     network_mode: host
@@ -47,7 +47,7 @@ services:
     environment:
       AppName: "SPARKPLUG-BRIDGE"
       DEV_MODE: ${DEV_MODE}
-      no_proxy: ${eis_no_proxy}
+      no_proxy: ${eii_no_proxy}
       ETCD_HOST: ${ETCD_HOST}
       ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
       ETCD_PREFIX: ${ETCD_PREFIX}
@@ -64,11 +64,11 @@ services:
         options:
             max-file: "3"
             max-size: "10m"
-    user: ${EIS_UID}
+    user: ${EII_UID}
     volumes:
-     - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
-     - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-     - "${EIS_INSTALL_PATH}/container_logs/sparkplug-bridge:/opt/intel/app/logs"
+     - "${EII_INSTALL_PATH}/uwc_data:/opt/intel/eii/uwc_data:ro"
+     - "${EII_INSTALL_PATH}/uwc_data/common_config:${EII_INSTALL_PATH}/uwc_data/common_config:ro"
+     - "${EII_INSTALL_PATH}/container_logs/sparkplug-bridge:/opt/intel/app/logs"
     secrets:
       - ca_etcd
       - etcd_SPARKPLUG-BRIDGE_cert
@@ -91,7 +91,7 @@ volumes:
     driver_opts:
       type: local
       o: bind
-      device: ${EIS_INSTALL_PATH}/sockets
+      device: ${EII_INSTALL_PATH}/sockets
 
 secrets:
   ca_etcd:

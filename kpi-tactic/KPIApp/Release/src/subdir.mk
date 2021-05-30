@@ -12,7 +12,7 @@
 CPP_SRCS += \
 ../src/Common.cpp \
 ../src/ControlLoopHandler.cpp \
-../src/EISPlBusHandler.cpp \
+../src/EIIPlBusHandler.cpp \
 ../src/KPIAppConfigMgr.cpp \
 ../src/Main.cpp \
 ../src/MqttHandler.cpp \
@@ -21,7 +21,7 @@ CPP_SRCS += \
 OBJS += \
 ./src/Common.o \
 ./src/ControlLoopHandler.o \
-./src/EISPlBusHandler.o \
+./src/EIIPlBusHandler.o \
 ./src/KPIAppConfigMgr.o \
 ./src/Main.o \
 ./src/MqttHandler.o \
@@ -30,7 +30,7 @@ OBJS += \
 CPP_DEPS += \
 ./src/Common.d \
 ./src/ControlLoopHandler.d \
-./src/EISPlBusHandler.d \
+./src/EIIPlBusHandler.d \
 ./src/KPIAppConfigMgr.d \
 ./src/Main.d \
 ./src/MqttHandler.d \

@@ -45,7 +45,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvServiceReq)
 	 stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_nsec	= 21132323;
 	stMbusApiPram.m_stOnDemandReqData.m_obtReqRcvdTS.tv_sec		= 1;
 	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq				= "455";
-	stMbusApiPram.m_stOnDemandReqData.m_strEisTime				= "2020-03-31 12:34:56";
+	stMbusApiPram.m_stOnDemandReqData.m_strEiiTime				= "2020-03-31 12:34:56";
 	stMbusApiPram.m_stOnDemandReqData.m_strMetric				= "Flow";
 	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime				= "2020-03-13 12:34:56";
 	stMbusApiPram.m_stOnDemandReqData.m_strTopic				= "/flowmeter/PL0/Flow/read";
@@ -89,7 +89,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_InvalidTopicMsg)
 	stMbusApiPram.m_stOnDemandReqData.m_sTimestamp = "2020-02-12 06:14:15";
 	stMbusApiPram.m_stOnDemandReqData.m_sUsec = "1581488055204186";
 	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = "2020-03-13 12:34:56";
-	stMbusApiPram.m_stOnDemandReqData.m_strEisTime = "2020-03-31 12:34:56";
+	stMbusApiPram.m_stOnDemandReqData.m_strEiiTime = "2020-03-31 12:34:56";
 	stMbusApiPram.m_stOnDemandReqData.m_isRT = true;
 	stMbusApiPram.m_nRetry = 1;
 	stMbusApiPram.m_lPriority = 1;
@@ -134,7 +134,7 @@ TEST_F(ModbusOnDemandHandler_ut, jsonParserForOnDemandRequest_ValidIpJason)
 	stMbusApiPram.m_stOnDemandReqData.m_sTimestamp = "2020-02-12 06:14:15";
 	stMbusApiPram.m_stOnDemandReqData.m_sUsec = "1581488055204186";
 	stMbusApiPram.m_stOnDemandReqData.m_strMqttTime = "2020-03-13 12:34:56";
-	stMbusApiPram.m_stOnDemandReqData.m_strEisTime = "2020-03-31 12:34:56";
+	stMbusApiPram.m_stOnDemandReqData.m_strEiiTime = "2020-03-31 12:34:56";
 	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = "1";
 	stMbusApiPram.m_stOnDemandReqData.m_isRT = true;
 	stMbusApiPram.m_nRetry = 1;

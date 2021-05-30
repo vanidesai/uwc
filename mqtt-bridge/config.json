@@ -5,11 +5,11 @@
         "Subscribers": [
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "TCP_PolledData",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "TCP_PolledData"
                 ],
@@ -18,11 +18,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "TCP_RdResp",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "TCP_RdResp"
                 ],
@@ -31,11 +31,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "TCP_WrResp",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "TCP_WrResp"
                 ],
@@ -44,11 +44,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "RT_TCP_PolledData_RT",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "RT_TCP_PolledData_RT"
                 ],
@@ -57,11 +57,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "RT_TCP_RdResp_RT",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "RT_TCP_RdResp_RT"
                 ],
@@ -70,11 +70,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "RT_TCP_WrResp_RT",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "RT_TCP_WrResp_RT"
                 ],
@@ -83,11 +83,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "RTU_PolledData",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "RTU_PolledData"
                 ],
@@ -96,11 +96,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "RTU_RdResp",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "RTU_RdResp"
                 ],
@@ -109,11 +109,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "RTU_WrResp",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "RTU_WrResp"
                 ],
@@ -122,11 +122,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "RT_RTU_PolledData_RT",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "RT_RTU_PolledData_RT"
                 ],
@@ -135,11 +135,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "RT_RTU_RdResp_RT",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "RT_RTU_RdResp_RT"
                 ],
@@ -148,11 +148,11 @@
             },
             {
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Name": "RT_RTU_WrResp_RT",
-                "PublisherAppName": "EISZmqBroker",
+                "PublisherAppName": "ZmqBroker",
                 "Topics": [
                     "RT_RTU_WrResp_RT"
                 ],
@@ -166,7 +166,7 @@
                     "*"
                 ],
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "frontend-socket"
                 },
                 "Name": "MQTT_Export_RdReq",
@@ -174,7 +174,7 @@
                     "MQTT_Export_RdReq"
                 ],
                 "Type": "zmq_ipc",
-                "BrokerAppName":"EISZmqBroker",
+                "BrokerAppName":"ZmqBroker",
                 "brokered":true
             },
             {
@@ -182,7 +182,7 @@
                     "*"
                 ],
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "frontend-socket"
                 },
                 "Name": "MQTT_Export_WrReq",
@@ -190,7 +190,7 @@
                     "MQTT_Export_WrReq"
                 ],
                 "Type": "zmq_ipc",
-                "BrokerAppName":"EISZmqBroker",
+                "BrokerAppName":"ZmqBroker",
                 "brokered":true
             },
             {
@@ -198,7 +198,7 @@
                     "*"
                 ],
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "frontend-socket"
                 },
                 "Name": "RT_MQTT_Export_RdReq_RT",
@@ -206,7 +206,7 @@
                     "RT_MQTT_Export_RdReq_RT"
                 ],
                 "Type": "zmq_ipc",
-                "BrokerAppName":"EISZmqBroker",
+                "BrokerAppName":"ZmqBroker",
                 "brokered":true
             },
             {
@@ -214,7 +214,7 @@
                     "*"
                 ],
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "frontend-socket"
                 },
                 "Name": "RT_MQTT_Export_WrReq_RT",
@@ -222,7 +222,7 @@
                     "RT_MQTT_Export_WrReq_RT"
                 ],
                 "Type": "zmq_ipc",
-                "BrokerAppName":"EISZmqBroker",
+                "BrokerAppName":"ZmqBroker",
                 "brokered":true
             }
         ]

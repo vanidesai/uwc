@@ -8,13 +8,13 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 #*********************************************************************************
 
-ARG EIS_VERSION
-FROM ia_eisbase:$EIS_VERSION as eisbase
+ARG EII_VERSION
+FROM ia_eiibase:$EII_VERSION as eiibase
 LABEL description="MQTT container"
-ARG EIS_UID
-ARG EIS_USER_NAME
+ARG EII_UID
+ARG EII_USER_NAME
 
-FROM eisbase
+FROM eiibase
 WORKDIR /
 
 RUN apt-get update && apt-get install -y mosquitto mosquitto-clients

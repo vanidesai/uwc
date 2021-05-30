@@ -287,13 +287,13 @@
                                     									
                                     <listOptionValue builtIn="false" value="paho-mqttpp3"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisconfigmanager"/>
+                                    <listOptionValue builtIn="false" value="eiiconfigmanager"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eismsgenv"/>
+                                    <listOptionValue builtIn="false" value="eiimsgenv"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eisutils"/>
+                                    <listOptionValue builtIn="false" value="eiiutils"/>
                                     									
-                                    <listOptionValue builtIn="false" value="eismsgbus"/>
+                                    <listOptionValue builtIn="false" value="eiimsgbus"/>
                                     									
                                     <listOptionValue builtIn="false" value="yaml-cpp"/>
                                     									

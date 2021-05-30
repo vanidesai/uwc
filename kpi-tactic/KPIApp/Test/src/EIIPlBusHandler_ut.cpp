@@ -8,110 +8,110 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "../include/EISPlBusHandler_ut.hpp"
+#include "../include/EIIPlBusHandler_ut.hpp"
 
-extern bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic);
+extern bool publishEIiMsg(std::string a_sEiiMsg, std::string &a_sEiiTopic);
 
 extern std::vector<std::thread> g_vThreads;
 
-void EISPlBusHandler_ut::SetUp()
+void EIIPlBusHandler_ut::SetUp()
 {
 	// Setup code
 }
 
-void EISPlBusHandler_ut::TearDown()
+void EIIPlBusHandler_ut::TearDown()
 {
 	// TearDown code
 }
 
 /***********************************************************/
 /*	Helper function	*/
-void initEISContext_Caller(bool& RetVal)
+void initEIIContext_Caller(bool& RetVal)
 {
-	CEISPlBusHandler CEISPlBusHandler_obj;
-	RetVal = CEISPlBusHandler_obj.initEISContext();
+	CEIIPlBusHandler CEIIPlBusHandler_obj;
+	RetVal = CEIIPlBusHandler_obj.initEIIContext();
 }
 /***********************************************************/
 
 /**
- * Test case to check if configEISListerners() function Configures EIS listeners for a_bIsPollingRT = false and a_bIsWrOpRT = false successfully
+ * Test case to check if configEIIListerners() function Configures EII listeners for a_bIsPollingRT = false and a_bIsWrOpRT = false successfully
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(EISPlBusHandler_ut, EISListerners_false)
+TEST_F(EIIPlBusHandler_ut, EIIListerners_false)
 {
 	bool a_bIsPollingRT = false;
 	bool a_bIsWrOpRT = false;
-	CEISPlBusHandler_obj.configEISListerners(a_bIsPollingRT, a_bIsWrOpRT);
+	CEIIPlBusHandler_obj.configEIIListerners(a_bIsPollingRT, a_bIsWrOpRT);
 }
 
 /**
- * Test case to check if configEISListerners() function Configures EIS listeners a_bIsPollingRT = true and a_bIsWrOpRT = false successfully
+ * Test case to check if configEIIListerners() function Configures EII listeners a_bIsPollingRT = true and a_bIsWrOpRT = false successfully
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(EISPlBusHandler_ut, EISListerners_true_false)
+TEST_F(EIIPlBusHandler_ut, EIIListerners_true_false)
 {
 	bool a_bIsPollingRT = true;
 	bool a_bIsWrOpRT = false;
-	CEISPlBusHandler_obj.configEISListerners(a_bIsPollingRT, a_bIsWrOpRT);
+	CEIIPlBusHandler_obj.configEIIListerners(a_bIsPollingRT, a_bIsWrOpRT);
 }
 
 /**
- * Test case to check if configEISListerners() function Configures EIS listeners a_bIsPollingRT = false and a_bIsWrOpRT = true successfully
+ * Test case to check if configEIIListerners() function Configures EII listeners a_bIsPollingRT = false and a_bIsWrOpRT = true successfully
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(EISPlBusHandler_ut, EISListerners_false_true)
+TEST_F(EIIPlBusHandler_ut, EIIListerners_false_true)
 {
 	bool a_bIsPollingRT = false;
 	bool a_bIsWrOpRT = true;
-	CEISPlBusHandler_obj.configEISListerners(a_bIsPollingRT, a_bIsWrOpRT);
+	CEIIPlBusHandler_obj.configEIIListerners(a_bIsPollingRT, a_bIsWrOpRT);
 }
 
 /**
- * Test case to check if stopEISListeners() function Stops EIS listener threads successfully
+ * Test case to check if stopEIIListeners() function Stops EII listener threads successfully
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(EISPlBusHandler_ut, stopEISListener)
+TEST_F(EIIPlBusHandler_ut, stopEIIListener)
 {
-	CEISPlBusHandler_obj.stopEISListeners();
+	CEIIPlBusHandler_obj.stopEIIListeners();
 	EXPECT_EQ(1,1);
 }
 
 /**
- * Test case to check if publishWriteMsg() function fails to publish message to EIS and returns false
+ * Test case to check if publishWriteMsg() function fails to publish message to EII and returns false
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(EISPlBusHandler_ut, PublishWriteMsg_false)
+TEST_F(EIIPlBusHandler_ut, PublishWriteMsg_false)
 {
-	bool RetVal = CEISPlBusHandler_obj.publishWriteMsg(strMsg);
+	bool RetVal = CEIIPlBusHandler_obj.publishWriteMsg(strMsg);
 	EXPECT_EQ(0, RetVal);
 }
 
 /**
- * Test case to check if publishWriteMsg() function fails to publish message to EIS and returns false
+ * Test case to check if publishWriteMsg() function fails to publish message to EII and returns false
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(EISPlBusHandler_ut, EISMsg_ctx_Map_Empty)
+TEST_F(EIIPlBusHandler_ut, EIIMsg_ctx_Map_Empty)
 {
-	std::string eisTopic = "KPIAPP_WrReq";
+	std::string eiiTopic = "KPIAPP_WrReq";
 
 	void* msgbus_ctx;
 	std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
 	try
 	{
 		std::string sMsg{""};
-	    bool RetVal = publishEISMsg(strMsg, eisTopic);
+	    bool RetVal = publishEIIMsg(strMsg, eiiTopic);
 		EXPECT_EQ(false, RetVal);
 
 	}

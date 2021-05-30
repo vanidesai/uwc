@@ -99,7 +99,7 @@ Section to describe all the APIs in defined in file `CommonDataShare.cpp`
 # API description of ConfigManager
 Section to describe all the APIs in defined in file `ConfigManager.cpp`
 
-1. Purpose: ConfigManager.cpp is used to handle configuration management using ConfigManager eis library
+1. Purpose: ConfigManager.cpp is used to handle configuration management using ConfigManager eii library
 2. APIs' details: 
 	1. Instance():
 			1. Parent class: CfgManager
@@ -758,7 +758,7 @@ Section to describe all the APIs in defined in file `QueueHandler.cpp`
 			2. Is singleton class: No
 			4. Description:
 			`bool getSubMsgFromQ(CMessageObject& msg)`
-			Retrieve non-RT read message from message queue to publish on EIS
+			Retrieve non-RT read message from message queue to publish on EII
 			Input1: reference to message to retrieve from queue
 			Return: Datatype=boolean, true/false based on success/failure
 	13. breakWaitOnQ()
@@ -840,7 +840,7 @@ Section to describe all the APIs in defined in file `ZmqHandler.cpp`
 			1. Namespace: zmq_handler
 			2. Description:
 			bool zmq_handler::prepareCommonContext(std::string topicType)
-			Prepare all EIS contexts for zmq communications based on topic configured in SubTopics or PubTopics section from 				docker-compose.yml file 
+			Prepare all EII contexts for zmq communications based on topic configured in SubTopics or PubTopics section from 				docker-compose.yml file 
 			Input: opic type to create context for, value is either "sub" or "pub"
 			Return: true : on success, false : on error
 	3. getSubCTX():
@@ -849,7 +849,7 @@ Section to describe all the APIs in defined in file `ZmqHandler.cpp`
 			stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
 			Function gets sub context for topic
 			Input: topic to get sub context for
-			Return: structure containing EIS contexts
+			Return: structure containing EII contexts
 
 	4. insertSubCTX():
 			1. Namespace: zmq_handler
@@ -894,7 +894,7 @@ Section to describe all the APIs in defined in file `ZmqHandler.cpp`
 			stZmqPubContext& zmq_handler::getPubCTX(std::string a_sTopic)
 			Function to get pub context
 			Input: topic for which to get pub context
-			Return: Reference to structure containing EIS contexts
+			Return: Reference to structure containing EII contexts
 	10. insertPubCTX():
 			1. Namespace: zmq_handler
 			2. Description:

@@ -8,13 +8,13 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 #*********************************************************************************
 
-ARG EIS_VERSION
-FROM uwc_common:$EIS_VERSION as uwc_common
-FROM ia_eisbase:$EIS_VERSION as eisbase
+ARG EII_VERSION
+FROM uwc_common:$EII_VERSION as uwc_common
+FROM ia_eiibase:$EII_VERSION as eiibase
 LABEL description="SPARKPLUG BRIDGE container"
 
 # Build tahu library
-FROM eisbase as build-tahu
+FROM eiibase as build-tahu
 RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&  git clone --branch develop https://github.com/eclipse/tahu \
     && cd tahu \ 
@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&	make -s 
 
 # Build SPARKPLUG-BRIDGE application
-FROM ia_common:$EIS_VERSION as sparkplug-bridge
+FROM ia_common:$EII_VERSION as sparkplug-bridge
 WORKDIR /
 
 # copy required dependencies
@@ -37,10 +37,10 @@ COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_common /usr/include/MQTT* /SPARKPLUG-BRIDGE/include/
-COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /SPARKPLUG-BRIDGE/include/log4cpp
-COPY --from=uwc_common /EIS/log4cpp/build/lib/* /SPARKPLUG-BRIDGE/lib/
-COPY --from=build-tahu /EIS/tahu/client_libraries/c/lib/libtahu.so /SPARKPLUG-BRIDGE/lib/
-COPY --from=build-tahu /EIS/tahu/client_libraries/c/include/* /SPARKPLUG-BRIDGE/include/tahu/
+COPY --from=uwc_common /EII/log4cpp/build/include/log4cpp /SPARKPLUG-BRIDGE/include/log4cpp
+COPY --from=uwc_common /EII/log4cpp/build/lib/* /SPARKPLUG-BRIDGE/lib/
+COPY --from=build-tahu /EII/tahu/client_libraries/c/lib/libtahu.so /SPARKPLUG-BRIDGE/lib/
+COPY --from=build-tahu /EII/tahu/client_libraries/c/include/* /SPARKPLUG-BRIDGE/include/tahu/
 COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /SPARKPLUG-BRIDGE/lib/
 COPY --from=uwc_common /uwc_util/include/* /SPARKPLUG-BRIDGE/include/
 
@@ -83,7 +83,7 @@ RUN cd /SPARKPLUG-BRIDGE/Release; /kw10/bin/kwdeploy sync --url  https://klocwor
        /kw10/bin/kwadmin --url  https://klocwork-jf6.devtools.intel.com:8100 load UWC tables_UWC --name UWC_SPARKPLUG_BRIDGE_$BUILD_NUMBER;
 	   
 # Build sparkplug-bridge container service
-FROM ia_common:$EIS_VERSION as sparkplug-bridge-service
+FROM ia_common:$EII_VERSION as sparkplug-bridge-service
 
 WORKDIR /
 # creating base directories
@@ -91,7 +91,7 @@ ENV APP_WORK_DIR /opt/intel/app/
 RUN mkdir -p /opt/intel/app \
 	&& mkdir -p /opt/intel/app/logs \
 	&& mkdir -p /opt/intel/config \
-	&& mkdir -p /opt/intel/eis/uwc_data
+	&& mkdir -p /opt/intel/eii/uwc_data
 
 WORKDIR ${APP_WORK_DIR}
 
@@ -101,17 +101,17 @@ COPY --from=sparkplug-bridge /SPARKPLUG-BRIDGE/lib/* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/lib/libpaho* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
-COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
+COPY --from=uwc_common /EII/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
-COPY --from=build-tahu /EIS/tahu/client_libraries/c/lib/libtahu.so ${APP_WORK_DIR}/lib/
-COPY --from=build-tahu /EIS/tahu/client_libraries/c/include/* ${APP_WORK_DIR}/include/tahu/
+COPY --from=build-tahu /EII/tahu/client_libraries/c/lib/libtahu.so ${APP_WORK_DIR}/lib/
+COPY --from=build-tahu /EII/tahu/client_libraries/c/include/* ${APP_WORK_DIR}/include/tahu/
 COPY --from=sparkplug-bridge /SPARKPLUG-BRIDGE/Config/log4cpp.properties /opt/intel/config
 COPY --from=uwc_common /uwc_util/Release/libuwc-common.so ${APP_WORK_DIR}
 
-# set permissions to working dir for eisuser
-RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
-   && chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR} \
+# set permissions to working dir for eiiuser
+RUN chown -R ${EII_UID}:${EII_UID} /opt/intel/config \
+   && chown -R ${EII_UID}:${EII_UID} ${APP_WORK_DIR} \
    && chmod -R 770 ${APP_WORK_DIR}
 
 #set the environment variable

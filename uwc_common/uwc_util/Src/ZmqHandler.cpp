@@ -22,7 +22,7 @@
 #include <functional>
 #include "ConfigManager.hpp"
 
-using namespace eis::config_manager;
+using namespace eii::config_manager;
 using namespace zmq_handler;
 
 std::mutex fileMutex;
@@ -137,7 +137,7 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 }
 
 /**
- * Prepare all EIS contexts for zmq communications based on topic configured in
+ * Prepare all EII contexts for zmq communications based on topic configured in
  * SubTopics or PubTopics section from docker-compose.yml file
  * Following is the sequence of context creation
  * 	1. Get the topic from SubTopics/PubTopics section
@@ -237,7 +237,7 @@ bool zmq_handler::prepareCommonContext(std::string topicType)
 /**
  * Get sub context for topic
  * @param a_sTopic	:[in] topic to get sub context for
- * @return structure containing EIS contexts
+ * @return structure containing EII contexts
  */
 stZmqSubContext& zmq_handler::getSubCTX(std::string a_sTopic)
 {
@@ -318,7 +318,7 @@ void zmq_handler::removeCTX(std::string a_sTopic)
 /**
  * Get pub context
  * @param a_sTopic	:[in] topic for which to get pub context
- * @return reference to structure containing EIS contexts
+ * @return reference to structure containing EII contexts
  */
 stZmqPubContext& zmq_handler::getPubCTX(std::string a_sTopic)
 {

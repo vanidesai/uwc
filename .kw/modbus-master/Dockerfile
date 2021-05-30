@@ -8,15 +8,15 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 #*********************************************************************************
 
-ARG EIS_VERSION
-FROM ia_eisbase:$EIS_VERSION as eisbase
+ARG EII_VERSION
+FROM ia_eiibase:$EII_VERSION as eiibase
 LABEL description="Modbus TCP Master Application"
-ARG EIS_UID
+ARG EII_UID
 
-FROM ia_common:$EIS_VERSION as common
+FROM ia_common:$EII_VERSION as common
 
 # install klocwork in it's own named layer ####################################
-FROM eisbase as klocwork
+FROM eiibase as klocwork
 
 RUN dpkg --add-architecture i386 \
   && apt-get update -y \
@@ -37,7 +37,7 @@ RUN mkdir /klocwork \
 ###############################################################################
 
 # Build log4cpp Library
-FROM eisbase as build-log4cpp
+FROM eiibase as build-log4cpp
 
 RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
   && tar -zxvf log4cpp-1.1.3.tar.gz \
@@ -47,7 +47,7 @@ RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-
   && make install
 
 # yaml build
-FROM eisbase as build-yaml
+FROM eiibase as build-yaml
 
 RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
   && cd yaml-cpp \
@@ -61,7 +61,7 @@ RUN git clone --branch yaml-cpp-0.6.3 https://github.com/jbeder/yaml-cpp.git \
   && cd ../../
 
 # Build Modbus Stack
-FROM eisbase as modbus-lib
+FROM eiibase as modbus-lib
 
 WORKDIR /
 
@@ -100,7 +100,7 @@ RUN /klocwork/bin/kwauth --url "${KW_SERVER}" < /tmp/kwcreds \
 # end kw ######################
 
 # Build Modbus application
-FROM eisbase as modbus-app
+FROM eiibase as modbus-app
 
 WORKDIR /
 
@@ -113,8 +113,8 @@ COPY --from=build-yaml /usr/yaml /bin/yaml-cpp/.
 COPY Modbus-App /Modbus-App/. 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
 COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
-COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
-COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /Modbus-App/lib/
+COPY --from=build-log4cpp /EII/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
+COPY --from=build-log4cpp /EII/log4cpp/build/lib/* /Modbus-App/lib/
 
 # begin kw ######################
 COPY --from=klocwork /klocwork /klocwork
@@ -147,7 +147,7 @@ RUN /klocwork/bin/kwauth --url "${KW_SERVER}" < /tmp/kwcreds \
 # end kw ######################
 
 # Build Modbus container service
-FROM eisbase as modbus-service
+FROM eiibase as modbus-service
 
 COPY --from=common /usr/local/include /usr/local/include
 COPY --from=common /usr/local/lib /usr/local/lib
@@ -157,18 +157,18 @@ WORKDIR /
 ENV APP_WORK_DIR /opt/intel/app/
 RUN mkdir -p /opt/intel/app
 RUN mkdir -p /opt/intel/config
-RUN mkdir -p /opt/intel/eis/uwc_data
+RUN mkdir -p /opt/intel/eii/uwc_data
 
 WORKDIR ${APP_WORK_DIR}
 
 COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so ${APP_WORK_DIR}
 COPY --from=modbus-app /Modbus-App/Release/ModbusMaster ${APP_WORK_DIR}
 COPY --from=build-yaml /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
-COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
+COPY --from=build-log4cpp /EII/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=modbus-app /Modbus-App/Config/log4cpp.properties /opt/intel/config
 
-RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config
-RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
+RUN chown -R ${EII_UID}:${EII_UID} /opt/intel/config
+RUN chown -R ${EII_UID}:${EII_UID} ${APP_WORK_DIR}
 RUN chmod -R 770 ${APP_WORK_DIR}
 
 #set the environment variable

@@ -23,7 +23,7 @@
 
 using namespace globalConfig;
 
-#define SCADA_CONFIG_FILE_PATH "/opt/intel/eis/uwc_data/sparkplug-bridge/scada_config.yml"
+#define SCADA_CONFIG_FILE_PATH "/opt/intel/eii/uwc_data/sparkplug-bridge/scada_config.yml"
 #define SCADA_SPARKPLUG_VERSION "2.0"
 
 /** class handling common operations*/

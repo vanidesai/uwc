@@ -58,7 +58,7 @@ For compiling Kpi-tactics sources on machine without container, following pre-re
 1. Install make and cmake
 2. Install wget by using command "sudo apt-get install wget".
 3. Install Git by using command "sudo apt install git"
-4. Install all the EIS libraries on host by running the shell script -- `sudo -E ./eis_libs_installer.sh`. Refre the README.md from  `IEdgeInsights\common\README.md` for details.
+4. Install all the EII libraries on host by running the shell script -- `sudo -E ./eii_libs_installer.sh`. Refre the README.md from  `IEdgeInsights\common\README.md` for details.
 5. Install log4cpp (version - 1.1.3, link - https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz) library under /usr/local/ directory.
 6. Install yaml-cpp (branch - yaml-cpp-0.6.3, version - 0.6.3, link - https://github.com/jbeder/yaml-cpp.git) libraries on host under /usr/local/ directory.
 7. Install paho-cpp (branch develop https://github.com/eclipse/paho.mqtt.c.git) libraries on host under /usr/local/ directory.
@@ -80,7 +80,7 @@ Notes : Above instructions are specified to build the sources in "Release" mode.
 	2. Add `network_mode: host` option in two containers present in IEdgeInsights\build\provision\dep\docker-compose-provision.yml file.
 	3. Run th eprovisioning command script to deploy ia_etcd container as explainedin main uwc/README/md.
 2. Go to `Sourcecode/kpi-tactic/KPIApp/Release` directory and open bash terminal.
-3. Set EIS specific environment variables using below command.
+3. Set EII specific environment variables using below command.
 	`source <Complete Path of .env file present inside IEdgeInsights/build directory>`
 	For example `source /home/intel/IEdgeInsights/build/.env`
 4. Export all environment variables required for Kpi container. Refer environment section from kpi-tactic's docker-compose.yml file (E.g. `export AppName="KPIAPP"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal).
@@ -100,7 +100,7 @@ Kindly Refer UWC user guide for container deployments
     1. Deploy ia_etcd container with dev mode using following steps. 
         1. Run `01_pre-requisites.sh --isTLS=no  --brokerAddr="mqtt_test_container" --brokerPort="11883" --qos=1 --deployMode=IPC_DEV` script
         2. Add `network_mode: host` option in two containers present in EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\docker_setup\provision\dep\docker-compose-provision.yml file. 
-        3. Run `02_provisionEIS.sh` script to deploy ia_etcd container
+        3. Run `02_provision_UWC_.sh` script to deploy ia_etcd container
     2. Go to `Sourcecode\kpi-tactic\KPIApp\Build.test` directory and open bash terminal.
     3. Export all environment variables required for KPIApp container. Refer environment section from kpi-tactic service present inside docker-compose_unit_test.yml file (E.g. `export AppName="KPIAPP"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal) 
     4. After successful compilation, run the application binary with following command,

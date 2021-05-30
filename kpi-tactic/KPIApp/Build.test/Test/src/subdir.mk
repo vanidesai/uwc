@@ -12,7 +12,7 @@
 CPP_SRCS += \
 ../Test/src/Common_ut.cpp \
 ../Test/src/ControlLoopHandler_ut.cpp \
-../Test/src/EISPlBusHandler_ut.cpp \
+../Test/src/EIIPlBusHandler_ut.cpp \
 ../Test/src/KPIAppConfiMgr_ut.cpp \
 ../Test/src/Main_ut.cpp \
 ../Test/src/MqttHandler_ut.cpp \
@@ -21,7 +21,7 @@ CPP_SRCS += \
 OBJS += \
 ./Test/src/Common_ut.o \
 ./Test/src/ControlLoopHandler_ut.o \
-./Test/src/EISPlBusHandler_ut.o \
+./Test/src/EIIPlBusHandler_ut.o \
 ./Test/src/KPIAppConfiMgr_ut.o \
 ./Test/src/Main_ut.o \
 ./Test/src/MqttHandler_ut.o \
@@ -30,7 +30,7 @@ OBJS += \
 CPP_DEPS += \
 ./Test/src/Common_ut.d \
 ./Test/src/ControlLoopHandler_ut.d \
-./Test/src/EISPlBusHandler_ut.d \
+./Test/src/EIIPlBusHandler_ut.d \
 ./Test/src/KPIAppConfiMgr_ut.d \
 ./Test/src/Main_ut.d \
 ./Test/src/MqttHandler_ut.d \

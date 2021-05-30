@@ -15,7 +15,7 @@ GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
 NC=$(tput sgr0)
 
-eis_build_dir="$Current_Dir/../../build"
+eii_build_dir="$Current_Dir/../../build"
 Dev_Mode="false"
 IS_SCADA=0
 source uwc_common_lib.sh
@@ -32,26 +32,26 @@ qos=""
 ret=""
 
 #------------------------------------------------------------------
-# eis_provision
+# eii_provision
 #
 # Description:
 #        Performs prvovisioning as per docker-compose.yml file.
 # Return:
 #        None
 # Usage:
-#       eis_provision
+#       eii_provision
 #------------------------------------------------------------------
-eis_provision()
+eii_provision()
 {
     docker stop $(docker ps -a -q)
-    if [ -d "${eis_build_dir}/provision/" ];then
-        cd "${eis_build_dir}/provision/"
+    if [ -d "${eii_build_dir}/provision/" ];then
+        cd "${eii_build_dir}/provision/"
     else
-        echo "${RED}ERROR: ${eis_build_dir}/provision/ is not present.${NC}"
+        echo "${RED}ERROR: ${eii_build_dir}/provision/ is not present.${NC}"
         exit 1 # terminate and indicate error
     fi
 
-    ./provision_eis.sh ../docker-compose.yml
+    ./provision.sh ../docker-compose.yml
     check_for_errors "$?" "Provisioning is failed. Please check logs" \
                     "${GREEN}Provisioning is done successfully.${NC}"
     echo "${GREEN}>>>>>${NC}"
@@ -93,44 +93,44 @@ configure_usecase()
         fi
     else
         echo "Please choose one of the below options based on the use case (combination of UWC services) needed." 
-        echo "1) Basic UWC micro-services without KPI-tactic Application & Sparkplug-Bridge - (Modbus-master TCP & RTU, mqtt-bridge, internal mqtt broker, ETCD server, ETCD UI & other base EIS & UWC services)"
+        echo "1) Basic UWC micro-services without KPI-tactic Application & Sparkplug-Bridge - (Modbus-master TCP & RTU, mqtt-bridge, internal mqtt broker, ETCD server, ETCD UI & other base EII & UWC services)"
         echo "2) Basic UWC micro-services as in option 1 along with KPI-tactic Application (Without Sparkplug-Bridge)"
         echo "3) Basic UWC micro-services & KPI-tactic Application along with Sparkplug-Bridge"
         echo "4) Basic UWC micro-services with Sparkplug-Bridge and no KPI-tactic Application" 
         read yn
     fi
-    cd ${eis_build_dir}
+    cd ${eii_build_dir}
     while :
     do
         case $yn in
             1)
                 echo "Running Basic UWC micro-services without KPI-tactic Application & Sparkplug-Bridge"
-                python3.6 eis_builder.py -f uwc-pipeline-without-sparkplug-bridge.yml
+                python3.6 builder.py -f uwc-pipeline-without-sparkplug-bridge.yml
                 if [ "$?" != 0 ]; then
-                    echo "${RED}Error running EIS builder script. Check the recipe configuration file...!${NC}" 
+                    echo "${RED}Error running EII builder script. Check the recipe configuration file...!${NC}" 
                     exit 1
                 fi
-                echo "${GREEN}EIS builder script successfully generated consolidated docker-compose & configuration files.${NC}"
+                echo "${GREEN}EII builder script successfully generated consolidated docker-compose & configuration files.${NC}"
                 break
                 ;;
             2)
                 echo "Running Basic UWC micro-services with KPI-tactic Application & without Sparkplug-Bridge"
-                python3.6 eis_builder.py -f uwc-pipeline-with-kpi-no-sparkplug-bridge.yml
+                python3.6 builder.py -f uwc-pipeline-with-kpi-no-sparkplug-bridge.yml
                 if [ "$?" != 0 ]; then
-                    echo "${RED}Error running EIS builder script. Check the recipe configuration file...!${NC}" 
+                    echo "${RED}Error running EII builder script. Check the recipe configuration file...!${NC}" 
                     exit 1
                 fi
-                echo "${GREEN}EIS builder script successfully generated consolidated docker-compose & configuration files.${NC}"
+                echo "${GREEN}EII builder script successfully generated consolidated docker-compose & configuration files.${NC}"
                 break
                 ;;
             3)
                 echo "Running Basic UWC micro-services with KPI-tactic Application & with Sparkplug-Bridge"
-                python3.6 eis_builder.py -f uwc-pipeline-with-sparkplug-bridge_and_kpi.yml
+                python3.6 builder.py -f uwc-pipeline-with-sparkplug-bridge_and_kpi.yml
                 if [ "$?" != 0 ]; then
-                    echo "${RED}Error running EIS builder script. Check the recipe configuration file...!${NC}" 
+                    echo "${RED}Error running EII builder script. Check the recipe configuration file...!${NC}" 
                     exit 1
                 fi
-                echo "${GREEN}EIS builder script successfully generated consolidated docker-compose & configuration files.${NC}"
+                echo "${GREEN}EII builder script successfully generated consolidated docker-compose & configuration files.${NC}"
                 echo "${GREEN}Sparkplug-Bridge related configurations are being updated to the consolidated docker-compose.yml file.${NC}"
 
                 IS_SCADA=1
@@ -148,12 +148,12 @@ configure_usecase()
                 ;;                
             4)
                 echo "Running Basic UWC micro-services with no KPI-tactic Application & with Sparkplug-Bridge"
-                python3.6 eis_builder.py -f uwc-pipeline-with-sparkplug-bridge-no-kpi.yml
+                python3.6 builder.py -f uwc-pipeline-with-sparkplug-bridge-no-kpi.yml
                 if [ "$?" != 0 ]; then
-                    echo "${RED}Error running EIS builder script. Check the recipe configuration file...!${NC}" 
+                    echo "${RED}Error running EII builder script. Check the recipe configuration file...!${NC}" 
                     exit 1
                 fi
-                echo "${GREEN}EIS builder script successfully generated consolidated docker-compose & configuration files.${NC}"
+                echo "${GREEN}EII builder script successfully generated consolidated docker-compose & configuration files.${NC}"
                 echo "${GREEN}Sparkplug-Bridge related configurations are being updated to the consolidated docker-compose.yml file.${NC}"
 
                 IS_SCADA=1
@@ -209,7 +209,7 @@ set_mode()
         echo "2) Prod"
         read mode
     fi
-    cd ${eis_build_dir}
+    cd ${eii_build_dir}
     while :
         do
             case $mode in
@@ -217,8 +217,8 @@ set_mode()
                     deployMode="dev"
                     echo "User inputted dev mode"
                     echo "${INFO}Setting dev mode to true ${NC}"    
-                    sed -i 's/DEV_MODE=false/DEV_MODE=true/g' $eis_build_dir/.env
-                    sed -i 's/MQTT_PROTOCOL=ssl/MQTT_PROTOCOL=tcp/g' $eis_build_dir/.env
+                    sed -i 's/DEV_MODE=false/DEV_MODE=true/g' $eii_build_dir/.env
+                    sed -i 's/MQTT_PROTOCOL=ssl/MQTT_PROTOCOL=tcp/g' $eii_build_dir/.env
                     
                     if [ "$?" -ne "0" ]; then
                         echo "${RED}Failed to set dev mode."
@@ -233,8 +233,8 @@ set_mode()
                     deployMode="prod"
                     echo "User inputted prod mode"
                     echo "${INFO}Setting dev mode to false ${NC}"    
-                    sed -i 's/DEV_MODE=true/DEV_MODE=false/g' $eis_build_dir/.env
-                    sed -i 's/MQTT_PROTOCOL=tcp/MQTT_PROTOCOL=ssl/g' $eis_build_dir/.env
+                    sed -i 's/DEV_MODE=true/DEV_MODE=false/g' $eii_build_dir/.env
+                    sed -i 's/MQTT_PROTOCOL=tcp/MQTT_PROTOCOL=ssl/g' $eii_build_dir/.env
                     if [ "$?" -ne "0" ]; then
                         echo "${RED}Failed to set dev mode."
                         echo "${GREEN}Kinldy set DEV_MODE to false manually in .env file and then re--run this script"
@@ -415,7 +415,7 @@ if [[ "${IS_SCADA}" -eq "1" ]]; then
         echo "${GREEN}ConfigureScada successfully.${NC}"
     fi   
 fi
-eis_provision
+eii_provision
 if [[ "${IS_SCADA}" -eq "1" ]]; then 
    cd  ${Current_Dir}
   ./2.2_CopyScadaCertsToProvision.sh

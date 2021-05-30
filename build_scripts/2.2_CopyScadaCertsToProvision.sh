@@ -10,7 +10,7 @@
 ################################################################################
 source ./uwc_common_lib.sh
 Current_Dir=$(pwd)
-eis_build_dir="$Current_Dir/../../build"
+eii_build_dir="$Current_Dir/../../build"
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
@@ -32,21 +32,21 @@ copy_external_certs_to_provision()
 	if [ -d ${Current_Dir}/tmp_certs ]; then
         echo "${GREEN}Copying required certs for sparkplug-bridge.${NC}"
 		cd ${Current_Dir}
-		rm -rf ${eis_build_dir}/provision/Certificates/scada_ext_certs
-		mkdir -p ${eis_build_dir}/provision/Certificates/scada_ext_certs
-		mkdir -p ${eis_build_dir}/provision/Certificates/scada_ext_certs/ca
-		mkdir -p ${eis_build_dir}/provision/Certificates/scada_ext_certs/client_crt
-		mkdir -p ${eis_build_dir}/provision/Certificates/scada_ext_certs/client_key
-		cp ${Current_Dir}/tmp_certs/ca/*  ${eis_build_dir}/provision/Certificates/scada_ext_certs/ca
+		rm -rf ${eii_build_dir}/provision/Certificates/scada_ext_certs
+		mkdir -p ${eii_build_dir}/provision/Certificates/scada_ext_certs
+		mkdir -p ${eii_build_dir}/provision/Certificates/scada_ext_certs/ca
+		mkdir -p ${eii_build_dir}/provision/Certificates/scada_ext_certs/client_crt
+		mkdir -p ${eii_build_dir}/provision/Certificates/scada_ext_certs/client_key
+		cp ${Current_Dir}/tmp_certs/ca/*  ${eii_build_dir}/provision/Certificates/scada_ext_certs/ca
 		check_for_errors "$?" "Incorrect certificate path is given in command line...Please provide the required command line arguments and re-run the script" \
 		            "${GREEN}"".${NC}"
-		cp ${Current_Dir}/tmp_certs/client_crt/*  ${eis_build_dir}/provision/Certificates/scada_ext_certs/client_crt
+		cp ${Current_Dir}/tmp_certs/client_crt/*  ${eii_build_dir}/provision/Certificates/scada_ext_certs/client_crt
 		check_for_errors "$?" "Incorrect certificate path is given in command line...Please provide the required command line arguments and re-run the script" \
 		            "${GREEN}"".${NC}"
-		cp ${Current_Dir}/tmp_certs/client_key/*  ${eis_build_dir}/provision/Certificates/scada_ext_certs/client_key
+		cp ${Current_Dir}/tmp_certs/client_key/*  ${eii_build_dir}/provision/Certificates/scada_ext_certs/client_key
 		check_for_errors "$?" "Incorrect certificate path is given in command line...Please provide the required command line arguments and re-run the script" \
 		            "${GREEN}Certificates are successfully copied in required directory.${NC}"
-		chown -R  eisuser:eisuser ${eis_build_dir}/provision/Certificates/scada_ext_certs
+		chown -R  eiiuser:eiiuser ${eii_build_dir}/provision/Certificates/scada_ext_certs
 		echo "${GREEN}Done.${NC}"		
 		rm -rf ${Current_Dir}/tmp_certs
 		return 0

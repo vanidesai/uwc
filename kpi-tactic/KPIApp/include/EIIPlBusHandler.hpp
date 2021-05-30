@@ -8,10 +8,10 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-/** EISBusHandler.hpp handles EIS bus operations*/
+/** EIIBusHandler.hpp handles EII bus operations*/
 
-#ifndef INCLUDE_EISPLBUSHANDLER_HPP_
-#define INCLUDE_EISPLBUSHANDLER_HPP_
+#ifndef INCLUDE_EIIPLBUSHANDLER_HPP_
+#define INCLUDE_EIIPLBUSHANDLER_HPP_
 
 #include <vector>
 #include <thread>
@@ -20,21 +20,21 @@
 #include <functional>
 #include <string>
 
-/** Handler class for EIS Bus*/
-class CEISPlBusHandler
+/** Handler class for EII Bus*/
+class CEIIPlBusHandler
 {
     std::vector<std::thread> m_vThreads; /** vector of threads*/
 
-    void listenOnEIS(std::string topic, zmq_handler::stZmqContext context,
+    void listenOnEII(std::string topic, zmq_handler::stZmqContext context,
 			zmq_handler::stZmqSubContext subContext, bool a_bIsPolling);
     
     bool processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
 		const std::function<bool(const std::string &)> &a_fPointListChecker);
 
 public:
-    bool initEISContext();
-    void configEISListerners(bool a_bIsPollingRT, bool a_bIsWrOpRT);
-    void stopEISListeners();
+    bool initEIIContext();
+    void configEIIListerners(bool a_bIsPollingRT, bool a_bIsWrOpRT);
+    void stopEIIListeners();
     bool publishWriteMsg(const std::string &a_sMsg);    
 };
 

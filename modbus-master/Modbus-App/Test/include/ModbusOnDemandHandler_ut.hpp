@@ -26,8 +26,8 @@
 #include <fstream>
 #include <cstdlib>
 #include <stdio.h>
-#include "eis/msgbus/msgbus.h"
-#include "eis/utils/json_config.h"
+#include "eii/msgbus/msgbus.h"
+#include "eii/utils/json_config.h"
 #include <semaphore.h>
 #include "ModbusOnDemandHandler.hpp"
 
@@ -40,7 +40,7 @@ public:
 	const string topic = "Modbus-TCP/PL0_flowmeter1_write,MQTT-EXPORT/PL0_flowmeter2_write";
 
 	string msg =
-			"{ 	\"value\": \"0xFF00\", 	\"command\": \"Flow\", 	\"app_seq\": \"1234\", \"tsMsgPublishOnEIS\":\"2020-03-31 12:34:56\", \"tsMsgRcvdFromMQTT\":\"2020-03-13 12:34:56\",  \"wellhead\": \"PL0\",  \"version\": \"0.0.0.1\", \"sourcetopic\":\"/flowmeter/PL0/Flow/read\", \"timestamp\": \"2020-02-12 06:14:15\", \"usec\": \"1581488055204186\" }";
+			"{ 	\"value\": \"0xFF00\", 	\"command\": \"Flow\", 	\"app_seq\": \"1234\", \"tsMsgPublishOnEII\":\"2020-03-31 12:34:56\", \"tsMsgRcvdFromMQTT\":\"2020-03-13 12:34:56\",  \"wellhead\": \"PL0\",  \"version\": \"0.0.0.1\", \"sourcetopic\":\"/flowmeter/PL0/Flow/read\", \"timestamp\": \"2020-02-12 06:14:15\", \"usec\": \"1581488055204186\" }";
 
 	string str = "data";
 	uint8_t* target = NULL;

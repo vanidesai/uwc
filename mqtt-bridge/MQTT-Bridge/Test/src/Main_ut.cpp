@@ -45,12 +45,12 @@ void TargetCaller_postMsgstoMQTT()
 }
 
 /**
- * Test case to check if processMsgToSendOnEIS()function Process message received from MQTT and send it on EIS for valid topic
+ * Test case to check if processMsgToSendOnEII()function Process message received from MQTT and send it on EII for valid topic
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(Main_ut, processMsgToSendOnEIS_ValidTopic)
+TEST_F(Main_ut, processMsgToSendOnEII_ValidTopic)
 {
 	mqtt::const_message_ptr recvdMsg = mqtt::make_message(
 			"{\"topic\": \"MQTT_Export_RdReq\"}",
@@ -58,12 +58,12 @@ TEST_F(Main_ut, processMsgToSendOnEIS_ValidTopic)
 
 	CMessageObject Temp(recvdMsg);
 	std::string Topic = "MQTT_Export_RdReq";
-	processMsgToSendOnEIS(Temp, Topic);
+	processMsgToSendOnEII(Temp, Topic);
 
 }
 
 /**
- * Test case to check if processMsg()function do not Process message received from EIS and send for publishing on MQTT for Null msg and returns false
+ * Test case to check if processMsg()function do not Process message received from EII and send for publishing on MQTT for Null msg and returns false
  * @param :[in] None
  * @param :[out] None
  * @return None
@@ -77,7 +77,7 @@ TEST_F(Main_ut, processMsg_NULLMsg)
 }
 
 /**
- * Test case to check if processMsg()function do not Process message received from EIS and send for publishing on MQTT if topic is present in zmq and returns false
+ * Test case to check if processMsg()function do not Process message received from EII and send for publishing on MQTT if topic is present in zmq and returns false
  * @param :[in] None
  * @param :[out] None
  * @return None
@@ -100,7 +100,7 @@ TEST_F(Main_ut, processMsg_TopicNotPresentInZMQmsg)
 
 	bool realTime = true;
 	bool IsRead = true;
-	set_thread_priority_for_eis(realTime, IsRead);
+	set_thread_priority_for_eii(realTime, IsRead);
 
 
 	bool RetVal = processMsg(msg, mqttPublisher);
@@ -109,58 +109,58 @@ TEST_F(Main_ut, processMsg_TopicNotPresentInZMQmsg)
 }
 
 /**
- * Test case to check if set_thread_priority_for_eis()function Set thread priority for threads that send messages from MQTT-Export to EIS for realTime = true and IsRead = true
+ * Test case to check if set_thread_priority_for_eii()function Set thread priority for threads that send messages from MQTT-Export to EII for realTime = true and IsRead = true
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(Main_ut, set_thread_priority_for_eis_RTRead)
+TEST_F(Main_ut, set_thread_priority_for_eii_RTRead)
 {
 	bool realTime = true;
 	bool IsRead = true;
-	set_thread_priority_for_eis(realTime, IsRead);
+	set_thread_priority_for_eii(realTime, IsRead);
 }
 
 /**
- * Test case to check if set_thread_priority_for_eis()function Set thread priority for threads that send messages from MQTT-Export to EIS for realTime = true and IsRead = false
+ * Test case to check if set_thread_priority_for_eii()function Set thread priority for threads that send messages from MQTT-Export to EII for realTime = true and IsRead = false
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(Main_ut, set_thread_priority_for_eis_RTWrite)
+TEST_F(Main_ut, set_thread_priority_for_eii_RTWrite)
 {
 	bool realTime = true;
 	bool IsRead = false;
-	set_thread_priority_for_eis(realTime, IsRead);
+	set_thread_priority_for_eii(realTime, IsRead);
 
 }
 
 /**
- * Test case to check if set_thread_priority_for_eis()function Set thread priority for threads that send messages from MQTT-Export to EIS for realTime = false and IsRead = true
+ * Test case to check if set_thread_priority_for_eii()function Set thread priority for threads that send messages from MQTT-Export to EII for realTime = false and IsRead = true
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(Main_ut, set_thread_priority_for_eis_NonRTRead)
+TEST_F(Main_ut, set_thread_priority_for_eii_NonRTRead)
 {
 	bool realTime = false;
 	bool IsRead = true;
-	set_thread_priority_for_eis(realTime, IsRead);
+	set_thread_priority_for_eii(realTime, IsRead);
 
 }
 
 /**
- * Test case to check if set_thread_priority_for_eis()function Set thread priority for threads that send messages from MQTT-Export to EIS for realTime = false and IsRead = false
+ * Test case to check if set_thread_priority_for_eii()function Set thread priority for threads that send messages from MQTT-Export to EII for realTime = false and IsRead = false
  * @param :[in] None
  * @param :[out] None
  * @return None
  */
-TEST_F(Main_ut, set_thread_priority_for_eis_NonRTWrite)
+TEST_F(Main_ut, set_thread_priority_for_eii_NonRTWrite)
 {
 	bool realTime = false;
 	bool IsRead = false;
 
-	set_thread_priority_for_eis(realTime, IsRead);
+	set_thread_priority_for_eii(realTime, IsRead);
 
 }
 
@@ -170,10 +170,10 @@ TEST_F(Main_ut, set_thread_priority_for_eis_NonRTWrite)
  * @param :[out] None
  * @return None
  */
-TEST_F(Main_ut, postMsgsToEIS_RTRead)
+TEST_F(Main_ut, postMsgsToEII_RTRead)
 {
 	g_shouldStop = true;
-	postMsgsToEIS(QMgr::getRTRead());
+	postMsgsToEII(QMgr::getRTRead());
 }
 
 /**
@@ -182,10 +182,10 @@ TEST_F(Main_ut, postMsgsToEIS_RTRead)
  * @param :[out] None
  * @return None
  */
-TEST_F(Main_ut, postMsgsToEIS_RTWrite)
+TEST_F(Main_ut, postMsgsToEII_RTWrite)
 {
 	g_shouldStop = true;
-	postMsgsToEIS(QMgr::getRTWrite());
+	postMsgsToEII(QMgr::getRTWrite());
 }
 
 /**
@@ -194,10 +194,10 @@ TEST_F(Main_ut, postMsgsToEIS_RTWrite)
  * @param :[out] None
  * @return None
  */
-TEST_F(Main_ut, postMsgsToEIS_Read)
+TEST_F(Main_ut, postMsgsToEII_Read)
 {
 	g_shouldStop = true;
-	postMsgsToEIS(QMgr::getRead());
+	postMsgsToEII(QMgr::getRead());
 }
 
 /**
@@ -206,10 +206,10 @@ TEST_F(Main_ut, postMsgsToEIS_Read)
  * @param :[out] None
  * @return None
  */
-TEST_F(Main_ut, postMsgsToEIS_Write)
+TEST_F(Main_ut, postMsgsToEII_Write)
 {
 	g_shouldStop = true;
-	postMsgsToEIS(QMgr::getWrite());
+	postMsgsToEII(QMgr::getWrite());
 }
 
 /**

@@ -10,5 +10,5 @@
 
 USER_OBJS :=
 
-LIBS := -lModbusMasterStack -luwc-common -llog4cpp  -lpaho-mqtt3as -lpaho-mqttpp3 -leisconfigmanager -leismsgenv -leismsgbus -leisutils -lrt -lyaml-cpp -lcjson -lsafestring -lpthread
+LIBS := -lModbusMasterStack -luwc-common -llog4cpp  -lpaho-mqtt3as -lpaho-mqttpp3 -leiiconfigmanager -leiimsgenv -leiimsgbus -leiiutils -lrt -lyaml-cpp -lcjson -lsafestring -lpthread
 

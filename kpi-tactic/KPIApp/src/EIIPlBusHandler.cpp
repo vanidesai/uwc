@@ -8,7 +8,7 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#include "EISPlBusHandler.hpp"
+#include "EIIPlBusHandler.hpp"
 #include "KPIAppConfigMgr.hpp"
 #include "CommonDataShare.hpp"
 #include "EnvironmentVarHandler.hpp"
@@ -28,11 +28,11 @@
 extern std::atomic<bool> g_stopThread;
 
 /**
- * Create EIS msg bus context and topic context for publisher and subscriber both
+ * Create EII msg bus context and topic context for publisher and subscriber both
  * @param None
  * @return true/false based on success/failure
  */
-bool CEISPlBusHandler::initEISContext()
+bool CEIIPlBusHandler::initEIIContext()
 {
 	bool retVal = true;
 	// Initializing all the pub/sub topic base context for ZMQ
@@ -81,12 +81,12 @@ bool CEISPlBusHandler::initEISContext()
 }
 
 /**
- * Process message received from EIS for control loop operations
+ * Process message received from EII for control loop operations
  * @param msg	:[in] actual message
  * @param a_bIsPollMsg :[in] true = polling msg, false = write response
  * returns true/false based on success/failure
  */
-bool CEISPlBusHandler::processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
+bool CEIIPlBusHandler::processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
 		const std::function<bool(const std::string &)> &a_fPointListChecker)
 {
 	bool bRetVal = false;
@@ -149,20 +149,20 @@ bool CEISPlBusHandler::processMsg(msg_envelope_t *msg, CQueueHandler &a_rQ,
 }
 
 /**
- * Thread function to listen on EIS and send data to MQTT
+ * Thread function to listen on EII and send data to MQTT
  * @param sTopic :[in] topic to listen onto
  * @param context :[in] msg bus context
  * @param subContext :[in] sub context
  * @param a_bIsPolling :[in] operation type this thread needs to perform
  * @return None
  */
-void CEISPlBusHandler::listenOnEIS(std::string sTopic, zmq_handler::stZmqContext context,
+void CEIIPlBusHandler::listenOnEII(std::string sTopic, zmq_handler::stZmqContext context,
 			zmq_handler::stZmqSubContext subContext, bool a_bIsPolling)
 {
 	if(context.m_pContext == NULL || subContext.sub_ctx == NULL)
 	{
-		std::cout << "Context is null. Cannot start listening on EIS for topic : " << sTopic << std::endl;
-		DO_LOG_ERROR("Context is null. Cannot start listening on EIS for topic : " + sTopic);
+		std::cout << "Context is null. Cannot start listening on EII for topic : " << sTopic << std::endl;
+		DO_LOG_ERROR("Context is null. Cannot start listening on EII for topic : " + sTopic);
 		return;
 	}
 
@@ -220,12 +220,12 @@ void CEISPlBusHandler::listenOnEIS(std::string sTopic, zmq_handler::stZmqContext
 }
 
 /**
- * publish message to EIS
- * @param a_sEisMsg :[in] message to publish on EIS
- * @param a_sEisTopic :[in] eis topic
+ * publish message to EII
+ * @param a_sEiiMsg :[in] message to publish on EII
+ * @param a_sEiiTopic :[in] eii topic
  * @return true/false based on success/failure
  */
-bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic)
+bool publishEIIMsg(std::string a_sEiiMsg, std::string &a_sEiiTopic)
 {
 	// Creating message to be published
 	msg_envelope_t *msg = NULL;
@@ -239,7 +239,7 @@ bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic)
 			return false;
 		}
 		//parse from root element
-		root = cJSON_Parse(a_sEisMsg.c_str());
+		root = cJSON_Parse(a_sEiiMsg.c_str());
 		if (NULL == root)
 		{
 			if(msg != NULL)
@@ -274,16 +274,16 @@ bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic)
 			root = NULL;
 		}
 
-		//add time stamp before publishing msg on EIS
+		//add time stamp before publishing msg on EII
 		std::string strTsReceived{""};
 		bool bRet = true;
-		if(true == zmq_handler::publishJson(strTsReceived, msg, a_sEisTopic, "tsMsgPublishOnEIS"))
+		if(true == zmq_handler::publishJson(strTsReceived, msg, a_sEiiTopic, "tsMsgPublishOnEII"))
 		{
 			bRet = true;
 		}
 		else
 		{
-			DO_LOG_ERROR("Failed to publish write msg on EIS: " + a_sEisMsg);
+			DO_LOG_ERROR("Failed to publish write msg on EII: " + a_sEiiMsg);
 			bRet = false;
 		}
 
@@ -295,11 +295,11 @@ bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic)
 	}
 	catch(std::string& strException)
 	{
-		DO_LOG_ERROR("publishEISMsg error1::" + strException);
+		DO_LOG_ERROR("publishEIIMsg error1::" + strException);
 	}
 	catch(std::exception &ex)
 	{
-		DO_LOG_ERROR("publishEISMsg error2::" + std::string(ex.what()));
+		DO_LOG_ERROR("publishEIIMsg error2::" + std::string(ex.what()));
 	}
 
 	if(msg != NULL)
@@ -315,24 +315,24 @@ bool publishEISMsg(std::string a_sEisMsg, std::string &a_sEisTopic)
 }
 
 /**
- * publish message to EIS based on whether write Request is RT or Non-RT
- * @param a_sMsg :[in] message to publish on EIS
+ * publish message to EII based on whether write Request is RT or Non-RT
+ * @param a_sMsg :[in] message to publish on EII
  * @return true/false based on success/failure
  */
-bool CEISPlBusHandler::publishWriteMsg(const std::string &a_sMsg)
+bool CEIIPlBusHandler::publishWriteMsg(const std::string &a_sMsg)
 {
 	try
 	{
-		std::string eisTopic = "";
+		std::string eiiTopic = "";
 		if(true == CKPIAppConfig::getInstance().isRTModeForWriteOp())
 		{
-			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest_RT"));
+			eiiTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest_RT"));
 		}
 		else
 		{
-			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest"));
+			eiiTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest"));
 		}		
-		return publishEISMsg(a_sMsg, eisTopic);
+		return publishEIIMsg(a_sMsg, eiiTopic);
 	}
 	catch (std::exception &ex)
 	{
@@ -342,12 +342,12 @@ bool CEISPlBusHandler::publishWriteMsg(const std::string &a_sMsg)
 }
 
 /**
- * Configures EIS listeners based on configurations
+ * Configures EII listeners based on configurations
  * @param a_bIsPollingRT :[in] tells whether RT or Non-RT polling topics to be scanned
  * @param a_bIsWrOpRT :[in] tells whether RT or Non-RT write response topics to be scanned
  * @return None
  */
-void CEISPlBusHandler::configEISListerners(bool a_bIsPollingRT, bool a_bIsWrOpRT)
+void CEIIPlBusHandler::configEIIListerners(bool a_bIsPollingRT, bool a_bIsWrOpRT)
 {
 	try
 	{
@@ -399,7 +399,7 @@ void CEISPlBusHandler::configEISListerners(bool a_bIsPollingRT, bool a_bIsWrOpRT
 			zmq_handler::stZmqSubContext& subContext = zmq_handler::getSubCTX(sTopic);
 
 			m_vThreads.push_back(
-				std::thread(&CEISPlBusHandler::listenOnEIS, this, sTopic, context, subContext, bIsPolling));
+				std::thread(&CEIIPlBusHandler::listenOnEII, this, sTopic, context, subContext, bIsPolling));
 		}
 	}
 	catch(const std::exception& e)
@@ -409,10 +409,10 @@ void CEISPlBusHandler::configEISListerners(bool a_bIsPollingRT, bool a_bIsWrOpRT
 }
 
 /**
- * Stops EIS listener threads
+ * Stops EII listener threads
  * @return None
  */
-void CEISPlBusHandler::stopEISListeners()
+void CEIIPlBusHandler::stopEIIListeners()
 {
 	try
 	{

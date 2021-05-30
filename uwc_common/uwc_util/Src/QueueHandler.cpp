@@ -115,7 +115,7 @@ bool CQueueHandler::breakWaitOnQ()
 }
 
 /**
- * Retrieve non-RT read message from message queue to publish on EIS
+ * Retrieve non-RT read message from message queue to publish on EII
  * @param msg :[in] reference to message to retrieve from queue
  * @return true/false based on success/failure
  */
@@ -158,7 +158,7 @@ bool CQueueHandler::isMsgArrived(CMessageObject& msg)
 		{
 			if (false == getSubMsgFromQ(msg))
 			{
-				DO_LOG_INFO("No message to send to EIS in queue");
+				DO_LOG_INFO("No message to send to EII in queue");
 				return false;
 			}
 		}

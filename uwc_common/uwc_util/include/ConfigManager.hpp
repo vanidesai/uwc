@@ -8,7 +8,7 @@
 * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 ************************************************************************************/
 
-/*** ConfigManager.hpp is used to handle configuration management using ConfigManager eis library*/
+/*** ConfigManager.hpp is used to handle configuration management using ConfigManager eii library*/
 
 #ifndef UWC_CONFIGMANAGER_HPP_
 #define UWC_CONFIGMANAGER_HPP_
@@ -20,15 +20,15 @@
 #include <iostream>
 #include <unistd.h>
 // EII configmgr
-#include "eis/config_manager/config_mgr.hpp"
+#include "eii/config_manager/config_mgr.hpp"
 #include <yaml-cpp/yaml.h>
 #include "CommonDataShare.hpp"
 
 #define DIR_PATH "/config"
-#define GLOBAL_CONFIG_FILE_PATH "/opt/intel/eis/uwc_data/common_config/Global_Config.yml"
+#define GLOBAL_CONFIG_FILE_PATH "/opt/intel/eii/uwc_data/common_config/Global_Config.yml"
 #define handle_error_en(en, msg) do { errno = en; perror(msg); } while (0)
 
-using namespace eis::config_manager;
+using namespace eii::config_manager;
 
 #ifndef SCADA_RTU
 
@@ -51,7 +51,7 @@ public:
 	 */
 	bool IsClientCreated();
 
-	/** Returns EII configMgr reference from EIS CfgMgr library
+	/** Returns EII configMgr reference from EII CfgMgr library
 	 *
 	 * @param : Nothing
 	 * @return: EII Configuration object reference
