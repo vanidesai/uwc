@@ -30,7 +30,7 @@ protected:
 		std::string objVal= "xyz";
 		std::string a_version = "1.0";
 		bool a_bIsDefinition = false;
-                bool a_bIsRealDevice = true;
+		bool isRealDevice = true;
 		CValObj obj;
 		obj.initTestData(dtype, objVal);
 		std::string a_sName = "Properties/Version";
@@ -57,7 +57,7 @@ protected:
 					DO_LOG_ERROR(std::string("Error:") + e.what());
 			}
 
-		bool result =  oUDT.assignToCJSON(cjRoot, a_bIsRealDevice);
+		bool result =  oUDT.assignToCJSON(cjRoot, isRealDevice);
 		EXPECT_EQ(true, result);
 	}
 

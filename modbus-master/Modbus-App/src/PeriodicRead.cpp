@@ -23,6 +23,7 @@
 #include <time.h>
 #include "CommonDataShare.hpp"
 #include <stdlib.h>
+#include <fenv.h>
 /// flag to check thread stop condition
 std::atomic<bool> g_stopThread;
 
@@ -1251,10 +1252,11 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 	// Check if datatype is float and its width is 2 (4 bytes). It represents float.
 	else if(oYMlDataType == enFLOAT && a_iWidth == WIDTH_TWO)
 	{
+		fesetround(FE_TONEAREST);
 		// Convert original hex string value into float
 		float convertedValue = common_Handler::hexBytesToFloat(a_sValue);
 		// Scales up converted value by multiplying with scale factor.				
-		long double fScaleValue = convertedValue * dScaleFactor;
+		double fScaleValue = convertedValue * dScaleFactor;
 		// checks scaledValue is less than min value of float				
 		if (fScaleValue < std::numeric_limits<float>::lowest())
 		{
@@ -1266,15 +1268,31 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 		{
 			// Set iScaleValue to MAX
 			fScaleValue = std::numeric_limits<float>::max();		
-		}
-		// Truncating fScaleValue to 2 decimal places
-		fScaleValue = (long long int)(100 * fScaleValue)/100.0;		
+		}	
+		//< trunc() - Truncates a double value after the decimal point and gives the integer part as the result.
+		//<         - E.g. trunc() returns value 2 for 2.8 argument value
+		//< floor() - Rounds x downward, returning the largest integral value that is not greater than x. (i.e: rounds downs the nearest integer)
+		//<         - E.g. floor() returns value 2 for 2.9 argument value
+		//< ceil()  - Rounds x upward, returning the smallest integral value that is not less than x.
+		//<         - E.g. ceil() returns value 3 for 2.3 argument value
+		//< round() - Returns the integral value that is nearest to x, with halfway cases rounded away from zero.
+		//<         - E.g. round() returns value 2 for 2.3 argument value and returns value 3 for 2.9.
+		//<            - Our requirement is only fullfilled by round() function
+		//< As per our requirment, we should consider only two digits after decimal point. And, second digit should be rounded off.
+		//< For doing this, fScaleValue is multiplied by 100 to shift decimal point to the right direction. This right shifted value
+		//< is provided to the round(), result of round() will have rounding off to second digit.
+		//< Rounding result is then divided by 100 to shift decimal point to the left, to achieve origianl decimal point position.
+		//< E.g. fScaleValue is 1234.56789, result of round((fScaleValue * (double) 100)) = 123457. Result of this is divided by 100
+		//< So fScaleValue final value is 1234.57
+		fScaleValue = round((fScaleValue * (double) 100)) / 100;
+		std::feclearexcept(FE_ALL_EXCEPT);
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_floating(fScaleValue);
 		return ptScaleValue;
 	}
 	// Check if datatype is double and its width is 4 (8 bytes). It represents double.
 	else if(oYMlDataType == enDOUBLE && a_iWidth == WIDTH_FOUR)
 	{
+		fesetround(FE_TONEAREST);
 		// Convert original hex string value into double
 		double convertedValue = common_Handler::hexBytesToDouble(a_sValue);	
 		// Scales up converted value by multiplying with scale factor.			
@@ -1291,8 +1309,23 @@ msg_envelope_elem_body_t* CPeriodicReponseProcessor::setScaledValue(std::string 
 			// Set iScaleValue to MAX
 			dScaleValue = std::numeric_limits<double>::max();			
 		}
-		// Truncating dScaleValue to 2 decimal places
-		dScaleValue =  (long long int)(100 * dScaleValue)/100.0;
+		//< trunc() - Truncates a double value after the decimal point and gives the integer part as the result.
+		//<         - E.g. trunc() returns value 2 for 2.8 argument value
+		//< floor() - Rounds x downward, returning the largest integral value that is not greater than x. (i.e: rounds downs the nearest integer)
+		//<         - E.g. floor() returns value 2 for 2.9 argument value
+		//< ceil()  - Rounds x upward, returning the smallest integral value that is not less than x.
+		//<         - E.g. ceil() returns value 3 for 2.3 argument value
+		//< round() - Returns the integral value that is nearest to x, with halfway cases rounded away from zero.
+		//<         - E.g. round() returns value 2 for 2.3 argument value and returns value 3 for 2.9.
+		//<            - Our requirement is only fullfilled by round() function
+		//< As per our requirment, we should consider only two digits after decimal point. And, second digit should be rounded off.
+		//< For doing this, fScaleValue is multiplied by 100 to shift decimal point to the right direction. This right shifted value
+		//< is provided to the round(), result of round() will have rounding off to second digit.
+		//< Rounding result is then divided by 100 to shift decimal point to the left, to achieve origianl decimal point position.
+		//< E.g. fScaleValue is 1234.56789, result of round((fScaleValue * (double) 100)) = 123457. Result of this is divided by 100
+		//< So fScaleValue final value is 1234.57
+ 		dScaleValue = round(dScaleValue * (long double) 100) / 100;
+ 		std::feclearexcept(FE_ALL_EXCEPT);
 		msg_envelope_elem_body_t* ptScaleValue = msgbus_msg_envelope_new_floating(dScaleValue);
 		return ptScaleValue;
 	}

@@ -22,7 +22,7 @@
 #include "eis/utils/json_config.h"
 #include "ModbusOnDemandHandler.hpp"
 #include <string>
-
+#include <fenv.h>
 /// stop thread flag
 extern std::atomic<bool> g_stopThread;
 /// reference if to store request data
@@ -377,14 +377,24 @@ bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWi
 				return ret;
 			}
 			else if (enUINT == enDtype)
-			{
-				uint16_t val = 0;
+			{				
 				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
 				{ 
-					variantVal = std::get<int64_t>(a_ScaledValue);
-					val = (uint16_t)variantVal;										
-					uint16_t originalVal = val / a_dscaleFactor;				 
-					oreverseScaledData.u16 = originalVal;
+					variantVal = std::get<int64_t>(a_ScaledValue);													
+					int64_t originalVal = variantVal / a_dscaleFactor;				 
+					// checks originalVal is less than min value of uint16_t		
+				    if (originalVal < std::numeric_limits<unsigned short>::min())
+					{
+						// Set originalVal to MIN
+						originalVal = std::numeric_limits<unsigned short>::min();
+					}
+					// checks originalVal is greater than max value of uint16_t
+					else if (originalVal > std::numeric_limits<unsigned short>::max())
+					{
+						// Set originalVal to MAX
+						originalVal = std::numeric_limits<unsigned short>::max();
+					}
+					oreverseScaledData.u16 = originalVal; 
 					a_HexValue = convertToHexString(oreverseScaledData.u16, WIDTH_ONE);					
 				}
 				else
@@ -394,15 +404,26 @@ bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWi
 				}
 				return ret;
 			}
-			else if(enINT == enDtype)
+			else if(enINT == enDtype)			
 			{				
-				int16_t val = 0;
+				
 				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
 				{ 
-					variantVal = std::get<int64_t>(a_ScaledValue);					
-					val=(int16_t)variantVal;				 
-					int16_t originalVal = val / a_dscaleFactor;				 
-					oreverseScaledData.i16 = originalVal;
+					variantVal = std::get<int64_t>(a_ScaledValue);									 
+					int64_t originalVal = variantVal / a_dscaleFactor;	
+					// checks originalVal is less than min value of int16	
+					if (originalVal < std::numeric_limits<short>::min())
+					{
+						// Set originalVal to MIN
+						originalVal = std::numeric_limits<short>::min();
+					}
+					// checks originalVal is greater than max value of int16	
+					else if (originalVal > std::numeric_limits<short>::max())
+					{
+						// Set originalVal to MAX
+						originalVal = std::numeric_limits<short>::max();
+					}			 
+					oreverseScaledData.i16 = originalVal;					 
 					a_HexValue = convertToHexString(oreverseScaledData.u16, WIDTH_ONE);					
 			    }
 			    else
@@ -423,14 +444,24 @@ bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWi
 		case WIDTH_TWO:
 		{
 			if (enUINT == enDtype)
-			{				
-				uint32_t val = 0;
+			{								
 				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
 				{				
-					variantVal = std::get<int64_t>(a_ScaledValue);
-					val = (uint32_t)variantVal;									 
-					unsigned long int originalVal = val / a_dscaleFactor;				
-					oreverseScaledData.u32 = originalVal;
+					variantVal = std::get<int64_t>(a_ScaledValue);													 
+					int64_t originalVal = variantVal / a_dscaleFactor;	
+					// checks originalVal is less than min value of uint32_t		
+				    if (originalVal < std::numeric_limits<unsigned int>::min())
+					{
+						// Set originalVal to MIN
+						originalVal = std::numeric_limits<unsigned int>::min();
+					}
+					// checks originalVal is greater than max value of uint32_t
+					else if (originalVal > std::numeric_limits<unsigned int>::max())
+					{
+						// Set originalVal to MAX
+						originalVal = std::numeric_limits<unsigned int>::max();
+					}			
+					oreverseScaledData.u32 = originalVal;					 
 					a_HexValue = convertToHexString(oreverseScaledData.u32, WIDTH_TWO);					
 			    }
 			    else
@@ -441,14 +472,24 @@ bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWi
 				return ret;
 			}
 			else if(enINT == enDtype)
-			{				
-				int32_t val = 0;
+			{
 				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
 				{
-					variantVal = std::get<int64_t>(a_ScaledValue);
-					val = (int32_t)variantVal;					
-					int32_t originalVal = val / a_dscaleFactor;					
-					oreverseScaledData.i32 = originalVal;
+					variantVal = std::get<int64_t>(a_ScaledValue);									
+					int64_t originalVal = variantVal / a_dscaleFactor;		
+					// checks originalVal is less than min value of int32	
+					if (originalVal < std::numeric_limits<int>::min())
+					{
+						// Set originalVal to MIN
+						originalVal = std::numeric_limits<int>::min();
+					}
+					// checks originalVal is greater than max value of int32
+					else if (originalVal > std::numeric_limits<int>::max())
+					{
+						// Set originalVal to MAX
+						originalVal = std::numeric_limits<int>::max();
+					}			
+					oreverseScaledData.i32 = originalVal;				
 					a_HexValue = convertToHexString(oreverseScaledData.u32, WIDTH_TWO);					
 			    }
 			    else
@@ -460,27 +501,39 @@ bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWi
 			}
 			else if (enFLOAT == enDtype)
 			{
-				float val = 0;
+				fesetround(FE_TONEAREST);				
 				double valDbl = 0;
 				int64_t i64;
 				if (true == std::holds_alternative<double>(a_ScaledValue))
 				{ 
-					valDbl = std::get<double>(a_ScaledValue);
-					val = (float)valDbl;					 
+					valDbl = std::get<double>(a_ScaledValue);										 
 				}
 				else if (true == std::holds_alternative<int64_t>(a_ScaledValue)) 
 				{					 
 					i64 = std::get<int64_t>(a_ScaledValue);
-					val = (float)i64;					 
+					valDbl = (double)i64;					 
 				}
 				else
 				{
 					ret = false;
 					return ret;
 				}
-				float originalVal = val / a_dscaleFactor;				
-				std::stringstream stream;
-				oreverseScaledData.f = originalVal;
+				double originalVal = valDbl / a_dscaleFactor;								
+				if (originalVal < std::numeric_limits<float>::lowest())
+				{
+					// Set originalVal to MIN
+					originalVal = std::numeric_limits<float>::lowest();		
+				}
+				// checks scaledValue is greater than max value of float
+				else if (originalVal > std::numeric_limits<float>::max())
+				{
+					// Set originalVal to MAX
+					originalVal = std::numeric_limits<float>::max();		
+				}
+				// round off float 2 decimal places
+				originalVal = round((originalVal * (double) 100)) / 100;
+				std::feclearexcept(FE_ALL_EXCEPT);	
+				oreverseScaledData.f = originalVal;				
 				a_HexValue = convertToHexString(oreverseScaledData.u32, WIDTH_TWO);				
 				return ret;
 			}
@@ -489,14 +542,24 @@ bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWi
 		case WIDTH_FOUR:
 		{
 			if (enUINT == enDtype)
-			{
-				uint64_t val = 0;
+			{				
 				if (true  == std::holds_alternative<int64_t>(a_ScaledValue))
 				{
-					variantVal = std::get<int64_t>(a_ScaledValue);					
-					val = (uint64_t)variantVal;
-					uint64_t originalVal = val / a_dscaleFactor;
-					oreverseScaledData.u64 = originalVal;
+					variantVal = std::get<int64_t>(a_ScaledValue);
+					uint64_t originalVal = variantVal / a_dscaleFactor;
+					// checks originalVal is less than min value of uint64_t	
+					if (originalVal < std::numeric_limits<unsigned long long>::min())
+					{
+						// Set originalVal to MIN
+						originalVal = std::numeric_limits<unsigned long long>::min();
+					}
+					// checks originalVal is greater than max value of uint64_t
+					else if (originalVal > std::numeric_limits<unsigned long long>::max())
+					{
+						// Set originalVal to MAX
+						originalVal = std::numeric_limits<unsigned long long>::max();
+					}
+					oreverseScaledData.u64 = originalVal;				 
 					a_HexValue = convertToHexString(oreverseScaledData.u64, WIDTH_FOUR);
 			    }
 			    else
@@ -513,7 +576,19 @@ bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWi
 				{
 					val = std::get<int64_t>(a_ScaledValue);
 					int64_t originalVal = val / a_dscaleFactor;
-					oreverseScaledData.i64 = originalVal;
+					// checks originalVal is less than min value of int64	
+					if (originalVal < std::numeric_limits<long long int>::min())
+					{
+						// Set originalVal to MIN
+						originalVal = std::numeric_limits<long long int>::min();
+					}
+					// checks originalVal is greater than max value of int64
+					else if (originalVal > std::numeric_limits<long long int>::max())
+					{
+						// Set originalVal to MAX
+						originalVal = std::numeric_limits<long long int>::max();
+					}
+					oreverseScaledData.i64 = originalVal;				
 					a_HexValue = convertToHexString(oreverseScaledData.u64, WIDTH_FOUR);
 			    }
 			    else
@@ -525,6 +600,7 @@ bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWi
 			}
 			else if (enDOUBLE == enDtype)
 			{
+				fesetround(FE_TONEAREST);
 				double val = 0.0;
 				int64_t i64;				 
 				if (true == std::holds_alternative<double>(a_ScaledValue))
@@ -541,7 +617,21 @@ bool onDemandHandler::reverseScaledValueToHex(std::string a_sDataType, int a_iWi
 					ret = false;
 					return ret;
 				}				
-				double originalVal = val / a_dscaleFactor;							
+				long double originalVal = val / a_dscaleFactor;
+				// checks originalVal is less than min value of double
+				if (originalVal < std::numeric_limits<double>::lowest())
+				{
+					// Set originalVal to MIN
+					originalVal = std::numeric_limits<double>::lowest();			
+				}
+				// checks originalVal is greater than max value of double
+				else if (originalVal > std::numeric_limits<double>::max())
+				{
+					// Set originalVal to MAX
+					originalVal = std::numeric_limits<double>::max();			
+				}
+				originalVal = round(originalVal * (long double) 100) / 100;
+ 				std::feclearexcept(FE_ALL_EXCEPT);		 									
 				oreverseScaledData.d = originalVal;
 				a_HexValue = convertToHexString(oreverseScaledData.u64, WIDTH_FOUR);			
 				return ret;
