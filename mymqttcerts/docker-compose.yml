@@ -1,0 +1,21 @@
+version: '3.6'
+
+services:
+  mymqttcerts:  
+    depends_on:
+    - ia_eisbase
+    - uwc_common
+    read_only: true
+    hostname: ia_mymqttcerts
+    restart: unless-stopped
+    ipc: "none"
+    security_opt:
+    - no-new-privileges
+    environment:
+      AppName: "mymqttcerts"      
+      CertType: "pem"
+    secrets:
+    - ca_broker
+    - client_cert
+    - client_key  
+

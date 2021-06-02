@@ -31,7 +31,10 @@ services:
       args:
           EII_VERSION: ${EII_VERSION}
     read_only: true
-    image: ${DOCKER_REGISTRY}uwc_common:${EII_VERSION}
+    image: ${DOCKER_REGISTRY}uwc_common:${EIS_VERSION}
+    environment:
+      AppName: "uwc-common"
+    
 
 volumes:
   vol_eii_socket:
