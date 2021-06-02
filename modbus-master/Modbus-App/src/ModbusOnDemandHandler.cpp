@@ -1202,15 +1202,18 @@ bool onDemandHandler::processMsg(msg_envelope_t *msg,
 #endif
 
 	stMbusApiPram.m_stOnDemandReqData.m_strAppSeq = getMsgElement(msg, "app_seq");
-	stMbusApiPram.m_stOnDemandReqData.m_strMetric = getMsgElement(msg, "command");
-	stMbusApiPram.m_stOnDemandReqData.m_sValue = getMsgElement(msg, "value");
-	if (stMbusApiPram.m_stOnDemandReqData.m_sValue.empty())
-	{		
-		if (false == getScaledValueElement(msg, "scaledValue", stMbusApiPram.m_stOnDemandReqData.m_ScaledValue))
-		{
-			DO_LOG_ERROR("Invalid scaledValue received from message envelope of mqtt-bridge");
-			return false;
-		}		 
+	stMbusApiPram.m_stOnDemandReqData.m_strMetric = getMsgElement(msg, "command");	
+	if (a_bIsWriteReq)
+	{
+		stMbusApiPram.m_stOnDemandReqData.m_sValue = getMsgElement(msg, "value");
+		if (stMbusApiPram.m_stOnDemandReqData.m_sValue.empty())
+		{		
+			if (false == getScaledValueElement(msg, "scaledValue", stMbusApiPram.m_stOnDemandReqData.m_ScaledValue))
+			{
+				DO_LOG_ERROR("Invalid scaledValue received from message envelope of mqtt-bridge");
+				return false;
+			}		 
+		}
 	}	 
 	stMbusApiPram.m_stOnDemandReqData.m_strWellhead = getMsgElement(msg, "wellhead");
 	stMbusApiPram.m_stOnDemandReqData.m_strVersion = getMsgElement(msg, "version");
