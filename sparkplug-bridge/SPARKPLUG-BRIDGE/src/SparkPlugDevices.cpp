@@ -206,11 +206,17 @@ void CSparkPlugDev::addMetric(const network_info::CUniqueDataPoint &a_rUniqueDat
 				    {
 				        return enBOOLEAN;
 				    }
-				    else if (! a_sDataType.compare("uint"))
+				    else if ((! a_sDataType.compare("uint"))   ||
+					         (! a_sDataType.compare("uint16")) ||
+					         (! a_sDataType.compare("uint32")) ||
+					         (! a_sDataType.compare("uint64")))
 				    {
 				        return enUINT;
 				    }
-				    else if (! a_sDataType.compare("int"))
+				    else if ((! a_sDataType.compare("int"))   ||
+					         (! a_sDataType.compare("int16")) ||
+					         (! a_sDataType.compare("int32")) ||
+					         (! a_sDataType.compare("int64")))
 				    {
 				        return enINT;
 				    }
