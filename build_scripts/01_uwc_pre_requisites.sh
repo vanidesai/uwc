@@ -104,5 +104,5 @@ modify_config()
 echo "${GREEN}============================= Script START ============================================${NC}"
 
 create_docker_volume_dir
-add_UWC_containers_In_EIS
+add_UWC_containers_In_EII
 modify_config

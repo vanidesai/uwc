@@ -6,7 +6,7 @@
                 "Name": "frontend",
                 "Type": "zmq_ipc",
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "frontend-socket"
                 },
                 "Topics": ["*"],
@@ -19,7 +19,7 @@
                 "Name": "backend",
                 "Type": "zmq_ipc",
                 "EndPoint": {
-                    "SocketDir": "/EIS/sockets",
+                    "SocketDir": "/EII/sockets",
                     "SocketFile": "backend-socket"
                 },
                 "Topics": ["*"],
