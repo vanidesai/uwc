@@ -8,12 +8,12 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 #*********************************************************************************
 
-ARG EIS_VERSION
-FROM uwc_common:$EIS_VERSION as uwc_common
+ARG EII_VERSION
+FROM uwc_common:$EII_VERSION as uwc_common
 LABEL description="KPI Tactic Application"
 
 # Build KPI Tactic application
-FROM ia_common:$EIS_VERSION as kpitactic
+FROM ia_common:$EII_VERSION as kpitactic
 WORKDIR /
 
 # copy required dependencies
@@ -26,8 +26,8 @@ COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_common /usr/include/MQTT* /KPIApp/include/
-COPY --from=uwc_common /EIS/log4cpp/build/include/log4cpp /KPIApp/include/log4cpp
-COPY --from=uwc_common /EIS/log4cpp/build/lib/* /KPIApp/lib/
+COPY --from=uwc_common /EII/log4cpp/build/include/log4cpp /KPIApp/include/log4cpp
+COPY --from=uwc_common /EII/log4cpp/build/lib/* /KPIApp/lib/
 COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /KPIApp/lib/
 COPY --from=uwc_common /uwc_util/include/* /KPIApp/include/
 
@@ -37,7 +37,7 @@ RUN cd /KPIApp/Release \
     &&	make clean all -s
 
 # Build KPI App container service
-FROM ia_common:$EIS_VERSION as KPIApp-service
+FROM ia_common:$EII_VERSION as KPIApp-service
 
 WORKDIR /
 # creating base directories
@@ -45,7 +45,7 @@ ENV APP_WORK_DIR /opt/intel/app/
 RUN mkdir -p /opt/intel/app \
 	&& mkdir -p /opt/intel/app/logs \
 	&& mkdir -p /opt/intel/config \
-	&& mkdir -p /opt/intel/eis/uwc_data
+	&& mkdir -p /opt/intel/eii/uwc_data
 WORKDIR ${APP_WORK_DIR}
 
 # copy required dependencies
@@ -55,13 +55,13 @@ COPY --from=uwc_common /usr/lib/libpaho* ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/ssl/lib/* /usr/local/lib/
 COPY --from=uwc_common /usr/ssl/include/* /usr/local/include/
 COPY --from=uwc_common /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
-COPY --from=uwc_common /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
+COPY --from=uwc_common /EII/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=kpitactic /KPIApp/Config/log4cpp.properties /opt/intel/config
 COPY --from=uwc_common /uwc_util/Release/libuwc-common.so ${APP_WORK_DIR}
 
-# set permissions to working dir for eisuser
-RUN chown -R ${EIS_UID}:${EIS_UID} /opt/intel/config \
-   && chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR} \
+# set permissions to working dir for eiiuser
+RUN chown -R ${EII_UID}:${EII_UID} /opt/intel/config \
+   && chown -R ${EII_UID}:${EII_UID} ${APP_WORK_DIR} \
    && chmod -R 770 ${APP_WORK_DIR}
 
 #set the environment variable

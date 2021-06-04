@@ -270,7 +270,7 @@ bool CMQTTHandler::parseMQTTMsg(const std::string &sJson, bool &isRealtime, cons
 }
 
 /**
- * Push message in message queue to send on EIS
+ * Push message in message queue to send on EII
  * @param msg :[in] reference of message to push in queue
  * @return true/false based on success/failure
  */

@@ -23,5 +23,5 @@ This directory contains files to install MQTT container
 Section to describe all directory contents and it's uses.
 
 1. `Dockerfile` - Dockerfile to install mosquitto brocker inside MQTT container.
-2. `mosquitto_dev.conf` - Mosquitto configuration file for eis IPC_DEV mode.
-3. `mosquitto_prod.conf` - Mosquitto configuration file for eis IPC_PROD mode.
+2. `mosquitto_dev.conf` - Mosquitto configuration file for eii IPC_DEV mode.
+3. `mosquitto_prod.conf` - Mosquitto configuration file for eii IPC_PROD mode.

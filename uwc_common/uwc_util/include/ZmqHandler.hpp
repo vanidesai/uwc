@@ -19,12 +19,12 @@
 #include <mutex>
 #include "cjson/cJSON.h"
 
-#include <eis/utils/thread_safe_queue.h>
-#include <eis/utils/config.h>
-#include <eis/utils/json_config.h>
-#include <eis/msgbus/msgbus.h>
+#include <eii/utils/thread_safe_queue.h>
+#include <eii/utils/config.h>
+#include <eii/utils/json_config.h>
+#include <eii/msgbus/msgbus.h>
 //eii configmgr
-#include "eis/config_manager/config_mgr.hpp"
+#include "eii/config_manager/config_mgr.hpp"
 // uwc configmgr
 #include "ConfigManager.hpp"
 #include "CommonDataShare.hpp"
@@ -60,7 +60,7 @@ namespace zmq_handler
 	};
 
 	/**
-	 * Prepare all EIS contexts for zmq communications based on topic configured in
+	 * Prepare all EII contexts for zmq communications based on topic configured in
 	 * SubTopics or PubTopics section from docker-compose.yml file
 	 * Following is the sequence of context creation
 	 * 	1. Get the topic from SubTopics/PubTopics section

@@ -14,7 +14,7 @@
 #define YAMLUTIL_H_
 #include "yaml-cpp/yaml.h"  // IWYU pragma: keep
 
-#define BASE_PATH_YAML_FILE "/opt/intel/eis/uwc_data/"
+#define BASE_PATH_YAML_FILE "/opt/intel/eii/uwc_data/"
 
 /** CommonUtils is a namespace holding the function for Yaml operations like loading yaml ,parsing yaml files,
  * coverting yaml to string, and reading env variables*/

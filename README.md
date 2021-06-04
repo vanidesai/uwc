@@ -68,7 +68,7 @@ All the below UWC specific scripts need to be run from the directory `IEdgeInsig
   ```
 
 ## Provision EII and UWC services
-Runs the builder script enabling to choose the UWC recipe needed for the use case. Next it prompts the user to select `develeopment mode` or `production mode` & prepares the set up to run in the selected mode. Finally it does the provisioning of EIS & UWC services based on the recipe & mode selected. 
+Runs the builder script enabling to choose the UWC recipe needed for the use case. Next it prompts the user to select `develeopment mode` or `production mode` & prepares the set up to run in the selected mode. Finally it does the provisioning of EII & UWC services based on the recipe & mode selected. 
 ```sh
     $ cd <working-dir>/IEdgeInsights/uwc/build_scripts
     $ sudo ./02_provision_UWC.sh
@@ -130,8 +130,8 @@ Now check for the unit test reports for all services of UWC in "<working-dir>/IE
 docker logs modbus-tcp-container > docker.log 2>&1
 ```
 
-1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL for dev mode & `https://localhost:7071/etcdkeeper/` for prod mode . (username - root , password- eis123)
-2. EIS Message Bus related interface configurations (including secrets) for all UWC & EII containers are stored in ia_etcd server, which can be accessed using EtcdUI as mentioned above.
+1. ETCD UI is available on `http://localhost:7070/etcdkeeper/` URL for dev mode & `https://localhost:7071/etcdkeeper/` for prod mode . (username - root , password- eii123)
+2. EII Message Bus related interface configurations (including secrets) for all UWC & EII containers are stored in ia_etcd server, which can be accessed using EtcdUI as mentioned above.
 
 ## Notes
 *  If docker-compose.yml is modified then bring down the containers & then bring them up as mentioned above.

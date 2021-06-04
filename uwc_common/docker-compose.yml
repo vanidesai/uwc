@@ -24,22 +24,22 @@ services:
 ## uwc_common image
   uwc_common:
     depends_on:
-      - ia_eisbase
+      - ia_eiibase
     build:
       context: $PWD/../uwc/uwc_common
       dockerfile: $PWD/../uwc/uwc_common/Dockerfile.common
       args:
-          EIS_VERSION: ${EIS_VERSION}
+          EII_VERSION: ${EII_VERSION}
     read_only: true
-    image: ${DOCKER_REGISTRY}uwc_common:${EIS_VERSION}
+    image: ${DOCKER_REGISTRY}uwc_common:${EII_VERSION}
 
 volumes:
-  vol_eis_socket:
+  vol_eii_socket:
     driver: local
     driver_opts:
       type: local
       o: bind
-      device: ${EIS_INSTALL_PATH}/sockets
+      device: ${EII_INSTALL_PATH}/sockets
 
   vol_etcd_keeper:
     driver: local

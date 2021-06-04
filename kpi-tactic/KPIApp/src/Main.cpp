@@ -29,13 +29,13 @@ std::atomic<bool> g_stopThread(false);
 std::vector<std::thread> g_vThreads;
 
 /**
- * Thread function to read requests from queue filled up by MQTT and send data to EIS
+ * Thread function to read requests from queue filled up by MQTT and send data to EII
  * @param qMgr 	:[in] pointer to respective queue manager
  * @return None
  */
 void postMsgsToWriteOnMQTT(CQueueHandler& qMgr)
 {
-	DO_LOG_DEBUG("Starting thread to send messages on EIS");
+	DO_LOG_DEBUG("Starting thread to send messages on EII");
 
 	try
 	{
@@ -188,7 +188,7 @@ int main(int argc, char* argv[])
 
 		PlBusMgr::initPlatformBusHandler(CKPIAppConfig::getInstance().isMQTTModeOn());
 
-		//threads to send on-demand requests on EIS
+		//threads to send on-demand requests on EII
 		g_vThreads.push_back(std::thread(postMsgsToWriteOnMQTT, std::ref(QMgr::PollMsgQ())));
 		g_vThreads.push_back(std::thread(analyzeControlLoopData, std::ref(QMgr::WriteRespMsgQ())));
 

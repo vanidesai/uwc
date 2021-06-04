@@ -11,14 +11,14 @@
 #include "Common.hpp"
 #include "QueueMgr.hpp"
 #include "MqttHandler.hpp"
-#include "EISPlBusHandler.hpp"
+#include "EIIPlBusHandler.hpp"
 #include "KPIAppConfigMgr.hpp"
 #include "ControlLoopHandler.hpp"
 #include "ZmqHandler.hpp"
 
-static CEISPlBusHandler& getEISPlBusHandler()
+static CEIIPlBusHandler& getEIIPlBusHandler()
 {
-	static CEISPlBusHandler _obj;
+	static CEIIPlBusHandler _obj;
 	return _obj;
 }
 
@@ -63,9 +63,9 @@ void PlBusMgr::initPlatformBusHandler(bool a_bIsMQTTMode)
 		else
 		{
 			// It is ZMQ mode. Prepare contexts and create threads
-			getEISPlBusHandler().initEISContext();
+			getEIIPlBusHandler().initEIIContext();
 
-			getEISPlBusHandler().configEISListerners(CKPIAppConfig::getInstance().isRTModeForPolledPoints(),
+			getEIIPlBusHandler().configEIIListerners(CKPIAppConfig::getInstance().isRTModeForPolledPoints(),
 				CKPIAppConfig::getInstance().isRTModeForWriteOp());
 		}
 	}
@@ -128,7 +128,7 @@ bool PlBusMgr::publishWriteReq(const CControlLoopOp& a_rCtrlLoop,
 		}
 		else
 		{
-			return getEISPlBusHandler().publishWriteMsg(sMsg);
+			return getEIIPlBusHandler().publishWriteMsg(sMsg);
 		}
 	}
 	catch(const std::exception& e)
@@ -153,7 +153,7 @@ void PlBusMgr::stopListeners()
 		}
 		else
 		{
-			getEISPlBusHandler().stopEISListeners();
+			getEIIPlBusHandler().stopEIIListeners();
 		}
 	}
 	catch(const std::exception& e)

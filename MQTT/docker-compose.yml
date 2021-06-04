@@ -23,15 +23,15 @@ version: '3.6'
 services:
   mqtt_container:
     depends_on:
-    - ia_eisbase
+    - ia_eiibase
     - uwc_common
     build:
       context: $PWD/../uwc/MQTT/
       dockerfile: $PWD/../uwc/MQTT/Dockerfile
       args:
-        EIS_VERSION: ${EIS_VERSION}
-        EIS_UID: ${EIS_UID}
-    image: ${DOCKER_REGISTRY}mqtt_container:${EIS_VERSION}
+        EII_VERSION: ${EII_VERSION}
+        EII_UID: ${EII_UID}
+    image: ${DOCKER_REGISTRY}mqtt_container:${EII_VERSION}
     container_name: mqtt_container
     hostname: mqtt_container
     network_mode: host
@@ -45,9 +45,9 @@ services:
     environment:
       AppName: "MQTT"
       DEV_MODE: ${DEV_MODE}
-      no_proxy: ${eis_no_proxy}
+      no_proxy: ${eii_no_proxy}
       CertType: "zmq"
-    user: ${EIS_UID}
+    user: ${EII_UID}
     # userns_mode: host
     secrets:
       - ca_broker

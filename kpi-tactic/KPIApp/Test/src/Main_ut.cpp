@@ -55,7 +55,7 @@ void CallHelper_sTopThreadTrue_analyzeControlLoopData( mqtt::const_message_ptr& 
 }
 
 /**
- * Test case to check if postMsgsToWriteOnMQTT() Thread function reads requests from queue filled up by MQTT and send data to EIS
+ * Test case to check if postMsgsToWriteOnMQTT() Thread function reads requests from queue filled up by MQTT and send data to EII
  * @param :[in] None
  * @param :[out] None
  * @return None
@@ -76,7 +76,7 @@ TEST_F(Main_ut, PostMsgsToWriteOnMQTT_ControlLoopPollPoint_False)
 }
 
 /**
- * Test case to check if analyzeControlLoopData() Thread function reads requests from queue filled up by MQTT and send data to EIS
+ * Test case to check if analyzeControlLoopData() Thread function reads requests from queue filled up by MQTT and send data to EII
  * @param :[in] None
  * @param :[out] None
  * @return None

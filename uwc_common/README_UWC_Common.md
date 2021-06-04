@@ -54,7 +54,7 @@ For compiling uwc-common container sources on machine without container, followi
 1. Install make and cmake
 2. Install wget by using command "sudo apt-get install wget".
 3. Install Git by using command "sudo apt install git"
-4. Install all the EIS libraries on host from `EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\common\libs` directory. (Refer EIS README files to do the same)
+4. Install all the EII libraries on host from `EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\common\libs` directory. (Refer EII README files to do the same)
 5. Install log4cpp (version - 1.1.3, link - https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz) library under /usr/local/ directory.
 6. Install yaml-cpp (branch - yaml-cpp-0.6.3, version - 0.6.3, link - https://github.com/jbeder/yaml-cpp.git) libraries on host under /usr/local/ directory.
 7. Install paho-cpp (branch develop https://github.com/eclipse/paho.mqtt.c.git) libraries on host under /usr/local/ directory.
@@ -86,7 +86,7 @@ Kindly Refer UWC user guide for container deployments
 	1. Deploy ia_etcd container with dev mode using following steps. 
 		1. Run `01_pre-requisites.sh --isTLS=no  --brokerAddr="mqtt_test_container" --brokerPort="11883" --qos=1 --deployMode=IPC_DEV` script
 		2. Add `network_mode: host` option in two containers present in EdgeInsightsSoftware-v2.2-PV\IEdgeInsights\docker_setup\provision\dep\docker-compose-provision.yml file.
-		3. Run `02_provisionEIS.sh` script to deploy ia_etcd container
+		3. Run `02_provisionEII.sh` script to deploy ia_etcd container
 	2. Go to `Sourcecode\uwc_common\uwc_util\Build.test` directory and open bash terminal.
 	3. Export all environment variables required for uwc-util-test container. Refer environment section from uwc-util-test service present inside docker-compose_unit_test.yml file (E.g. `export AppName="UWCUTIL"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal) 
 	4. After successful compilation, run the application binary with following command,

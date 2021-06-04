@@ -10,7 +10,7 @@
 ################################################################################
 source ./uwc_common_lib.sh
 Current_Dir=$(pwd)
-eis_build_dir="$Current_Dir/../../build"
+eii_build_dir="$Current_Dir/../../build"
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 MAGENTA=$(tput setaf 5)
@@ -71,43 +71,43 @@ edit_docker_compose_file()
     echo "${GREEN}Adding docker secrets for sparkplug-bridge...${NC}"
 	if [ "$MODE" == "dev" ]; then 
 		echo "${GREEN} Add sparkplug-bridge-secret section in docker-compose.yml in dev mode and when TLS is required ..${NC}"
-		sed -i '/sparkplug-bridge:\/opt/ a\    secrets:\n    - scadahost_ca_cert\n    - scadahost_client_key\n    - scadahost_client_cert\n' ${eis_build_dir}/docker-compose.yml
+		sed -i '/sparkplug-bridge:\/opt/ a\    secrets:\n    - scadahost_ca_cert\n    - scadahost_client_key\n    - scadahost_client_cert\n' ${eii_build_dir}/docker-compose.yml
 	else
-	    sed -i '/- etcd_SPARKPLUG-BRIDGE_key/ a\    - scadahost_ca_cert\n    - scadahost_client_key\n    - scadahost_client_cert' ${eis_build_dir}/docker-compose.yml
+	    sed -i '/- etcd_SPARKPLUG-BRIDGE_key/ a\    - scadahost_ca_cert\n    - scadahost_client_key\n    - scadahost_client_cert' ${eii_build_dir}/docker-compose.yml
 	fi
 	    check_for_errors "$?" "Error in adding external MQTT certificates secrets under sparkplug-bridge-secret container definition in docker-compose.yml" \
 	                     "${GREEN}"".${NC}"
 
 	echo "${GREEN}Adding docker secrets paths for sparkplug-bridge...${NC}"
 	if [ "$MODE" == "dev" ]; then 
-		sed -i '$ a\secrets:' ${eis_build_dir}/docker-compose.yml
+		sed -i '$ a\secrets:' ${eii_build_dir}/docker-compose.yml
 		echo "${GREEN} Adding secret section at the end of docker-compose.yml file"
 	fi
 	ca_file_name=$(basename ${CA})
 	client_cert_file_name=$(basename ${CLIENT_CERT})
 	client_key_file_name=$(basename ${CLIENT_KEY})
 
-	sed -i '$ a\  scadahost_ca_cert:' ${eis_build_dir}/docker-compose.yml
+	sed -i '$ a\  scadahost_ca_cert:' ${eii_build_dir}/docker-compose.yml
 	check_for_errors "$?" " Error in adding scadahost_ca_cert secret section in docker-compose.yml" \
                      "${GREEN}"".${NC}"
 
-	sed -i "$ a\    file: provision\/Certificates\/scada_ext_certs\/ca\/$ca_file_name" ${eis_build_dir}/docker-compose.yml
+	sed -i "$ a\    file: provision\/Certificates\/scada_ext_certs\/ca\/$ca_file_name" ${eii_build_dir}/docker-compose.yml
 	check_for_errors "$?" "Error in adding scadahost_ca_cert secret path in docker-compose.yml" \
                      "${GREEN}"".${NC}"
 
-	sed -i '$ a\  scadahost_client_cert:' ${eis_build_dir}/docker-compose.yml
+	sed -i '$ a\  scadahost_client_cert:' ${eii_build_dir}/docker-compose.yml
 	check_for_errors "$?" "Error in adding scadahost_client_cert secret section in docker-compose.yml" \
                      "${GREEN}"".${NC}"
 
-	sed -i "$ a\    file: provision\/Certificates\/scada_ext_certs\/client_crt\/$client_cert_file_name" ${eis_build_dir}/docker-compose.yml
+	sed -i "$ a\    file: provision\/Certificates\/scada_ext_certs\/client_crt\/$client_cert_file_name" ${eii_build_dir}/docker-compose.yml
 	check_for_errors "$?" "Error in adding scadahost_client_cert secret path in docker-compose.yml" \
                      "${GREEN}"".${NC}"
 
-	sed -i '$ a\  scadahost_client_key:' ${eis_build_dir}/docker-compose.yml
+	sed -i '$ a\  scadahost_client_key:' ${eii_build_dir}/docker-compose.yml
 	check_for_errors "$?" "Error in adding scadahost_client_key secret section in docker-compose.yml" \
                      "${GREEN}"".${NC}"
 
-	sed -i "$ a\    file: provision\/Certificates\/scada_ext_certs\/client_key\/$client_key_file_name" ${eis_build_dir}/docker-compose.yml
+	sed -i "$ a\    file: provision\/Certificates\/scada_ext_certs\/client_key\/$client_key_file_name" ${eii_build_dir}/docker-compose.yml
 	check_for_errors "$?" "Error in adding scadahost_client_key secret path in docker-compose.yml" \
                      "${GREEN}"".${NC}"
 	echo "${GREEN}Done...${NC}"
@@ -149,8 +149,8 @@ print_all_args()
 #------------------------------------------------------------------
 create_scada_config_file()
 {
-rm -rf /opt/intel/eis/uwc_data/sparkplug-bridge/scada_config.yml
-cat > /opt/intel/eis/uwc_data/sparkplug-bridge/scada_config.yml << ENDOFFILE
+rm -rf /opt/intel/eii/uwc_data/sparkplug-bridge/scada_config.yml
+cat > /opt/intel/eii/uwc_data/sparkplug-bridge/scada_config.yml << ENDOFFILE
 ---
 # scada config parameter file
 

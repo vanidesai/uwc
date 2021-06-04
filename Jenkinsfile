@@ -14,7 +14,7 @@ pipeline {
         SLACK_FAIL   = '#indu-uwc'
 
         PROFILING_MODE = false
-        EIS_BRANCH = 'v2.1'
+        EII_BRANCH = 'v2.1'
     }
     stages {
         stage('Prep Builder Image') {
@@ -65,7 +65,7 @@ pipeline {
                                 userRemoteConfigs: [
                                     [ url: 'https://gitlab.devtools.intel.com/Indu/IEdgeInsights/IEdgeInsights.git', credentialsId: 'owr-jenkins-gitlab' ]
                                 ],
-                                branches: [[name: env.EIS_BRANCH]]
+                                branches: [[name: env.EII_BRANCH]]
                             ], poll: false
                         }
 
@@ -79,13 +79,13 @@ pipeline {
                     }
                 }
 
-                stage('Prep EIS Base Layers') {
+                stage('Prep EII Base Layers') {
                     steps {
                         // this is temporary for v2.1-Alpha-RC4, it looks to have been fixed in v2.1
-                        // sh 'patch IEdgeInsights/common/dockerfiles/Dockerfile.eisbase Release/Dockerfile.eisbase.patch'
+                        // sh 'patch IEdgeInsights/common/dockerfiles/Dockerfile.eiibase Release/Dockerfile.eiibase.patch'
 
                         //base
-                        sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy ia_eisbase'
+                        sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy ia_eiibase'
                         // common
                         sh 'cd IEdgeInsights/docker_setup && docker-compose --env-file .env build --build-arg http_proxy --build-arg https_proxy ia_common'
                     }

@@ -15,7 +15,7 @@
 #include "Common.hpp"
 #include "QueueMgr.hpp"
 #include "QueueHandler.hpp"
-#include "EISPlBusHandler.hpp"
+#include "EIIPlBusHandler.hpp"
 #include "ControlLoopHandler.hpp"
 
 class QueueMgr_ut : public ::testing::Test{

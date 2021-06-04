@@ -43,7 +43,7 @@ std::atomic<bool> g_shouldStop(false);
 #define WRITE_RESPONSE_RT		"_WrResp_RT"
 
 /**
- * Process message received from EIS and send for publishing on MQTT
+ * Process message received from EII and send for publishing on MQTT
  * @param msg	:[in] actual message
  * @param mqttPublisher :[in] mqtt publisher instance from which to publish this message
  * returns true/false based on success/failure
@@ -162,23 +162,23 @@ void getOperation(std::string topic, globalConfig::COperation& operation)
 }
 
 /**
- * Thread function to listen on EIS and send data to MQTT
+ * Thread function to listen on EII and send data to MQTT
  * @param topic :[in] topic to listen onto
  * @param context :[in] msg bus context
  * @param subContext :[in] sub context
  * @param operation :[in] operation type this thread needs to perform
  * @return None
  */
-void listenOnEIS(std::string topic, zmq_handler::stZmqContext context, zmq_handler::stZmqSubContext subContext, globalConfig::COperation operation)
+void listenOnEII(std::string topic, zmq_handler::stZmqContext context, zmq_handler::stZmqSubContext subContext, globalConfig::COperation operation)
 {
 	globalConfig::set_thread_sched_param(operation);
-	globalConfig::display_thread_sched_attr(topic + " listenOnEIS");
+	globalConfig::display_thread_sched_attr(topic + " listenOnEII");
 	int qos = operation.getQos();
 
 	if(context.m_pContext == NULL || subContext.sub_ctx == NULL)
 	{
-		std::cout << "Cannot start listening on EIS for topic : " << topic << std::endl;
-		DO_LOG_ERROR("Cannot start listening on EIS for topic : " + topic);
+		std::cout << "Cannot start listening on EII for topic : " << topic << std::endl;
+		DO_LOG_ERROR("Cannot start listening on EII for topic : " + topic);
 		return;
 	}
 
@@ -225,12 +225,12 @@ void listenOnEIS(std::string topic, zmq_handler::stZmqContext context, zmq_handl
 }
 
 /**
- * publish message to EIS
- * @param a_oRcvdMsg  :[in] message to publish on EIS
- * @param a_sEisTopic :[in] EIS topic
+ * publish message to EII
+ * @param a_oRcvdMsg  :[in] message to publish on EII
+ * @param a_sEiiTopic :[in] EII topic
  * @return true/false based on success/failure
  */
-bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
+bool publishEIIMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEiiTopic)
 {
 	bool retVal = false;
 
@@ -246,9 +246,9 @@ bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 			DO_LOG_ERROR("could not create new msg envelope");
 			return retVal;
 		}
-		std::string eisMsg = a_oRcvdMsg.getStrMsg();
+		std::string eiiMsg = a_oRcvdMsg.getStrMsg();
 		//parse from root element
-		root = cJSON_Parse(eisMsg.c_str());
+		root = cJSON_Parse(eiiMsg.c_str());
 		if (NULL == root)
 		{
 			DO_LOG_ERROR("Could not parse value received from MQTT");
@@ -319,13 +319,13 @@ bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 		
 		std::string strTsReceived{""};
 		bool bRet = true;
-		if(true == zmq_handler::publishJson(strTsReceived, msg, a_sEisTopic, "tsMsgPublishOnEIS"))
+		if(true == zmq_handler::publishJson(strTsReceived, msg, a_sEiiTopic, "tsMsgPublishOnEII"))
 		{
 			bRet = true;
 		}
 		else
 		{
-			DO_LOG_ERROR("Failed to publish write msg on EIS: " + eisMsg);
+			DO_LOG_ERROR("Failed to publish write msg on EII: " + eiiMsg);
 			bRet = false;
 		}
 
@@ -356,12 +356,12 @@ bool publishEISMsg(CMessageObject &a_oRcvdMsg, const std::string &a_sEisTopic)
 }
 
 /**
- * Process message received from MQTT and send it on EIS
- * @param recvdMsg :[in] message to publish on EIS
- * @param a_sEisTopic :[in] EIS topic
+ * Process message received from MQTT and send it on EII
+ * @param recvdMsg :[in] message to publish on EII
+ * @param a_sEiiTopic :[in] EII topic
  * @return true/false based on success/failure
  */
-void processMsgToSendOnEIS(CMessageObject &recvdMsg, const std::string a_sEisTopic)
+void processMsgToSendOnEII(CMessageObject &recvdMsg, const std::string a_sEiiTopic)
 {
 	try
 	{
@@ -378,23 +378,23 @@ void processMsgToSendOnEIS(CMessageObject &recvdMsg, const std::string a_sEisTop
 
 		DO_LOG_DEBUG("Request received from MQTT for topic "+ rcvdTopic);
 
-		if (a_sEisTopic.empty())
+		if (a_sEiiTopic.empty())
 		{
-			DO_LOG_ERROR("EIS topic is not set to publish on EIS"+ rcvdTopic);
+			DO_LOG_ERROR("EII topic is not set to publish on EII"+ rcvdTopic);
 			return;
 		}
 		else
 		{
-			//publish data to EIS
-			DO_LOG_DEBUG("Received mapped EIS topic : " + a_sEisTopic);
+			//publish data to EII
+			DO_LOG_DEBUG("Received mapped EII topic : " + a_sEiiTopic);
 
-			if(publishEISMsg(recvdMsg, a_sEisTopic))
+			if(publishEIIMsg(recvdMsg, a_sEiiTopic))
 			{
-				DO_LOG_DEBUG("Published EIS message : "	+ strMsg + " on topic :" + a_sEisTopic);
+				DO_LOG_DEBUG("Published EII message : "	+ strMsg + " on topic :" + a_sEiiTopic);
 			}
 			else
 			{
-				DO_LOG_ERROR("Failed to publish EIS message : "	+ strMsg + " on topic :" + a_sEisTopic);
+				DO_LOG_ERROR("Failed to publish EII message : "	+ strMsg + " on topic :" + a_sEiiTopic);
 			}
 		}
 	}
@@ -407,13 +407,13 @@ void processMsgToSendOnEIS(CMessageObject &recvdMsg, const std::string a_sEisTop
 }
 
 /**
- * Set thread priority for threads that send messages from MQTT-Export to EIS
+ * Set thread priority for threads that send messages from MQTT-Export to EII
  * depending on read and real-time parameters
  * @param isRealtime :[in] is operation real-time or not
  * @param isRead :[in] is it read or write operation
  * @return None
  */
-void set_thread_priority_for_eis(bool& isRealtime, bool& isRead)
+void set_thread_priority_for_eii(bool& isRealtime, bool& isRead)
 {
 	globalConfig::COperation operation;
 
@@ -452,43 +452,43 @@ void set_thread_priority_for_eis(bool& isRealtime, bool& isRead)
 }
 
 /**
- * Thread function to read requests from queue filled up by MQTT and send data to EIS
+ * Thread function to read requests from queue filled up by MQTT and send data to EII
  * @param qMgr 	:[in] pointer to respective queue manager
  * @return None
  */
-void postMsgsToEIS(QMgr::CQueueMgr& qMgr)
+void postMsgsToEII(QMgr::CQueueMgr& qMgr)
 {
-	DO_LOG_DEBUG("Starting thread to send messages on EIS");
+	DO_LOG_DEBUG("Starting thread to send messages on EII");
 
 	bool isRealtime = qMgr.isRealTime();
 	bool isRead = qMgr.isRead();
 
-	//set priority to send msgs on EIS from MQTT-export (on-demand)
-	set_thread_priority_for_eis(isRealtime, isRead);
+	//set priority to send msgs on EII from MQTT-export (on-demand)
+	set_thread_priority_for_eii(isRealtime, isRead);
 
-	globalConfig::display_thread_sched_attr("postMsgsToEIS");
+	globalConfig::display_thread_sched_attr("postMsgsToEII");
 
-	std::string eisTopic = "";
+	std::string eiiTopic = "";
 	if(! isRead)//write request
 	{
 		if(isRealtime)
 		{
-			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest_RT"));
+			eiiTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest_RT"));
 		}
 		else
 		{
-			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest"));
+			eiiTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("WriteRequest"));
 		}
 	}
 	else//read request
 	{
 		if(isRealtime)
 		{
-			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest_RT"));
+			eiiTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest_RT"));
 		}
 		else
 		{
-			eisTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest"));
+			eiiTopic.assign(EnvironmentInfo::getInstance().getDataFromEnvMap("ReadRequest"));
 		}
 	}
 
@@ -499,7 +499,7 @@ void postMsgsToEIS(QMgr::CQueueMgr& qMgr)
 			CMessageObject oTemp;
 			if(true == qMgr.isMsgArrived(oTemp))
 			{
-				processMsgToSendOnEIS(oTemp, eisTopic);
+				processMsgToSendOnEII(oTemp, eiiTopic);
 			}
 		}
 	}
@@ -510,14 +510,14 @@ void postMsgsToEIS(QMgr::CQueueMgr& qMgr)
 }
 
 /**
- * Get EIS topic list, get corresponding message bus and topic contexts.
- * Spawn threads to listen to EIS messages, receive messages from EIS and publish them to MQTT
+ * Get EII topic list, get corresponding message bus and topic contexts.
+ * Spawn threads to listen to EII messages, receive messages from EII and publish them to MQTT
  * @param None
  * @return None
  */
 void postMsgstoMQTT()
 {
-	DO_LOG_DEBUG("Initializing threads to start listening on EIS topics...");
+	DO_LOG_DEBUG("Initializing threads to start listening on EII topics...");
 
 	// get sub topic list
 	std::vector<std::string> vFullTopics;
@@ -544,16 +544,16 @@ void postMsgstoMQTT()
 		getOperation(topic, objOperation);
 
 		g_vThreads.push_back(
-				std::thread(listenOnEIS, topic, context, subContext, objOperation));
+				std::thread(listenOnEII, topic, context, subContext, objOperation));
 	}
 }
 
 /**
- * Create EIS msg bus context and topic context for publisher and subscriber both
+ * Create EII msg bus context and topic context for publisher and subscriber both
  * @param None
  * @return true/false based on success/failure
  */
-bool initEISContext()
+bool initEIIContext()
 {
 	bool retVal = true;
 	// Initializing all the pub/sub topic base context for ZMQ
@@ -636,8 +636,8 @@ int main(int argc, char *argv[])
 		CMQTTHandler::instance();
 
 		//Prepare ZMQ contexts for publishing & subscribing data
-		if(!initEISContext()) {
-			DO_LOG_ERROR("Error in initEISContext");
+		if(!initEIIContext()) {
+			DO_LOG_ERROR("Error in initEIIContext");
 		}
 
 #ifdef UNIT_TEST
@@ -645,13 +645,13 @@ int main(int argc, char *argv[])
 	return RUN_ALL_TESTS();
 #endif
 
-		//Start listening on EIS & publishing to MQTT
+		//Start listening on EII & publishing to MQTT
 		postMsgstoMQTT();
-		//threads to send on-demand requests on EIS
-		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRTRead())));
-		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRTWrite())));
-		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getRead())));
-		g_vThreads.push_back(std::thread(postMsgsToEIS, std::ref(QMgr::getWrite())));
+		//threads to send on-demand requests on EII
+		g_vThreads.push_back(std::thread(postMsgsToEII, std::ref(QMgr::getRTRead())));
+		g_vThreads.push_back(std::thread(postMsgsToEII, std::ref(QMgr::getRTWrite())));
+		g_vThreads.push_back(std::thread(postMsgsToEII, std::ref(QMgr::getRead())));
+		g_vThreads.push_back(std::thread(postMsgsToEII, std::ref(QMgr::getWrite())));
 
 
 		for (auto &th : g_vThreads)

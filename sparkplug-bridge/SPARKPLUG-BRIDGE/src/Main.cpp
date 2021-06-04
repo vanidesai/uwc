@@ -62,7 +62,7 @@ void processExternalMqttMsgs(CQueueHandler& a_qMgr)
  */
 void processInternalMqttMsgs(CQueueHandler& a_qMgr)
 {
-	string eisTopic = "";
+	string eiiTopic = "";
 
 	try
 	{

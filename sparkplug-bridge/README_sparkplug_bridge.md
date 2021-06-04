@@ -53,7 +53,7 @@ For compiling sparkplug-bridge container sources on machine without container, f
 1. Install make and cmake
 2. Install wget by using command "sudo apt-get install wget".
 3. Install Git by using command "sudo apt install git"
-4. Install all the EIS libraries on host by running the shell script -- `sudo -E ./eis_libs_installer.sh`. Refer the README.md from  `IEdgeInsights\common\README.md` for details.
+4. Install all the EII libraries on host by running the shell script -- `sudo -E ./eii_libs_installer.sh`. Refer the README.md from  `IEdgeInsights\common\README.md` for details.
 5. Install log4cpp (version - 1.1.3, link - https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz) library under /usr/local/ directory.
 6. Install yaml-cpp (branch - yaml-cpp-0.6.3, version - 0.6.3, link - https://github.com/jbeder/yaml-cpp.git) libraries on host under /usr/local/ directory.
 7. Install paho-cpp (branch develop https://github.com/eclipse/paho.mqtt.c.git) libraries on host under /usr/local/ directory.
@@ -73,7 +73,7 @@ Notes : Above instructions are specified to build the sources in "Release" mode.
 	1. Run `01_uwc_pre_requisites.sh` script as explained in the main uwc/README.md.
 	2. Run the provisioning command script to deploy ia_etcd container as explainedin main uwc/README.md.
 2. Go to `Sourcecode\sparkplug-bridge\SPARKPLUG-BRIDGE\Release` directory and open bash terminal.
-3. Set EIS specific environment variables using below command.
+3. Set EII specific environment variables using below command.
 	`source <Complete Path of .env file present inside IEdgeInsights/build directory>`
 	For example `source /home/intel/uwc-releases/IEdgeInsights/build/.env`
 4. Export all other environment variables required for sparkplug-bridge container. Refer environment section from sparkplug-bridge service present inside docker-compose.yml file of sparkplug-bridge service (E.g. `export AppName="SPARKPLUG-BRIDGE"` for exporting AppName variable likewise all other variables needed to be exported in the same terminal) 

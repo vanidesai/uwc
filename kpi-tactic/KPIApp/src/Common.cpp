@@ -233,7 +233,7 @@ std::string commonUtilKPI::createAnalysisMsg(struct stPollWrData &a_stPollWrData
 		answer(sMsg, pRootPollMsg, 	"reqSentByStack", 		"pollReqSentByStack", 	false);
 		answer(sMsg, pRootPollMsg, 	"respRcvdByStack", 		"pollRespRcvdByStack", 	false);
 		answer(sMsg, pRootPollMsg, 	"respPostedByStack", 	"pollRespPostedByStack",false);
-		answer(sMsg, pRootPollMsg, 	"usec",				 	"pollRespPostedToEIS",false);
+		answer(sMsg, pRootPollMsg, 	"usec",				 	"pollRespPostedToEII",false);
 		answer(sMsg, pRootPollMsg, 	"tsMsgRcvdForProcessing","pollDataRcvdInExport",false);
 		answer(sMsg, pRootPollMsg, 	"tsMsgReadyForPublish",	"pollDataPostedToMQTT",	false);
 
@@ -257,13 +257,13 @@ std::string commonUtilKPI::createAnalysisMsg(struct stPollWrData &a_stPollWrData
 		answer(sMsg, pRootWrRspMsg, "status", 				"wrRspStatus", 		false);
 		answer(sMsg, pRootWrRspMsg, "error_code",			"wrRspError", 		false);
 		answer(sMsg, pRootWrRspMsg, "tsMsgRcvdFromMQTT", 	"wrReqRcvdInExport",	false);
-		answer(sMsg, pRootWrRspMsg, "tsMsgPublishOnEIS", 	"wrReqPublishOnEIS",	false);
+		answer(sMsg, pRootWrRspMsg, "tsMsgPublishOnEII", 	"wrReqPublishOnEII",	false);
 		answer(sMsg, pRootWrRspMsg, "reqRcvdByApp", 		"wrReqRcvdByModbus",	false);
 		answer(sMsg, pRootWrRspMsg, "reqRcvdInStack", 		"wrReqRcvdInStack", 	false);
 		answer(sMsg, pRootWrRspMsg, "reqSentByStack", 		"wrReqSentByStack", 	false);
 		answer(sMsg, pRootWrRspMsg, "respRcvdByStack", 		"wrRespRcvdByStack", 	false);
 		answer(sMsg, pRootWrRspMsg, "respPostedByStack", 	"wrRespPostedByStack",	false);
-		answer(sMsg, pRootWrRspMsg, "usec",			 		"wrRespPostedToEIS",	false);
+		answer(sMsg, pRootWrRspMsg, "usec",			 		"wrRespPostedToEII",	false);
 		answer(sMsg, pRootWrRspMsg,	"tsMsgRcvdForProcessing","wrRespRcvdInExport",	false);
 		answer(sMsg, pRootWrRspMsg,	"tsMsgReadyForPublish",	"wrRespPostedToMQTT",	false);
 

@@ -8,15 +8,15 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 #*********************************************************************************
 
-ARG EIS_VERSION
-FROM ia_eisbase:$EIS_VERSION as eisbase
+ARG EII_VERSION
+FROM ia_eiibase:$EII_VERSION as eiibase
 LABEL description="MQTT Export Application"
-ARG EIS_UID
+ARG EII_UID
 
-FROM ia_common:$EIS_VERSION as common
+FROM ia_common:$EII_VERSION as common
 
 # Build Paho C Library
-FROM eisbase as build-pahoc
+FROM eiibase as build-pahoc
 RUN mkdir -p /usr/paho-c
 RUN git clone --branch v1.3.1 https://github.com/eclipse/paho.mqtt.c.git \
   && cd paho.mqtt.c \
@@ -28,7 +28,7 @@ RUN git clone --branch v1.3.1 https://github.com/eclipse/paho.mqtt.c.git \
 
 
 # Build Paho CPP Library
-FROM eisbase as build-pahocpp
+FROM eiibase as build-pahocpp
 COPY --from=build-pahoc /usr/paho-c /usr/.
 RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
   && cd paho.mqtt.cpp \
@@ -41,7 +41,7 @@ RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
 
 
 # Build log4cpp Library
-FROM eisbase as build-log4cpp
+FROM eiibase as build-log4cpp
 
 RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
   && tar -zxvf log4cpp-1.1.3.tar.gz \
@@ -52,7 +52,7 @@ RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-
 
 
 # Build MQTT-Export application
-FROM eisbase as mqtt-export
+FROM eiibase as mqtt-export
 WORKDIR /
 COPY --from=common /usr/local/include /usr/local/include
 COPY --from=common /usr/local/lib /usr/local/lib
@@ -62,8 +62,8 @@ COPY --from=build-pahoc /usr/paho-c/lib/lib* /MQTT-Export-App/lib/
 COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* /MQTT-Export-App/lib/
 COPY --from=build-pahocpp /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=build-pahoc /usr/paho-c/include/MQTT* /MQTT-Export-App/include/
-COPY --from=build-log4cpp /EIS/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
-COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* /MQTT-Export-App/lib/
+COPY --from=build-log4cpp /EII/log4cpp/build/include/log4cpp /MQTT-Export-App/include/log4cpp
+COPY --from=build-log4cpp /EII/log4cpp/build/lib/* /MQTT-Export-App/lib/
 
 # begin kw ######################
 RUN dpkg --add-architecture i386 \
@@ -102,7 +102,7 @@ RUN /klocwork/bin/kwauth --url "${KW_SERVER}" < /tmp/kwcreds \
 # end kw ######################
 
 # Build mqtt export container service
-FROM eisbase as mqtt-export-service
+FROM eiibase as mqtt-export-service
 COPY --from=common /usr/local/include /usr/local/include
 COPY --from=common /usr/local/lib /usr/local/lib
 WORKDIR /
@@ -113,10 +113,10 @@ WORKDIR ${APP_WORK_DIR}
 COPY --from=mqtt-export /MQTT-Export-App/Release/MQTT_Export ${APP_WORK_DIR}
 COPY --from=build-pahoc /usr/paho-c/lib/lib* ${APP_WORK_DIR}
 COPY --from=build-pahocpp /usr/paho-cpp/lib/lib* ${APP_WORK_DIR}
-COPY --from=build-log4cpp /EIS/log4cpp/build/lib/* ${APP_WORK_DIR}
+COPY --from=build-log4cpp /EII/log4cpp/build/lib/* ${APP_WORK_DIR}
 COPY --from=mqtt-export /MQTT-Export-App/Config/log4cpp.properties /opt/intel/config
-RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
-RUN chown -R ${EIS_UID}:${EIS_UID} ${APP_WORK_DIR}
+RUN chown -R ${EII_UID}:${EII_UID} ${APP_WORK_DIR}
+RUN chown -R ${EII_UID}:${EII_UID} ${APP_WORK_DIR}
 RUN chmod -R 770 ${APP_WORK_DIR}
 
 #set the environment variable

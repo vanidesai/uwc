@@ -8,15 +8,15 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 #*********************************************************************************
 
-ARG EIS_VERSION
-FROM ia_eisbase:$EIS_VERSION as eisbase
+ARG EII_VERSION
+FROM ia_eiibase:$EII_VERSION as eiibase
 LABEL description="Common library container"
-ARG EIS_UID
+ARG EII_UID
 
-FROM ia_common:$EIS_VERSION as common
+FROM ia_common:$EII_VERSION as common
 
 # build openssl library
-FROM ia_common:$EIS_VERSION as openssl-build
+FROM ia_common:$EII_VERSION as openssl-build
 ARG OPENSSL_DIR=openssl
 
 RUN mkdir -p ${OPENSSL_DIR} \
@@ -28,7 +28,7 @@ RUN mkdir -p ${OPENSSL_DIR} \
     && make install_sw -s 
 
 # Build Paho C Library
-FROM eisbase as build-pahoc
+FROM eiibase as build-pahoc
 RUN mkdir -p /usr/paho-c
 
 COPY --from=openssl-build /usr/ssl /usr/local
@@ -42,7 +42,7 @@ RUN git clone --branch develop https://github.com/eclipse/paho.mqtt.c.git \
     &&	make install
 
 #Build Paho CPP Library
-FROM ia_common:$EIS_VERSION
+FROM ia_common:$EII_VERSION
 COPY --from=build-pahoc /usr/paho-c /usr/.
 COPY --from=openssl-build /usr/ssl /usr/ssl
 
@@ -66,7 +66,7 @@ RUN git clone --branch v1.1 https://github.com/eclipse/paho.mqtt.cpp.git \
     && make install \
     && rm -rf /tmp/*
 
-WORKDIR /EIS
+WORKDIR /EII
 RUN wget https://sourceforge.net/projects/log4cpp/files/latest/download/log4cpp-1.1.3.tar.gz \
     && tar -zxvf log4cpp-1.1.3.tar.gz \
     && cd log4cpp && mkdir build \
@@ -90,8 +90,8 @@ COPY uwc_util /uwc_util/.
 RUN	cp -r /usr/yaml/include/* /uwc_util/include/yaml-cpp/ \
         && mkdir -p /uwc_util/lib \
 	&& cp -r /usr/yaml/lib/* /uwc_util/lib/ \
- 	&& cp -r /EIS/log4cpp/build/include/* /uwc_util/include/ \
-	&& cp -r /EIS/log4cpp/build/lib/* /uwc_util/lib/ \
+ 	&& cp -r /EII/log4cpp/build/include/* /uwc_util/include/ \
+	&& cp -r /EII/log4cpp/build/lib/* /uwc_util/lib/ \
 	&& cp -r /usr/paho-cpp/include/mqtt /usr/local/include/mqtt \
 	&& cp -r /usr/ssl/lib/* /usr/local/lib/ \
 	&& cp -r /usr/ssl/include/* /usr/local/include/ \

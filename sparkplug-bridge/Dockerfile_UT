@@ -8,14 +8,14 @@
 # the Materials, either expressly, by implication, inducement, estoppel or otherwise.
 #*********************************************************************************
 
-ARG EIS_VERSION
-ARG EIS_UID
-FROM uwc_test_common:$EIS_VERSION as uwc_test_common
-FROM ia_eisbase:$EIS_VERSION as eisbase
+ARG EII_VERSION
+ARG EII_UID
+FROM uwc_test_common:$EII_VERSION as uwc_test_common
+FROM ia_eiibase:$EII_VERSION as eiibase
 LABEL description="SPARKPLUG BRIDGE Unit Testing container"
 
 # Build tahu library
-FROM eisbase as build-tahu
+FROM eiibase as build-tahu
 RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&  git clone --branch develop https://github.com/eclipse/tahu \
     && cd tahu \ 
@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y libmosquitto-dev \
     &&	make -s
 
 # Build Sparkplug-BRIDGE application
-FROM ia_common:$EIS_VERSION as sparkplug-bridge
+FROM ia_common:$EII_VERSION as sparkplug-bridge
 WORKDIR /
 
 RUN mkdir -p reports/sparkplug-bridge
@@ -39,12 +39,12 @@ COPY --from=uwc_test_common /usr/paho-cpp/lib/lib* /SPARKPLUG-BRIDGE/lib/
 COPY --from=uwc_test_common /usr/lib/libpaho* /SPARKPLUG-BRIDGE/lib/
 COPY --from=uwc_test_common /usr/paho-cpp/include/mqtt /usr/local/include/mqtt
 COPY --from=uwc_test_common /usr/include/MQTT* /SPARKPLUG-BRIDGE/include/
-COPY --from=uwc_test_common /EIS/log4cpp/build/include/log4cpp /SPARKPLUG-BRIDGE/include/log4cpp
-COPY --from=uwc_test_common /EIS/log4cpp/build/lib/* /SPARKPLUG-BRIDGE/lib/
-COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/googletest/include/gtest /usr/local/include/gtest
-COPY --from=uwc_test_common /EIS/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
-COPY --from=build-tahu /EIS/tahu/client_libraries/c/lib/libtahu.so /SPARKPLUG-BRIDGE/lib/
-COPY --from=build-tahu /EIS/tahu/client_libraries/c/include/* /SPARKPLUG-BRIDGE/include/tahu/
+COPY --from=uwc_test_common /EII/log4cpp/build/include/log4cpp /SPARKPLUG-BRIDGE/include/log4cpp
+COPY --from=uwc_test_common /EII/log4cpp/build/lib/* /SPARKPLUG-BRIDGE/lib/
+COPY --from=uwc_test_common /EII/googletest-release-1.8.0/googletest/include/gtest /usr/local/include/gtest
+COPY --from=uwc_test_common /EII/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
+COPY --from=build-tahu /EII/tahu/client_libraries/c/lib/libtahu.so /SPARKPLUG-BRIDGE/lib/
+COPY --from=build-tahu /EII/tahu/client_libraries/c/include/* /SPARKPLUG-BRIDGE/include/tahu/
 COPY --from=uwc_test_common /uwc_util/Release/libuwc-common.so /SPARKPLUG-BRIDGE/lib/
 COPY --from=uwc_test_common /uwc_util/include/* /SPARKPLUG-BRIDGE/include/
 

@@ -14,7 +14,7 @@
 #include <gtest/gtest.h>
 #include "MQTTPublishHandler.hpp"
 
-#include "eis/utils/config.h"
+#include "eii/utils/config.h"
 #include "ZmqHandler.hpp"
 
 class MQTTPublishHandler_ut : public ::testing::Test{

@@ -76,7 +76,7 @@ static unsigned long get_micros(struct timespec ts) {
 }
 
 /**
- * Prepare response json using EIS APIs
+ * Prepare response json using EII APIs
  * @param a_pMsg		:[out] pointer to message envelope to fill up
  * @param a_sValue		:[out] Value, if available
  * @param a_objReqData	:[in] request data
@@ -176,12 +176,12 @@ bool CPeriodicReponseProcessor::prepareResponseJson(msg_envelope_t** a_pMsg, std
 			/// message received from MQTT Time
 			msg_envelope_elem_body_t* ptMqttTime = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strMqttTime.c_str());
 			/// message received from MQTT Time
-			msg_envelope_elem_body_t* ptEisTime = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strEisTime.c_str());
+			msg_envelope_elem_body_t* ptEiiTime = msgbus_msg_envelope_new_string(stMbusApiPram.m_stOnDemandReqData.m_strEiiTime.c_str());
 
 			msgbus_msg_envelope_put(msg, "reqRcvdByApp", ptAppTSReqRcvd);
 			msgbus_msg_envelope_put(msg, "app_seq", ptAppSeq);
 			msgbus_msg_envelope_put(msg, "tsMsgRcvdFromMQTT", ptMqttTime);
-			msgbus_msg_envelope_put(msg, "tsMsgPublishOnEIS", ptEisTime);
+			msgbus_msg_envelope_put(msg, "tsMsgPublishOnEII", ptEiiTime);
 
 			bIsByteSwap = stMbusApiPram.m_stOnDemandReqData.m_isByteSwap;
 			bIsWordSwap = stMbusApiPram.m_stOnDemandReqData.m_isWordSwap;
@@ -397,7 +397,7 @@ bool CPeriodicReponseProcessor::postResponseJSON(stStackResponse& a_stResp, cons
 			}
 			else
 			{
-				DO_LOG_ERROR("Failed to publish msg on EIS");
+				DO_LOG_ERROR("Failed to publish msg on EII");
 			}
 
 #ifdef INSTRUMENTATION_LOG

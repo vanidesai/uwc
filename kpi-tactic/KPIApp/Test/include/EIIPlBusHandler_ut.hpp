@@ -8,21 +8,21 @@
  * the Materials, either expressly, by implication, inducement, estoppel or otherwise.
  ************************************************************************************/
 
-#ifndef TEST_INCLUDE_EISPLBUSHANDLER_UT_HPP_
-#define TEST_INCLUDE_EISPLBUSHANDLER_UT_HPP_
+#ifndef TEST_INCLUDE_EIIPLBUSHANDLER_UT_HPP_
+#define TEST_INCLUDE_EIIPLBUSHANDLER_UT_HPP_
 
-#include "EISPlBusHandler.hpp"
+#include "EIIPlBusHandler.hpp"
 #include "gtest/gtest.h"
 
 
-class EISPlBusHandler_ut : public ::testing::Test{
+class EIIPlBusHandler_ut : public ::testing::Test{
 protected:
 	virtual void SetUp();
 	virtual void TearDown();
 public:
-	CEISPlBusHandler CEISPlBusHandler_obj;
+	CEIIPlBusHandler CEIIPlBusHandler_obj;
 	std::string strMsg = "{ 	\"value\": \"0xFF00\", 	\"command\": \"Pointname\", 	\"app_seq\": \"1234\" }";
 
 };
 
-#endif /* TEST_INCLUDE_EISPLBUSHANDLER_UT_HPP_ */
+#endif /* TEST_INCLUDE_EIIPLBUSHANDLER_UT_HPP_ */

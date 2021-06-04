@@ -38,20 +38,20 @@
 
 
 std::string parse_msg(const char *json);
-extern bool initEISContext();
+extern bool initEIIContext();
 extern void postMsgstoMQTT();
 extern void signalHandler(int signal);
 extern bool addSrTopic(std::string &json, std::string& topic);
-extern void postMsgsToEIS(QMgr::CQueueMgr& qMgr);
+extern void postMsgsToEII(QMgr::CQueueMgr& qMgr);
 extern bool processMsg(msg_envelope_t *msg, CMQTTPublishHandler &mqttPublisher);
-extern void processMsgToSendOnEIS(CMessageObject &recvdMsg, const std::string a_sEisTopic);
+extern void processMsgToSendOnEII(CMessageObject &recvdMsg, const std::string a_sEiiTopic);
 extern void getOperation(std::string topic, globalConfig::COperation& operation);
 
 extern std::vector<std::thread> g_vThreads;;
 
 extern void Temp_Function(std::string& topic);
 
-extern void set_thread_priority_for_eis(bool& isRealtime, bool& isRead);
+extern void set_thread_priority_for_eii(bool& isRealtime, bool& isRead);
 
 extern std::atomic<bool> g_shouldStop;
 

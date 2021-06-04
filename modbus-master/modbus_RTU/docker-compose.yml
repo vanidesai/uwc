@@ -23,16 +23,16 @@ version: '3.6'
 services:
   modbus-rtu-master:
     depends_on:
-    - ia_eisbase
+    - ia_eiibase
     - uwc_common
     build:
       context: $PWD/../uwc/modbus-master/
       dockerfile: $PWD/../uwc/modbus-master/Dockerfile_RTU
       args:
-        EIS_VERSION: ${EIS_VERSION}
-        EIS_UID: ${EIS_UID}
-        EIS_USER_NAME: ${EIS_USER_NAME}
-    image: ${DOCKER_REGISTRY}modbus-rtu-master:${EIS_VERSION}
+        EII_VERSION: ${EII_VERSION}
+        EII_UID: ${EII_UID}
+        EII_USER_NAME: ${EII_USER_NAME}
+    image: ${DOCKER_REGISTRY}modbus-rtu-master:${EII_VERSION}
     container_name: modbus-rtu-master
     hostname: modbus-rtu-master
     network_mode: host
@@ -49,7 +49,7 @@ services:
       ETCD_CLIENT_PORT: ${ETCD_CLIENT_PORT}
       ETCD_PREFIX: ${ETCD_PREFIX}
       DEV_MODE: ${DEV_MODE}
-      no_proxy: ${eis_no_proxy}
+      no_proxy: ${eii_no_proxy}
       Log4cppPropsFile: "/opt/intel/config/log4cpp.properties"
       MY_APP_ID: 2
       CUTOFF_INTERVAL_PERCENTAGE: 90
@@ -64,11 +64,11 @@ services:
         max-file: "3"
         max-size: "10m"
     volumes:
-    - "${EIS_INSTALL_PATH}/uwc_data:/opt/intel/eis/uwc_data:ro"
+    - "${EII_INSTALL_PATH}/uwc_data:/opt/intel/eii/uwc_data:ro"
     - "vol_uwc_socket:${SOCKET_DIR}:z"
-    - "${EIS_INSTALL_PATH}/uwc_data/common_config:${EIS_INSTALL_PATH}/uwc_data/common_config:ro"
-    - "${EIS_INSTALL_PATH}/container_logs/modbus-rtu-master:/opt/intel/app/logs"
-    user: ${EIS_UID}
+    - "${EII_INSTALL_PATH}/uwc_data/common_config:${EII_INSTALL_PATH}/uwc_data/common_config:ro"
+    - "${EII_INSTALL_PATH}/container_logs/modbus-rtu-master:/opt/intel/app/logs"
+    user: ${EII_UID}
     # userns_mode: host
     devices:
       - /dev:/dev
@@ -93,7 +93,7 @@ volumes:
     driver_opts:
       type: local
       o: bind
-      device: ${EIS_INSTALL_PATH}/sockets
+      device: ${EII_INSTALL_PATH}/sockets
 
 secrets:
   etcd_root_cert:
