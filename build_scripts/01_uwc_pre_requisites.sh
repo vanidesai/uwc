@@ -85,8 +85,24 @@ add_UWC_containers_In_EII()
     return 0
 }
 
+modify_config()
+{
+	echo "Modifying the config file"
+	search_dir="${working_dir}/../eii_configs/"
+	for file_path in "$search_dir"/*
+    do
+     dir=$(basename "$file_path" .json)
+	 if [ -d "${working_dir}/../../${dir}" ]; then
+	     cp ${file_path} ${working_dir}/../../${dir}/config.json
+		 echo "${GREEN}Done copying from ${file_path} to ${working_dir}/../../${dir}${NC}"
+	 else
+	     echo "${RED}${working_dir}/../../${dir} doesn't exists, Please check ${working_dir}/../eii_configs for valid config files${NC}"	 
+	 fi	
+    done
+}
 
 echo "${GREEN}============================= Script START ============================================${NC}"
 
 create_docker_volume_dir
-add_UWC_containers_In_EII
+add_UWC_containers_In_EIS
+modify_config

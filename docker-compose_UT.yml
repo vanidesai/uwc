@@ -604,9 +604,9 @@ secrets:
   ca_broker:
     file: provision/Certificates/ca/ca_certificate.pem
   broker_cert:
-    file: provision/Certificates/mymqttcerts/mymqttcerts_server_certificate.pem
+    file: provision/Certificates/mymqttcerts_Server/mymqttcerts_Server_server_certificate.pem
   broker_key:
-    file: provision/Certificates/mymqttcerts/mymqttcerts_server_key.pem
+    file: provision/Certificates/mymqttcerts_Server/mymqttcerts_Server_server_key.pem
   etcd_MQTT_Bridge_cert:
     file: provision/Certificates/MQTT_Bridge/MQTT_Bridge_client_certificate.pem
   etcd_MQTT_Bridge_key:

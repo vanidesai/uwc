@@ -73,6 +73,7 @@ secrets:
   ca_broker:
     file: provision/Certificates/ca/ca_certificate.pem
   broker_cert:
-    file: provision/Certificates/mymqttcerts/mymqttcerts_server_certificate.pem
+    file: provision/Certificates/mymqttcerts_Server/mymqttcerts_Server_server_certificate.pem
   broker_key:
-    file: provision/Certificates/mymqttcerts/mymqttcerts_server_key.pem
+    file: provision/Certificates/mymqttcerts_Server/mymqttcerts_Server_server_key.pem
+

@@ -32,7 +32,51 @@ qos=""
 ret=""
 
 #------------------------------------------------------------------
-# eii_provision
+# copy_recipes
+#
+# Description:
+#        Copy the recipes files from uwc/uwc_recipes/ to build/
+# Return:
+#        None
+# 
+#------------------------------------------------------------------
+
+
+
+copy_recipes(){
+
+   echo "${GREEN}Copying the recipes files from uwc/uwc_recipes/ to build/${NC}"
+   cp -rf $Current_Dir/../uwc_recipes/* $eis_build_dir/
+   echo "Done copying...."
+
+}
+
+#------------------------------------------------------------------
+# modifying_env
+#
+# Description:
+#        Adding UWC env variables.
+# Return:
+#        None
+# 
+#------------------------------------------------------------------
+
+modifying_env()
+{
+	echo "Addding UWC specific env variables"
+	result=`grep -F 'env for uwc' ../.env`
+	if [ -z "${result}" ]; then
+	    cat ../.env >> ../../build/.env
+       
+	fi
+    result=`grep -F 'uwc/'  ../../.gitignore`
+	if [ -z "${result}" ]; then
+	    sed -i '$a uwc/' ../../.gitignore
+	fi	
+  
+}
+#------------------------------------------------------------------
+# eis_provision
 #
 # Description:
 #        Performs prvovisioning as per docker-compose.yml file.
@@ -51,11 +95,21 @@ eii_provision()
         exit 1 # terminate and indicate error
     fi
 
-    ./provision.sh ../docker-compose.yml
+    cp  ../../uwc/mymqttcerts/docker-compose.yml ../docker-compose-mymqtt.yml
+    ./provision_eis.sh ../docker-compose-mymqtt.yml
+    check_for_errors "$?" "Provisioning is failed. Please check logs"                     
+    echo "${GREEN}>>>>>${NC}"
+    echo "${GREEN}Certificates are generated for mqtt_client${NC}"    
+    cp -fr Certificates Certificates_backup
+    
+    ./provision_eis.sh ../docker-compose.yml
     check_for_errors "$?" "Provisioning is failed. Please check logs" \
                     "${GREEN}Provisioning is done successfully.${NC}"
     echo "${GREEN}>>>>>${NC}"
     echo "${GREEN}For building & running UWC services,run 03_Build_Run_UWC.sh script${NC}"
+    echo "Generating certificates for mqtt_client"
+    cp -fr Certificates_backup/* Certificates/
+    rm -rf Certificates_backup ../docker-compose-mymqtt.yml
     return 0
 }
 
@@ -392,6 +446,8 @@ export DOCKER_CONTENT_TRUST=1
 export DOCKER_BUILDKIT=1
 check_root_user
 check_internet_connection
+copy_recipes
+modifying_env
 docker_verify
 docker_compose_verify
 if [ -z "$1" ]; then
