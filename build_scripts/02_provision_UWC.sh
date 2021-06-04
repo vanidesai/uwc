@@ -46,7 +46,7 @@ ret=""
 copy_recipes(){
 
    echo "${GREEN}Copying the recipes files from uwc/uwc_recipes/ to build/${NC}"
-   cp -rf $Current_Dir/../uwc_recipes/* $eis_build_dir/
+   cp -rf $Current_Dir/../uwc_recipes/* $eii_build_dir/
    echo "Done copying...."
 
 }
@@ -76,7 +76,7 @@ modifying_env()
   
 }
 #------------------------------------------------------------------
-# eis_provision
+# eii_provision
 #
 # Description:
 #        Performs prvovisioning as per docker-compose.yml file.
@@ -96,13 +96,13 @@ eii_provision()
     fi
 
     cp  ../../uwc/mymqttcerts/docker-compose.yml ../docker-compose-mymqtt.yml
-    ./provision_eis.sh ../docker-compose-mymqtt.yml
+    ./provision.sh ../docker-compose-mymqtt.yml
     check_for_errors "$?" "Provisioning is failed. Please check logs"                     
     echo "${GREEN}>>>>>${NC}"
     echo "${GREEN}Certificates are generated for mqtt_client${NC}"    
     cp -fr Certificates Certificates_backup
     
-    ./provision_eis.sh ../docker-compose.yml
+    ./provision.sh ../docker-compose.yml
     check_for_errors "$?" "Provisioning is failed. Please check logs" \
                     "${GREEN}Provisioning is done successfully.${NC}"
     echo "${GREEN}>>>>>${NC}"

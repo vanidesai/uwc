@@ -1,6 +1,6 @@
 AppName:
 - EtcdUI
-- EISZmqBroker
+- ZmqBroker
 - uwc/uwc_common
 - uwc/MQTT
 - uwc/mqtt-bridge

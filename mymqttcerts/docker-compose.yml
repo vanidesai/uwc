@@ -3,7 +3,7 @@ version: '3.6'
 services:
   mymqttcerts:  
     depends_on:
-    - ia_eisbase
+    - ia_eiibase
     - uwc_common
     read_only: true
     hostname: ia_mymqttcerts
