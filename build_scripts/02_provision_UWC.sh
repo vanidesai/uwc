@@ -64,7 +64,7 @@ copy_recipes(){
 modifying_env()
 {
 	echo "Addding UWC specific env variables"
-	result=`grep -F 'env for uwc' ../.env`
+	result=`grep -Fi 'env for UWC' ../../build/.env`
 	if [ -z "${result}" ]; then
 	    cat ../.env >> ../../build/.env
        
