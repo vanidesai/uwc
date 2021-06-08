@@ -32,26 +32,6 @@ qos=""
 ret=""
 
 #------------------------------------------------------------------
-# copy_recipes
-#
-# Description:
-#        Copy the recipes files from uwc/uwc_recipes/ to build/
-# Return:
-#        None
-# 
-#------------------------------------------------------------------
-
-
-
-copy_recipes(){
-
-   echo "${GREEN}Copying the recipes files from uwc/uwc_recipes/ to build/${NC}"
-   cp -rf $Current_Dir/../uwc_recipes/* $eii_build_dir/
-   echo "Done copying...."
-
-}
-
-#------------------------------------------------------------------
 # modifying_env
 #
 # Description:
@@ -95,21 +75,36 @@ eii_provision()
         exit 1 # terminate and indicate error
     fi
 
-    cp  ../../uwc/mymqttcerts/docker-compose.yml ../docker-compose-mymqtt.yml
-    ./provision.sh ../docker-compose-mymqtt.yml
-    check_for_errors "$?" "Provisioning is failed. Please check logs"                     
-    echo "${GREEN}>>>>>${NC}"
-    echo "${GREEN}Certificates are generated for mqtt_client${NC}"    
-    cp -fr Certificates Certificates_backup
-    
     ./provision.sh ../docker-compose.yml
     check_for_errors "$?" "Provisioning is failed. Please check logs" \
                     "${GREEN}Provisioning is done successfully.${NC}"
     echo "${GREEN}>>>>>${NC}"
     echo "${GREEN}For building & running UWC services,run 03_Build_Run_UWC.sh script${NC}"
-    echo "Generating certificates for mqtt_client"
-    cp -fr Certificates_backup/* Certificates/
-    rm -rf Certificates_backup ../docker-compose-mymqtt.yml
+
+    return 0
+}
+
+mqtt_certs()
+{
+    echo "${GREEN} Genrating certs for mqtt${NC}"	
+    mkdir ./temp ./temp/client ./temp/server
+
+    openssl req -config ../../uwc/Others/mqtt_certs/mqtt_cert_openssl_config -new -newkey rsa:3072 -keyout  ./temp/client/key.pem -out ./temp/client/req.pem -days 3650 -outform PEM -subj /CN=mymqttcerts/O=client/L=$$$/ -nodes
+
+    openssl req -config ../../uwc/Others/mqtt_certs/mqtt_cert_openssl_config -new -newkey rsa:3072 -keyout  ./temp/server/key.pem -out ./temp/server/req.pem -days 3650 -outform PEM -subj /CN=mymqttcerts/O=server/L=$$$/ -nodes
+
+    openssl ca -days 3650 -cert ../../build/provision/rootca/cacert.pem -keyfile ../../build/provision/rootca/cakey.pem -in ./temp/server/req.pem -out ./temp/mymqttcerts_server_certificate.pem  -outdir ../../build/provision/rootca/certs -notext -batch -extensions server_extensions -config ../../uwc/Others/mqtt_certs/mqtt_cert_openssl_config
+
+    openssl ca -days 3650 -cert ../../build/provision/rootca/cacert.pem -keyfile ../../build/provision/rootca/cakey.pem -in ./temp/client/req.pem -out ./temp/mymqttcerts_client_certificate.pem -outdir ../../build/provision/rootca/certs -notext -batch -extensions client_extensions -config ../../uwc/Others/mqtt_certs/mqtt_cert_openssl_config
+
+    mkdir ../../build/provision/Certificates/mymqttcerts
+    cp -rf ./temp/mymqttcerts_server_certificate.pem ../../build/provision/Certificates/mymqttcerts/mymqttcerts_server_certificate.pem
+    cp -rf ./temp/mymqttcerts_client_certificate.pem ../../build/provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
+    cp -rf ./temp/server/key.pem  ../../build/provision/Certificates/mymqttcerts/mymqttcerts_server_key.pem
+    cp -rf ./temp/client/key.pem ../../build/provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem
+   
+    sudo chown -R eiiuser:eiiuser ../../build/provision/Certificates/mymqttcerts/ 
+    rm -rf ./temp
     return 0
 }
 
@@ -159,7 +154,7 @@ configure_usecase()
         case $yn in
             1)
                 echo "Running Basic UWC micro-services without KPI-tactic Application & Sparkplug-Bridge"
-                python3.6 builder.py -f uwc-pipeline-without-sparkplug-bridge.yml
+                python3.6 builder.py -f ../uwc/uwc_recipes/uwc-pipeline-without-sparkplug-bridge.yml
                 if [ "$?" != 0 ]; then
                     echo "${RED}Error running EII builder script. Check the recipe configuration file...!${NC}" 
                     exit 1
@@ -169,7 +164,7 @@ configure_usecase()
                 ;;
             2)
                 echo "Running Basic UWC micro-services with KPI-tactic Application & without Sparkplug-Bridge"
-                python3.6 builder.py -f uwc-pipeline-with-kpi-no-sparkplug-bridge.yml
+                python3.6 builder.py -f ../uwc/uwc_recipes/uwc-pipeline-with-kpi-no-sparkplug-bridge.yml
                 if [ "$?" != 0 ]; then
                     echo "${RED}Error running EII builder script. Check the recipe configuration file...!${NC}" 
                     exit 1
@@ -179,7 +174,7 @@ configure_usecase()
                 ;;
             3)
                 echo "Running Basic UWC micro-services with KPI-tactic Application & with Sparkplug-Bridge"
-                python3.6 builder.py -f uwc-pipeline-with-sparkplug-bridge_and_kpi.yml
+                python3.6 builder.py -f ../uwc/uwc_recipes/uwc-pipeline-with-sparkplug-bridge_and_kpi.yml
                 if [ "$?" != 0 ]; then
                     echo "${RED}Error running EII builder script. Check the recipe configuration file...!${NC}" 
                     exit 1
@@ -202,7 +197,7 @@ configure_usecase()
                 ;;                
             4)
                 echo "Running Basic UWC micro-services with no KPI-tactic Application & with Sparkplug-Bridge"
-                python3.6 builder.py -f uwc-pipeline-with-sparkplug-bridge-no-kpi.yml
+                python3.6 builder.py -f ../uwc/uwc_recipes/uwc-pipeline-with-sparkplug-bridge-no-kpi.yml
                 if [ "$?" != 0 ]; then
                     echo "${RED}Error running EII builder script. Check the recipe configuration file...!${NC}" 
                     exit 1
@@ -472,6 +467,7 @@ if [[ "${IS_SCADA}" -eq "1" ]]; then
     fi   
 fi
 eii_provision
+mqtt_certs
 if [[ "${IS_SCADA}" -eq "1" ]]; then 
    cd  ${Current_Dir}
   ./2.2_CopyScadaCertsToProvision.sh
