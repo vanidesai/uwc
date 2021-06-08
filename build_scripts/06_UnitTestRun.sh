@@ -31,6 +31,31 @@ function ctrl_c()
 		exit 0
 }
 
+#------------------------------------------------------------------
+# modifying_env
+#
+# Description:
+#        Adding UWC env variables.
+# Return:
+#        None
+# 
+#------------------------------------------------------------------
+
+modifying_env()
+{
+	echo "Addding UWC specific env variables"
+	result=`grep -Fi 'env for UWC' ../../build/.env`
+	if [ -z "${result}" ]; then
+	    cat ../.env >> ../../build/.env
+       
+	fi
+    result=`grep -F 'uwc/'  ../../.gitignore`
+	if [ -z "${result}" ]; then
+	    sed -i '$a uwc/' ../../.gitignore
+	fi	
+  
+}
+
 set_dev_mode()
 {
    if [ "$1" == "true" ]; then
@@ -106,8 +131,43 @@ function cleanup()
 	sed -i 's/MQTT_PROTOCOL=tcp/MQTT_PROTOCOL=ssl/g' $eii_build_dir/.env
 }
 
+mqtt_certs()
+{
+    echo "${GREEN} Genrating certs for mqtt${NC}"	
+    mkdir ./temp ./temp/client ./temp/server
+
+    openssl req -config ../../uwc/Others/mqtt_certs/mqtt_cert_openssl_config -new -newkey rsa:3072 -keyout  ./temp/client/key.pem -out ./temp/client/req.pem -days 3650 -outform PEM -subj /CN=mymqttcerts/O=client/L=$$$/ -nodes
+
+    openssl req -config ../../uwc/Others/mqtt_certs/mqtt_cert_openssl_config -new -newkey rsa:3072 -keyout  ./temp/server/key.pem -out ./temp/server/req.pem -days 3650 -outform PEM -subj /CN=mymqttcerts/O=server/L=$$$/ -nodes
+
+    openssl ca -days 3650 -cert ../../build/provision/rootca/cacert.pem -keyfile ../../build/provision/rootca/cakey.pem -in ./temp/server/req.pem -out ./temp/mymqttcerts_server_certificate.pem  -outdir ../../build/provision/rootca/certs -notext -batch -extensions server_extensions -config ../../uwc/Others/mqtt_certs/mqtt_cert_openssl_config
+
+    openssl ca -days 3650 -cert ../../build/provision/rootca/cacert.pem -keyfile ../../build/provision/rootca/cakey.pem -in ./temp/client/req.pem -out ./temp/mymqttcerts_client_certificate.pem -outdir ../../build/provision/rootca/certs -notext -batch -extensions client_extensions -config ../../uwc/Others/mqtt_certs/mqtt_cert_openssl_config
+
+    mkdir ../../build/provision/Certificates/mymqttcerts
+    cp -rf ./temp/mymqttcerts_server_certificate.pem ../../build/provision/Certificates/mymqttcerts/mymqttcerts_server_certificate.pem
+    cp -rf ./temp/mymqttcerts_client_certificate.pem ../../build/provision/Certificates/mymqttcerts/mymqttcerts_client_certificate.pem
+    cp -rf ./temp/server/key.pem  ../../build/provision/Certificates/mymqttcerts/mymqttcerts_server_key.pem
+    cp -rf ./temp/client/key.pem ../../build/provision/Certificates/mymqttcerts/mymqttcerts_client_key.pem
+   
+    sudo chown -R eiiuser:eiiuser ../../build/provision/Certificates/mymqttcerts/ 
+    rm -rf ./temp
+    return 0
+}
+
+#------------------------------------------------------------------
+# eii_provision
+#
+# Description:
+#        Performs prvovisioning as per docker-compose.yml file.
+# Return:
+#        None
+# Usage:
+#       eii_provision
+#------------------------------------------------------------------
 eii_provision()
 {
+	docker stop $(docker ps -a -q)
     if [ -d "${eii_build_dir}/provision/" ];then
         cp -f ${eii_build_dir}/../uwc/docker-compose_UT.yml ${eii_build_dir}/docker-compose.yml
         cp -f ${eii_build_dir}/../uwc/eii_config_UT.json ${eii_build_dir}/provision/config/eii_config.json
@@ -117,10 +177,13 @@ eii_provision()
         exit 1 # terminate and indicate error
     fi
 
-    docker stop $(docker ps -a -q)
     ./provision.sh ../docker-compose.yml
     check_for_errors "$?" "Provisioning is failed. Please check logs" \
                     "${GREEN}Provisioning is done successfully.${NC}"
+    echo "${GREEN}>>>>>${NC}"
+    echo "${GREEN}For building & running UWC services,run 03_Build_Run_UWC.sh script${NC}"
+
+    return 0
     echo "${GREEN}>>>>>${NC}"
     echo "${GREEN}For building & running UWC services,run 03_Build_Run_UWC.sh script${NC}"
     return 0
@@ -155,11 +218,13 @@ export DOCKER_CONTENT_TRUST=1
 export DOCKER_BUILDKIT=1
 check_root_user
 check_internet_connection
+modifying_env
 docker_verify
 docker_compose_verify
 create_test_dir
 set_dev_mode "false"
 eii_provision
+mqtt_certs
 create_scada_config_file_ut
 generate_unit_test_report
 

@@ -113,8 +113,8 @@ services:
     depends_on:
     - ia_common
     build:
-      context: $PWD/../EIIZmqBroker
-      dockerfile: $PWD/../EIIZmqBroker/Dockerfile
+      context: $PWD/../ZmqBroker
+      dockerfile: $PWD/../ZmqBroker/Dockerfile
       args:
         EII_VERSION: ${EII_VERSION}
         EII_UID: ${EII_UID}

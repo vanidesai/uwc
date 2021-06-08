@@ -10,7 +10,7 @@
 
 #include "../include/EIIPlBusHandler_ut.hpp"
 
-extern bool publishEIiMsg(std::string a_sEiiMsg, std::string &a_sEiiTopic);
+extern bool publishEIIMsg(std::string a_sEiiMsg, std::string &a_sEiiTopic);
 
 extern std::vector<std::thread> g_vThreads;
 
