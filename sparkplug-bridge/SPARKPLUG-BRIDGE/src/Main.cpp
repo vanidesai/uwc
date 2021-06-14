@@ -143,8 +143,8 @@ int main(int argc, char *argv[])
 		DO_LOG_INFO("SCADA RTU container app version is set to :: "+  std::string(APP_VERSION));
 		if(!CCommon::getInstance().loadYMLConfig())
 		{
-			DO_LOG_ERROR("Please set the required config in scada_config.yml file and restart the container");
-			std::cout << "Please set the required config in scada_config.yml file and restart the container" << std::endl;
+			DO_LOG_ERROR("Please set the required config in sparkplug-bridge_config.yml file and restart the container");
+			std::cout << "Please set the required config in sparkplug-bridge_config.yml file and restart the container" << std::endl;
 		}
 
 		//initialize CCommon class to get common variables
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
 		{
 			while(true)
 			{
-				std::cout << "Waiting to set EXTERNAL_MQTT_URL/ INTERNAL_MQTT_URL variable in scada_config.yml file..." << std::endl;
+				std::cout << "Waiting to set EXTERNAL_MQTT_URL/ INTERNAL_MQTT_URL variable in sparkplug-bridge_config.yml file..." << std::endl;
 				std::this_thread::sleep_for(std::chrono::seconds(300));
 			};
 		}

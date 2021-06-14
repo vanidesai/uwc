@@ -190,21 +190,21 @@ eii_provision()
 }
 
 #------------------------------------------------------------------
-# create_scada_config_file_ut
+# create_sparkplug-bridge_config_file_ut
 #
 # Description:
-#        This function is used create scada_config.yml file required for sparkplug-bridge container for unit testing
+#        This function is used create sparkplug-bridge_config.yml file required for sparkplug-bridge container for unit testing
 # Return:
 #        None
 # Usage:
-#        create_scada_config_file_ut
+#       create_sparkplug-bridge_config_file_ut
 #------------------------------------------------------------------
-create_scada_config_file_ut()
+create_sparkplug-bridge_config_file_ut()
 {
-rm -rf /opt/intel/eii/uwc_data/sparkplug-bridge/scada_config.yml
-cat > /opt/intel/eii/uwc_data/sparkplug-bridge/scada_config.yml << ENDOFFILE
+rm -rf /opt/intel/eii/uwc_data/sparkplug-bridge/sparkplug-bridge_config.yml
+cat > /opt/intel/eii/uwc_data/sparkplug-bridge/sparkplug-bridge_config.yml << ENDOFFILE
 ---
-# scada config parameter file
+# sparkplug-bridge config parameter file
 
 isTLS: false
 mqttServerAddrSCADA: "127.0.0.1"
@@ -225,7 +225,7 @@ create_test_dir
 set_dev_mode "false"
 eii_provision
 mqtt_certs
-create_scada_config_file_ut
+create_sparkplug-bridge_config_file_ut
 generate_unit_test_report
 
 echo "Generating code coverage report..."

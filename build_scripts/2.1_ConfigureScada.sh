@@ -138,21 +138,21 @@ print_all_args()
 }
 
 #------------------------------------------------------------------
-# create_scada_config_file
+# create_sparkplug-bridge_config file
 #
 # Description:
-#        This function is used create scada_config.yml file required for sparkplug-bridge container
+#        This function is used create sparkplug-bridge_config.yml file required for sparkplug-bridge container
 # Return:
 #        None
 # Usage:
-#        create_scada_config_file
+#       create_sparkplug-bridge_config file
 #------------------------------------------------------------------
-create_scada_config_file()
+create_sparkplug-bridge_config_file()
 {
-rm -rf /opt/intel/eii/uwc_data/sparkplug-bridge/scada_config.yml
-cat > /opt/intel/eii/uwc_data/sparkplug-bridge/scada_config.yml << ENDOFFILE
+rm -rf /opt/intel/eii/uwc_data/sparkplug-bridge/sparkplug-bridge_config.yml
+cat > /opt/intel/eii/uwc_data/sparkplug-bridge/sparkplug-bridge_config.yml << ENDOFFILE
 ---
-# scada config parameter file
+# sparkplug-bridge config parameter file
 
 isTLS: $IS_TLS
 mqttServerAddrSCADA: "$BROKER_HOST"
@@ -380,7 +380,7 @@ if [ "$IS_TLS" == "1" ] || [ "$IS_TLS" == "true" ] ||  [ "$IS_TLS" == "yes" ] ;t
 else
 	echo "Cert configuration is not required.."
 fi
-create_scada_config_file
+create_sparkplug-bridge_config_file
 cd "${Current_Dir}"
 echo "${GREEN}============================= Script 2.1 END ============================================${NC}"
 exit 0

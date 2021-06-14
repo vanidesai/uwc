@@ -34,7 +34,7 @@ m_strGroupId{""}, m_strNodeName{""}, m_bIsScadaTLS{true}
 }
 
 /**
- * load config required for scada-rtu container from scada_config.yml file
+ * load config required for sparkplug-bridge container from sparkplug-bridge_config.yml file
  * @param None
  * @return true/false based on condition
  */
@@ -45,12 +45,12 @@ bool CCommon::loadYMLConfig()
 
 	try
 	{
-		config = YAML::LoadFile(SCADA_CONFIG_FILE_PATH);
+		config = YAML::LoadFile(SPARKPLUG_BRIDGE_CONFIG_FILE_PATH);
 	}
 	catch(YAML::Exception &e)
 	{
-		DO_LOG_ERROR("scada_config.yml file not found :: " + std::string(e.what()));
-		std::cout << "ERROR: scada_config.yml file not found :: " + std::string(e.what()) << std::endl;
+		DO_LOG_ERROR("sparkplug-bridge_config.yml file not found :: " + std::string(e.what()));
+		std::cout << "ERROR: sparkplug-bridge_config.yml file not found :: " + std::string(e.what()) << std::endl;
 		return false;
 	}
 
