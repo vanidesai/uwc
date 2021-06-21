@@ -111,8 +111,25 @@ modify_config()
     done
 }
 
+# clonning modbus-stack modconn
+clone_modconn()
+{
+
+	if [ -d "${working_dir}/../modbus-master/modconn/" ]; then
+		echo "modconn directory already exists. Removing the existing modconn directory."
+		rm -rf ${working_dir}/../modbus-master/modconn/
+	fi
+	echo "${GREEN}Git clone modconn into modbus-master .."
+	git clone https://github.com/modconn/modconn ${working_dir}/../modbus-master/modconn
+	echo "${GREEN}Done cloning"
+	cd ${working_dir}/../modbus-master/modconn/
+	git checkout b574b6460b00b42dba191f64dfbd7334314faef1
+	echo "${GREEN}Git checkout modconn to commit id b574b6460b00b42dba191f64dfbd7334314faef1"
+}
+
 echo "${GREEN}============================= Script START ============================================${NC}"
 
 create_docker_volume_dir
 add_UWC_containers_In_EII
 modify_config
+clone_modconn

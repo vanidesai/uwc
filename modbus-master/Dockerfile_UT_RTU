@@ -28,9 +28,9 @@ FROM ia_common:$EII_VERSION as modbus-lib
 
 WORKDIR /
 
-COPY SoftMod_Stack /SoftMod_Stack/.
-RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /SoftMod_Stack/Release/Src/subdir.mk 
-WORKDIR SoftMod_Stack
+COPY modconn /modconn/.
+RUN sed -i 's/-DMODBUS_STACK_TCPIP_ENABLED//g' /modconn/Release/Src/subdir.mk 
+WORKDIR modconn
 RUN cd Release \
     && make clean all -s
 
@@ -44,8 +44,8 @@ RUN mkdir -p reports/modbus-rtu-master
 COPY --from=uwc_test_common /usr/yaml /bin/yaml-cpp/.
 
 COPY Modbus-App /Modbus-App/. 
-COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
-COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
+COPY --from=modbus-lib /modconn/Release/libModbusMasterStack.so /Modbus-App/lib/
+COPY --from=modbus-lib /modconn/Inc/API.h /Modbus-App/include/
 COPY --from=uwc_test_common /EII/googletest-release-1.8.0/googletest/include/gtest /usr/local/include/gtest
 COPY --from=uwc_test_common /EII/googletest-release-1.8.0/build/googlemock/gtest/libg* /usr/local/lib/
 COPY --from=uwc_test_common /EII/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp

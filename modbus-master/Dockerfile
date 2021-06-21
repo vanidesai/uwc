@@ -27,8 +27,8 @@ FROM ia_common:$EII_VERSION as modbus-lib
 WORKDIR /
 
 # compile modbus stack
-COPY SoftMod_Stack /SoftMod_Stack/.
-WORKDIR SoftMod_Stack
+COPY modconn /modconn/.
+WORKDIR modconn
 RUN cd Release \
     && make clean all -s
 
@@ -40,8 +40,8 @@ WORKDIR /
 COPY --from=uwc_common /usr/yaml /bin/yaml-cpp/.
 
 COPY Modbus-App /Modbus-App/. 
-COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so /Modbus-App/lib/
-COPY --from=modbus-lib /SoftMod_Stack/Inc/API.h /Modbus-App/include/
+COPY --from=modbus-lib /modconn/Release/libModbusMasterStack.so /Modbus-App/lib/
+COPY --from=modbus-lib /modconn/Inc/API.h /Modbus-App/include/
 COPY --from=uwc_common /EII/log4cpp/build/include/log4cpp /Modbus-App/include/log4cpp
 COPY --from=uwc_common /EII/log4cpp/build/lib/* /Modbus-App/lib/
 COPY --from=uwc_common /uwc_util/Release/libuwc-common.so /Modbus-App/lib/
@@ -70,7 +70,7 @@ RUN mkdir -p /opt/intel/app \
 WORKDIR ${APP_WORK_DIR}
 
 # copy required libs and includes
-COPY --from=modbus-lib /SoftMod_Stack/Release/libModbusMasterStack.so ${APP_WORK_DIR}
+COPY --from=modbus-lib /modconn/Release/libModbusMasterStack.so ${APP_WORK_DIR}
 COPY --from=modbus-app /Modbus-App/Release/ModbusMaster ${APP_WORK_DIR}
 COPY --from=uwc_common /usr/yaml/lib/*.so.* ${APP_WORK_DIR}
 COPY --from=uwc_common /EII/log4cpp/build/lib/* ${APP_WORK_DIR}
