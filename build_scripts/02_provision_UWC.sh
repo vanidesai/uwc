@@ -466,7 +466,9 @@ if [[ "${IS_SCADA}" -eq "1" ]]; then
     fi   
 fi
 eii_provision
-mqtt_certs
+if [[ "$deployMode" == "prod" ]]; then
+    mqtt_certs
+fi
 if [[ "${IS_SCADA}" -eq "1" ]]; then 
    cd  ${Current_Dir}
   ./2.2_CopyScadaCertsToProvision.sh
