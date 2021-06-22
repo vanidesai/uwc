@@ -125,6 +125,8 @@ Now check for the unit test reports for all services of UWC in "<working-dir>/IE
    Syntax - docker cp <container_name>:<file to copy from container> <file to be copied i.e. host directory>
 5. To check the IP address of machine, use "ifconfig" command.
 6. For Modbus RTU, to check attached COM port for serial communication, use "dmesg | grep tty" command.
+7. The container logs for each of the UWC micro-service is volume mounted in the directory "/opt/intel/eii/container_logs/", with a separate sub-directory for each micro-service.
+8. Also the UWC configuration files can be edited in the sub-directory "/opt/intel/eii/uwc_data", if there is a need to change the configurations.
 
 ## Redirect docker logs to file including errors
 docker logs modbus-tcp-container > docker.log 2>&1
