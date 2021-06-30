@@ -333,6 +333,13 @@ TEST_F(PeriodicRead_ut, checkTimer_IsPolling)
 	CTimeMapper::instance().checkTimer(600, 600, tsPoll);
 }
 
+/**
+ * Test case to check the behaviour of setScaledValue() for datatype int with 1 width register and 
+ * scalefactor 20
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(PeriodicRead_ut, ScaleValue)
 {
 	std::string Value = "0x12";
@@ -345,7 +352,13 @@ TEST_F(PeriodicRead_ut, ScaleValue)
         EXPECT_EQ(360, ptScaleValue->body.integer);
 }
 
-
+/**
+ * Test case to check the behaviour of setScaledValue() for datatype int with 2 width register and 
+ * scalefactor 20
+ * @param :[in] None
+ * @param :[out] None
+ * @return None
+ */
 TEST_F(PeriodicRead_ut, ScaleValueInt_1)
 {
     std::string Value = "0x24";
