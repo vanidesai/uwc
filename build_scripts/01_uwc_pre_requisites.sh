@@ -80,6 +80,10 @@ create_docker_volume_dir()
     fi
 }
 
+# -------------------------------------------
+# Coping UWC configurations to /opt/intel/eii/ 
+# -------------------------------------------
+
 add_UWC_containers_In_EII()
 {
     echo "${INFO}Copying UWC Containers in EII...${NC}"   
@@ -94,6 +98,10 @@ add_UWC_containers_In_EII()
     fi
     return 0
 }
+
+# ----------------------------------------
+# Updating config files according to uwc 
+# ----------------------------------------
 
 modify_config()
 {
@@ -111,7 +119,10 @@ modify_config()
     done
 }
 
+# ----------------------------
 # clonning modbus-stack modconn
+# ----------------------------
+
 clone_modconn()
 {
 
@@ -127,9 +138,26 @@ clone_modconn()
 	echo "${GREEN}Git checkout modconn to commit id b574b6460b00b42dba191f64dfbd7334314faef1"
 }
 
+# ----------------------------
+# Checking for ambiguous networks
+# ----------------------------
+
+network_setup()
+{
+  echo "${INFO}Checking for ambiguous networks${NC}"	
+  cmd_output=`docker network ls | grep edgeinsightssoftware_default`
+  length=${#cmd_output[@]}
+  while [ ${length} -ne 1 ];
+  do
+      echo "${length}"
+      cmd_output=`docker network rm edgeinsightssoftware_default`
+      length=$((length-1))
+  done
+}
 echo "${GREEN}============================= Script START ============================================${NC}"
 
 create_docker_volume_dir
 add_UWC_containers_In_EII
 modify_config
 clone_modconn
+network_setup
