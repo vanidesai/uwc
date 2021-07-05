@@ -185,8 +185,7 @@ public:
 					case METRIC_DATA_TYPE_BOOLEAN:
 					case METRIC_DATA_TYPE_FLOAT:
 					case METRIC_DATA_TYPE_DOUBLE:
-					case METRIC_DATA_TYPE_STRING:
-					case METRIC_DATA_TYPE_TEMPLATE:
+					case METRIC_DATA_TYPE_STRING:					
 						if(((itr->second)->getValue()).getDataType() == a_sparkplugMetric.datatype)
 						{
 							flag = true;
@@ -214,6 +213,18 @@ public:
 						}
 						break;
 					}
+
+					/*
+					*  Check for template datatype. Here it calls getDataType() method of CUDT class for
+					*  template datatype validation wheras for all other primitive datatypes, we call 
+					*  getDataType() of CValObj which is a friend function of CMetric class. 	
+					*/					
+					if((itr->second)->getDataType() == METRIC_DATA_TYPE_TEMPLATE &&
+						(itr->second)->getDataType() == a_sparkplugMetric.datatype)
+					{
+							flag = true;
+					}
+
 					if(false == flag)
 					{
 						DO_LOG_ERROR("Datatypes do not match for given metric: " + sName);
