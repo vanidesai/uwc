@@ -88,8 +88,6 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 		DO_LOG_ERROR("NULL pointers received while creating context for topic ::" + a_sTopic);
 		std::cout<<"[preparecontext]NULL pointers received while creating context for topic\n";
 		//< Failed to create publisher or subscriber topic's message bus context so remove context, destroy message bus context created.
-		//< <TODO> Instead of calling subroutine using goto, we should make & call a function for removing context and destryoing the messsage bus.
-		//< Right now subroutine is called to quick turn around wihtin short time. Subroutine calling is proven as it is adopted from support release 3.		
 		goto err;
 	}
 
