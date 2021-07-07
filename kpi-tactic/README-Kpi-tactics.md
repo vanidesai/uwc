@@ -125,3 +125,5 @@ Kindly Refer UWC user guide for container deployments
  
 Notes : Above steps are to run KPIApp unit test locally. In order to run unit test in container, please follow the steps mentioned in section `## Steps to run unit test cases` of file `README.md` in Sourcecode directory. 
 
+Troubleshooting steps:
+1. If KPI-App is seen crashing, container restarting or AnalysisKPI logs not getting generated after building the UWC containers then as a troubleshooting step kindly run the 05_applyConfigChanges.sh, which would bring the containers down & up.

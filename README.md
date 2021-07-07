@@ -161,3 +161,5 @@ docker logs modbus-tcp-container > docker.log 2>&1
   # After accessing Certificates, enter "exit" command & terminal would return back to normal mode.
   $ exit
 ```
+3. Troubleshooting steps:
+1. If KPI-Tactic Application is seen crashing, container restarting or AnalysisKPI.log files not getting generated after building the UWC containers then as a troubleshooting step kindly run the 05_applyConfigChanges.sh, which would bring the containers down & up.
