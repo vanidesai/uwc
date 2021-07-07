@@ -218,7 +218,13 @@ public:
 					*  Check for template datatype. Here it calls getDataType() method of CUDT class for
 					*  template datatype validation wheras for all other primitive datatypes, we call 
 					*  getDataType() of CValObj which is a friend function of CMetric class. 	
-					*/					
+					*
+					*  While preparing the m_mapMetric map in BIRTH message, the data type for template is METRIC_DATA_TYPE_TEMPLATE.
+					*  This METRIC_DATA_TYPE_TEMPLATE datatype is saved in map m_mapMetric during BIRTH messsage in case of UDT datatype.
+					*  Now when we receive the sparkplug payload, we compare the datatype received in payload with that stored in our previously 
+				    *  created map m_mapMetric. They both should match with METRIC_DATA_TYPE_TEMPLATE datatype.					   
+					*/
+
 					if((itr->second)->getDataType() == METRIC_DATA_TYPE_TEMPLATE &&
 						(itr->second)->getDataType() == a_sparkplugMetric.datatype)
 					{
