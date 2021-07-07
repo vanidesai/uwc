@@ -108,8 +108,6 @@ bool zmq_handler::prepareContext(bool a_bIsPub,
 		DO_LOG_ERROR("Failed to create publisher or subscriber for topic "+a_sTopic + " with error code:: "+std::to_string(retVal));
 		std::cout << "ERROR:: Failed to create publisher or subscriber for topic : "<< a_sTopic<< " with error code:: "<< std::to_string(retVal)<<std::endl;
 		//< Failed to create publisher or subscriber topic's message bus context so remove context, destroy message bus context created.
-		//< <TODO> Instead of calling subroutine using goto, we should make & call a function for removing context and destryoing the messsage bus.
-		//< Right now subroutine is called to quick turn around within short time. Subroutine calling is proven as it is adopted from support release 3.
 		goto err;
 	}
 	else
