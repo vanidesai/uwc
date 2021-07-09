@@ -105,7 +105,8 @@ def parsestring(line, sheet):
     global mySet
     global mydict
 
-    finalstring = line[(line.find(" ", line.find(" ", line.find(" ")+1)+1)):]
+
+    finalstring = line 
     list = finalstring.split(',')
     if len(list) > 1:
         for st in range(len(list)):
