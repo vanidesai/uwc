@@ -705,10 +705,13 @@ bool CSparkPlugDev::parseScaledValueRealDevices(const std::string &a_sPayLoad, s
 	cJSON *pjRoot = NULL;
 	//getDatatype of the datapoint
 	pjRoot = cJSON_Parse(a_sPayLoad.c_str());
+
+	// Below retVal flag is used to identify success/failure scenarios.
+	bool retVal = false;
 	if (NULL == pjRoot)
 	{
 		DO_LOG_ERROR("Message received from MQTT could not be parsed in json format");
-		return false;
+		return retVal;
 	}
 
 	auto iter = m_mapMetrics.find(a_sMetric);
@@ -719,14 +722,30 @@ bool CSparkPlugDev::parseScaledValueRealDevices(const std::string &a_sPayLoad, s
 		if(nullptr == (iter->second))
 		{
 			DO_LOG_ERROR("Null value in Metric Data: " + a_sMetric);
-			return false;
+			retVal = false;
 		}
-		tempYmlDataType = (iter->second)->getValue().getDataType();
+		else 
+		{
+			tempYmlDataType = (iter->second)->getValue().getDataType();
+			retVal = true;
+		}
 	}
 	else
 	{
 		DO_LOG_ERROR("Metric Not found : " + a_sMetric);
-		return false;
+		retVal = false;
+	}
+        
+	// Check if metric data is null then delete allocated pjRoot and return.
+	// If metric data is not null then proceed for further actions.
+	if (retVal == false)
+	{
+		if (NULL != pjRoot)
+		{
+			cJSON_Delete(pjRoot);
+		}
+		
+		return retVal;
 	}
 
 	//readScaledValueFieldFromJSON
@@ -734,9 +753,21 @@ bool CSparkPlugDev::parseScaledValueRealDevices(const std::string &a_sPayLoad, s
 	if (NULL == cjValue)
 	{
 		DO_LOG_ERROR("scaledValue field not found in input json");
-		return false;
+		retVal = false;
 	}
 
+	// Check if scaledValue is missing in received json then delete allocated pjRoot and return.
+	// If scaledValue is present then proceed for further actions.
+	if (retVal == false)
+	{
+		if (NULL != pjRoot)
+		{
+			cJSON_Delete(pjRoot);
+		}
+		
+		return retVal;
+	}
+     
 	if ((METRIC_DATA_TYPE_BOOLEAN == tempYmlDataType) && (1 == cJSON_IsBool(cjValue)))
 	{
 		if (cJSON_IsTrue(cjValue))
@@ -749,49 +780,59 @@ bool CSparkPlugDev::parseScaledValueRealDevices(const std::string &a_sPayLoad, s
 			CValObj oValtemp(METRIC_DATA_TYPE_BOOLEAN, false);
 			a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_BOOLEAN, oValtemp);
 		}
-		return true;
+		retVal = true;
 	}
 	else if (tempYmlDataType == METRIC_DATA_TYPE_UINT16 && (1 == cJSON_IsNumber(cjValue)))
 	{
 		if (cjValue->valuedouble < 0.0) {
 			DO_LOG_ERROR("Negative value received for unsigned datatype uint16");
-			return false;
-		}		
-		CValObj oValtemp(METRIC_DATA_TYPE_UINT16, (uint16_t)cjValue->valuedouble);
-		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_UINT16, oValtemp);
-		return true;
+			retVal = false;
+		}	
+		else
+		{
+		
+			CValObj oValtemp(METRIC_DATA_TYPE_UINT16, (uint16_t)cjValue->valuedouble);
+			a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_UINT16, oValtemp);
+			retVal = true;
+		}
 	}
 	else if (tempYmlDataType == METRIC_DATA_TYPE_UINT32 && (1 == cJSON_IsNumber(cjValue)))
 	{
 		if (cjValue->valuedouble < 0.0) {
 			DO_LOG_ERROR("Negative value received for unsigned datatype uint32");
-			return false;
+			retVal = false;
 		}
-		CValObj oValtemp(METRIC_DATA_TYPE_UINT32, (uint32_t)cjValue->valuedouble);
-		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_UINT32, oValtemp);
-		return true;
+		else 
+		{
+			CValObj oValtemp(METRIC_DATA_TYPE_UINT32, (uint32_t)cjValue->valuedouble);
+			a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_UINT32, oValtemp);
+			retVal = true;
+		}
 	}
 	else if (tempYmlDataType == METRIC_DATA_TYPE_UINT64 && (1 == cJSON_IsNumber(cjValue)))
 	{
 		if (cjValue->valuedouble < 0.0) {
 			DO_LOG_ERROR("Negative value received for unsigned datatype uint64");
-			return false;
+			retVal = false;
 		}
-		CValObj oValtemp(METRIC_DATA_TYPE_UINT64, (uint64_t)cjValue->valuedouble);
-		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_UINT64, oValtemp);
-		return true;
+		else
+		{
+			CValObj oValtemp(METRIC_DATA_TYPE_UINT64, (uint64_t)cjValue->valuedouble);
+			a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_UINT64, oValtemp);
+			retVal = true;
+		}
 	}
 	else if (tempYmlDataType == METRIC_DATA_TYPE_INT16 && (1 == cJSON_IsNumber(cjValue)))
 	{
 		CValObj oValtemp(METRIC_DATA_TYPE_INT16, (int16_t)cjValue->valuedouble);
 		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_INT16, oValtemp);
-		return true;
+		retVal = true;
 	}
 	else if (tempYmlDataType == METRIC_DATA_TYPE_INT32 && (1 == cJSON_IsNumber(cjValue)))
 	{
 		CValObj oValtemp(METRIC_DATA_TYPE_INT32, (int32_t)cjValue->valuedouble);
 		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_INT32, oValtemp);
-		return true;
+		retVal = true;
 	}
 	else if (tempYmlDataType == METRIC_DATA_TYPE_INT64 && (1 == cJSON_IsNumber(cjValue)))
 	{
@@ -803,33 +844,36 @@ bool CSparkPlugDev::parseScaledValueRealDevices(const std::string &a_sPayLoad, s
 		}
 		CValObj oValtemp(METRIC_DATA_TYPE_INT64, (int64_t)i64);
 		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_INT64, oValtemp);
-		return true;
+		retVal = true;
 	}
 	else if (tempYmlDataType == METRIC_DATA_TYPE_STRING && (1 == cJSON_IsString(cjValue)))
 	{
 		char *val = cJSON_GetStringValue(cjValue);
 		if (NULL == val) {
 			DO_LOG_ERROR("Cannot get String value from Json payload");
-			return false;
+			retVal = false;
 		}
-		std::string sTemp(val);
-		CValObj oValtemp(METRIC_DATA_TYPE_STRING, sTemp);
-		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_STRING, oValtemp);
-		return true;
+		else
+		{
+			std::string sTemp(val);
+			CValObj oValtemp(METRIC_DATA_TYPE_STRING, sTemp);
+			a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_STRING, oValtemp);
+			retVal = true;
+		}
 	}
 	else if (tempYmlDataType == METRIC_DATA_TYPE_FLOAT && (1 == cJSON_IsNumber(cjValue)))
 	{
 		float fval = static_cast<float>(cjValue->valuedouble);
 		CValObj oValtemp(METRIC_DATA_TYPE_FLOAT, fval);
 		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_FLOAT, oValtemp);
-		return true;
+		retVal = true;
 	}
 	else if (tempYmlDataType == METRIC_DATA_TYPE_DOUBLE && (1 == cJSON_IsNumber(cjValue)))
 	{
 		double dval = static_cast<double>(cjValue->valuedouble);
 		CValObj oValtemp(METRIC_DATA_TYPE_DOUBLE, dval);
 		a_rValobj.assignNewDataTypeValue(METRIC_DATA_TYPE_DOUBLE, oValtemp);
-		return true;
+		retVal = true;
 	}
 	else
 	{
@@ -837,9 +881,16 @@ bool CSparkPlugDev::parseScaledValueRealDevices(const std::string &a_sPayLoad, s
 				"Invalid data type or mismatch found. Mentioned type in Yml file : "
 						+ std::to_string(tempYmlDataType) + ", Value datatype :"
 						+ std::to_string(cjValue->type));
-		return false;
+		retVal = false;
 	}
-	return false;
+
+	// Deallocate pjRoot
+	if (NULL != pjRoot)
+	{
+		cJSON_Delete(pjRoot);
+	}
+
+	return retVal;
 }
 
 /**
