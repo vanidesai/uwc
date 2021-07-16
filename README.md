@@ -67,6 +67,8 @@ The directory comprises of following:
     $ <working-dir>/IEdgeInsights/build
     $ sudo ./pre_requisites.sh --help
   ```
+     Note - If the error "Docker CE installation step is failed" is seen while running pre-requisite.sh script on a fresh system then kindly re-run the pre_requisite.sh script again.
+            This is a known bug in docker community for Docker CE.
 
 2. If the required UWC code base is not yet repo synched or (git repositories cloned), then kindly follow the repo or git steps from  `<working-directory>/IEdgeInsights/../.repo/manifests/README.md` to repo sync or git clone the codebase.
 
