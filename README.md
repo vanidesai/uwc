@@ -21,6 +21,11 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 ```
+# Universal Wellpad Controller (UWC) userguide
+https://open-edge-insights.github.io/uwc-docs/Pages/page_01.html
+
+# UWC detailed installation instructions are here
+https://open-edge-insights.github.io/uwc-docs/Pages/page_03.html
 
 # Contents:
 1. [Directory details](#directory-details)
